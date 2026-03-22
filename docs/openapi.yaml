@@ -1,0 +1,89 @@
+openapi: 3.0.0
+info:
+  title: Verimus Secure Storage API
+  version: 1.0.0
+  description: HTTP API for submitting files and querying the decentralized ledger via the internal Express Gateway.
+paths:
+  /api/node/config:
+    get:
+      summary: Retrieves local node cryptographic identity
+      responses:
+        '200':
+          description: Public key and node signature returned successfully.
+  /api/upload:
+    post:
+      summary: Uploads, synchronously AES encrypts, and broadcasts files to the P2P network.
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                paths:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Physical chunks stored locally, logical bundle dispatched to Mempool.
+  /api/blocks:
+    get:
+      summary: Queries paginated blocks strictly from the verified local MongoDB ledger.
+      parameters:
+        - name: page
+          in: query
+          schema:
+             type: integer
+        - name: limit
+          in: query
+          schema:
+             type: integer
+        - name: sort
+          in: query
+          schema:
+             type: string
+             enum: [asc, desc]
+        - name: q
+          in: query
+          schema:
+             type: string
+             description: Path search filter for deeply nested logical file-trees
+      responses:
+        '200':
+          description: Returns securely formatted block array and standard pagination object.
+  /api/blocks/{hash}/private:
+    get:
+      summary: Attempts asymmetric RSA decryption of the AES payload logically isolated inside a block.
+      parameters:
+        - name: hash
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Fully decrypted block manifest returned (requires RSA private key match at Node layer).
+  /api/download/{hash}/file/{filepath}:
+    get:
+      summary: Assembles and streams decrypted physical shards into the originally requested file target.
+      parameters:
+        - name: hash
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: filepath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A raw file download stream (application/octet-stream)
+        '404':
+          description: Block, provider chunk, or node connection explicitly not found

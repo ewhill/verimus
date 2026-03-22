@@ -1,0 +1,47 @@
+{
+  "name": "verimus-solution",
+  "version": "1.0.0",
+  "description": "Implementation of Verimus over Verimus",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsx index.ts",
+    "keygen": "tsx generateKeys.ts",
+    "build:ui": "npm --prefix ui run build",
+    "watch:ui": "npm --prefix ui run watch",
+    "start:node": "tsx index.ts",
+    "watch:node": "nodemon -x tsx -e ts --ignore data/ --ignore storage/ index.ts",
+    "test": "tsx --test tests/**/*.test.ts routeHandlers/**/*.test.ts storage_providers/**/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-glacier": "^3.1010.0",
+    "@aws-sdk/client-s3": "^3.1010.0",
+    "@aws-sdk/lib-storage": "^3.1010.0",
+    "archiver": "^7.0.1",
+    "express": "^5.2.1",
+    "mongodb": "^7.1.0",
+    "multer": "^2.1.1",
+    "node-fetch": "^2.7.0",
+    "ringnet": "github:ewhill/ringnet#develop",
+    "smb2": "^0.2.11",
+    "ssh2": "^1.17.0",
+    "ssh2-sftp-client": "^12.1.0",
+    "unzipper": "^0.12.3",
+    "winston": "^3.19.0",
+    "winston-transport": "^4.9.0",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.1.0",
+    "@types/node": "^25.5.0",
+    "@types/ssh2-sftp-client": "^9.0.6",
+    "@types/unzipper": "^0.10.11",
+    "@types/ws": "^8.18.1",
+    "form-data": "^4.0.5",
+    "mongodb-memory-server": "^11.0.1",
+    "nodemon": "^3.1.14",
+    "tsx": "^4.7.0",
+    "typescript": "^5.9.3"
+  }
+}
