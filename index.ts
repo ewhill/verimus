@@ -1,22 +1,22 @@
-import Bundler from './bundler';
-import PeerNode from './peerNode';
+import Bundler from './bundler/Bundler';
+import PeerNode from './peer_node/PeerNode';
 import * as fs from 'fs';
-import logger from './logger';
-import { Credentials, PeerCredentials } from './credentialProvider';
-import { RemoteFSCredentials } from './storage_providers/remoteFSProvider/remoteFSProvider';
-import { S3Credentials } from './storage_providers/s3Provider/s3Provider';
-import { LocalCredentials } from './storage_providers/localProvider/localProvider';
-import { SambaCredentials } from './storage_providers/sambaProvider/sambaProvider';
-import { GlacierCredentials } from './storage_providers/glacierProvider/glacierProvider';
-import BaseStorageProvider from './storage_providers/baseProvider';
-import S3StorageProvider from './storage_providers/s3Provider/s3Provider';
-import GlacierStorageProvider from './storage_providers/glacierProvider/glacierProvider';
-import SambaStorageProvider from './storage_providers/sambaProvider/sambaProvider';
-import RemoteFSStorageProvider from './storage_providers/remoteFSProvider/remoteFSProvider';
-import LocalStorageProvider from './storage_providers/localProvider/localProvider';
-import GithubStorageProvider from './storage_providers/githubProvider/githubProvider';
-import MemoryStorageProvider from './storage_providers/memoryProvider/memoryProvider';
-import { CredentialProvider } from './credentialProvider';
+import logger from './logger/Logger';
+import { Credentials, PeerCredentials } from './credential_provider/CredentialProvider';
+import { RemoteFSCredentials } from './storage_providers/remote_fs_provider/RemoteFSProvider';
+import { S3Credentials } from './storage_providers/s3_provider/S3Provider';
+import { LocalCredentials } from './storage_providers/local_provider/LocalProvider';
+import { SambaCredentials } from './storage_providers/samba_provider/SambaProvider';
+import { GlacierCredentials } from './storage_providers/glacier_provider/GlacierProvider';
+import BaseStorageProvider from './storage_providers/base_provider/BaseProvider';
+import S3StorageProvider from './storage_providers/s3_provider/S3Provider';
+import GlacierStorageProvider from './storage_providers/glacier_provider/GlacierProvider';
+import SambaStorageProvider from './storage_providers/samba_provider/SambaProvider';
+import RemoteFSStorageProvider from './storage_providers/remote_fs_provider/RemoteFSProvider';
+import LocalStorageProvider from './storage_providers/local_provider/LocalProvider';
+import GithubStorageProvider, { GithubCredentials } from './storage_providers/github_provider/GithubProvider';
+import MemoryStorageProvider from './storage_providers/memory_provider/MemoryProvider';
+import { CredentialProvider } from './credential_provider/CredentialProvider';
 
 
 async function main() {
@@ -91,13 +91,13 @@ async function main() {
             storageProvider = RemoteFSStorageProvider.parseArgs(process.argv, providerCreds as RemoteFSCredentials);
             break;
         case 'github': {
-            const p = GithubStorageProvider.parseArgs(process.argv, providerCreds as any);
+            const p = GithubStorageProvider.parseArgs(process.argv, providerCreds as GithubCredentials);
             if (!p) throw new Error("Missing GitHub credentials or args.");
             storageProvider = p;
             break;
         }
         case 'memory':
-            storageProvider = MemoryStorageProvider.parseArgs(process.argv, providerCreds as any);
+            storageProvider = MemoryStorageProvider.parseArgs(process.argv, providerCreds as Record<string, unknown>);
             break;
         case 'local':
         default:

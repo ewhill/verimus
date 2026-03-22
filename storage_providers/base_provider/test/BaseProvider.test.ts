@@ -1,10 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import BaseStorageProvider from '../../storage_providers/base_provider/BaseProvider';
+import BaseStorageProvider from '../BaseProvider';
 
 describe('Backend: BaseStorageProvider Coverage Tests', () => {
 
-    it('Module initializes', () => {
+    it('Initializes generic base storage class interface instances', () => {
         assert.ok(BaseStorageProvider !== undefined);
     });
 

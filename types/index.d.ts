@@ -1,6 +1,7 @@
 export interface PeerConnection {
     peerAddress: string;
     send(message: object): void;
+    remoteCredentials_?: { rsaKeyPair?: { public?: Buffer } };
 }
 
 export interface PeerReputation {

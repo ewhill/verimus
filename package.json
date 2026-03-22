@@ -10,7 +10,7 @@
     "watch:ui": "npm --prefix ui run watch",
     "start:node": "tsx index.ts",
     "watch:node": "nodemon -x tsx -e ts --ignore data/ --ignore storage/ index.ts",
-    "test": "tsx --test tests/**/*.test.ts routeHandlers/**/*.test.ts storage_providers/**/*.test.ts",
+    "test": "tsx --test \"!(ui|node_modules)/**/test/*.test.ts\" \"!(ui|node_modules)/**/*.test.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
