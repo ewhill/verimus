@@ -12,6 +12,7 @@ export const ApiService = {
     fetchBlocks: async (state, dispatch) => {
         try {
             const res = await fetch(`/api/blocks${getBaseQueryParams(state)}`);
+            if (!res.ok) throw new Error('Network response was not ok');
             const data = await res.json();
             if (data.success) {
                 dispatch({ type: 'SET_BLOCKS', payload: { blocks: data.blocks, pagination: data.pagination } });
@@ -26,6 +27,7 @@ export const ApiService = {
     fetchFiles: async (dispatch) => {
         try {
             const res = await fetch('/api/files');
+            if (!res.ok) throw new Error('Network response was not ok');
             const data = await res.json();
             if (data.success) {
                 dispatch({ type: 'SET_FILES_MAP', payload: data.files });
@@ -40,6 +42,7 @@ export const ApiService = {
     fetchNodeConfig: async (dispatch) => {
         try {
             const res = await fetch('/api/node/config');
+            if (!res.ok) throw new Error('Network response was not ok');
             const data = await res.json();
             if (data.success) {
                 dispatch({ type: 'SET_NODE_CONFIG', payload: data });
@@ -54,6 +57,7 @@ export const ApiService = {
     fetchPrivatePayload: async (hash) => {
         try {
             const res = await fetch(`/api/blocks/${hash}/private`);
+            if (!res.ok) throw new Error('Network response was not ok');
             return await res.json();
         } catch (err) {
             console.error("Failed fetching private payload bounds:", err);

@@ -69,7 +69,7 @@ const Header = () => {
                 <a href="#" className={`nav-link ${activeRoute === 'files' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'files')}>Files</a>
                 <a href="#" className={`nav-link ${activeRoute === 'ledger' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'ledger')}>Ledger</a>
                 
-                {(!nodeConfig?.roles || nodeConfig?.roles?.includes('ORIGINATOR')) && (
+                {(nodeConfig?.roles?.includes('ORIGINATOR')) && (
                     <a href="#" className={`nav-link ${activeRoute === 'upload' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'upload')}>Upload</a>
                 )}
                 
