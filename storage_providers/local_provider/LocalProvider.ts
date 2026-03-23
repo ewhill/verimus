@@ -20,6 +20,8 @@ class LocalFileStorageProvider extends BaseStorageProvider {
         }
     }
 
+    getCostPerGB(): number { return 1.5; }
+
     getLocation() {
         return {
             type: 'local',

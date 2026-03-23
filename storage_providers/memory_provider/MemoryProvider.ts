@@ -11,6 +11,8 @@ class MemoryStorageProvider extends BaseStorageProvider {
         this.storage = new Map<string, Buffer>();
     }
 
+    getCostPerGB(): number { return 0.0; }
+
     getLocation() {
         return {
             type: 'memory',

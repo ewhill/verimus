@@ -1,9 +1,11 @@
 import { Message } from 'ringnet';
 import { MessageOptions } from '../types/Types';
+import { NodeRole } from '../../types/NodeRole';
 
 export interface ScorePayload {
     publicKey: string;
     score: number;
+    roles?: NodeRole[];
 }
 
 export interface NetworkHealthSyncOptions {

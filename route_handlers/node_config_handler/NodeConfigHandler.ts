@@ -10,7 +10,12 @@ export default class NodeConfigHandler extends BaseHandler {
         success: true,
         publicKey: this.node.publicKey,
         signature: this.node.signature,
-        port: this.node.port
+        port: this.node.port,
+        roles: this.node.roles,
+        storageConfig: this.node.storageProvider ? {
+            ...this.node.storageProvider.getLocation(),
+            costPerGB: this.node.storageProvider.getCostPerGB()
+        } : null
     });
     }
 }

@@ -31,6 +31,8 @@ class S3StorageProvider extends BaseStorageProvider {
         logger.info(`[S3StorageProvider] Initialized for bucket: ${this.bucket}`);
     }
 
+    getCostPerGB(): number { return 5.0; }
+
     getLocation() {
         return {
             type: 's3',

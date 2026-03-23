@@ -23,6 +23,8 @@ class GithubStorageProvider extends BaseStorageProvider {
         this.branch = branch;
     }
 
+    getCostPerGB(): number { return 0.0; }
+
     getLocation() {
         return {
             type: 'github',

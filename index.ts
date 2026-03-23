@@ -1,6 +1,6 @@
 import Bundler from './bundler/Bundler';
 import PeerNode from './peer_node/PeerNode';
-import * as fs from 'fs';
+import { NodeRole } from './types/NodeRole';
 import logger from './logger/Logger';
 import { Credentials, PeerCredentials } from './credential_provider/CredentialProvider';
 import { RemoteFSCredentials } from './storage_providers/remote_fs_provider/RemoteFSProvider';
@@ -35,6 +35,7 @@ async function main() {
     let signaturePath: string | undefined;
     let dataDir = './data';
     let isHeadless = false;
+    let roles: NodeRole[] = [NodeRole.ORIGINATOR, NodeRole.VALIDATOR, NodeRole.STORAGE];
 
     for (let i = 2; i < process.argv.length; i++) {
         const arg = process.argv[i];
@@ -65,6 +66,8 @@ async function main() {
             signaturePath = process.argv[++i];
         } else if (arg === '--data-dir' && i + 1 < process.argv.length) {
             dataDir = process.argv[++i];
+        } else if (arg === '--roles' && i + 1 < process.argv.length) {
+            roles = process.argv[++i].split(',').map(r => r.trim().toUpperCase() as NodeRole);
         }
     }
     const mongoUri = `mongodb://${mongoHost}:${mongoPort}`;
@@ -129,7 +132,8 @@ async function main() {
         publicAddress,
         keyPaths,
         dataDir,
-        isHeadless
+        isHeadless,
+        roles
     );
     await node1.init();
 

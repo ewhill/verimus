@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import Ledger from '../ledger/Ledger';
 import BaseProvider from '../storage_providers/base_provider/BaseProvider';
 import { Block } from '../types';
+import { NodeRole } from '../types/NodeRole';
 import { PeerCredentials } from '../credential_provider/CredentialProvider';
 import Bundler from '../bundler/Bundler';
 import Mempool from '../models/mempool/Mempool';
@@ -41,13 +42,15 @@ class PeerNode {
     signature!: string;
     httpServer?: https.Server;
     isHeadless: boolean;
-    constructor(port: number, discoverAddresses: string[] = [], storageProvider: BaseProvider | null = null, bundler: Bundler | null = null, mongoUri: string | null = null, publicAddress: string | null = null, keyPaths: PeerCredentials, dataDir: string | null = null, isHeadless: boolean = false) {
+    roles: NodeRole[];
+    constructor(port: number, discoverAddresses: string[] = [], storageProvider: BaseProvider | null = null, bundler: Bundler | null = null, mongoUri: string | null = null, publicAddress: string | null = null, keyPaths: PeerCredentials, dataDir: string | null = null, isHeadless: boolean = false, roles: NodeRole[] = [NodeRole.ORIGINATOR, NodeRole.VALIDATOR, NodeRole.STORAGE]) {
         this.port = port;
         this.discoverAddresses = discoverAddresses;
         this.publicAddress = publicAddress;
         this.ledger = mongoUri ? new Ledger(mongoUri) : new Ledger();
         this.peer = null;
         this.isHeadless = isHeadless;
+        this.roles = roles;
         this.storageProvider = storageProvider;
         this.bundler = bundler;
         this.keyPaths = {

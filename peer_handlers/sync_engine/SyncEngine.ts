@@ -6,6 +6,7 @@ import { BlockSyncRequestMessage } from '../../messages/block_sync_request_messa
 import { BlockSyncResponseMessage } from '../../messages/block_sync_response_message/BlockSyncResponseMessage';
 import { NetworkHealthSyncMessage } from '../../messages/network_health_sync_message/NetworkHealthSyncMessage';
 import type { Block, PeerConnection } from '../../types';
+import { NodeRole } from '../../types/NodeRole';
 
 export interface SyncBufferEvent {
     type: 'PendingBlock' | 'AdoptFork';
@@ -57,7 +58,10 @@ class SyncEngine {
             this.syncInterval = setInterval(async () => {
                 if (!this.node.ledger.peersCollection) return;
                 const peers = await this.node.ledger.peersCollection.find({}).toArray();
-                const score_payloads = peers.map(p => ({ publicKey: p.publicKey, score: p.score }));
+                const score_payloads = peers.map(p => ({ publicKey: p.publicKey, score: p.score, roles: p.roles }));
+                
+                // Also broadcast our own native node roles mapped organically
+                score_payloads.push({ publicKey: this.node.publicKey, score: 100, roles: this.node.roles });
                 if (score_payloads.length > 0) {
                     this.node.peer!.broadcast(new NetworkHealthSyncMessage({ score_payloads })).catch(() => {});
                 }
@@ -65,7 +69,7 @@ class SyncEngine {
         }
     }
 
-    async handleNetworkHealthSync(score_payloads: { publicKey: string, score: number }[], connection: PeerConnection) {
+    async handleNetworkHealthSync(score_payloads: { publicKey: string, score: number, roles?: NodeRole[] }[], connection: PeerConnection) {
         if (!this.node.ledger.peersCollection) return;
         
         for (const remoteScore of score_payloads) {
@@ -84,10 +88,10 @@ class SyncEngine {
                 if (updatedScore > 100) updatedScore = 100;
                 if (updatedScore < 0) updatedScore = 0;
                 
-                if (updatedScore !== localPeer.score) {
+                if (updatedScore !== localPeer.score || (remoteScore.roles && JSON.stringify(localPeer.roles) !== JSON.stringify(remoteScore.roles))) {
                     await this.node.ledger.peersCollection.updateOne(
                         { publicKey: remoteScore.publicKey },
-                        { $set: { score: updatedScore, isBanned: updatedScore === 0 } }
+                        { $set: { score: updatedScore, isBanned: updatedScore === 0, ...(remoteScore.roles ? { roles: remoteScore.roles } : {}) } }
                     );
                 }
             } else if (remoteScore.score > 0) {
@@ -97,8 +101,9 @@ class SyncEngine {
                      score: Math.min(remoteScore.score, 100),
                      strikeCount: 0,
                      isBanned: false,
-                     lastOffense: null
-                });
+                     lastOffense: null,
+                     roles: remoteScore.roles || []
+                 });
             }
         }
     }

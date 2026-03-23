@@ -68,7 +68,19 @@ const Header = () => {
             <nav className={`main-nav ${isNavOpen ? 'active' : ''}`}>
                 <a href="#" className={`nav-link ${activeRoute === 'files' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'files')}>Files</a>
                 <a href="#" className={`nav-link ${activeRoute === 'ledger' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'ledger')}>Ledger</a>
-                <a href="#" className={`nav-link ${activeRoute === 'upload' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'upload')}>Upload</a>
+                
+                {(!nodeConfig?.roles || nodeConfig?.roles?.includes('ORIGINATOR')) && (
+                    <a href="#" className={`nav-link ${activeRoute === 'upload' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'upload')}>Upload</a>
+                )}
+                
+                {nodeConfig?.roles?.includes('VALIDATOR') && (
+                    <a href="#" className={`nav-link ${activeRoute === 'consensus' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'consensus')}>Consensus</a>
+                )}
+                
+                {nodeConfig?.roles?.includes('STORAGE') && (
+                    <a href="#" className={`nav-link ${activeRoute === 'contracts' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'contracts')}>Contracts</a>
+                )}
+                
                 <a href="#" className={`nav-link ${activeRoute === 'peers' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'peers')}>Network</a>
                 <a href="#" className={`nav-link ${activeRoute === 'logs' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'logs')}>Logs</a>
             </nav>

@@ -32,6 +32,8 @@ class NullStorageProvider extends BaseProvider {
         return { status: 'available', stream: Object.create(stream.Readable.prototype) };
     }
     
+    getCostPerGB(): number { return 0.0; }
+
     getLocation(): { type: string } {
         return { type: 'null://local' };
     }

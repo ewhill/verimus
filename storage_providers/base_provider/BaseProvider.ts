@@ -11,7 +11,7 @@ export type GetBlockReadStreamResult =
  * Base abstract class for storage providers.
  * Each provider must implement its own way of storing and retrieving packages.
  */
-class BaseStorageProvider {
+abstract class BaseStorageProvider {
     /**
      * Returns non-sensitive connection details for the storage provider.
      * @returns {Object} location metadata
@@ -63,6 +63,12 @@ class BaseStorageProvider {
     generatePhysicalBlockId(physicalBlockId: string): string {
         throw new Error("generatePhysicalBlockId() must be implemented by subclasses");
     }
+
+    /**
+     * Determines the cost per Gigabyte for a 30-day billing cycle.
+     * @returns Float denoting the VERI token cost.
+     */
+    abstract getCostPerGB(): number;
 }
 
 export default BaseStorageProvider;

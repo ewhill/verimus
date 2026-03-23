@@ -28,6 +28,8 @@ class RemoteFSStorageProvider extends BaseStorageProvider {
         logger.info(`[RemoteFSStorageProvider] Initialized for ${username}@${host}:${remoteDir}`);
     }
 
+    getCostPerGB(): number { return 1.0; }
+
     getLocation() {
         return {
             type: 'remote-fs',

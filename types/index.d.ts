@@ -1,7 +1,10 @@
+import { NodeRole } from './NodeRole';
+
 export interface PeerConnection {
     peerAddress: string;
     send(message: object): void;
     remoteCredentials_?: { rsaKeyPair?: { public?: Buffer } };
+    roles?: NodeRole[]; // Dynamically threaded role bounds per connection 
 }
 
 export type BlockType = 'TRANSACTION' | 'STORAGE_CONTRACT';
@@ -13,6 +16,7 @@ export interface PeerReputation {
     strikeCount: number;
     isBanned: boolean;
     lastOffense: string | null;
+    roles?: NodeRole[];
 }
 
 export interface TransactionPayload {

@@ -25,6 +25,8 @@ class SambaStorageProvider extends BaseStorageProvider {
         logger.info(`[SambaStorageProvider] Initialized for share: ${share}`);
     }
 
+    getCostPerGB(): number { return 1.0; }
+
     getLocation() {
         return {
             type: 'samba',

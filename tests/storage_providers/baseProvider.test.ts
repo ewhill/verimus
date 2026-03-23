@@ -9,7 +9,10 @@ describe('Backend: BaseStorageProvider Coverage Tests', () => {
     });
 
     it('Throws interface errors invoking unimplemented virtual stream abstraction methods', async () => {
-        const provider = new BaseStorageProvider();
+        class DummyProvider extends BaseStorageProvider {
+            getCostPerGB() { return 0; }
+        }
+        const provider = new DummyProvider();
         
         assert.throws(() => provider.getLocation(), { message: 'getLocation not implemented' });
         assert.throws(() => BaseStorageProvider.parseArgs([]), { message: 'parseArgs() must be implemented by subclasses' });

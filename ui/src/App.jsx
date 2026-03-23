@@ -18,6 +18,7 @@ function App() {
     const searchQuery = useStore(s => s.searchQuery);
     const selectedBlockHash = useStore(s => s.selectedBlockHash);
     const isModalOpen = useStore(s => s.isModalOpen);
+    const nodeConfig = useStore(s => s.nodeConfig);
 
     useEffect(() => {
         // Evaluate deep-link URL on native mount taking precedence over Zustand persistent cache
@@ -76,7 +77,22 @@ function App() {
 
     const renderActiveView = () => {
         switch (currentRoute) {
-            case 'upload': return <UploadView />;
+            case 'consensus':
+                return nodeConfig?.roles?.includes('VALIDATOR') ? (
+                    <div style={{padding: '3rem', textAlign: 'center', color: '#8b9bb4'}}>
+                        <h1 style={{fontSize: '2rem', marginBottom: '1rem', color: '#c084fc'}}>Consensus Monitor</h1>
+                        <p>Mempool Diagnostics mapping (Incoming integration)</p>
+                    </div>
+                ) : <FilesView />;
+            case 'contracts':
+                return nodeConfig?.roles?.includes('STORAGE') ? (
+                    <div style={{padding: '3rem', textAlign: 'center', color: '#8b9bb4'}}>
+                        <h1 style={{fontSize: '2rem', marginBottom: '1rem', color: '#c084fc'}}>Active Contracts</h1>
+                        <p>Physical Block Allocation and hosting bounds visualizer (Incoming integration)</p>
+                    </div>
+                ) : <FilesView />;
+            case 'upload': 
+                return nodeConfig?.roles?.includes('ORIGINATOR') ? <UploadView /> : <FilesView />;
             case 'peers':  return <PeersView />;
             case 'logs':   return <LogsView />;
             case 'ledger': return <LedgerView />;
