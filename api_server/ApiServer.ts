@@ -46,7 +46,7 @@ export default function setupExpressApp(peerNode: PeerNode) {
 
     // Serve static files from public directory
     if (!peerNode.isHeadless) {
-        app.use(express.static(path.join(__dirname, 'public')));
+        app.use(express.static(path.join(__dirname, '../public')));
     }
     app.use(express.json());
 
