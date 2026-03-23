@@ -53,7 +53,7 @@ class ConsensusEngine {
         }
 
         const latestBlock = await this.node.ledger.getLatestBlock();
-        if (latestBlock && block.metadata.index < (latestBlock.metadata.index - 5)) {
+        if (block.metadata.index !== -1 && latestBlock && block.metadata.index < (latestBlock.metadata.index - 5)) {
             logger.info(`[Peer ${this.node.port}] Rejected Excessively Stale Block from ${connection.peerAddress}`);
             await this.node.reputationManager.penalizeMinor(block.publicKey, "Stale Block or Fork Deviation");
             return;
