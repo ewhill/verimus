@@ -6,7 +6,7 @@ import { Request, Response } from 'express';
 import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
 import { encryptPrivatePayload, signData } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
-import { Block, BlockPrivate, EncryptedBlockPrivate, PeerConnection } from '../../types';
+import type { Block, BlockPrivate, StorageContractPayload, PeerConnection } from '../../types';
 
 
 import BaseHandler from '../base_handler/BaseHandler';
@@ -59,7 +59,8 @@ export default class UploadHandler extends BaseHandler {
                 index: -1,
                 timestamp: Date.now(),
             },
-            private: encryptedPrivate as EncryptedBlockPrivate,
+            type: 'STORAGE_CONTRACT',
+            payload: encryptedPrivate as StorageContractPayload,
             publicKey: publicKey,
             signature: signatureStr
         };

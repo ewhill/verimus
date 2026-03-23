@@ -63,7 +63,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
         const mockBlock = {
              metadata: { index: 5, timestamp: Date.now() },
              public: {},
-             private: {},
+             payload: {},
              signature: validSignature,
              publicKey: publicKey
         } as any;
@@ -169,7 +169,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
 
     it('Evaluates proposed fork chains against local ledger', async () => {
         const mockConn = { peerAddress: '127.0.0.1:3001' } as any;
-        engine.mempool.pendingBlocks.set('block1', { block: { private: {} as any, signature: 'sig1', publicKey: 'pk1' }, originalTimestamp: Date.now() } as any);
+        engine.mempool.pendingBlocks.set('block1', { block: { payload: {} as any, signature: 'sig1', publicKey: 'pk1' }, originalTimestamp: Date.now() } as any);
         await engine.handleProposeFork('fork1', ['block1'], mockConn);
         const fork = engine.mempool.eligibleForks.get('fork1');
         assert.ok(fork !== undefined);

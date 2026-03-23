@@ -51,7 +51,7 @@ describe('Backend: blocksHandler Coverage', () => {
         
         mockNode.ledger.collection.find = () => ({
             sort: () => ({
-                toArray: async () => [{ metadata: { index: 1 }, hash: 'hash1', publicKey: 'testPubKey', private: encrypted }]
+                toArray: async () => [{ metadata: { index: 1 }, hash: 'hash1', publicKey: 'testPubKey', payload: encrypted }]
             })
         });
 
@@ -70,8 +70,8 @@ describe('Backend: blocksHandler Coverage', () => {
         mockNode.ledger.collection.find = () => ({
             sort: () => ({
                 toArray: async () => [
-                    { metadata: { index: 1 }, hash: 'hash1', publicKey: 'testPubKey', private: encryptedMatch },
-                    { metadata: { index: 2 }, hash: 'hash2', publicKey: 'testPubKey', private: encryptedNoMatch }
+                    { metadata: { index: 1 }, hash: 'hash1', publicKey: 'testPubKey', payload: encryptedMatch },
+                    { metadata: { index: 2 }, hash: 'hash2', publicKey: 'testPubKey', payload: encryptedNoMatch }
                 ]
             })
         });
@@ -90,7 +90,7 @@ describe('Backend: blocksHandler Coverage', () => {
         const encrypted = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'pending.txt' }] });
         mockNode.mempool.pendingBlocks.set('some-sig', { 
             committed: false,
-            block: { signature: 'some-sig', publicKey: 'testPubKey', private: encrypted, metadata: { timestamp: 12345 } }
+            block: { signature: 'some-sig', publicKey: 'testPubKey', payload: encrypted, metadata: { timestamp: 12345 } }
         });
 
         const handler = new BlocksHandler(mockNode as any);
@@ -114,11 +114,11 @@ describe('Backend: blocksHandler Coverage', () => {
         
         mockNode.mempool.pendingBlocks.set('some-sig', { 
             committed: false,
-            block: { signature: 'some-sig', publicKey: 'otherKey', private: encrypted, metadata: { timestamp: 12345 } }
+            block: { signature: 'some-sig', publicKey: 'otherKey', payload: encrypted, metadata: { timestamp: 12345 } }
         });
         mockNode.mempool.pendingBlocks.set('some-sig2', { 
             committed: false,
-            block: { signature: 'some-sig2', publicKey: 'testPubKey', private: encrypted, metadata: { timestamp: 123456 } }
+            block: { signature: 'some-sig2', publicKey: 'testPubKey', payload: encrypted, metadata: { timestamp: 123456 } }
         });
 
         req.query.own = 'true';
@@ -137,12 +137,12 @@ describe('Backend: blocksHandler Coverage', () => {
         
         mockNode.mempool.pendingBlocks.set('block1', { 
             committed: false,
-            block: { signature: 'b1', publicKey: 'testPubKey', private: encrypted },
+            block: { signature: 'b1', publicKey: 'testPubKey', payload: encrypted },
             originalTimestamp: 1000
         });
         mockNode.mempool.pendingBlocks.set('block2', { 
             committed: false,
-            block: { signature: 'b2', publicKey: 'testPubKey', private: encrypted },
+            block: { signature: 'b2', publicKey: 'testPubKey', payload: encrypted },
             originalTimestamp: 2000
         });
 
@@ -170,8 +170,8 @@ describe('Backend: blocksHandler Coverage', () => {
         mockNode.ledger.collection.find = () => ({
             sort: () => ({
                 toArray: async () => [
-                    { metadata: { index: 1 }, hash: 'hash1', publicKey: 'testPubKey', private: 'CORRUPTED_PRIVATE_PAYLOAD' },
-                    { metadata: { index: 2 }, hash: 'hash2', publicKey: 'testPubKey', private: encryptedMatch }
+                    { metadata: { index: 1 }, hash: 'hash1', publicKey: 'testPubKey', payload: 'CORRUPTED_PRIVATE_PAYLOAD' },
+                    { metadata: { index: 2 }, hash: 'hash2', publicKey: 'testPubKey', payload: encryptedMatch }
                 ]
             })
         });

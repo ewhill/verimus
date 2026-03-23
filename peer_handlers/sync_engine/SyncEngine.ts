@@ -5,7 +5,7 @@ import { ChainStatusResponseMessage } from '../../messages/chain_status_response
 import { BlockSyncRequestMessage } from '../../messages/block_sync_request_message/BlockSyncRequestMessage';
 import { BlockSyncResponseMessage } from '../../messages/block_sync_response_message/BlockSyncResponseMessage';
 import { NetworkHealthSyncMessage } from '../../messages/network_health_sync_message/NetworkHealthSyncMessage';
-import { Block, PeerConnection } from '../../types';
+import type { Block, PeerConnection } from '../../types';
 
 export interface SyncBufferEvent {
     type: 'PendingBlock' | 'AdoptFork';

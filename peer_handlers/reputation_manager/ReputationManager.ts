@@ -1,6 +1,6 @@
 import { Collection } from 'mongodb';
 import { EventEmitter } from 'events';
-import { PeerReputation } from '../../types';
+import type { PeerReputation } from '../../types';
 import logger from '../../logger/Logger';
 
 export class ReputationManager extends EventEmitter {

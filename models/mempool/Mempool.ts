@@ -1,4 +1,4 @@
-import { PeerConnection, Block } from '../../types';
+import type { PeerConnection, Block } from '../../types';
 
 export interface PendingBlockEntry {
     block: Block;

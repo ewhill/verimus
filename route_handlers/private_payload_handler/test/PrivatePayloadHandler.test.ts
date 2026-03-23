@@ -63,7 +63,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
 
     it('Gets block from mempool when missing in ledger', async () => {
         const { publicKey, privateKey } = cryptoUtils.generateRSAKeyPair();
-        const mockBlock = { hash: 'memhash', publicKey: publicKey, private: {}, signature: 'bad_sig' };
+        const mockBlock = { hash: 'memhash', publicKey: publicKey, payload: {}, signature: 'bad_sig' };
         const handler = new PrivatePayloadHandler({ 
             publicKey: publicKey,
             ledger: { collection: { find: () => ({ toArray: async () => [] }) } },
@@ -85,7 +85,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
 
     it('Returns 401 when signature is invalid', async () => {
         const { publicKey, privateKey } = cryptoUtils.generateRSAKeyPair();
-        const mockBlock = { hash: 'validh', publicKey: publicKey, private: {}, signature: 'bad_sig' };
+        const mockBlock = { hash: 'validh', publicKey: publicKey, payload: {}, signature: 'bad_sig' };
         
         const handler = new PrivatePayloadHandler({ 
             publicKey: publicKey,
@@ -117,7 +117,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const handler = new PrivatePayloadHandler({ 
             publicKey: publicKey,
             privateKey: 'wrong_private_key_to_force_failure',
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', publicKey, private: encPriv, signature: sig }] }) } }
+            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', publicKey, payload: encPriv, signature: sig }] }) } }
         } as any);
 
         const req: any = { params: { hash: 'validh' } };
@@ -144,7 +144,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const handler = new PrivatePayloadHandler({ 
             publicKey: publicKey,
             privateKey: privateKey,
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', publicKey, private: encPriv, signature: sig }] }) } }
+            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', publicKey, payload: encPriv, signature: sig }] }) } }
         } as any);
 
         const req: any = { params: { hash: 'validh' } };

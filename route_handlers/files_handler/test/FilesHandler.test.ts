@@ -53,7 +53,7 @@ describe('Backend: filesHandler Coverage', () => {
         
         mockNode.ownedBlocksCache = ['hashABC'];
         mockNode.ledger.collection.find = () => ({
-            toArray: async () => [{ metadata: { index: 5, timestamp: 9999 }, hash: 'hashABC', publicKey: 'testPubKey', private: encrypted }]
+            toArray: async () => [{ metadata: { index: 5, timestamp: 9999 }, hash: 'hashABC', publicKey: 'testPubKey', payload: encrypted }]
         });
         
         const handler = new FilesHandler(mockNode as any);
@@ -78,7 +78,7 @@ describe('Backend: filesHandler Coverage', () => {
         
         mockNode.mempool.pendingBlocks.set('pending-sig', {
             committed: false,
-            block: { publicKey: 'testPubKey', private: encrypted, hash: 'pendingHash' }
+            block: { publicKey: 'testPubKey', payload: encrypted, hash: 'pendingHash' }
         });
         
         const handler = new FilesHandler(mockNode as any);
@@ -111,8 +111,8 @@ describe('Backend: filesHandler Coverage', () => {
         mockNode.ownedBlocksCache = ['b1', 'b2'];
         mockNode.ledger.collection.find = () => ({
             toArray: async () => [
-                { metadata: { index: 1, timestamp: 1000 }, hash: 'b1', publicKey: 'testPubKey', private: encrypted },
-                { metadata: { index: 2, timestamp: 2000 }, hash: 'b2', publicKey: 'testPubKey', private: encrypted2 }
+                { metadata: { index: 1, timestamp: 1000 }, hash: 'b1', publicKey: 'testPubKey', payload: encrypted },
+                { metadata: { index: 2, timestamp: 2000 }, hash: 'b2', publicKey: 'testPubKey', payload: encrypted2 }
             ]
         });
         
@@ -133,7 +133,7 @@ describe('Backend: filesHandler Coverage', () => {
         mockNode.ownedBlocksCache = ['badBlock'];
         mockNode.ledger.collection.find = () => ({
             toArray: async () => [
-                { hash: 'badBlock', publicKey: 'testPubKey', private: 'CORRUPTED' }
+                { hash: 'badBlock', publicKey: 'testPubKey', payload: 'CORRUPTED' }
             ]
         });
         
@@ -167,19 +167,19 @@ describe('Backend: filesHandler Coverage', () => {
         // Add pending block directly to mempool since we cleared owned blocks
         mockNode.mempool.pendingBlocks.set('pending1', {
             committed: false,
-            block: { publicKey: 'testPubKey', private: encrypted, hash: 'loc1', metadata: { index: 1, timestamp: 1 } }
+            block: { publicKey: 'testPubKey', payload: encrypted, hash: 'loc1', metadata: { index: 1, timestamp: 1 } }
         });
         mockNode.mempool.pendingBlocks.set('pending2', {
             committed: false,
-            block: { publicKey: 'testPubKey', private: encrypted2, hash: 'loc2', metadata: { index: 2, timestamp: 2 } }
+            block: { publicKey: 'testPubKey', payload: encrypted2, hash: 'loc2', metadata: { index: 2, timestamp: 2 } }
         });
         mockNode.mempool.pendingBlocks.set('pending3', {
             committed: false,
-            block: { publicKey: 'testPubKey', private: encrypted3, hash: 'loc3', metadata: { index: 3, timestamp: 3 } }
+            block: { publicKey: 'testPubKey', payload: encrypted3, hash: 'loc3', metadata: { index: 3, timestamp: 3 } }
         });
         mockNode.mempool.pendingBlocks.set('pending4', {
             committed: false,
-            block: { publicKey: 'testPubKey', private: encrypted4, hash: 'loc4', metadata: { index: 4, timestamp: 4 } }
+            block: { publicKey: 'testPubKey', payload: encrypted4, hash: 'loc4', metadata: { index: 4, timestamp: 4 } }
         });
         
         const handler = new FilesHandler(mockNode as any);

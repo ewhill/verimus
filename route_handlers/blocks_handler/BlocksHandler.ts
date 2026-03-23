@@ -3,7 +3,7 @@ import { Filter } from 'mongodb';
 
 import logger from '../../logger/Logger';
 import { decryptPrivatePayload } from '../../crypto_utils/CryptoUtils';
-import { Block, EncryptedBlockPrivate } from '../../types';
+import type { Block, StorageContractPayload } from '../../types';
 
 
 import BaseHandler from '../base_handler/BaseHandler';
@@ -40,10 +40,11 @@ export default class BlocksHandler extends BaseHandler {
                             index: -1,
                             timestamp: entry.originalTimestamp || Date.now(),
                         },
-                        private: entry.block.private, // Added specifically to filter during search mapping
+                        type: entry.block.type || 'STORAGE_CONTRACT',
+                        payload: entry.block.payload, // Added specifically to filter during search mapping
                         publicKey: entry.block.publicKey,
                         signature: entry.block.signature,
-                    });
+                    } as Block);
                 }
             }
             if (sortOrder === 1) {
@@ -67,8 +68,8 @@ export default class BlocksHandler extends BaseHandler {
                     let targetBlock: Block | undefined = blocks.find((b: Block) => b.hash === block.hash) as Block;
                     if (!targetBlock) targetBlock = pendingBlocks.find((b: Block) => b.hash === block.hash);
 
-                    if (targetBlock && targetBlock.private) {
-                        const decodedObj = decryptPrivatePayload(privateKey, targetBlock.private as EncryptedBlockPrivate);
+                    if (targetBlock && targetBlock.payload) {
+                        const decodedObj = decryptPrivatePayload(privateKey, targetBlock.payload as StorageContractPayload);
                         if (decodedObj && decodedObj.files) {
                             const matchFound = decodedObj.files.some((file: { path: string }) =>
                                 file.path && file.path.toLowerCase().includes(searchQuery)

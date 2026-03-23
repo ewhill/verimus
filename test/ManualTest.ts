@@ -136,7 +136,7 @@ async function runManualTest() {
         await new Promise(r => setTimeout(r, 2000));
         
         const rogueBlocks: any = await (await fetch("http://127.0.0.1:27782/api/blocks")).json();
-        const rogueFound = rogueBlocks.blocks.some((b: any) => b.private && b.signature === rogueData.signature);
+        const rogueFound = rogueBlocks.blocks.some((b: any) => b.payload && b.signature === rogueData.signature);
         if (rogueFound) throw new Error("CRITICAL: Partition bypassed quorum limits!");
         console.log("SUCCESS: Isolated node stalled cleanly preventing corrupt blockchain commitments natively matching Math.floor(N/2)+1.");
 

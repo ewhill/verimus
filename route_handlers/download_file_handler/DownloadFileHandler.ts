@@ -4,7 +4,7 @@ import { verifySignature, decryptPrivatePayload, createAESDecryptStream } from '
 import logger from '../../logger/Logger';
 
 import { Parse, Entry } from 'unzipper';
-import { EncryptedBlockPrivate } from '../../types';
+import type { StorageContractPayload } from '../../types';
 
 import BaseHandler from '../base_handler/BaseHandler';
 
@@ -28,7 +28,7 @@ export default class DownloadFileHandler extends BaseHandler {
             const block = blocks[0];
 
             // Verify signature
-            const isSignatureValid = verifySignature(JSON.stringify(block.private), block.signature, block.publicKey);
+            const isSignatureValid = verifySignature(JSON.stringify(block.payload), block.signature, block.publicKey);
             if (!isSignatureValid) {
                 return res.status(401).send('Invalid block signature.');
             }
@@ -36,7 +36,7 @@ export default class DownloadFileHandler extends BaseHandler {
             // Decrypt private payload
             let privatePayload;
             try {
-                privatePayload = decryptPrivatePayload(privateKey, block.private as EncryptedBlockPrivate);
+                privatePayload = decryptPrivatePayload(privateKey, block.payload as StorageContractPayload);
             } catch (e) {
                 return res.status(401).send('Failed to decrypt private payload.');
             }

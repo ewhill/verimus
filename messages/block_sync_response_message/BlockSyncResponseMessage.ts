@@ -1,5 +1,5 @@
 import { Message } from 'ringnet';
-import { Block } from '../../types';
+import type { Block } from '../../types';
 import { MessageOptions } from '../types/Types';
 
 export interface BlockSyncResponseOptions {

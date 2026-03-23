@@ -4,6 +4,8 @@ export interface PeerConnection {
     remoteCredentials_?: { rsaKeyPair?: { public?: Buffer } };
 }
 
+export type BlockType = 'TRANSACTION' | 'STORAGE_CONTRACT';
+
 export interface PeerReputation {
     _id?: any;
     publicKey: string;
@@ -13,12 +15,14 @@ export interface PeerReputation {
     lastOffense: string | null;
 }
 
-export interface BlockMetadata {
-    index: number;
-    timestamp: number;
+export interface TransactionPayload {
+    senderSignature: string; 
+    senderId: string;        
+    recipientId: string;     
+    amount: number;         
 }
 
-export interface EncryptedBlockPrivate {
+export interface StorageContractPayload {
     encryptedPayloadBase64: string;
     encryptedKeyBase64: string;
     encryptedIvBase64: string;
@@ -30,31 +34,84 @@ export interface BlockPrivateFile {
     contentHash: string;
 }
 
+export interface LocalStorageLocation {
+    type: 'local' | 'memory';
+    storageDir?: string;
+}
+
+export interface S3StorageLocation {
+    type: 's3';
+    bucket: string;
+}
+
+export interface SambaStorageLocation {
+    type: 'samba';
+    share: string;
+}
+
+export interface RemoteFSStorageLocation {
+    type: 'remote-fs';
+    host: string;
+    dir: string;
+}
+
+export interface GlacierStorageLocation {
+    type: 'glacier';
+    vault: string;
+}
+
+export interface GithubStorageLocation {
+    type: 'github';
+    owner: string;
+    repo: string;
+    branch?: string;
+}
+
+export interface GenericStorageLocation {
+    type: string;
+    [key: string]: any;
+}
+
+export type StorageLocation = 
+    | LocalStorageLocation
+    | S3StorageLocation
+    | SambaStorageLocation
+    | RemoteFSStorageLocation
+    | GlacierStorageLocation
+    | GithubStorageLocation
+    | GenericStorageLocation;
+
 export interface BlockPrivate {
     key: string;
     iv: string;
     authTag?: string;
-    location: any; // Used to be StorageLocation, dynamically loaded via specific providers
+    location: StorageLocation;
     physicalId: string;
     files: BlockPrivateFile[];
 }
 
-export interface Block {
+export interface BlockMetadata {
+    index: number;
+    timestamp: number;
+}
+
+export interface BaseBlock {
     _id?: any;
-    /** Hash of previous block in the chain. A null value is used to indicate the block is not yet settled. */
     previousHash?: string;
-
-    /** Hash of the block. A null value is used to indicate the block is not yet settled. */
     hash?: string;
-
     metadata: BlockMetadata;
-
-    /** The private data included in the block. If encrypted, the type is EncryptedBlockPrivate. If decrypted, the type is BlockPrivate. */
-    private: EncryptedBlockPrivate | BlockPrivate;
-
-    /** The public key of the peer which submitted and owns this block */
     publicKey: string;
-
-    /** The signature of the peer which submitted and owns this block. */
     signature: string;
 }
+
+export interface TransactionBlock extends BaseBlock {
+    type: 'TRANSACTION';
+    payload: TransactionPayload;
+}
+
+export interface StorageContractBlock extends BaseBlock {
+    type: 'STORAGE_CONTRACT';
+    payload: StorageContractPayload; // The encrypted payload securely mapped
+}
+
+export type Block = TransactionBlock | StorageContractBlock;

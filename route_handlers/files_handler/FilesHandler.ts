@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import { decryptPrivatePayload } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
 
-import { EncryptedBlockPrivate, Block } from '../../types';
+import type { StorageContractPayload, Block } from '../../types';
 
 import BaseHandler from '../base_handler/BaseHandler';
 
@@ -33,8 +33,8 @@ export default class FilesHandler extends BaseHandler {
 
         for (const block of allBlocks) {
             try {
-                if (block.private) {
-                    const decodedObj = decryptPrivatePayload(privateKey, block.private as EncryptedBlockPrivate);
+                if (block.payload) {
+                    const decodedObj = decryptPrivatePayload(privateKey, block.payload as StorageContractPayload);
                     if (decodedObj && decodedObj.files) {
                         for (const file of decodedObj.files) {
                             if (file.path) {

@@ -102,7 +102,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
             hash: 'wrong_hash',
             previousHash: 'fake',
             publicKey: node2.publicKey,
-            private: { fake: true },
+            payload: { fake: true },
             signature: 'fakesig'
         };
 
@@ -127,7 +127,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
             metadata: { index: 99, timestamp: Date.now() },
             previousHash: 'fake',
             publicKey: node3.publicKey,
-            private: { fake: true },
+            payload: { fake: true },
             signature: 'invalid_sig'
         };
         const str = JSON.stringify(block);

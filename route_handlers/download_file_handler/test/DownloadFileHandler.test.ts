@@ -50,7 +50,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         
         const handler = new DownloadFileHandler({ 
             privateKey: privateKey,
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', private: {}, publicKey: publicKey, signature: 'bad_sig' }] }) } }
+            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: {}, publicKey: publicKey, signature: 'bad_sig' }] }) } }
         } as any);
 
         const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
@@ -86,7 +86,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
 
         const handler = new DownloadFileHandler({ 
             privateKey: privateKey,
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', private: encPriv, publicKey: publicKey, signature: sig }] }) } },
+            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
@@ -143,7 +143,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         let streamDestroyed = false;
         const handler = new DownloadFileHandler({ 
             privateKey: privateKey,
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', private: encPriv, publicKey: publicKey, signature: sig }] }) } },
+            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
@@ -186,7 +186,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
 
         const handler = new DownloadFileHandler({ 
             privateKey: privateKey,
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', private: encPriv, publicKey: publicKey, signature: sig }] }) } },
+            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
@@ -228,7 +228,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
 
         const handler = new DownloadFileHandler({ 
             privateKey: privateKey,
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', private: encPriv, publicKey: publicKey, signature: sig }] }) } },
+            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
@@ -279,7 +279,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         const { publicKey, privateKey } = generateRSAKeyPair();
         const handler = new DownloadFileHandler({ 
             privateKey: 'BAD_KEY',
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', private: 'CORRUPT', publicKey: publicKey, signature: 'sig' }] }) } }
+            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: 'CORRUPT', publicKey: publicKey, signature: 'sig' }] }) } }
         } as any);
 
         const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
@@ -299,7 +299,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
 
         const handler = new DownloadFileHandler({ 
             privateKey: generateRSAKeyPair().privateKey, // Wrong priv key to make it throw
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', private: encPriv, publicKey: publicKey, signature: sig }] }) } }
+            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } }
         } as any);
 
         const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
@@ -322,7 +322,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
 
         const handler = new DownloadFileHandler({ 
             privateKey: privateKey, 
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', private: encPriv, publicKey: publicKey, signature: sig }] }) } },
+            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
                 getBlockReadStream: async (id: string) => ({ status: 'not_found' }) // simulate not found
             }
@@ -348,7 +348,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
 
         const handler = new DownloadFileHandler({ 
             privateKey: privateKey, 
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', private: encPriv, publicKey: publicKey, signature: sig }] }) } },
+            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
@@ -394,7 +394,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
 
         const handler = new DownloadFileHandler({ 
             privateKey: privateKey,
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', private: encPriv, publicKey: publicKey, signature: sig }] }) } },
+            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();

@@ -49,7 +49,7 @@ async function runTest() {
 
     console.log("[Test] Blasting Node with synthetic 'PendingBlock' and 'AdoptFork' events mid-sync...");
 
-    const dummyBlock = { signature: "MOCK_SIG", publicKey: "MOCK_PUB", private: "MOCK_PRIV" };
+    const dummyBlock = { signature: "MOCK_SIG", publicKey: "MOCK_PUB", payload: "MOCK_PRIV" };
     
     // Fire events into the node explicitly mocking upstream triggers natively
     await node.consensusEngine.handlePendingBlock(dummyBlock, '127.0.0.1:8002', Date.now());

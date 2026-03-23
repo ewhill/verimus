@@ -7,7 +7,8 @@ import { PendingBlockMessage } from '../../messages/pending_block_message/Pendin
 import { VerifyBlockMessage } from '../../messages/verify_block_message/VerifyBlockMessage';
 import { ProposeForkMessage } from '../../messages/propose_fork_message/ProposeForkMessage';
 import { AdoptForkMessage } from '../../messages/adopt_fork_message/AdoptForkMessage';
-import { PeerConnection, Block } from '../../types';
+import type { PeerConnection, Block, TransactionPayload } from '../../types';
+import WalletManager from '../../wallet_manager/WalletManager';
 import logger from '../../logger/Logger';
 
 /**
@@ -20,11 +21,14 @@ class ConsensusEngine {
     mempool: Mempool;
     committing: boolean;
     proposalTimeout: NodeJS.Timeout | null;
+    walletManager: WalletManager;
+
     constructor(peerNode: PeerNode) {
         this.node = peerNode;
         this.mempool = peerNode.mempool;
         this.committing = false;
         this.proposalTimeout = null;
+        this.walletManager = new WalletManager(peerNode.ledger);
     }
 
     bindHandlers() {
@@ -40,7 +44,7 @@ class ConsensusEngine {
             return;
         }
 
-        if (!block || !block.publicKey || !block.signature || !block.private || !block.metadata) {
+        if (!block || !block.publicKey || !block.signature || !block.payload || !block.metadata) {
             logger.info(`[Peer ${this.node.port}] Rejected structurally malformed block from ${connection.peerAddress}`);
             if (block && block.publicKey) {
                 await this.node.reputationManager.penalizeMajor(block.publicKey, "Structural Failure");
@@ -69,11 +73,21 @@ class ConsensusEngine {
         const blockId = crypto.createHash('sha256').update(block.signature).digest('hex');
 
         const { verifySignature, signData } = require('../../crypto_utils/CryptoUtils');
-        const isSignatureValid = verifySignature(JSON.stringify(block.private), block.signature, block.publicKey);
+        const isSignatureValid = verifySignature(JSON.stringify(block.payload), block.signature, block.publicKey);
         if (!isSignatureValid) {
             logger.info(`[Peer ${this.node.port}] Rejected Invalid Pending Block from ${connection.peerAddress}`);
             await this.node.reputationManager.penalizeCritical(block.publicKey, "Signature Forgery");
             return;
+        }
+
+        if (block.type === 'TRANSACTION') {
+            const txPayload = block.payload as TransactionPayload;
+            const hasFunds = await this.walletManager.verifyFunds(txPayload.senderId, txPayload.amount);
+            if (!hasFunds && txPayload.senderId !== 'SYSTEM') {
+                logger.warn(`[Peer ${this.node.port}] Rejected Transaction: Insufficient Funds from ${txPayload.senderId}`);
+                await this.node.reputationManager.penalizeMajor(block.publicKey, "Insufficient Funds Double Spend");
+                return;
+            }
         }
 
         await this.node.reputationManager.rewardHonestProposal(block.publicKey);
@@ -201,11 +215,12 @@ class ConsensusEngine {
                 index++;
                 const newBlock: Block = {
                     metadata: { index, timestamp: pEntry.originalTimestamp || Date.now() },
+                    type: pEntry.block.type || 'STORAGE_CONTRACT',
                     previousHash,
                     publicKey: pEntry.block.publicKey,
-                    private: pEntry.block.private,
+                    payload: pEntry.block.payload,
                     signature: pEntry.block.signature
-                };
+                } as Block;
 
                 const blockToHash = { ...newBlock };
                 const strToHash = JSON.stringify(blockToHash);

@@ -2,7 +2,7 @@ import { MongoClient, Db, Collection } from 'mongodb';
 import { EventEmitter } from 'events';
 
 import { hashData } from '../crypto_utils/CryptoUtils';
-import type { Block, PeerReputation } from '../types';
+import type { Block, PeerReputation, BlockType } from '../types';
 
 
 class Ledger {
@@ -56,12 +56,14 @@ class Ledger {
                 index: 0,
                 timestamp: 1700000000000 // deterministic genesis timestamp
             },
+            type: 'TRANSACTION' as const, // Genesis acts as a base token instantiation
             previousHash: '',
             hash: hashData(''),
-            private: {
-                encryptedPayloadBase64: '',
-                encryptedKeyBase64: '',
-                encryptedIvBase64: ''
+            payload: {
+                senderId: 'SYSTEM',
+                recipientId: 'SYSTEM',
+                amount: Number.MAX_VALUE, // Maximum Float Value for Node.js
+                senderSignature: ''
             },
             publicKey: '',
             signature: '',
@@ -96,16 +98,17 @@ class Ledger {
      * Generates a block comprising the previous hash, publicKey, 
      * encrypted private payload, and signature.
      */
-    async addBlock(publicKey: string, privatePayload: any, signatureStr: string) {
+    async addBlock(publicKey: string, privatePayload: any, signatureStr: string, type: Exclude<BlockType, undefined> = 'STORAGE_CONTRACT') {
         const previousBlock = await this.getLatestBlock();
         const newBlock: Block = {
             metadata: {
                 index: previousBlock.metadata.index + 1,
                 timestamp: Date.now()
             },
+            type: type as any,
             previousHash: previousBlock.hash,
             publicKey: publicKey,
-            private: privatePayload,
+            payload: privatePayload,
             signature: signatureStr
         };
         newBlock.hash = hashData(JSON.stringify(newBlock));

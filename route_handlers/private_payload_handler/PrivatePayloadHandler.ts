@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import { verifySignature, decryptPrivatePayload } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
 
-import { EncryptedBlockPrivate } from '../../types';
+import type { StorageContractPayload } from '../../types';
 
 import BaseHandler from '../base_handler/BaseHandler';
 
@@ -42,7 +42,7 @@ export default class PrivatePayloadHandler extends BaseHandler {
             return res.status(403).json({ success: false, message: 'Not an owned block.' });
         }
 
-        const isSignatureValid = verifySignature(JSON.stringify(targetBlock.private), targetBlock.signature, targetBlock.publicKey);
+        const isSignatureValid = verifySignature(JSON.stringify(targetBlock.payload), targetBlock.signature, targetBlock.publicKey);
         if (!isSignatureValid) {
             return res.status(401).json({ success: false, message: 'Invalid block signature.' });
         }
@@ -50,7 +50,7 @@ export default class PrivatePayloadHandler extends BaseHandler {
         // Decrypt private payload
         let privatePayload;
         try {
-            privatePayload = decryptPrivatePayload(privateKey, targetBlock.private as EncryptedBlockPrivate);
+            privatePayload = decryptPrivatePayload(privateKey, targetBlock.payload as StorageContractPayload);
         } catch (e) {
             return res.status(401).json({ success: false, message: 'Failed to decrypt private payload.' });
         }

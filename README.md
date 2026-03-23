@@ -13,6 +13,7 @@ This project implements a secure, decentralized, blockchain-backed distributed s
   - `glacier` (AWS Glacier Archive)
   - `samba` (Network SMB shares)
   - `remote-fs` (Network SFTP)
+- **Decentralized Token Economics:** Natively enforces strict token balances via the newly minted `WalletManager`, rejecting double-spend transaction blocks and instituting a decentralized VERI marketplace initialized organically by an unforgeable Genesis `SYSTEM` treasury.
 - **Advanced UI Platform:** The frontend relies on a dynamic React & Zustand state-management system resolving asynchronous telemetry data via Vite.
 
 ## Repository Setup & Integration
@@ -99,10 +100,11 @@ npm test
 
 - `index.ts`: Unified node initialization injecting explicitly modeled modular route handlers and storage drivers.
 - `peerNode.ts`: State machine coordinating asynchronous lifecycle logic bridging Websockets across `syncEngine` and `consensusEngine`.
-- `routeHandlers/`: Modular API directories bounding handler pipelines:
-  - `blocksHandler/`, `filesHandler/`, `peersHandler/`
+- `route_handlers/`: Modular API directories bounding handler pipelines:
+  - `blocks_handler/`, `files_handler/`, `peers_handler/`, etc.
   - Includes isolated test matrices embedded within `./test/*`
 - `storage_providers/`: Abstract data sinks processing streamed buffers:
-  - `localProvider/`, `memoryProvider/`, `githubProvider/`, `s3Provider/`, `glacierProvider/`, `sambaProvider/`, `remoteFSProvider/`
+  - `local_provider/`, `memory_provider/`, `github_provider/`, `s3_provider/`, `glacier_provider/`, `samba_provider/`, `remote_fs_provider/`
   - Includes robust provider integration environments encapsulated in sub-test directories.
+- `wallet_manager/`: Strictly enforces mathematical blockchain transactions dynamically checking public balances.
 - `ui/`: React (Zustand/Vite) front-end deploying a single-page reactive web application.
