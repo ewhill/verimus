@@ -4,6 +4,9 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import PeerNode from '../../peer_node/PeerNode';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
 import Bundler from '../../bundler/Bundler';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation (Phase 3)', () => {
     let mongod1: MongoMemoryServer;
@@ -16,29 +19,32 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
         mongod1 = await MongoMemoryServer.create();
         mongod2 = await MongoMemoryServer.create();
 
+        const tmp1 = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
         // Node 1 (Partition A)
-        node1 = new PeerNode(31001, ['127.0.0.1:31002', '127.0.0.1:31003'], new MemoryStorageProvider(), new Bundler('data1'), mongod1.getUri(), undefined, {
+        node1 = new PeerNode(31001, ['127.0.0.1:31002', '127.0.0.1:31003'], new MemoryStorageProvider(), new Bundler(tmp1), mongod1.getUri(), undefined, {
             ringPublicKeyPath: 'keys/ring.ring.pub',
             publicKeyPath: 'keys/peer_31001.peer.pub',
             privateKeyPath: 'keys/peer_31001.peer.pem',
             signaturePath: 'keys/peer_31001.peer.signature'
-        }, 'data1');
+        }, tmp1);
 
+        const tmp2 = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
         // Node 2 (Partition A)
-        node2 = new PeerNode(31002, ['127.0.0.1:31001', '127.0.0.1:31003'], new MemoryStorageProvider(), new Bundler('data2'), mongod1.getUri(), undefined, {
+        node2 = new PeerNode(31002, ['127.0.0.1:31001', '127.0.0.1:31003'], new MemoryStorageProvider(), new Bundler(tmp2), mongod1.getUri(), undefined, {
             ringPublicKeyPath: 'keys/ring.ring.pub',
             publicKeyPath: 'keys/peer_31002.peer.pub',
             privateKeyPath: 'keys/peer_31002.peer.pem',
             signaturePath: 'keys/peer_31002.peer.signature'
-        }, 'data2');
+        }, tmp2);
 
+        const tmp3 = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
         // Node 3 (Partition B - Isolated DB and Network)
-        node3 = new PeerNode(31003, ['127.0.0.1:31001'], new MemoryStorageProvider(), new Bundler('data3'), mongod2.getUri(), undefined, {
+        node3 = new PeerNode(31003, ['127.0.0.1:31001'], new MemoryStorageProvider(), new Bundler(tmp3), mongod2.getUri(), undefined, {
             ringPublicKeyPath: 'keys/ring.ring.pub',
             publicKeyPath: 'keys/peer_31003.peer.pub',
             privateKeyPath: 'keys/peer_31003.peer.pem',
             signaturePath: 'keys/peer_31003.peer.signature'
-        }, 'data3');
+        }, tmp3);
 
         // We will mock keys internally for nodes to bypass generation overhead since the test relies on network topologies
         const mockKeys = (node: PeerNode) => {

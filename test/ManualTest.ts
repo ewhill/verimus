@@ -12,29 +12,35 @@ async function runManualTest() {
     const mongod = await MongoMemoryServer.create();
     const uri = mongod.getUri();
 
+    const fsLib = require('fs');
+    const pathLib = require('path');
+    const osLib = require('os');
+    const tmp1 = fsLib.mkdtempSync(pathLib.join(osLib.tmpdir(), 'verimus-'));
     // Node 1
-    const node1 = new PeerNode(26780, ['127.0.0.1:26781', '127.0.0.1:26782'], new MemoryStorageProvider(), new Bundler('data1'), uri, undefined, {
+    const node1 = new PeerNode(26780, ['127.0.0.1:26781', '127.0.0.1:26782'], new MemoryStorageProvider(), new Bundler(tmp1), uri, undefined, {
         ringPublicKeyPath: 'keys/ring.ring.pub',
         publicKeyPath: 'keys/peer_26780.peer.pub',
         privateKeyPath: 'keys/peer_26780.peer.pem',
         signaturePath: 'keys/peer_26780.peer.signature'
-    }, 'data1');
+    }, tmp1);
 
+    const tmp2 = fsLib.mkdtempSync(pathLib.join(osLib.tmpdir(), 'verimus-'));
     // Node 2
-    const node2 = new PeerNode(26781, ['127.0.0.1:26780', '127.0.0.1:26782'], new MemoryStorageProvider(), new Bundler('data2'), uri, undefined, {
+    const node2 = new PeerNode(26781, ['127.0.0.1:26780', '127.0.0.1:26782'], new MemoryStorageProvider(), new Bundler(tmp2), uri, undefined, {
         ringPublicKeyPath: 'keys/ring.ring.pub',
         publicKeyPath: 'keys/peer_26781.peer.pub',
         privateKeyPath: 'keys/peer_26781.peer.pem',
         signaturePath: 'keys/peer_26781.peer.signature'
-    }, 'data2');
+    }, tmp2);
 
+    const tmp3 = fsLib.mkdtempSync(pathLib.join(osLib.tmpdir(), 'verimus-'));
     // Node 3
-    const node3 = new PeerNode(26782, ['127.0.0.1:26780', '127.0.0.1:26781'], new MemoryStorageProvider(), new Bundler('data3'), uri, undefined, {
+    const node3 = new PeerNode(26782, ['127.0.0.1:26780', '127.0.0.1:26781'], new MemoryStorageProvider(), new Bundler(tmp3), uri, undefined, {
         ringPublicKeyPath: 'keys/ring.ring.pub',
         publicKeyPath: 'keys/peer_26782.peer.pub',
         privateKeyPath: 'keys/peer_26782.peer.pem',
         signaturePath: 'keys/peer_26782.peer.signature'
-    }, 'data3');
+    }, tmp3);
 
     // Generate keys dynamically to prevent errors
     [node1, node2, node3].forEach((node, index) => {

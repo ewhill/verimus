@@ -45,12 +45,13 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
     before(async () => {
         mongod = await MongoMemoryServer.create();
         
-        node = new PeerNode(32000, [], new NullStorageProvider(), new Bundler('dataLoad'), mongod.getUri(), undefined, {
+        const tmpLoad = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
+        node = new PeerNode(32000, [], new NullStorageProvider(), new Bundler(tmpLoad), mongod.getUri(), undefined, {
             ringPublicKeyPath: 'keys/ring.ring.pub',
             publicKeyPath: 'keys/peer_26780.peer.pub',
             privateKeyPath: 'keys/peer_26780.peer.pem',
             signaturePath: 'keys/peer_26780.peer.signature'
-        }, 'dataLoad');
+        }, tmpLoad);
 
         node.publicKey = fs.readFileSync('keys/peer_26780.peer.pub', 'utf8');
         node.privateKey = fs.readFileSync('keys/peer_26780.peer.pem', 'utf8');
