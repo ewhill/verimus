@@ -6,7 +6,7 @@ Currently, our network relies on an originating node storing encrypted data with
 ## 2. Core Architectural Shifts
 
 ### 2.1 Block Typings & Peer Wallets
-The blockchain will transition from holding homogeneous blocks to supporting specific **"Types"**. 
+The blockchain will transition from holding homogeneous blocks to supporting specific **"Types"**. Because Project Clementine is a formal hard fork, legacy data blocks are fully deprecated. The ledger acts exclusively as a marketplace configuration matrix tracking:
 - **`TRANSACTION` Blocks**: Tracks initial disbursements and ongoing balances across nodes.
 - **`STORAGE_CONTRACT` Blocks**: Finalized agreements recording storage shards across peers.
 - **Wallet States**: The local ledger state will calculate active wallet balances for every peer recursively based on the chain's immutable history, preventing Double-Spending or Over-Drafting.
