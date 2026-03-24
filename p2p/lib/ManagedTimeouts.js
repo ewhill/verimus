@@ -61,7 +61,6 @@ class ManagedTimeouts {
 
 		((self, id) => {
 			self.intervals[id] = setInterval(function () {
-				delete self.intervals[id];
 				f.apply(this, []);
 			}, d);
 		})(this, id);
