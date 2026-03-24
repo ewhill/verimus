@@ -98,7 +98,7 @@ class Ledger {
      * Generates a block comprising the previous hash, publicKey, 
      * encrypted private payload, and signature.
      */
-    async addBlock(publicKey: string, privatePayload: any, signatureStr: string, type: Exclude<BlockType, undefined> = 'STORAGE_CONTRACT') {
+    async addBlock(publicKey: string, privatePayload: any, signatureStr: string, type: Exclude<BlockType, undefined> = 'CONTRACT') {
         const previousBlock = await this.getLatestBlock();
         const newBlock: Block = {
             metadata: {

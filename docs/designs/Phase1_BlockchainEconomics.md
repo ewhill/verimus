@@ -11,7 +11,7 @@ Currently, blocks map loosely to generic data or simple ledger entries. Because 
 ```typescript
 export enum BlockType {
     TRANSACTION = "TRANSACTION",          // Funds transferred between peers
-    STORAGE_CONTRACT = "STORAGE_CONTRACT" // Market negotiation finalization
+    CONTRACT = "CONTRACT" // Market negotiation finalization
 }
 ```
 

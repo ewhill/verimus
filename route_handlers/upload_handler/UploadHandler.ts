@@ -59,7 +59,7 @@ export default class UploadHandler extends BaseHandler {
                 index: -1,
                 timestamp: Date.now(),
             },
-            type: 'STORAGE_CONTRACT',
+            type: 'CONTRACT',
             payload: encryptedPrivate as StorageContractPayload,
             publicKey: publicKey,
             signature: signatureStr

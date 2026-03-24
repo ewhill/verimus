@@ -58,7 +58,7 @@ To prevent an Originator from exploiting asynchronous network layers to spin up 
 ### `WalletManager` Updates
 - **`freezeFunds(publicKey: string, amount: number, requestId: string): void`:** Deducts the theoretical maximum expenditure (`maxCostPerGB * fileSizeBytes/GB * requiredNodes`) from their available balance into a `frozen` temporary map.
 - **`releaseFunds(requestId: string): void`:** If the triage loop fails to solicit `N` valid nodes, or the TCP handoff fails, the funds are returned to the sender's unspent pool.
-- **`commitFunds(requestId: string): void`:** Executed when the finalized `STORAGE_CONTRACT` block merges onto the verifiable ledger in Phase 4.
+- **`commitFunds(requestId: string): void`:** Executed when the finalized `CONTRACT` block merges onto the verifiable ledger in Phase 4.
 
 When evaluating `WalletManager.getBalance(key)`, the return must reflect:
 `balance = totalIncoming - totalOutgoing - totalFrozen`

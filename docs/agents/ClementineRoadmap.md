@@ -6,7 +6,7 @@ Each phase below outlines a core architectural shift required by the design prop
 
 ## Phase 1: Blockchain Economics (Wallets & Transactions)
 **Goal:** Shift the homogeneous ledger into a multi-type blockchain that supports node funds and programmatic economy tracking.
-- **Architectural Shift:** Introduce a `BlockType` schema (e.g., `TRANSACTION`, `STORAGE_CONTRACT`). Project Clementine operates strictly as a hard fork; legacy `DATA` blocks are fully deprecated and no longer supported on the native ledger.
+- **Architectural Shift:** Introduce a `BlockType` schema (e.g., `TRANSACTION`, `CONTRACT`). Project Clementine operates strictly as a hard fork; legacy `DATA` blocks are fully deprecated and no longer supported on the native ledger.
 - **New Mechanisms:** Implement `TRANSACTION` block handling and validation logic within the Consensus Engine.
 - **State Calculation:** Add a `WalletManager` component which recursively scans the blockchain history to derive and maintain secure peer fund balances.
 - **Target Sub-Design:** `Phase1_BlockchainEconomics.md`
@@ -29,7 +29,7 @@ Each phase below outlines a core architectural shift required by the design prop
 **Goal:** Orchestrate the encrypted shard payload across TCP pathways while validating size constraints.
 - **Cryptographic Chunk Maps:** Adjust underlying network streams to intercept and hash payload increments based on the contractual `ChunkSize` to build a 1:1 footprint map.
 - **The Initial Verify-Handoff:** Implement the initial challenge sequence forcing the host to prove chunk absorption.
-- **Finalized Contract Block:** Mint the finalized `STORAGE_CONTRACT` block mapping these chunk-hash tables intrinsically onto the public ledger for auditing.
+- **Finalized Contract Block:** Mint the finalized `CONTRACT` block mapping these chunk-hash tables intrinsically onto the public ledger for auditing.
 - **Target Sub-Design:** `Phase4_ValidatedDataSeeding.md`
 
 ## Phase 5: Ongoing Network Auditing & Sortition

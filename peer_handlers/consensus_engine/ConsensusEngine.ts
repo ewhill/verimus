@@ -161,7 +161,7 @@ class ConsensusEngine {
         for (const [bId, pEntry] of this.mempool.pendingBlocks.entries()) {
             if (pEntry.eligible && !pEntry.committed) {
                 eligibleBlockIds.push(bId);
-                if (pEntry.block.type === 'STORAGE_CONTRACT') {
+                if (pEntry.block.type === 'CONTRACT') {
                     hasStorageContract = true;
                 }
             }
@@ -248,7 +248,7 @@ class ConsensusEngine {
                 index++;
                 const newBlock: Block = {
                     metadata: { index, timestamp: pEntry.originalTimestamp || Date.now() },
-                    type: pEntry.block.type || 'STORAGE_CONTRACT',
+                    type: pEntry.block.type || 'CONTRACT',
                     previousHash,
                     publicKey: pEntry.block.publicKey,
                     payload: pEntry.block.payload,

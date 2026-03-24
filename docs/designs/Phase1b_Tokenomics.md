@@ -55,7 +55,7 @@ function calculateSystemReward(blockTimestamp: number, genesisTimestamp: number)
 The `calculateSystemReward` payout must be appended into the network.
 
 1. **Phase 1c/Phase 3 Foundation (Consensus Settlements):**
-   - Whenever an auditing node proposes a validated `STORAGE_CONTRACT` that merges upstream, they generate a linked `TRANSACTION` block compensating their cryptographic labor.
+   - Whenever an auditing node proposes a validated `CONTRACT` that merges upstream, they generate a linked `TRANSACTION` block compensating their cryptographic labor.
 2. **Phase 5 Foundation (Audits):**
    - Nodes selected via sortition to audit the ledger footprint are paid after verifying the health of the chunks against cryptographic hash mappings.
 
