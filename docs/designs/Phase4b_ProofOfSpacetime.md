@@ -1,57 +1,56 @@
-# Phase 4b: Cryptographic Validation (Proof of Spacetime) - Technical Specification
+# Phase 4b: Cryptographic Validation (Merkle Proofs of Retrievability) - Technical Specification
 
 ## 1. Problem Definition
-The current roadmap anticipates checking data resting health via standard SHA-256 validation payloads dynamically. A malicious actor can securely compress the 15 MB dataset of chunk hashes for a 1500 GB payload, delete the 1500 GB buffer fully, and perpetually transmit the correct mathematically matching hash metrics collected over time safely claiming rewards. 
+The current roadmap anticipates checking data resting health via standard SHA-256 validation payloads. A malicious actor can securely compress the 15 MB dataset of chunk hashes for a 1500 GB payload, delete the 1500 GB buffer fully, and perpetually transmit the correctly matching hash metrics collected over time to claim rewards. If we force hosts to uniquely "seal" data (encrypting it to their public key), they face severe CPU bottlenecks decrypting the data on-the-fly when legitimate clients request stream downloads.
 
 ## 2. Target Component Scope
-- **`crypto_utils/CryptoUtils.ts`:** Construct the initial sealing matrices mapping the physical bytes to a specific dynamic block challenge vector seamlessly.
-- **`peer_handlers/consensus_engine/ConsensusEngine.ts`:** Manage the random sortition constraints issuing the mathematically bounded challenges across operators selectively globally.
-- **`route_handlers/blocks_handler/BlocksHandler.ts`:** Route incoming PoSt checks natively binding responses immediately inside standard latency windows.
+- **`bundler/Bundler.ts`:** Construct a Merkle Tree over the file shards, emitting the Merkle Root into the contract payload.
+- **`peer_handlers/consensus_engine/ConsensusEngine.ts`:** Manage random sortition issuing audit challenges targeting specific random chunk indices globally.
+- **`route_handlers/blocks_handler/BlocksHandler.ts`:** Route incoming audit queries and package the raw logical byte segments alongside Merkle branching hashes.
 
 ## 3. Concrete Data Schemas & Interface Changes
 
 ```typescript
 // types/index.d.ts
-export interface PoStChallenge {
+export interface MerkleProofChallenge {
     contractId: string;
     auditorPublicKey: string;
-    randomNonce: string; // The dynamically generated 32-byte salt completely overriding deterministic precomputability
-    startIndex: number;  // The arbitrary byte index mapped across the hosted array segment directly
+    chunkIndex: number; // The exact arbitrary 64KB shard slice requested for mathematical verification
 }
 
-export interface PoStResponse {
-    proofSignature: string; // The encrypted sealing algorithm applied to: Hash(ChunkBytes[startIndex: startIndex+1024] + nonce + hostPublicKey)
-    hostPublicKey: string;
-    computedHash: string;
+export interface MerkleProofResponse {
+    chunkData: Buffer; // The actual physical 64KB raw data slice
+    merkleSiblings: string[]; // The sequential sibling hashes required calculating the root
+    computedRootMatch: boolean;
 }
 ```
 
 ## 4. Execution Workflow
-1. **Auditor Election:** A `ConsensusEngine` dynamically asserts a matching node as the network auditor based securely off deterministic block height rules globally.
-2. **Challenge Dispatch:** The auditor explicitly constructs a randomized `PoStChallenge` payload referencing a distinct logical chunk file.
-3. **Execution Delay Guarantee:** The respondent must slice out the `startIndex` bytes, prepend their physical peer ID, inject the active `nonce`, and hash the resulting vector natively generating a `computedHash`. 
-4. **Validation Windows:** Because the `nonce` changes and is bound exclusively to the targeted chunk physically hosted on drive, retrieving it dynamically requires instantaneous parsing. Responding after an unacceptable delay threshold (e.g., > 500ms) proves the host logically failed to generate the byte boundaries securely in-memory.
+1. **Contract Initialization:** During the upload phase, the `Bundler` splits shards into 64KB chunks and computes a Merkle Tree. The `CONTRACT` natively registers the `merkleRoot`.
+2. **Auditor Election:** The `ConsensusEngine` mathematically asserts a matching node as the network auditor based on deterministic block height rules.
+3. **Challenge Dispatch:** The auditor explicitly constructs a `MerkleProofChallenge` selecting a random `chunkIndex` (e.g., chunk 8,401 of 10,000).
+4. **Validation Generation:** The host retrieves chunk 8,401 from its physical drive and maps the requisite `merkleSiblings`. It transmits the physical bytes and hashes back.
+5. **Mathematical Verification:** The auditor hashes the sent physical bytes, layers the sibling hashes, and verifies the computed root matches the `CONTRACT` root. The host cannot fake this without physically possessing that specific 64KB chunk. Because indices are randomized, this probabilistically proves complete file possession over time.
 
 ## 5. Implementation Task Checklist
-- [ ] Construct the mathematical sealing function leveraging TLS cryptoparser boundaries securely coupling `FileReadStream` data with dynamic random nonces.
-- [ ] Incorporate the `PoStChallenge` networking models within `messages/Message.ts` structure logically.
-- [ ] Define dynamic sortition endpoints inside `ConsensusEngine.ts` initiating independent network auditor streams periodically.
-- [ ] Track latency limits securely measuring network request bounds aggressively failing queries breaching thresholds safely logically.
+- [ ] Incorporate a generic Merkle Tree builder utility inside `crypto_utils/CryptoUtils.ts`.
+- [ ] Refactor `StorageContractPayload` mapping the `merkleRoot` state string logically.
+- [ ] Incorporate `MerkleProofChallenge` networking models within `messages/Message.ts` structure.
+- [ ] Define dynamic auditor endpoints inside `ConsensusEngine.ts` verifying the probabilistic chunk bytes natively against the root string.
 
 ## 6. Proposed Solution Pros & Cons
 ### Pros
-- Mathematically guarantees operators are preserving the actual file bytes locally rather than exploiting trivial hash validations.
-- Thwarts instantaneous Sybil bot swarms executing zero-collateral dumps securely.
+- Eliminates "sealing" CPU bottlenecks allowing hosts to stream native encrypted shards instantly to requesting clients without sequential decrypt matrices.
+- Mathematically proves operators preserve actual file bytes forcing them to allocate physical drive sectors.
 
 ### Cons
-- Extreme engineering complexity binding TLS boundaries against variable network ping latency buffers globally.
-- Imposes dynamic active CPU utilization across storing peers randomly impacting basic hosting capabilities.
+- Transmitting a 64KB data chunk per audit consumes marginally more network payload bandwidth than a simple 32-byte cryptographic signature.
 
-## 7. Alternative Solution: Massive Random Byte Transmission
-Auditors explicitly request a random 100MB chunk off the stored file streamed immediately through standard TCP connections verifying physical storage possession.
+## 7. Alternative Solution: Host-Key Cryptographic Sealing (PoSt)
+Force nodes to individually encrypt (seal) the payload array using their specific peer identity, proving possession by hashing a randomized nonce against the sealed bytes in real-time.
 
 ### Pros
-- Exceptionally straightforward relying purely on standard file read pipelines avoiding dynamic hash matrices.
+- Sub-kilobyte auditing bandwidth.
 
 ### Cons
-- Irrevocably destroys ISP bandwidth budgets, transferring tens of gigabytes monthly per node purely for redundant "monitoring" parameters.
+- Devastating read-latency overhead. Every legitimate client file download requires the host to physically computationally unseal the payload stream sequentially before transmitting it, tanking realistic CDN market throughput speeds.
