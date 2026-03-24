@@ -565,13 +565,21 @@ class Peer {
   }
 
   async onPeersResponseMessage(message) {
-    const { peers } = message;
-    if (!peers || !peers.length) {
+    let { peers } = message;
+    if (!Array.isArray(peers) || !peers.length) {
       return;
     }
     
+    if (peers.length > 100) {
+      peers = peers.slice(0, 100);
+    }
+
     // Add discovered addresses cleanly to local registry book decoupled from sockets
     peers.forEach(peer => {
+      // Memory limit discoveryAddressBook
+      if (Object.keys(this.discoveryAddressBook_).length > 20000) {
+        return;
+      }
       if (!this.discoveryAddressBook_[peer.address]) {
         // Flag ready for discovery iteration 
         this.discoveryAddressBook_[peer.address] = Date.now() - 300000;

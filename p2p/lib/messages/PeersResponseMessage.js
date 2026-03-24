@@ -15,6 +15,9 @@ class PeersResponseMessage extends Message {
 		if (!Array.isArray(peers)) {
 			throw new Error(`Invalid type for PeersResponseMessage 'peers' parameter.`);
 		}
+		if (peers.length > 100) {
+			peers = peers.slice(0, 100);
+		}
 		this.body.peers = peers;
 	}
 
