@@ -11,3 +11,4 @@ The Verimus P2P node integrates epidemic networking procedures enabling permissi
     * `seenMessageHashes_` acts as a 5000-slot dictionary cache mapping `message.header.hash` concatenated to `message.header.signature`. Identical requests arriving sequentially through independent nodes are ignored, preventing infinite feedback loops.
 4. **Decoupled Peer Exchange (PEX)**:
     * Utilizes `PeersRequestMessage` and `PeersResponseMessage` abstractions for discovery. Unverified nodes are deposited into `this.discoveryAddressBook_`, mapping passively in memory without attempting automated dialing unless the connection floor evaluates below 50% utilization.
+    * Inbound arrays are strictly paginated (max 100 peers) and `discoveryAddressBook_` is capped at 20,000 entries to prevent memory exhaustion (OOM) and file descriptor starvation (EMFILE) vulnerabilities.

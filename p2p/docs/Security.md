@@ -11,5 +11,12 @@ The Verimus P2P library executes isolated handshake methodologies guaranteeing e
 - Using dynamic initialization vectors (IVs) and symmetric keys transacted over socket endpoints, external observers cannot decipher logical frames.
 - GCM calculates an `authTag` integrated via the `Message` framework properties protecting the data against tampering and padding-oracle attacks.
 
-### Sybil Defense & Reputation Mechanics
-- Handshake validations require the node signing messages using its unique private RSA credentials. In tandem with global application bindings, nodes misbehaving during protocol exchanges or repeating duplicate payloads endlessly receive reputation penalties resulting in `disconnect()` commands upon dipping underneath trust thresholds.
+### Sybil Defense & Hashcash Mechanics
+- **Identity Pinning**: Sockets actively implement `expectedSignature` mapping to defeat localized MITM spoofing. Unknown intermediaries lacking corresponding RSA Private Keys are explicitly severed.
+- **Proof of Work (PoW)**: Peer exchanges compute localized 5-minute Hashcash Nonces natively bounding computation limits. Replay attacks are mitigated structurally utilizing windowing matrices restricting stale hash cascades.
+- **Timestamp Drift Protection**: Replayed messages manifesting 5-minute external drift anomalies are dropped automatically bypassing signature computations.
+
+### Robust Execution Bounds
+- **Prototype Pollution Shielding**: Outward TCP interfaces block Remote Code Execution directly denying implicit object iteration vectors like `__proto__` and `constructor` mapping.
+- **Safe Evaluation Streams**: Network deserialization streams wrap execution handlers defensively mitigating event-loop synchronous crashes induced via malformed JSON injections.
+- **Memory Maps**: Disconnected WebSocket execution frames implicitly sever themselves from memory clusters closing node interval leaks resolving long-term V8 server stability routines.
