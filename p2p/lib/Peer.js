@@ -19,7 +19,8 @@ const RSAKeyPair = require('./RSAKeyPair');
 const Server = require('./Server');
 const utils = require('./utils');
 
-const PeersMessage = require('./messages/peers');
+const PeersResponseMessage = require('./messages/PeersResponseMessage');
+const GetPeersMessage = require('./messages/GetPeersMessage');
 
 class Peer {
   // Begin Private Class Properties Statically Assigned
@@ -200,10 +201,11 @@ class Peer {
         this.server_.on('wsConnection', (o) => this.onWsConnection(o));
 
 
-        this.bind(PeersMessage).to((m) => { this.onPeersMessage(m); });
+        this.bind(PeersResponseMessage).to((m) => { this.onPeersResponseMessage(m); });
+        this.bind(GetPeersMessage).to((m, c) => { this.onGetPeersMessage(m, c); });
 
-        // Every 5 minutes, broadcast peers.
-        this.managedTimeouts_.setInterval(() => this.broadcastPeers(), 300000);
+        // Periodically ask neighbors for new peers without auto connecting to them
+        this.managedTimeouts_.setInterval(() => this.requestRandomPeers(), 120000);
 
         this.isInitializing_ = false;
         this.isReady_ = true;
@@ -528,24 +530,22 @@ class Peer {
       });
   }
 
-  async broadcastPeers() {
-    const peersMessage = new PeersMessage({
-      peers: this.getPeersSince(this.peersSince_),
-      since: this.peersSince_,
+  async requestRandomPeers() {
+    const getPeersMsg = new GetPeersMessage({ since: 0, limit: 50 });
+    return this.broadcast(getPeersMsg).catch(err => this.logger_.error(err.stack));
+  }
+
+  async onGetPeersMessage(message, connection) {
+    const peersResponse = new PeersResponseMessage({
+      peers: this.getPeersSince(message.since).slice(0, message.limit || 50),
+      since: Date.now()
     });
-    return this.broadcast(peersMessage)
-      .then(() => {
-        this.peersSince = utils.utcTimestamp().getTime();
-      })
-      .catch(err => {
-        /* Do nothing. */
-        this.logger_.error(err.stack);
-      });
+    return this.sendTo(connection, peersResponse).catch(err => this.logger_.error(err.stack));
   }
 
   async sendPeersTo(connection, since = this.peersSince_) {
-    const peersMessage = new PeersMessage({
-      peers: this.getPeersSince(since),
+    const peersMessage = new PeersResponseMessage({
+      peers: this.getPeersSince(since).slice(0, 50),
       since,
     });
     return this.sendTo(connection, peersMessage)
@@ -555,16 +555,24 @@ class Peer {
       });
   }
 
-  async onPeersMessage(message) {
+  async onPeersResponseMessage(message) {
     const { peers } = message;
     if (!peers || !peers.length) {
       return;
     }
-    return this.discover(peers)
-      .catch(err => {
-        /* Do nothing. */
-        this.logger_.error(err.stack);
-      });
+    
+    // Add discovered addresses cleanly to local registry book decoupled from sockets
+    peers.forEach(peer => {
+      if (!this.discoveryAddressBook_[peer.address]) {
+        // Flag ready for discovery iteration 
+        this.discoveryAddressBook_[peer.address] = Date.now() - 300000;
+      }
+    });
+
+    // Auto-invoke discover only if connection pool requires replenishment
+    if (this.connectedPeers.length < (this.maxConnections_ / 2)) {
+      return this.discover(peers).catch(err => this.logger_.error(err.stack));
+    }
   }
 
   /**

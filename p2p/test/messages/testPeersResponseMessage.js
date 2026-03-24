@@ -1,34 +1,34 @@
 const test = require('tape');
 
-const PeersMessage = require('../../lib/messages/peers');
+const PeersResponseMessage = require('../../lib/messages/PeersResponseMessage');
 const utils = require('../../lib/utils');
 
-test("PeersMessage", (assert) => {
-  const emptyPeersMessage = new PeersMessage();
+test("PeersResponseMessage", (assert) => {
+  const emptyPeersResponseMessage = new PeersResponseMessage();
 
-  assert.deepEqual(emptyPeersMessage.since, new Date(0),
+  assert.deepEqual(emptyPeersResponseMessage.since, new Date(0),
     "Default value of since should be provided via constructor.");
 
-  assert.deepEqual(emptyPeersMessage.peers, [],
+  assert.deepEqual(emptyPeersResponseMessage.peers, [],
     "Default value of peers should be provided via constructor.");
 
-  assert.throws(() => { emptyPeersMessage.since = 'a'; },
+  assert.throws(() => { emptyPeersResponseMessage.since = 'a'; },
     "Attempting to set since property to non-number value should throw.");
 
-  assert.throws(() => { emptyPeersMessage.peers = 'a'; },
+  assert.throws(() => { emptyPeersResponseMessage.peers = 'a'; },
     "Attempting to set peers property to non-array value should throw.");
 
-  emptyPeersMessage.since = undefined;
-  assert.deepEqual(emptyPeersMessage.since, new Date(0),
+  emptyPeersResponseMessage.since = undefined;
+  assert.deepEqual(emptyPeersResponseMessage.since, new Date(0),
     "Default value of since should be provided via property setter.");
 
-  emptyPeersMessage.peers = undefined;
-  assert.deepEqual(emptyPeersMessage.peers, [],
+  emptyPeersResponseMessage.peers = undefined;
+  assert.deepEqual(emptyPeersResponseMessage.peers, [],
     "Default value of peers should be provided via property setter.");
 
   const nowDate = new Date(Date.now());
   const peersList = [{ a: 'a' }, { b: 'b' }];
-  let peersMessage = new PeersMessage({
+  let peersMessage = new PeersResponseMessage({
     since: nowDate.getTime(),
     peers: peersList,
   });
