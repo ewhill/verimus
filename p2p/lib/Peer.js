@@ -519,6 +519,10 @@ class Peer {
       this.onClientMessage.apply(this, args);
     });
 
+    client.on('close', () => {
+      this.peers_ = this.peers_.filter(p => p !== client);
+    });
+
     await this.sendPeersTo(client, 0);
 
     this.logger_.log(`Adding client to peers list...`);

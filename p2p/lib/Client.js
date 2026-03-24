@@ -141,6 +141,7 @@ class Client {
 			this.isConnected_ = false;
 			this.isConnecting_ = false;
 			this.isTrusted_ = false;
+			this.managedTimeouts_.destroy();
 			this.logger_.log(`Connection closed with code: ${e}`);
 		});
 	}
