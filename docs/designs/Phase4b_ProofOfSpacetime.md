@@ -52,13 +52,13 @@ export interface MerkleProofResponse {
 - Proves operators preserve actual file bytes by forcing them to allocate physical drive sectors.
 
 ### Cons
-- Transmitting a 64KB data chunk per audit consumes marginally more network payload bandwidth than a simple 32-byte cryptographic signature.
+- Transmitting a 64KB data chunk per audit consumes more network payload bandwidth than a 32-byte cryptographic signature.
 
 ## 9. Alternative Solution: Massive Random Byte Transmission
-Auditors request a random 100MB chunk off the stored file streamed immediately through standard TCP connections verifying physical storage possession.
+Auditors request a random 100MB chunk off the stored file streamed through standard TCP connections verifying physical storage possession.
 
 ### Pros
-- Exceptionally straightforward relying on standard file read pipelines avoiding dynamic hash matrices.
+- Straightforward, relying on standard file read pipelines avoiding hash matrices.
 
 ### Cons
-- Irrevocably destroys ISP bandwidth budgets, transferring tens of gigabytes monthly per node for redundant monitoring.
+- Destroys ISP bandwidth budgets, transferring tens of gigabytes monthly per node for redundant monitoring.
