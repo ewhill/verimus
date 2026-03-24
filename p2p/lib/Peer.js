@@ -455,7 +455,8 @@ class Peer {
 
     return this.attemptConnection({
       originalAddress: utils.stripIpv4Prefix(peerToDiscover.address),
-      parsedAddress: utils.parseUrl(peerToDiscover.address)
+      parsedAddress: utils.parseUrl(peerToDiscover.address),
+      expectedSignature: peerToDiscover.signature
     });
   };
 
@@ -471,7 +472,7 @@ class Peer {
    *         A promise which resolves or rejects based on result of the 
    *         attempted connection.
    */
-  async attemptConnection({ originalAddress, parsedAddress }) {
+  async attemptConnection({ originalAddress, parsedAddress, expectedSignature }) {
     const formattedAddress = url.format(parsedAddress);
 
     this.logger_.log(`Attempting connection to ${formattedAddress}`);
@@ -482,6 +483,7 @@ class Peer {
       },
       address: this.server_.publicAddress,
       peerAddress: formattedAddress.replace(/^wss?:\/\//, ''),
+      expectedSignature,
       logger: this.logger_,
     });
 
@@ -733,6 +735,14 @@ class Peer {
         for (const key of oldestKeys) {
           this.messageHashCache_.delete(key);
         }
+      }
+    }
+
+    if (message && message.header && message.header.timestamp) {
+      const drift = Math.abs(Date.now() - new Date(message.header.timestamp).getTime());
+      if (drift > (1000 * 60 * 5)) {
+        this.logger_.warn(`Message dropped implicitly due to excessive sequential timestamp drift limiting replication replay attacks natively.`);
+        return;
       }
     }
 

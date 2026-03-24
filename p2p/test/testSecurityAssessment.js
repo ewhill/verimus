@@ -58,7 +58,8 @@ test("Security: HelloMessage Hashcash PoW Validation", (assert) => {
 
     // Test Valid Hashcash Nonce
     let validNonce = 0;
-    while (!crypto.createHash('sha256').update(mockKeyStr + validNonce).digest('hex').startsWith('0000')) {
+    const blockTime = Math.floor(Date.now() / 300000);
+    while (!crypto.createHash('sha256').update(mockKeyStr + blockTime + validNonce).digest('hex').startsWith('0000')) {
         validNonce++;
     }
 

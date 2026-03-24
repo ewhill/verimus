@@ -60,6 +60,7 @@ class Client {
 		credentials,
 		address,
 		peerAddress,
+		expectedSignature,
 		logger = this.logger_,
 	}) {
 
@@ -72,6 +73,7 @@ class Client {
 		this.credentials_ = credentials;
 		this.address_ = address;
 		this.peerAddress_ = peerAddress;
+		this.expectedSignature_ = expectedSignature;
 		this.logger_ = logger;
 
 		this.setupConnection();
@@ -267,12 +269,20 @@ class Client {
 			let decipher = crypto.createDecipheriv('aes-256-gcm',
 				this.remoteCipher_.key, messageIv);
 
-			if (message.header.authTag) {
-				decipher.setAuthTag(Buffer.from(message.header.authTag, 'base64'));
+			if (!message.header.authTag) {
+				this.logger_.error(`AES GCM Requires an Authentication Tag natively verifying payload integrity! Rejecting.`);
+				return;
 			}
+			decipher.setAuthTag(Buffer.from(message.header.authTag, 'base64'));
 
-			let decryptedMessageBody = (Buffer.concat([
-				decipher.update(encryptedMessageBody), decipher.final()]));
+			let decryptedMessageBody;
+			try {
+				decryptedMessageBody = (Buffer.concat([
+					decipher.update(encryptedMessageBody), decipher.final()]));
+			} catch(e) {
+				this.logger_.error(`Decryption failed natively. MITM or payload corruption detected.`);
+				return;
+			}
 
 			// Check the message header's 'signature' validity...
 			const hasValidSignature =
@@ -470,9 +480,10 @@ class Client {
 			const publicKeyStr = this.credentials_.rsaKeyPair.public.toString('utf8');
 			let nonce = 0;
 			let hash = '';
+			const blockTime = Math.floor(Date.now() / 300000);
 			do {
 				nonce++;
-				hash = crypto.createHash('sha256').update(publicKeyStr + nonce).digest('hex');
+				hash = crypto.createHash('sha256').update(publicKeyStr + blockTime + nonce).digest('hex');
 			} while (!hash.startsWith('0000'));
 
 			let helloMessage = new HelloMessage({
@@ -522,11 +533,17 @@ class Client {
 	}
 
 	heloHandler(message, connection) {
-		const nonceHash = crypto.createHash('sha256')
-			.update(message.publicKey + message.nonce).digest('hex');
+		const blockTime = Math.floor(Date.now() / 300000);
+		let nonceHash = crypto.createHash('sha256')
+			.update(message.publicKey + blockTime + message.nonce).digest('hex');
 		
 		if (!nonceHash.startsWith('0000')) {
-			return this.receiveHeloPromiseReject_(new Error(`Invalid Hashcash nonce bounds evaluated!`));
+			nonceHash = crypto.createHash('sha256')
+				.update(message.publicKey + (blockTime - 1) + message.nonce).digest('hex');
+		}
+
+		if (!nonceHash.startsWith('0000')) {
+			return this.receiveHeloPromiseReject_(new Error(`Invalid Hashcash nonce temporal bounds evaluated!`));
 		}
 
 		const peerAddress = message.publicAddress.toString('utf8');
@@ -546,6 +563,12 @@ class Client {
 			return this.receiveHeloPromiseReject_(new Error(
 				`Received public key matching own public key from peer. ` +
 				`Closing connection so as to prevent potential connection to self.`));
+		}
+
+		if (this.expectedSignature_ && remotePublicKey !== this.expectedSignature_) {
+			return this.receiveHeloPromiseReject_(new Error(
+				`Received public key did not match actively expected pinned signature identity. ` +
+				`Dropping MITM socket natively.`));
 		}
 
 		const formattedPublicKey =
