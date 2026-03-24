@@ -47,12 +47,12 @@ class RequestHandler {
         // TODO: What to do if the message object conatins insufficient 
         // or extra properties.
         for (let prop of Object.keys(requestObj[part])) {
-          if (prop === 'constructor') {
+          if (prop === 'constructor' || prop === '__proto__') {
             continue;
           }
 
-          if (nonEnumerableInstance.indexOf(prop) ||
-            nonEnumerableGeneric.indexOf(prop)) {
+          if (nonEnumerableInstance.indexOf(prop) > -1 ||
+            nonEnumerableGeneric.indexOf(prop) > -1) {
             try {
               instance[prop] = requestObj[part][prop];
             } catch (e) {

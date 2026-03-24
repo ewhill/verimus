@@ -37,7 +37,6 @@ class Peer {
   peersSince_ = 0;
   requestHandlers_ = {};
   discoverAddressQueue_ = [];
-  messageHashCache_ = new Map();
 
   // Private Class Properties Assigned Via Constructor Params
   privateKeyPath_;
@@ -706,7 +705,6 @@ class Peer {
     if (message && message.header && message.header.hash) {
       // LRU tracks both hash and origin signature to differentiate identical duplicate-body payload injections
       const trackingId = message.header.hash + (message.header.signature || message.header.timestamp);
-      console.log("DEBUG LRU RECEIVED ID:", trackingId);
       if (this.seenMessageHashes_.has(trackingId)) {
         return; // Drop duplicate message to prevent broadcast storms
       }
@@ -715,26 +713,6 @@ class Peer {
       if (this.seenMessageHashes_.size > 5000) {
         const oldestKeys = Array.from(this.seenMessageHashes_.keys()).slice(0, 500);
         oldestKeys.forEach(k => this.seenMessageHashes_.delete(k));
-      }
-    }
-
-    if (message && message.hash) {
-      if (this.messageHashCache_.has(message.hash)) {
-        this.logger_.info(`Dropping duplicate message with hash ${message.hash}`);
-        return;
-      }
-
-      this.messageHashCache_.set(message.hash, Date.now());
-
-      // Simple cache eviction preventing unbounded OOM exhaustion mapping infinitely
-      if (this.messageHashCache_.size > 5000) {
-        const oldestKeys = Array.from(this.messageHashCache_.entries())
-          .sort((a, b) => a[1] - b[1])
-          .slice(0, 1000)
-          .map(entry => entry[0]);
-        for (const key of oldestKeys) {
-          this.messageHashCache_.delete(key);
-        }
       }
     }
 
