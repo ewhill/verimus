@@ -108,7 +108,7 @@ describe('WalletManager', () => {
     });
 
     it('Calculates fractional block rewards explicitly via continuous mathematical scaling formulas', async () => {
-        const genesisTimestamp = 1711238400000;
+        const genesisTimestamp = 1774310400000;
         
         // Exact genesis time mappings reward full node payload bounds
         const genesisReward = WalletManager.calculateSystemReward(genesisTimestamp, genesisTimestamp);
