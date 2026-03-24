@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import WalletManager from '../WalletManager';
 import Ledger from '../../ledger/Ledger';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { BLOCK_TYPES } from '../../constants';
 
 describe('WalletManager', () => {
     let mongod: MongoMemoryServer;
@@ -21,9 +22,9 @@ describe('WalletManager', () => {
             collection: {
                 find: () => ({
                     toArray: async () => [
-                        { type: 'TRANSACTION', payload: { senderId: 'SYSTEM', recipientId: 'peerA', amount: 100 } },
-                        { type: 'TRANSACTION', payload: { senderId: 'peerA', recipientId: 'peerB', amount: 20 } },
-                        { type: 'TRANSACTION', payload: { senderId: 'peerC', recipientId: 'peerA', amount: 50 } }
+                        { type: BLOCK_TYPES.TRANSACTION, payload: { senderId: 'SYSTEM', recipientId: 'peerA', amount: 100 } },
+                        { type: BLOCK_TYPES.TRANSACTION, payload: { senderId: 'peerA', recipientId: 'peerB', amount: 20 } },
+                        { type: BLOCK_TYPES.TRANSACTION, payload: { senderId: 'peerC', recipientId: 'peerA', amount: 50 } }
                     ]
                 })
             }
@@ -55,7 +56,7 @@ describe('WalletManager', () => {
             collection: {
                 find: () => ({
                     toArray: async () => [
-                        { type: 'TRANSACTION', payload: { senderId: 'SYSTEM', recipientId: 'peerA', amount: 50 } }
+                        { type: BLOCK_TYPES.TRANSACTION, payload: { senderId: 'SYSTEM', recipientId: 'peerA', amount: 50 } }
                     ]
                 })
             }
@@ -74,7 +75,7 @@ describe('WalletManager', () => {
             collection: {
                 find: () => ({
                     toArray: async () => [
-                        { type: 'TRANSACTION', payload: { senderId: 'SYSTEM', recipientId: 'peerA', amount: 50 } }
+                        { type: BLOCK_TYPES.TRANSACTION, payload: { senderId: 'SYSTEM', recipientId: 'peerA', amount: 50 } }
                     ]
                 })
             }

@@ -2,6 +2,7 @@ import { MongoClient, Db, Collection } from 'mongodb';
 import { EventEmitter } from 'events';
 
 import { hashData } from '../crypto_utils/CryptoUtils';
+import { BLOCK_TYPES } from '../constants';
 import type { Block, PeerReputation, BlockType } from '../types';
 
 
@@ -56,7 +57,7 @@ class Ledger {
                 index: 0,
                 timestamp: 1700000000000 // deterministic genesis timestamp
             },
-            type: 'TRANSACTION' as const, // Genesis acts as a base token instantiation
+            type: BLOCK_TYPES.TRANSACTION, // Genesis acts as a base token instantiation
             previousHash: '',
             hash: hashData(''),
             payload: {
@@ -98,7 +99,7 @@ class Ledger {
      * Generates a block comprising the previous hash, publicKey, 
      * encrypted private payload, and signature.
      */
-    async addBlock(publicKey: string, privatePayload: any, signatureStr: string, type: Exclude<BlockType, undefined> = 'CONTRACT') {
+    async addBlock(publicKey: string, privatePayload: any, signatureStr: string, type: Exclude<BlockType, undefined> = BLOCK_TYPES.CONTRACT) {
         const previousBlock = await this.getLatestBlock();
         const newBlock: Block = {
             metadata: {

@@ -7,7 +7,9 @@ export interface PeerConnection {
     roles?: NodeRole[]; // Dynamically threaded role bounds per connection 
 }
 
-export type BlockType = 'TRANSACTION' | 'CONTRACT';
+import { BLOCK_TYPES } from '../constants';
+
+export type BlockType = typeof BLOCK_TYPES[keyof typeof BLOCK_TYPES];
 
 export interface PeerReputation {
     _id?: any;
@@ -109,12 +111,12 @@ export interface BaseBlock {
 }
 
 export interface TransactionBlock extends BaseBlock {
-    type: 'TRANSACTION';
+    type: typeof BLOCK_TYPES.TRANSACTION;
     payload: TransactionPayload;
 }
 
 export interface StorageContractBlock extends BaseBlock {
-    type: 'CONTRACT';
+    type: typeof BLOCK_TYPES.CONTRACT;
     payload: StorageContractPayload; // The encrypted payload securely mapped
 }
 

@@ -1,1 +1,6 @@
 export const GENESIS_TIMESTAMP = 1711238400000;
+
+export const BLOCK_TYPES = {
+    TRANSACTION: 'TRANSACTION',
+    CONTRACT: 'CONTRACT'
+} as const;

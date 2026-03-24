@@ -2,6 +2,7 @@ import type { Block, TransactionBlock, TransactionPayload } from '../types';
 import type Ledger from '../ledger/Ledger';
 import logger from '../logger/Logger';
 
+import { BLOCK_TYPES } from '../constants';
 export default class WalletManager {
     private ledger: Ledger;
 
@@ -28,7 +29,7 @@ export default class WalletManager {
             }
 
             const transactions = await this.ledger.collection.find({
-                type: 'TRANSACTION',
+                type: BLOCK_TYPES.TRANSACTION,
                 $or: [
                     { 'payload.senderId': peerId },
                     { 'payload.recipientId': peerId }

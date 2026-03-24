@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 
 import { AdoptForkMessage } from '../../messages/adopt_fork_message/AdoptForkMessage';
-import { GENESIS_TIMESTAMP } from '../../constants';
+import { GENESIS_TIMESTAMP, BLOCK_TYPES } from '../../constants';
 import { hashData, signData, verifySignature } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
 import Mempool from '../../models/mempool/Mempool';
@@ -81,7 +81,7 @@ class ConsensusEngine {
             return;
         }
 
-        if (block.type === 'TRANSACTION') {
+        if (block.type === BLOCK_TYPES.TRANSACTION) {
             const txPayload = block.payload as TransactionPayload;
             const hasFunds = await this.walletManager.verifyFunds(txPayload.senderId, txPayload.amount);
             if (!hasFunds && txPayload.senderId !== 'SYSTEM') {
@@ -161,7 +161,7 @@ class ConsensusEngine {
         for (const [bId, pEntry] of this.mempool.pendingBlocks.entries()) {
             if (pEntry.eligible && !pEntry.committed) {
                 eligibleBlockIds.push(bId);
-                if (pEntry.block.type === 'CONTRACT') {
+                if (pEntry.block.type === BLOCK_TYPES.CONTRACT) {
                     hasStorageContract = true;
                 }
             }
@@ -177,7 +177,7 @@ class ConsensusEngine {
                 const sig = signData(JSON.stringify(txPayload), this.node.privateKey);
                 const newBlock: Block = {
                     metadata: { index: -1, timestamp: Date.now() },
-                    type: 'TRANSACTION',
+                    type: BLOCK_TYPES.TRANSACTION,
                     payload: txPayload,
                     publicKey: this.node.publicKey,
                     signature: sig as string
@@ -248,7 +248,7 @@ class ConsensusEngine {
                 index++;
                 const newBlock: Block = {
                     metadata: { index, timestamp: pEntry.originalTimestamp || Date.now() },
-                    type: pEntry.block.type || 'CONTRACT',
+                    type: pEntry.block.type || BLOCK_TYPES.CONTRACT,
                     previousHash,
                     publicKey: pEntry.block.publicKey,
                     payload: pEntry.block.payload,

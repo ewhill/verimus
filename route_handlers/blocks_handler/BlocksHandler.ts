@@ -3,6 +3,7 @@ import { Filter } from 'mongodb';
 
 import logger from '../../logger/Logger';
 import { decryptPrivatePayload } from '../../crypto_utils/CryptoUtils';
+import { BLOCK_TYPES } from '../../constants';
 import type { Block, StorageContractPayload } from '../../types';
 
 
@@ -40,7 +41,7 @@ export default class BlocksHandler extends BaseHandler {
                             index: -1,
                             timestamp: entry.originalTimestamp || Date.now(),
                         },
-                        type: entry.block.type || 'CONTRACT',
+                        type: entry.block.type || BLOCK_TYPES.CONTRACT,
                         payload: entry.block.payload, // Added specifically to filter during search mapping
                         publicKey: entry.block.publicKey,
                         signature: entry.block.signature,

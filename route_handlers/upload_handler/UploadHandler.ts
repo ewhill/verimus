@@ -10,6 +10,7 @@ import type { Block, BlockPrivate, StorageContractPayload, PeerConnection } from
 
 
 import BaseHandler from '../base_handler/BaseHandler';
+import { BLOCK_TYPES } from '../../constants';
 
 export default class UploadHandler extends BaseHandler {
     async handle(req: Request, res: Response) {
@@ -59,7 +60,7 @@ export default class UploadHandler extends BaseHandler {
                 index: -1,
                 timestamp: Date.now(),
             },
-            type: 'CONTRACT',
+            type: BLOCK_TYPES.CONTRACT,
             payload: encryptedPrivate as StorageContractPayload,
             publicKey: publicKey,
             signature: signatureStr

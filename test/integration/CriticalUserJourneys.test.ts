@@ -7,6 +7,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import Bundler from '../../bundler/Bundler';
 import LocalFileStorageProvider from '../../storage_providers/local_provider/LocalProvider';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
+import { BLOCK_TYPES } from '../../constants';
 
 describe('Integration: UI Critical User Journeys (Frontend/Backend System Contract)', () => {
     let node: PeerNode;
@@ -155,7 +156,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             let targetBlock;
             for (let i = 0; i < 20; i++) {
                 blockRes = await (await fetch(`${baseUrl}/api/blocks`)).json();
-                targetBlock = blockRes.blocks.find((b: any) => b.metadata && b.metadata.index > 0 && b.type === 'CONTRACT');
+                targetBlock = blockRes.blocks.find((b: any) => b.metadata && b.metadata.index > 0 && b.type === BLOCK_TYPES.CONTRACT);
                 if (targetBlock) break;
                 await new Promise(r => setTimeout(r, 200));
             }
@@ -179,7 +180,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             // Wait for consensus commit logic (index > 0) moving block out of mempool onto storage native collection
             for (let i = 0; i < 20; i++) {
                 blockRes = await (await fetch(`${baseUrl}/api/blocks`)).json();
-                targetBlock = blockRes.blocks.find((b: any) => b.metadata && b.metadata.index > 0 && b.type === 'CONTRACT');
+                targetBlock = blockRes.blocks.find((b: any) => b.metadata && b.metadata.index > 0 && b.type === BLOCK_TYPES.CONTRACT);
                 if (targetBlock) break;
                 await new Promise(r => setTimeout(r, 200));
             }
