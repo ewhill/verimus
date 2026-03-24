@@ -18,7 +18,6 @@ import GithubStorageProvider, { GithubCredentials } from './storage_providers/gi
 import MemoryStorageProvider from './storage_providers/memory_provider/MemoryProvider';
 import { CredentialProvider } from './credential_provider/CredentialProvider';
 
-
 async function main() {
     logger.info("Starting Verimus Secure Storage Node...");
 

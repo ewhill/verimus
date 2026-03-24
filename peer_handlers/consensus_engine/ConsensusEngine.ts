@@ -1,15 +1,17 @@
 import * as crypto from 'crypto';
 
-import PeerNode from '../../peer_node/PeerNode';
-import Mempool from '../../models/mempool/Mempool';
-import { hashData } from '../../crypto_utils/CryptoUtils';
-import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
-import { VerifyBlockMessage } from '../../messages/verify_block_message/VerifyBlockMessage';
-import { ProposeForkMessage } from '../../messages/propose_fork_message/ProposeForkMessage';
 import { AdoptForkMessage } from '../../messages/adopt_fork_message/AdoptForkMessage';
-import type { PeerConnection, Block, TransactionPayload } from '../../types';
-import WalletManager from '../../wallet_manager/WalletManager';
+import { GENESIS_TIMESTAMP } from '../../constants';
+import { hashData, signData, verifySignature } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
+import Mempool from '../../models/mempool/Mempool';
+import PeerNode from '../../peer_node/PeerNode';
+import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
+import { ProposeForkMessage } from '../../messages/propose_fork_message/ProposeForkMessage';
+import type { Block, PeerConnection, TransactionPayload } from '../../types';
+import { VerifyBlockMessage } from '../../messages/verify_block_message/VerifyBlockMessage';
+import WalletManager from '../../wallet_manager/WalletManager';
+
 
 /**
  * @typedef {import('../types').PeerConnection} PeerConnection
@@ -72,7 +74,6 @@ class ConsensusEngine {
 
         const blockId = crypto.createHash('sha256').update(block.signature).digest('hex');
 
-        const { verifySignature, signData } = require('../../crypto_utils/CryptoUtils');
         const isSignatureValid = verifySignature(JSON.stringify(block.payload), block.signature, block.publicKey);
         if (!isSignatureValid) {
             logger.info(`[Peer ${this.node.port}] Rejected Invalid Pending Block from ${connection.peerAddress}`);
@@ -156,13 +157,45 @@ class ConsensusEngine {
 
     async _checkAndProposeFork() {
         const eligibleBlockIds: string[] = [];
+        let hasStorageContract = false;
         for (const [bId, pEntry] of this.mempool.pendingBlocks.entries()) {
             if (pEntry.eligible && !pEntry.committed) {
                 eligibleBlockIds.push(bId);
+                if (pEntry.block.type === 'STORAGE_CONTRACT') {
+                    hasStorageContract = true;
+                }
             }
         }
 
         if (eligibleBlockIds.length === 0) return;
+
+        if (hasStorageContract) {
+            const reward = WalletManager.calculateSystemReward(Date.now(), GENESIS_TIMESTAMP);
+            
+            const txPayload = await this.walletManager.allocateFunds('SYSTEM', this.node.publicKey, reward, 'SYSTEM_MINT');
+            if (txPayload) {
+                const sig = signData(JSON.stringify(txPayload), this.node.privateKey);
+                const newBlock: Block = {
+                    metadata: { index: -1, timestamp: Date.now() },
+                    type: 'TRANSACTION',
+                    payload: txPayload,
+                    publicKey: this.node.publicKey,
+                    signature: sig as string
+                };
+                
+                const blockId = crypto.createHash('sha256').update(sig as string).digest('hex');
+                
+                this.mempool.pendingBlocks.set(blockId, {
+                    block: newBlock,
+                    verifications: new Set([`127.0.0.1:${this.node.port}`]),
+                    originalTimestamp: Date.now(),
+                    eligible: true,
+                    committed: false
+                });
+                
+                eligibleBlockIds.push(blockId);
+            }
+        }
 
         eligibleBlockIds.sort((a, b) => {
             const entryA = this.mempool.pendingBlocks.get(a);

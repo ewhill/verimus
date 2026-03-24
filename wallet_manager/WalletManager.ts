@@ -16,6 +16,10 @@ export default class WalletManager {
      * @returns The floating-point token map of the peer's actual network wealth 
      */
     async calculateBalance(peerId: string): Promise<number> {
+        if (peerId === 'SYSTEM') {
+            return Infinity;
+        }
+
         let balance = 0;
 
         try {
@@ -54,8 +58,36 @@ export default class WalletManager {
      * @returns True if funds exceed or match the minimum constraint
      */
     async verifyFunds(peerId: string, minimumRequired: number): Promise<boolean> {
+        if (peerId === 'SYSTEM') {
+            return true;
+        }
         const balance = await this.calculateBalance(peerId);
         return balance >= minimumRequired;
+    }
+
+    /**
+     * Calculates the exponential continuous decay of the System allocation rate representing physical Kryders Law half-lives
+     * @param blockTimestamp Absolute milliseconds since epoch timing current mint
+     * @param genesisTimestamp Absolute milliseconds mapping originating node genesis
+     * @returns Base normalized numerical output mapping exact block rewards 
+     */
+    static calculateSystemReward(blockTimestamp: number, genesisTimestamp: number): number {
+        const BASE_REWARD = 50.0;
+        
+        // 4 years in milliseconds to represent the physical half-life
+        const FOUR_YEARS_MS = 4 * 365.25 * 24 * 60 * 60 * 1000; 
+        
+        // Calculate the 'decay constant' lambda (λ) for a 4-year half-life
+        // lambda = ln(2) / half_life
+        const DECAY_RATE = Math.LN2 / FOUR_YEARS_MS;
+        
+        const timeDeltaMs = Math.max(0, blockTimestamp - genesisTimestamp);
+        
+        // N(t) = N0 * e^(-λt)
+        const reward = BASE_REWARD * Math.exp(-DECAY_RATE * timeDeltaMs);
+        
+        // Establish a dust limit (minimum mint floor)
+        return Math.max(reward, 0.000001);
     }
 
     /**

@@ -155,7 +155,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             let targetBlock;
             for (let i = 0; i < 20; i++) {
                 blockRes = await (await fetch(`${baseUrl}/api/blocks`)).json();
-                targetBlock = blockRes.blocks.find((b: any) => b.metadata && b.metadata.index > 0);
+                targetBlock = blockRes.blocks.find((b: any) => b.metadata && b.metadata.index > 0 && b.type === 'STORAGE_CONTRACT');
                 if (targetBlock) break;
                 await new Promise(r => setTimeout(r, 200));
             }
@@ -179,7 +179,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             // Wait for consensus commit logic (index > 0) moving block out of mempool onto storage native collection
             for (let i = 0; i < 20; i++) {
                 blockRes = await (await fetch(`${baseUrl}/api/blocks`)).json();
-                targetBlock = blockRes.blocks.find((b: any) => b.metadata && b.metadata.index > 0);
+                targetBlock = blockRes.blocks.find((b: any) => b.metadata && b.metadata.index > 0 && b.type === 'STORAGE_CONTRACT');
                 if (targetBlock) break;
                 await new Promise(r => setTimeout(r, 200));
             }

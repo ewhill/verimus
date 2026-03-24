@@ -63,8 +63,8 @@ The `calculateSystemReward` payout must be appended into the network.
 
 ## 4. Execution Task Checklist
 
-- [ ] Modify `WalletManager.ts` to isolate `SYSTEM` boundary checks, ensuring no infinite loops.
-- [ ] Establish `GENESIS_TIMESTAMP` as a universally tracked constant inside `index.ts` or a shared `constants.ts`.
-- [ ] Integrate the `calculateSystemReward` routine to return normalized token floors without floating point corruption.
-- [ ] Hook the payout generation tracking new `TRANSACTION` schemas into validation checkpoints inside `ConsensusEngine.ts`.
-- [ ] Add integration tests verifying a 10-year timestamp shift generates the expected fractional block reward.
+- [x] Modify `WalletManager.ts` to isolate `SYSTEM` boundary checks, ensuring no infinite loops.
+- [x] Establish `GENESIS_TIMESTAMP` as a universally tracked constant inside `index.ts` or a shared `constants.ts`.
+- [x] Integrate the `calculateSystemReward` routine to return normalized token floors without floating point corruption.
+- [x] Hook the payout generation tracking new `TRANSACTION` schemas into validation checkpoints inside `ConsensusEngine.ts`.
+- [x] Add integration tests verifying a 10-year timestamp shift generates the expected fractional block reward.
