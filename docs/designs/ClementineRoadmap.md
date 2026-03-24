@@ -4,6 +4,13 @@ This document serves as the top-level roadmap to guide the implementation of the
 
 Each phase below outlines a core architectural shift required by the design proposal. Future work will break these phases down into detailed **sub-designs** and subsequent **implementation tasks**. 
 
+## Phase 0: Permissionless Transport Layer
+**Goal:** Dismantle the permissioned transport layer gatekeeper by replacing the shared RSA "Ring" key with a fully open, personal identity-based P2P handshake.
+- **Library Fork (p2p):** Directly copy the vendored `ringnet` library source code into the project root under the `p2p` directory to fully sever external dependency.
+- **Identity Handshakes:** Modify the connection upgrade sequence to validate a peer's personal cryptographic key pair instead of a centralized, shared ring key.
+- **Application Layer Trust:** Delegate all Byzantine fault tolerance and peer banishment logic entirely to the Application Layer (`ReputationManager`), enabling anyone to join the network anonymously.
+- **Target Sub-Design:** `Phase0_PermissionlessTransport.md`
+
 ## Phase 1: Blockchain Economics (Wallets & Transactions)
 **Goal:** Shift the homogeneous ledger into a multi-type blockchain that supports node funds and programmatic economy tracking.
 - **Architectural Shift:** Introduce a `BlockType` schema (e.g., `TRANSACTION`, `STORAGE_CONTRACT`). Project Clementine operates strictly as a hard fork; legacy `DATA` blocks are fully deprecated and no longer supported on the native ledger.
