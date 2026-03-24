@@ -1,4 +1,4 @@
-import { Message } from 'ringnet';
+import { Message } from '../../p2p';
 import { MessageOptions } from '../types/Types';
 
 export interface ProposeForkOptions {
@@ -8,7 +8,7 @@ export interface ProposeForkOptions {
 
 export class ProposeForkMessage extends Message {
     
-    declare body: any;
+
 
     constructor(options: MessageOptions<ProposeForkOptions> = {}) {
         super(options);

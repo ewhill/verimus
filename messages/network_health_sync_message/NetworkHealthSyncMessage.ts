@@ -1,4 +1,4 @@
-import { Message } from 'ringnet';
+import { Message } from '../../p2p';
 import { MessageOptions } from '../types/Types';
 import { NodeRole } from '../../types/NodeRole';
 
@@ -14,7 +14,7 @@ export interface NetworkHealthSyncOptions {
 
 export class NetworkHealthSyncMessage extends Message {
     
-    declare body: any;
+
 
     constructor(options: MessageOptions<NetworkHealthSyncOptions> = {}) {
         super(options);

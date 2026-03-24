@@ -1,4 +1,4 @@
-import { Message } from 'ringnet';
+import { Message } from '../../p2p';
 import { MessageOptions } from '../types/Types';
 
 export interface ChainStatusResponseOptions {
@@ -8,7 +8,7 @@ export interface ChainStatusResponseOptions {
 
 export class ChainStatusResponseMessage extends Message {
     
-    declare body: any;
+
 
     constructor(options: MessageOptions<ChainStatusResponseOptions> = {}) {
         super(options);

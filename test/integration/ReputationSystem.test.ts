@@ -20,7 +20,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
         mongod = await MongoMemoryServer.create();
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rep-test-'));
 
-        const RSAKeyPair = require('ringnet/lib/rsakeypair');
+        const RSAKeyPair = require('../../p2p/lib/rsakeypair');
         const ringKeys = RSAKeyPair.generate();
         fs.writeFileSync(path.join(tempDir, 'ring.pub'), ringKeys.public);
 

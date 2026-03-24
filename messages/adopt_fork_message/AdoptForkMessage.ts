@@ -1,4 +1,4 @@
-import { Message } from 'ringnet';
+import { Message } from '../../p2p';
 import { MessageOptions } from '../types/Types';
 
 export interface AdoptForkOptions {
@@ -8,7 +8,7 @@ export interface AdoptForkOptions {
 
 export class AdoptForkMessage extends Message {
     
-    declare body: any;
+
 
     constructor(options: MessageOptions<AdoptForkOptions> = {}) {
         super(options);

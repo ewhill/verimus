@@ -1,7 +1,7 @@
 import EventEmitter from 'events';
-import Server from 'ringnet/lib/server';
+import Server from '../p2p/lib/Server';
 import * as https from 'https';
-import { Peer } from 'ringnet';
+import { Peer } from '../p2p';
 import { Db } from 'mongodb';
 import { Socket } from 'net';
 import { Http2ServerRequest } from 'http2';
@@ -139,10 +139,10 @@ class PeerNode {
             signature: this.keyPaths.signature
         });
 
-        httpServer.on('upgrade', (request: Http2ServerRequest, socket: Socket, head: any) => {
-            if (this.peer && this.peer.wsServer) {
-                this.peer.wsServer.handleUpgrade(request, socket, head, (ws: WebSocket) => {
-                    this.peer!.wsServer.emit('connection', ws, request);
+        httpServer.on('upgrade', (request: any, socket: Socket, head: any) => {
+            if (this.peer && (this.peer as any).wsServer) {
+                (this.peer as any).wsServer.handleUpgrade(request, socket, head, (ws: WebSocket) => {
+                    (this.peer as any).wsServer.emit('connection', ws, request);
                 });
             }
         });

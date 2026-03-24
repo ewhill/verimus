@@ -1,4 +1,4 @@
-import { Message } from 'ringnet';
+import { Message } from '../../p2p';
 import type { Block } from '../../types';
 import { MessageOptions } from '../types/Types';
 
@@ -8,7 +8,7 @@ export interface BlockSyncResponseOptions {
 
 export class BlockSyncResponseMessage extends Message {
     
-    declare body: any;
+
 
     constructor(options: MessageOptions<BlockSyncResponseOptions> = {}) {
         super(options);

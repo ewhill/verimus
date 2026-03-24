@@ -45,7 +45,7 @@ async function runManualTest() {
     // Generate keys dynamically to prevent errors
     [node1, node2, node3].forEach((node, index) => {
         const fsLib = require('fs');
-        const RSAKeyPair = require('../ringnet/lib/RSAKeyPair');
+        const RSAKeyPair = require('../p2p/lib/RSAKeyPair');
         const baseKey = `keys/peer_2678${index}`;
         if (!fsLib.existsSync('keys')) fsLib.mkdirSync('keys');
         if (!fsLib.existsSync('keys/ring.ring.pem')) {

@@ -1,4 +1,4 @@
-import { Message } from 'ringnet';
+import { Message } from '../../p2p';
 import { MessageOptions } from '../types/Types';
 
 export interface VerifyBlockOptions {
@@ -8,7 +8,7 @@ export interface VerifyBlockOptions {
 
 export class VerifyBlockMessage extends Message {
     
-    declare body: any;
+
 
     constructor(options: MessageOptions<VerifyBlockOptions> = {}) {
         super(options);
