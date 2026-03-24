@@ -37,3 +37,21 @@ export interface PoStResponse {
 - [ ] Incorporate the `PoStChallenge` networking models within `messages/Message.ts` structure logically.
 - [ ] Define dynamic sortition endpoints inside `ConsensusEngine.ts` initiating independent network auditor streams periodically.
 - [ ] Track latency limits securely measuring network request bounds aggressively failing queries breaching thresholds safely logically.
+
+## 6. Proposed Solution Pros & Cons
+### Pros
+- Mathematically guarantees operators are preserving the actual file bytes locally rather than exploiting trivial hash validations.
+- Thwarts instantaneous Sybil bot swarms executing zero-collateral dumps securely.
+
+### Cons
+- Extreme engineering complexity binding TLS boundaries against variable network ping latency buffers globally.
+- Imposes dynamic active CPU utilization across storing peers randomly impacting basic hosting capabilities.
+
+## 7. Alternative Solution: Massive Random Byte Transmission
+Auditors explicitly request a random 100MB chunk off the stored file streamed immediately through standard TCP connections verifying physical storage possession.
+
+### Pros
+- Exceptionally straightforward relying purely on standard file read pipelines avoiding dynamic hash matrices.
+
+### Cons
+- Irrevocably destroys ISP bandwidth budgets, transferring tens of gigabytes monthly per node purely for redundant "monitoring" parameters.

@@ -43,3 +43,22 @@ export interface StorageContractPayload {
 - [ ] Overhaul `Bundler.archiveFile()` injecting the matrix shard distribution pipeline mapping array buffers natively.
 - [ ] Scale the DHT routing table enabling parallel streaming queries securing independent fragment hashes immediately.
 - [ ] Reconstruct `DownloadFileHandler.ts` injecting an RS recombination buffering hook validating integrity hashes accurately before decrypting the unified payload.
+
+## 6. Proposed Solution Pros & Cons
+### Pros
+- Outstanding fault tolerance preventing widespread array losses without triggering immediate network re-seeding pipelines.
+- Optimizes overall capacity ratios against standard replication bounds exponentially.
+
+### Cons
+- Slicing payloads through RS mathematical encoding and decoding matrices triggers intense CPU overhead on the requesting clients.
+- `DownloadFileHandler` buffer management becomes significantly more rigid.
+
+## 7. Alternative Solution: Direct Multi-Replication (1:1 Mirrored Footprints)
+Store exact 1:1 copies of the full encrypted structure across five specific nodes completely avoiding data splitting sequences.
+
+### Pros
+- Extremely simple structural deployment. Immediate access without complex cryptographic re-assembly matrices.
+
+### Cons
+- Forces massive raw capacity thresholds (e.g. 500% redundant storage space costs).
+- Devastates network bandwidth propagating repetitive full structures globally.

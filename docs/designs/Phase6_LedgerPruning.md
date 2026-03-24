@@ -39,3 +39,21 @@ export interface CheckpointBlock {
 - [ ] Modify `WalletManager.ts` natively supporting initialization from a static hash-mapped object rather than absolute array recursion loops aggressively.
 - [ ] Introduce a `pruneHistory(checkpointHash: string)` function natively into `Ledger.ts` securely cleaning the DB storage pipeline efficiently cleanly.
 - [ ] Incorporate multi-sig threshold requirements enforcing array logic resolving `validatorSignatures` safely inside `ConsensusEngine.ts` preventing spoofed checkpoint truncation attacks logically statically globally.
+
+## 6. Proposed Solution Pros & Cons
+### Pros
+- Condenses blockchain resynchronization times effectively from terabyte streaming pipelines to sub-minute cryptographic checkpoints instantly.
+- Solves the infinite linear ledger dilemma securing physical SSD bounds independently.
+
+### Cons
+- Enormously complicates `WalletManager` inference matrices forcing dual-phase historical validation pipelines securely tracking boundaries.
+- Re-aligning active `CONTRACT` bounds actively resolving `CHECKPOINT` genesis states forces heavy active consensus voting sequences periodically.
+
+## 7. Alternative Solution: Centralized Archival Data Hubs
+Define heavily capitalized "Archival Tier" nodes mandated specifically mapping the full immutable chain history, allowing generic nodes to query RPC strings discarding direct database persistence entirely.
+
+### Pros
+- Decouples local physical storage pressure immediately across baseline nodes maintaining simple structural footprints.
+
+### Cons
+- Severely jeopardizes underlying cryptographic Web3 trust boundaries forcing baseline participants onto highly vulnerable single points of querying truth structurally.

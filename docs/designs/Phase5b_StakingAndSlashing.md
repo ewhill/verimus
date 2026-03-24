@@ -38,3 +38,21 @@ export interface SlashingPayload {
 - [ ] Restructure `BLOCK_TYPES` mapped integrating explicit parsing for `SLASH_TX` definitions natively decoupled globally.
 - [ ] Connect `ConsensusEngine.ts` audit failure blocks logically triggering the formulation sequences asserting complete network broadcasts accurately securing state penalties cleanly.
 - [ ] Generate dynamic test boundaries asserting 100% loss ratios mapped across Integration journeys explicitly proving logic paths securely physically reliably logically.
+
+## 6. Proposed Solution Pros & Cons
+### Pros
+- Directly destroys value tied to malicious manipulators cleanly protecting genuine users.
+- Secures the network fundamentally from infinite Sybil identities executing `CONTRACT` fraud structurally.
+
+### Cons
+- Creates a brutal onboarding hurdle punishing genuine developers experimenting with isolated nodes unable to afford `SYSTEM` collateral margins.
+- Risks accidentally slashing well-meaning operators experiencing honest ISP connectivity failures.
+
+## 7. Alternative Solution: Delayed Withheld Rewards (Vesting)
+Tokens are never slashed physically; instead, all rewards enter a 90-day vesting freeze. Failing an audit wipes out the pending queue strictly.
+
+### Pros
+- Zero-cost onboarding allowing organic network expansion globally organically.
+
+### Cons
+- Advanced attackers deduce exact profitability margins balancing 80-day dumps effectively neutralizing deterrence structures dynamically.
