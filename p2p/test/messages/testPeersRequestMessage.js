@@ -1,32 +1,32 @@
 const test = require('tape');
 
-const GetPeersMessage = require('../../lib/messages/GetPeersMessage');
+const PeersRequestMessage = require('../../lib/messages/PeersRequestMessage');
 
-test("GetPeersMessage", (assert) => {
-  const emptyGetPeersMessage = new GetPeersMessage();
+test("PeersRequestMessage", (assert) => {
+  const emptyPeersRequestMessage = new PeersRequestMessage();
 
-  assert.deepEqual(emptyGetPeersMessage.since, new Date(0),
+  assert.deepEqual(emptyPeersRequestMessage.since, new Date(0),
     "Default value of since should be provided via constructor.");
 
-  assert.deepEqual(emptyGetPeersMessage.limit, 50,
+  assert.deepEqual(emptyPeersRequestMessage.limit, 50,
     "Default value of limit should be provided via constructor.");
 
-  assert.throws(() => { emptyGetPeersMessage.since = 'a'; },
+  assert.throws(() => { emptyPeersRequestMessage.since = 'a'; },
     "Attempting to set since property to non-number value should throw.");
 
-  assert.throws(() => { emptyGetPeersMessage.limit = 'a'; },
+  assert.throws(() => { emptyPeersRequestMessage.limit = 'a'; },
     "Attempting to set limit property to non-number value should throw.");
 
-  emptyGetPeersMessage.since = undefined;
-  assert.deepEqual(emptyGetPeersMessage.since, new Date(0),
+  emptyPeersRequestMessage.since = undefined;
+  assert.deepEqual(emptyPeersRequestMessage.since, new Date(0),
     "Default value of since should be provided via property setter.");
 
-  emptyGetPeersMessage.limit = undefined;
-  assert.deepEqual(emptyGetPeersMessage.limit, 50,
+  emptyPeersRequestMessage.limit = undefined;
+  assert.deepEqual(emptyPeersRequestMessage.limit, 50,
     "Default value of limit should be provided via property setter.");
 
   const nowDate = new Date(Date.now());
-  let peersMessage = new GetPeersMessage({
+  let peersMessage = new PeersRequestMessage({
     since: nowDate.getTime(),
     limit: 100,
   });

@@ -4,8 +4,8 @@ const EventEmitter = require('events');
 const WebSocket = require('ws');
 
 const RSAKeyPair = require('./RSAKeyPair');
-const HeloMessage = require('./messages/helo');
-const SetupCipherMessage = require('./messages/setupCipher');
+const HelloMessage = require('./messages/HelloMessage');
+const SetupCipherMessage = require('./messages/SetupCipherMessage');
 const RequestHandler = require('./RequestHandler');
 const ManagedTimeouts = require('./ManagedTimeouts');
 const Message = require('./Message');
@@ -297,11 +297,11 @@ class Client {
 		if (this.requestHandlers_.hasOwnProperty(messageType)) {
 			const handler = this.requestHandlers_[messageType];
 			const messageObj = handler.upgrade(message);
-			const isHeloMessage = messageObj instanceof HeloMessage;
+			const isHelloMessage = messageObj instanceof HelloMessage;
 			const isSetupCipherMessage =
 				messageObj instanceof SetupCipherMessage;
 
-			if (!this.isTrusted && (isHeloMessage || isSetupCipherMessage)) {
+			if (!this.isTrusted && (isHelloMessage || isSetupCipherMessage)) {
 				try {
 					handler.invoke(messageObj, this);
 				} catch (e) {
@@ -368,10 +368,10 @@ class Client {
 			}
 		}
 
-		const isHeloMessage = message instanceof HeloMessage;
+		const isHelloMessage = message instanceof HelloMessage;
 		const isCipherSetupMessage = message instanceof SetupCipherMessage;
 
-		if (!isHeloMessage && !isCipherSetupMessage && !this.isTrusted) {
+		if (!isHelloMessage && !isCipherSetupMessage && !this.isTrusted) {
 			this.logger_.warn(
 				`Attempted to send message before connection could be ` +
 				`upgraded: ${message}`);
@@ -442,16 +442,16 @@ class Client {
 		}
 
 		if (!this.hasSentHelo_) {
-			let heloMessage = new HeloMessage({
+			let helloMessage = new HelloMessage({
 				publicAddress: this.address,
 				publicKey: this.credentials_.rsaKeyPair.public.toString('utf8')
 			});
-			heloMessage.header = {
+			helloMessage.header = {
 				signature: (this.credentials_.rsaKeyPair.sign(
-					JSON.stringify(heloMessage.body)))
+					JSON.stringify(helloMessage.body)))
 					.toString('base64')
 			};
-			this.sendHeloPromise_ = this.send(heloMessage);
+			this.sendHeloPromise_ = this.send(helloMessage);
 			this.hasSentHelo_ = true;
 		}
 
@@ -469,17 +469,17 @@ class Client {
 				this.receiveHeloPromiseReject_ = reject;
 				this.receiveHeloTimeout_ =
 					this.managedTimeouts_.setTimeout(reject, 15000);
-				this.bind_(HeloMessage).to((message, connection) => {
+				this.bind_(HelloMessage).to((message, connection) => {
 					this.heloHandler(message, connection);
 				});
 			}).then(() => {
 				this.managedTimeouts_.clearTimeout(
 					this.receiveHeloTimeout_);
-				this.unbind_(HeloMessage);
+				this.unbind_(HelloMessage);
 			}).catch(err => {
 				this.managedTimeouts_.clearTimeout(
 					this.receiveHeloTimeout_);
-				this.unbind_(HeloMessage);
+				this.unbind_(HelloMessage);
 				throw err;
 			});
 		}

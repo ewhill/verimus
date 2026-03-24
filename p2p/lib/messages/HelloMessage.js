@@ -1,6 +1,6 @@
 const Message = require('../Message');
 
-class HeloMessage extends Message {
+class HelloMessage extends Message {
 	constructor(options = {}) {
 		super();
 		const { publicAddress, publicKey, signature } = options;
@@ -31,4 +31,4 @@ class HeloMessage extends Message {
 	}
 }
 
-module.exports = HeloMessage;
+module.exports = HelloMessage;

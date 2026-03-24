@@ -20,7 +20,7 @@ const Server = require('./Server');
 const utils = require('./utils');
 
 const PeersResponseMessage = require('./messages/PeersResponseMessage');
-const GetPeersMessage = require('./messages/GetPeersMessage');
+const PeersRequestMessage = require('./messages/PeersRequestMessage');
 
 class Peer {
   // Begin Private Class Properties Statically Assigned
@@ -202,7 +202,7 @@ class Peer {
 
 
         this.bind(PeersResponseMessage).to((m) => { this.onPeersResponseMessage(m); });
-        this.bind(GetPeersMessage).to((m, c) => { this.onGetPeersMessage(m, c); });
+        this.bind(PeersRequestMessage).to((m, c) => { this.onPeersRequestMessage(m, c); });
 
         // Periodically ask neighbors for new peers without auto connecting to them
         this.managedTimeouts_.setInterval(() => this.requestRandomPeers(), 120000);
@@ -531,11 +531,11 @@ class Peer {
   }
 
   async requestRandomPeers() {
-    const getPeersMsg = new GetPeersMessage({ since: 0, limit: 50 });
+    const getPeersMsg = new PeersRequestMessage({ since: 0, limit: 50 });
     return this.broadcast(getPeersMsg).catch(err => this.logger_.error(err.stack));
   }
 
-  async onGetPeersMessage(message, connection) {
+  async onPeersRequestMessage(message, connection) {
     const peersResponse = new PeersResponseMessage({
       peers: this.getPeersSince(message.since).slice(0, message.limit || 50),
       since: Date.now()

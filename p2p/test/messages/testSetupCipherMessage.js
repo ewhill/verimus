@@ -1,6 +1,6 @@
 const test = require('tape');
 
-const SetupCipherMessage = require('../../lib/messages/setupCipher');
+const SetupCipherMessage = require('../../lib/messages/SetupCipherMessage');
 
 
 test("SetupCipherMessage", (assert) => {
