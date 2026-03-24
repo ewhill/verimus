@@ -41,6 +41,7 @@ class GlacierStorageProvider extends BaseStorageProvider {
     }
 
     getCostPerGB(): number { return 2.0; }
+    getEgressCostPerGB(): number { return 1.5; }
 
     getLocation(): GlacierLocation {
         return {

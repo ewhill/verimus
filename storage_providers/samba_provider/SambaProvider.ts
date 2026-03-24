@@ -26,6 +26,7 @@ class SambaStorageProvider extends BaseStorageProvider {
     }
 
     getCostPerGB(): number { return 1.0; }
+    getEgressCostPerGB(): number { return 0.5; }
 
     getLocation() {
         return {

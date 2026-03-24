@@ -21,6 +21,11 @@ export interface PeerReputation {
     roles?: NodeRole[];
 }
 
+export interface StoragePricingConfig {
+    restCostPerGBHour: number; 
+    egressCostPerGB: number;  
+}
+
 export interface TransactionPayload {
     senderSignature: string; 
     senderId: string;        
@@ -33,6 +38,9 @@ export interface StorageContractPayload {
     encryptedKeyBase64: string;
     encryptedIvBase64: string;
     encryptedAuthTagBase64?: string;
+    allocatedRestToll?: number;
+    allocatedEgressEscrow?: number;
+    remainingEgressEscrow?: number;
 }
 
 export interface BlockPrivateFile {

@@ -69,6 +69,12 @@ abstract class BaseStorageProvider {
      * @returns Float denoting the VERI token cost.
      */
     abstract getCostPerGB(): number;
+
+    /**
+     * Determines the cost per Gigabyte transferred via the REST egress streaming HTTP pipe.
+     * @returns Float denoting VERI token deduction mapping byte iterations uniformly.
+     */
+    abstract getEgressCostPerGB(): number;
 }
 
 export default BaseStorageProvider;

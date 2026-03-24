@@ -33,6 +33,7 @@ class NullStorageProvider extends BaseProvider {
     }
     
     getCostPerGB(): number { return 0.0; }
+    getEgressCostPerGB(): number { return 0.0; }
 
     getLocation(): { type: string } {
         return { type: 'null://local' };

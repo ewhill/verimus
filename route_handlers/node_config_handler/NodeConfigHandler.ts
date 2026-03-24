@@ -14,7 +14,8 @@ export default class NodeConfigHandler extends BaseHandler {
         roles: this.node.roles,
         storageConfig: this.node.storageProvider ? {
             ...this.node.storageProvider.getLocation(),
-            costPerGB: this.node.storageProvider.getCostPerGB()
+            costPerGB: this.node.storageProvider.getCostPerGB(),
+            egressCostPerGB: this.node.storageProvider.getEgressCostPerGB()
         } : null
     });
     }

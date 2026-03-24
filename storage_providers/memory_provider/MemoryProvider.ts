@@ -12,6 +12,7 @@ class MemoryStorageProvider extends BaseStorageProvider {
     }
 
     getCostPerGB(): number { return 0.0; }
+    getEgressCostPerGB(): number { return 0.0; }
 
     getLocation() {
         return {

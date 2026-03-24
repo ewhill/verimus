@@ -32,6 +32,7 @@ class S3StorageProvider extends BaseStorageProvider {
     }
 
     getCostPerGB(): number { return 5.0; }
+    getEgressCostPerGB(): number { return 4.0; }
 
     getLocation() {
         return {
