@@ -1,4 +1,4 @@
-import type { Block, TransactionBlock, TransactionPayload } from '../types';
+import type { Block, TransactionBlock, TransactionPayload, StorageContractBlock, StorageContractPayload } from '../types';
 import type Ledger from '../ledger/Ledger';
 import logger from '../logger/Logger';
 
@@ -113,5 +113,28 @@ export default class WalletManager {
             amount,
             senderSignature 
         };
+    }
+
+    /**
+     * Deducts calculated stream costs from a block's allocated egress escrow atomically.
+     * @param blockHash The target contract block bounding the extraction.
+     * @param calculatedCost Float numerical reduction to apply.
+     */
+    async deductEgressEscrow(blockHash: string, calculatedCost: number): Promise<void> {
+        if (!this.ledger.collection) return;
+        if (calculatedCost <= 0) return;
+
+        const block = await this.ledger.collection.findOne({ hash: blockHash }) as StorageContractBlock | null;
+        if (!block || !block.payload) return;
+
+        const p = block.payload as StorageContractPayload;
+        const currentRemaining = p.remainingEgressEscrow ?? p.allocatedEgressEscrow ?? 0;
+        
+        const newRemaining = Math.max(0, currentRemaining - calculatedCost);
+
+        await this.ledger.collection.updateOne(
+            { hash: blockHash },
+            { $set: { "payload.remainingEgressEscrow": newRemaining } }
+        );
     }
 }

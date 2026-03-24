@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Transform } from 'stream';
 
 import { verifySignature, decryptPrivatePayload, createAESDecryptStream } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
@@ -62,6 +63,26 @@ export default class DownloadHandler extends BaseHandler {
             res.setHeader('Content-disposition', `attachment; filename=block_${hash}.zip`);
             res.setHeader('Content-type', 'application/zip');
 
+            const egressCostPerGB = (typeof this.node.storageProvider?.getEgressCostPerGB === 'function')
+                ? this.node.storageProvider.getEgressCostPerGB()
+                : 0;
+            let accumulatedCost = 0;
+            const maxEscrow = privatePayload.remainingEgressEscrow ?? privatePayload.allocatedEgressEscrow ?? 0;
+
+            const byteSpooler = new Transform({
+                transform(chunk, encoding, callback) {
+                    if (egressCostPerGB > 0) {
+                        const iterationCost = (chunk.length / (1024 * 1024 * 1024)) * egressCostPerGB;
+                        accumulatedCost += iterationCost;
+
+                        if (accumulatedCost > maxEscrow) {
+                            return callback(new Error('Bandwidth escrow exhausted. Payment Required.'));
+                        }
+                    }
+                    callback(null, chunk);
+                }
+            });
+
             readStream.on('error', (err: any) => {
                 logger.error('ReadStream Error:', err);
                 if (!res.headersSent) res.status(500).send('Error reading block.');
@@ -72,8 +93,25 @@ export default class DownloadHandler extends BaseHandler {
                 if (!res.headersSent) res.status(500).send('Decryption failed, check your keys.');
             });
 
-            // Pipe storage -> decrypt -> response
-            readStream.pipe(decipher).pipe(res);
+            byteSpooler.on('error', (err: any) => {
+                logger.warn(`Egress cutoff triggered: ${err.message}`);
+                if (!res.headersSent) res.status(402).send(err.message);
+                else res.end();
+                
+                if (typeof (readStream as any).destroy === 'function') {
+                    (readStream as any).destroy();
+                }
+            });
+
+            res.on('close', async () => {
+                if (accumulatedCost > 0) {
+                    const resolvedHash = Array.isArray(hash) ? hash[0] : hash;
+                    await this.node.consensusEngine?.walletManager?.deductEgressEscrow(resolvedHash, accumulatedCost);
+                }
+            });
+
+            // Pipe storage -> bill tracking -> decrypt -> response
+            readStream.pipe(byteSpooler).pipe(decipher).pipe(res);
 
         } catch (error) {
             logger.error(error as Error);
