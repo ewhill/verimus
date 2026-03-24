@@ -230,7 +230,9 @@ class Client {
 		const bracketIndex = message.indexOf("{");
 
 		if (bracketIndex < 0) {
-			throw new Error(`Message could not be understood.`)
+			this.logger_.error(`Message could not be understood. Closing connection.`);
+			this.connection_.terminate();
+			return;
 		} else if (bracketIndex === 0) {
 			messageType = 'Message';
 		} else if (bracketIndex > 0) {
@@ -251,32 +253,27 @@ class Client {
 				return;
 			}
 
-			// Create an AES-256-CBC decipher to decrypt the message body
-			let encryptedMessageBody = Buffer.from(message.body, 'base64');
-			let messageSignature =
-				Buffer.from(message.header.signature, 'base64');
-
-			this.logger_.log(`Message signature (last 16 bytes): ` +
-				`\n\t-> ${messageSignature.toString('base64').slice(-32)}`);
-			this.logger_.log(`Encrypted message body: ` +
-				`\n\t-> ${encryptedMessageBody.toString('base64')}`);
-
-			if (!message.header || !message.header.iv) {
-				this.logger_.error(`Message transmitted without required AES initialization vector in header. Rejecting payload.`);
-				return;
-			}
-			const messageIv = Buffer.from(message.header.iv, 'base64');
-			let decipher = crypto.createDecipheriv('aes-256-gcm',
-				this.remoteCipher_.key, messageIv);
-
-			if (!message.header.authTag) {
-				this.logger_.error(`AES GCM Requires an Authentication Tag natively verifying payload integrity! Rejecting.`);
-				return;
-			}
-			decipher.setAuthTag(Buffer.from(message.header.authTag, 'base64'));
-
 			let decryptedMessageBody;
+			let messageSignature;
 			try {
+				let encryptedMessageBody = Buffer.from(message.body || '', 'base64');
+				messageSignature =
+					Buffer.from(message.header.signature || '', 'base64');
+
+				if (!message.header || !message.header.iv) {
+					this.logger_.error(`Message transmitted without required AES initialization vector in header. Rejecting payload.`);
+					return;
+				}
+				const messageIv = Buffer.from(message.header.iv, 'base64');
+				let decipher = crypto.createDecipheriv('aes-256-gcm',
+					this.remoteCipher_.key, messageIv);
+
+				if (!message.header.authTag) {
+					this.logger_.error(`AES GCM Requires an Authentication Tag natively verifying payload integrity! Rejecting.`);
+					return;
+				}
+				decipher.setAuthTag(Buffer.from(message.header.authTag, 'base64'));
+
 				decryptedMessageBody = (Buffer.concat([
 					decipher.update(encryptedMessageBody), decipher.final()]));
 			} catch(e) {
