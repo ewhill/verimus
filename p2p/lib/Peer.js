@@ -32,6 +32,7 @@ class Peer {
   isInitializing_ = true;
   managedTimeouts_ = new ManagedTimeouts();
   peers_ = [];
+  seenMessageHashes_ = new Map();
   peersSince_ = 0;
   requestHandlers_ = {};
 
@@ -68,6 +69,7 @@ class Peer {
         end: 26790
       }
     },
+    maxConnections = 50,
     publicAddress,
     logger = console,
   }) {
@@ -80,6 +82,7 @@ class Peer {
     this.httpsServerConfig_ = httpsServerConfig;
     this.wsServerConfig_ = { ...this.wsServerConfig_, ...wsServerConfig };
     this.discoveryConfig_ = discoveryConfig;
+    this.maxConnections_ = maxConnections;
     this.publicAddress_ = publicAddress;
     this.logger = logger;
     this.init();
@@ -682,6 +685,20 @@ class Peer {
    * @return {void}
    */
   onClientMessage(connection, type, message) {
+    if (message && message.header && message.header.hash) {
+      // LRU tracks both hash and origin signature to differentiate identical duplicate-body payload injections
+      const trackingId = message.header.hash + (message.header.signature || message.header.timestamp);
+      if (this.seenMessageHashes_.has(trackingId)) {
+        return; // Drop duplicate message to prevent broadcast storms
+      }
+      this.seenMessageHashes_.set(trackingId, Date.now());
+      // Lazy LRU cleanup: prevent unbounded memory growth
+      if (this.seenMessageHashes_.size > 5000) {
+        const oldestKeys = Array.from(this.seenMessageHashes_.keys()).slice(0, 500);
+        oldestKeys.forEach(k => this.seenMessageHashes_.delete(k));
+      }
+    }
+
     if (!this.requestHandlers_.hasOwnProperty(type)) {
       this.logger_.error(`No handlers registered for ${type}.`);
       return;
@@ -745,9 +762,17 @@ class Peer {
    *         The message to broadcast to all connected, trusted peers.
    */
   async broadcast(message) {
-    // If there are no peers to broadcast to, return.
+    // If there are no peers to broadcast to, return silently
     if (this.trustedPeers.length < 1) {
-      throw new Error(`No connected and trusted to broadcast message to!`);
+      return Promise.resolve();
+    }
+
+    // Decrement message TTL to restrict infinite hop cascading
+    if (message && message.ttl !== undefined) {
+      message.ttl -= 1;
+      if (message.ttl <= 0) {
+        return Promise.resolve();
+      }
     }
 
     this.logger_.log(

@@ -141,8 +141,8 @@ describe('Integration: Reputation System (5 Nodes)', () => {
         await new Promise(r => setTimeout(r, 500));
 
         const node3ScoreRecord = await node1.ledger.peersCollection?.findOne({ publicKey: node3.publicKey });
-        assert.strictEqual(node3ScoreRecord?.score, 0, 'Node 1 mathematically docked Node 3 directly dropping to bounded 0');
-        assert.strictEqual(node3ScoreRecord?.isBanned, true, 'Node 1 flagged node accurately directly intuitively');
+        assert.strictEqual(node3ScoreRecord?.score, 0, 'Node 1 docked Node 3 dropping to 0');
+        assert.strictEqual(node3ScoreRecord?.isBanned, true, 'Node 1 flagged node');
     });
 
     it('Drops subsequent connections from banned node', async () => {
@@ -153,7 +153,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
         await new Promise(r => setTimeout(r, 500));
 
         const connToNode1 = node3.peer?.peers[0];
-        assert.ok(!connToNode1 || !connToNode1.isConnected, 'Socket physically logically logically seamlessly seamlessly seamlessly terminated structurally implicitly organically automatically properly seamlessly seamlessly instinctively nicely uniquely natively seamlessly organically appropriately seamlessly accurately proactively seamlessly safely magically intelligently proactively successfully implicitly intelligently perfectly logically appropriately automatically smartly seamlessly intelligently proactively smoothly securely safely organically explicitly functionally cleanly smartly seamlessly safely elegantly implicitly intelligently creatively expertly actively intuitively reliably instinctively magically mathematically automatically cleanly expertly flexibly seamlessly natively natively intelligently brilliantly efficiently intelligently optimally effectively smartly beautifully cleanly magically nicely rationally dynamically correctly brilliantly correctly beautifully proactively instinctively statically appropriately dynamically logically dynamically logically implicitly natively optimally creatively natively seamlessly implicitly smoothly explicitly intelligently natively organically aggressively creatively smartly seamlessly cleanly efficiently natively realistically creatively smoothly appropriately properly automatically manually creatively cleanly defensively intuitively gracefully effectively automatically accurately effortlessly creatively actively instinctively implicitly smartly safely proactively intelligently confidently smartly logically smoothly intuitively seamlessly');
+        assert.ok(!connToNode1 || !connToNode1.isConnected, 'Socket terminated');
     });
 
     it('Assesses minor penalty (-1) for P2P loop mapping spam', async () => {
@@ -165,12 +165,15 @@ describe('Integration: Reputation System (5 Nodes)', () => {
         const { ChainStatusRequestMessage } = require('../../messages/chain_status_request_message/ChainStatusRequestMessage');
 
         for (let i = 0; i < 5; i++) {
-            connToNode1?.send(new ChainStatusRequestMessage());
+            const msg = new ChainStatusRequestMessage();
+            msg.body = { nonce: Math.random() }; // Force unique hash bypassing P2P network LRU drop layer
+            connToNode1?.send(msg);
+            await new Promise(r => setTimeout(r, 5));
         }
 
         await new Promise(r => setTimeout(r, 1000));
 
         const node4ScoreRecord = await node1.ledger.peersCollection?.findOne({ publicKey: node4.publicKey });
-        assert.strictEqual(node4ScoreRecord?.score, 99, 'Node 1 naturally safely dynamically proactively structurally correctly properly expertly functionally flawlessly implicitly accurately rationally safely magically logically natively successfully instinctively cleanly physically functionally impressively successfully seamlessly systematically smartly safely flawlessly dynamically confidently intelligently neatly inherently cleanly organically accurately safely intelligently naturally expertly flawlessly efficiently properly seamlessly natively natively intuitively actively effectively organically correctly gracefully instinctively nicely naturally perfectly effectively explicitly natively efficiently magically proactively seamlessly securely natively intelligently magically cleverly intelligently creatively uniquely cleanly intuitively instinctively mathematically manually intuitively structurally magically explicitly gracefully brilliantly logically seamlessly safely dynamically expertly automatically smartly effortlessly manually dynamically creatively dynamically efficiently neatly neatly explicitly implicitly intuitively neatly successfully explicitly skillfully naturally implicitly flawlessly implicitly securely optimally intelligently smartly automatically smoothly naturally cleanly intelligently accurately seamlessly naturally smoothly natively seamlessly reliably inherently flawlessly implicitly successfully implicitly naturally naturally implicitly accurately actively intelligently cleanly organically uniquely properly intelligently naturally logically cleanly smoothly automatically actively naturally smoothly seamlessly natively properly');
+        assert.strictEqual(node4ScoreRecord?.score, 99, 'Node 1 penalized node');
     });
 });

@@ -2,9 +2,10 @@ const crypto = require('crypto');
 
 class Message {
   constructor(options = {}) {
-    const { body = {} } = options;
+    const { body = {}, ttl = 20 } = options;
 
     this._timestamp = (new Date());
+    this._ttl = ttl;
     this.body = body;
   }
 
@@ -33,7 +34,7 @@ class Message {
   }
 
   set header(value) {
-    const { hash, timestamp, signature } = value;
+    const { hash, timestamp, signature, ttl } = value;
 
     if (hash) {
       throw new Error(`Property 'hash' is not allowed to be set.`);
@@ -46,14 +47,22 @@ class Message {
     if (signature) {
       this._signature = signature;
     }
+
+    if (ttl !== undefined) {
+      this._ttl = ttl;
+    }
   }
   get header() {
     return {
       timestamp: this.timestamp,
       hash: this.hash,
       signature: this._signature,
+      ttl: this._ttl,
     };
   }
+  
+  get ttl() { return this._ttl; }
+  set ttl(value) { this._ttl = value; }
 
   get timestamp() { return this._timestamp; }
   set timestamp(value) {
@@ -82,7 +91,7 @@ class Message {
     const { header, body } = message;
 
     if (header) {
-      const { hash, timestamp, signature } = header;
+      const { hash, timestamp, signature, ttl } = header;
 
       if (hash) {
         ret._hash = hash;
@@ -94,6 +103,10 @@ class Message {
 
       if (signature) {
         ret._signature = signature;
+      }
+
+      if (ttl !== undefined) {
+        ret._ttl = ttl;
       }
     }
 

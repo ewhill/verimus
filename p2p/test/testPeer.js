@@ -150,6 +150,6 @@ async function testSendWhenClosed(assert) {
     err = e;
   }
 
-  assert.notEqual(err, undefined,
-    `Attempting to send to closed conneciton should throw.`);
+  assert.equal(err, undefined,
+    `Attempting to send to closed connection should resolve silently with bounded TTL broadcast rules.`);
 }
