@@ -51,6 +51,10 @@ class Message {
     if (ttl !== undefined) {
       this._ttl = ttl;
     }
+
+    if (value.authTag) {
+      this._authTag = value.authTag;
+    }
   }
   get header() {
     return {
@@ -58,9 +62,12 @@ class Message {
       hash: this.hash,
       signature: this._signature,
       ttl: this._ttl,
+      authTag: this._authTag,
     };
   }
   
+  get authTag() { return this._authTag; }
+  set authTag(value) { this._authTag = value; }
   get ttl() { return this._ttl; }
   set ttl(value) { this._ttl = value; }
 
@@ -107,6 +114,10 @@ class Message {
 
       if (ttl !== undefined) {
         ret._ttl = ttl;
+      }
+
+      if (header.authTag) {
+        ret._authTag = header.authTag;
       }
     }
 

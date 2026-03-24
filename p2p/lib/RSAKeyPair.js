@@ -259,7 +259,7 @@ class RSAKeyPair {
     const privateKeyOptions = passphrase ?
       {
         ...keyOptions,
-        cipher: 'aes-256-cbc',
+        cipher: 'aes-256-gcm',
         passphrase
       } : keyOptions;
 

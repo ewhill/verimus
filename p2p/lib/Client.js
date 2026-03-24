@@ -255,8 +255,13 @@ class Client {
 			this.logger_.log(`Encrypted message body: ` +
 				`\n\t-> ${encryptedMessageBody.toString('base64')}`);
 
-			let decipher = crypto.createDecipheriv('aes-256-cbc',
+			let decipher = crypto.createDecipheriv('aes-256-gcm',
 				this.remoteCipher_.key, this.remoteCipher_.iv);
+
+			if (message.header.authTag) {
+				decipher.setAuthTag(Buffer.from(message.header.authTag, 'base64'));
+			}
+
 			let decryptedMessageBody = (Buffer.concat([
 				decipher.update(encryptedMessageBody), decipher.final()]));
 
@@ -392,7 +397,7 @@ class Client {
 				clone.header = { signature };
 
 				const cipher = crypto.createCipheriv(
-					'aes-256-cbc', this.cipher_.key, this.cipher_.iv);
+					'aes-256-gcm', this.cipher_.key, this.cipher_.iv);
 
 				const messageBodyBuffer =
 					Buffer.from(JSON.stringify(message.body));
@@ -400,6 +405,7 @@ class Client {
 					Buffer.concat([cipher.update(messageBodyBuffer),
 					cipher.final()]);
 				clone.body = encryptedMessageBodyBuffer.toString('base64');
+				clone.header = { authTag: cipher.getAuthTag().toString('base64') };
 			} catch (e) {
 				throw new Error(`Could not encrypt message!`);
 			}
