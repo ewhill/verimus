@@ -1,24 +1,41 @@
-# Phase 6: Chain Scalability & Ledger Pruning
+# Phase 6: Chain Scalability & Ledger Pruning - Technical Specification
 
-## The Problem
-Sub-second continuous reward minting mechanisms dynamically drive high network turnover securely enforcing the `SYSTEM` token decay curve autonomously across validators and auditors globally. However, these sequences bloat the single global append-only ledger size exponentially. A new participant spinning up a peer node in 2028 will face syncing terabytes of historical metadata simply to parse active storage contracts blocking their immediate capacity availability.
+## 1. Problem Definition
+The decentralized environment dictates the distribution of autonomous fractional `SYSTEM` rewards consistently tracking sub-second transaction sequences globally across active participating validators natively. These structures inflate the singleton linear `Ledger` scale rapidly over time. New or offline node instances spinning up require massive historical retrieval payloads merely to calculate the foundational arithmetic bounds before participating dynamically block parsing interactions correctly.
 
-## Proposed Solution: Validated Micro-Ledgers & State Checkpoints
-Build a consensus hook generating a `CHECKPOINT_STATE` block universally across the entire network cluster bounding a specific 90-day epoch cycle. The `CHECKPOINT_STATE` aggregates all current peer balances mapping directly against their remaining outstanding `CONTRACT` liabilities, summarizing the entire prior history into a single, verifiable hash mapped payload mathematically. Once settled, nodes may universally prune all predecessor transactions matching the older epochs safely reclaiming their active physical disk bounds.
+## 2. Target Component Scope
+- **`ledger/Ledger.ts`:** Construct state checkpoints and safely trim previous linear hashes actively mapping the new origin index logically.
+- **`wallet_manager/WalletManager.ts`:** Pre-compute the unified array mapping the frozen base balances natively without recursive historical inference requirements securely.
+- **`peer_handlers/consensus_engine/ConsensusEngine.ts`:** Hook into Epoch block heights orchestrating universally signed checkpoint generation globally natively seamlessly.
 
-### Pros
-- Condenses syncing times effectively from massive terabyte pipelines to sub-minute checkpoint verifications dynamically.
-- Eliminates the infinite scaling array problem natively for a decentralized filesystem environment over time globally.
+## 3. Concrete Data Schemas & Interface Changes
 
-### Cons
-- Drastically complicates the underlying `WalletManager` calculation loops bounding historical audits resolving correctly over dynamically shifting checkpoint boundaries actively. 
+```typescript
+// types/index.d.ts
 
-## Alternative Solution: Centralized State Archiving Hubs
-Designate highly resourced "Archival Nodes" specializing purely in storing the multi-terabyte complete, bloated ledger chain history preserving it securely over decades.
+export interface CheckpointStatePayload {
+    epochIndex: number;
+    startHash: string;
+    endHash: string; // The concluding block of the previous multi-day mapping securely tracked 
+    compiledBalances: { [publicKey: string]: number }; // Aggregate static arithmetic bound globally verified mathematically
+    activeContracts: { [contractId: string]: StorageContractPayload };
+}
 
-### Pros
-- Allows standard nodes to rely securely on external history queries avoiding localized disk space issues entirely.
-- Removes complex `CHECKPOINT` consensus loops scaling across thousands of nodes concurrently globally.
+export interface CheckpointBlock {
+    type: 'CHECKPOINT';
+    payload: CheckpointStatePayload;
+    validatorSignatures: string[]; // Requires multi-sig consensus proving minimum N/2 validation ratios locally 
+}
+```
 
-### Cons
-- Reinstates centralization risks specifically over historical chain data integrity bounds resolving contrary securely against decentralized Web3 parameters actively.
+## 4. Execution Workflow
+1. **Epoch Detection:** Once the overarching active blockchain size hits the predetermined index boundary (e.g., Block 1,000,000), `ConsensusEngine` automatically shifts into a special sync phase seamlessly.
+2. **State Compilation:** Every globally participating node calculates the exact aggregated `compiledBalances` array and aggregates the `activeContracts` list physically tracking active storage shards. Unfunded, rejected, or completed `CONTRACT` bindings are explicitly dropped out of state.
+3. **Multi-Signature Verification:** The elected checkpoint proposal node physically gathers consensus votes sequentially securing mathematically valid `validatorSignatures`. 
+4. **Checkout Minting & Pruning:** The finalized `CHECKPOINT` block is merged. `Ledger.ts` recursively prunes all preceding structures (Blocks 0 through 999,999) from the active data store.
+
+## 5. Implementation Task Checklist
+- [ ] Add the `CHECKPOINT` enum securely inside `BLOCK_TYPES` mapped independently preventing overlapping parsing vectors inside index schemas.
+- [ ] Modify `WalletManager.ts` natively supporting initialization from a static hash-mapped object rather than absolute array recursion loops aggressively.
+- [ ] Introduce a `pruneHistory(checkpointHash: string)` function natively into `Ledger.ts` securely cleaning the DB storage pipeline efficiently cleanly.
+- [ ] Incorporate multi-sig threshold requirements enforcing array logic resolving `validatorSignatures` safely inside `ConsensusEngine.ts` preventing spoofed checkpoint truncation attacks logically statically globally.

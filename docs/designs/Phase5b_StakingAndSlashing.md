@@ -1,26 +1,40 @@
-# Phase 5b: Staking Collateral & Network Slashing Mechanics
+# Phase 5b: Staking Collateral & Network Slashing Mechanics - Technical Specification
 
-## The Problem
-Decentralized networks rely completely upon trustless alignment of financial incentives mapping optimal behaviors over time. Phase 5 audits identify non-compliant nodes but impose zero penalties beyond halting future reward dispersion. A malicious network operator could inject millions of Sybil instances to sweep initial payments and drop all the data an hour later with complete impunity. We must establish a strict deterrent enforcing data retention commitments.
+## 1. Problem Definition
+Without an explicit value destruction threshold locked directly against the operator mathematically, a host faces exactly zero financial downside failing cryptographic `PoSt` queries locally. Consequently, massive botnet layers logically spin up fake peer IDs, commit to hosting free blocks targeting immediate allocation payments dynamically, then systematically drop arrays completely destroying filesystem usability overall.
 
-## Proposed Solution: Verimus Tokens Escrow (Staking) and Slashing
-Every node aspiring to participate as a Storage or Validator `roles` array constraint must lock an upfront base collateral sum (e.g. 50,000 $SYSTEM tokens) within a `STAKING_CONTRACT` block.
-As they secure more file chunks, their locked stake threshold scales proportionally to total bytes hosted.
+## 2. Target Component Scope
+- **`wallet_manager/WalletManager.ts`:** The state compiler interpreting native `SLASHING_TRANSACTION` mapping blocks dynamically deducting baseline $SYSTEM constraints.
+- **`peer_handlers/consensus_engine/ConsensusEngine.ts`:** Integration validating failure logic actively emitting penalty signatures directly.
+- **`ledger/Ledger.ts`:** Appending distinct `STAKING_CONTRACT` bindings securing the initial base lockups sequentially internally.
+- **`types/index.d.ts`:** Establishing strictly structured `SlashingPayload` block elements comprehensively validating consensus overrides intelligently.
 
-When the Phase 5 Sortition Audit detects a node failing Proof of Spacetime criteria across consecutive windows, a `SLASHING_TRANSACTION` block is consensus-proposed and explicitly drains $SYSTEM balances out of their locked escrow, burning them, terminating their standing in the network.
+## 3. Concrete Data Schemas & Interface Changes
 
-### Pros
-- Secures the network from Sybil swarms inherently.
-- Forwards extreme accountability against sloppy or unreliable infrastructure providers globally.
+```typescript
+// types/index.d.ts
 
-### Cons
-- Creates a steep onboarding hurdle blocking hobbyist developers from running experimental nodes without acquiring heavy token balances.
+export interface StakingContractPayload {
+    operatorPublicKey: string;
+    collateralAmount: number;     // Tokens fundamentally removed from liquid usage internally
+    minEpochTimelineDays: number; // Prevent instantaneous dump metrics selectively overriding bounds 
+}
 
-## Alternative Solution: Withheld Payment Vesting Constraints
-Rather than forcing heavy upfront collateral deposits, heavily delay all outbound rewards tracking 90 days. If the node fails a check on Day 89, cancel the vesting queue entirely representing lost electrical expenditure.
+export interface SlashingPayload {
+    penalizedPublicKey: string; // Target target
+    evidenceSignature: string;  // The cryptographic proof of an explicit failed PoStChallenge audit seamlessly mapped logically
+    burntAmount: number;
+}
+```
 
-### Pros
-- Permits frictionless node onboarding without acquiring base token collateral.
+## 4. Execution Workflow
+1. **Node Onboarding:** A new node connects actively submitting a `STAKING_CONTRACT` block mapping e.g., 50,000 liquid `SYSTEM` units fundamentally shifting them to the escrow balance tracked securely in `WalletManager`.
+2. **Audit Verification Failure:** During a Phase 5 validation sweep mapped securely against `PoStChallenge`, the tested host fails sequentially 3 distinct bounds seamlessly executing mathematical timeouts.
+3. **Slashing Dissemination:** The auditor constructs a `SLASHING_TRANSACTION` payload, dynamically embedding the timed-out query array `evidenceSignature`.
+4. **Consensus Forfeiture:** The global network securely validates the failure mathematically asserting a deduction securely erasing the 50,000 $SYSTEM tokens physically mapping zero value retrieval entirely preventing malicious manipulation loops dynamically.
 
-### Cons
-- Sophisticated operators may deduce exact vesting intervals and carefully engineer complex strategies dynamically exploiting the delay constraints. Upfront stake enforces immediate, symmetric risk profiles across all scale levels.
+## 5. Implementation Task Checklist
+- [ ] Augment `WalletManager.calculateBalance()` tracking base collateral deposits separately preventing `allocateFunds()` overdraw scenarios internally dynamically.
+- [ ] Restructure `BLOCK_TYPES` mapped integrating explicit parsing for `SLASH_TX` definitions natively decoupled globally.
+- [ ] Connect `ConsensusEngine.ts` audit failure blocks logically triggering the formulation sequences asserting complete network broadcasts accurately securing state penalties cleanly.
+- [ ] Generate dynamic test boundaries asserting 100% loss ratios mapped across Integration journeys explicitly proving logic paths securely physically reliably logically.

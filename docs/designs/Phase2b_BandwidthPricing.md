@@ -1,30 +1,45 @@
-# Phase 2b: Bandwidth Egress Pricing
+# Phase 2b: Bandwidth Egress Pricing - Technical Specification
 
-## The Problem
-In decentralized storage, peering operators must offset hardware costs. Currently, Phase 2 proposes nodes publish their `getCostPerGB()` rates. While storing bytes at rest has a predictable, static electricity and disk-wear cost, *sending* bytes (egress) over the public Internet introduces highly volatile ISP bandwidth fees. If heavy retrieval workloads trigger uncompensated burst pipelines, storage node operators will autonomously disconnect from the network to preserve capital.
+## 1. Problem Definition
+Currently, storing data delegates compensation metrics exclusively to static resting properties (`getCostPerGB()`). In reality, querying/downloading active files incurs severe ISP networking costs. Without distinct outbound bandwidth pricing structures, storage nodes face negative revenue pipelines and will disconnect to preserve operating capital.
 
-## Proposed Solution: Decoupled Rest/Retrieval Markets
-Introduce a dual pricing schema where nodes establish two explicit parameters:
-1. `CostPerGB_Rest`: A baseline staking fee holding the data at rest over time.
-2. `CostPerGB_Egress`: A dedicated toll charged specifically for streaming the data back to the user or auditors.
+## 2. Target Component Scope
+- **`types/index.d.ts`:** Expansion of economic schemas framing contracts and peer configurations.
+- **`storage_providers/*`:** Integration of explicit baseline bandwidth tolling functions.
+- **`wallet_manager/WalletManager.ts`:** Micropayment escrow decrementing resolving outbound HTTP data streams.
+- **`route_handlers/download_file_handler/DownloadFileHandler.ts`:** Injection of logic trapping unpaid streaming requests.
 
-During Phase 3 negotiation, requesting users allocate total contract funds predicting typical retrieval ratios, bounding an overarching SLA. Nodes refuse outbound pipelines extending beyond their funded egress bounds without additional `TRANSACTION` micropayments.
+## 3. Concrete Data Schemas & Interface Changes
 
-### Pros
-- Accurately aligns the marketplace with real-world infrastructure economic models (e.g., AWS S3 outbound rates).
-- Encourages operators to deploy nodes on high-throughput ISPs rather than isolated hard disks.
+```typescript
+// types/index.d.ts
+export interface StoragePricingConfig {
+    restCostPerGBHour: number;  // Continuous holding cost 
+    egressCostPerGB: number;    // Subtracted sequentially upon data retrieval
+}
 
-### Cons
-- Increases the complexity of marketplace logic and escrow allocation tracking.
-- Clients may experience "surprise" denial of service if they underestimate retrieval payloads and fail to post adequate bandwidth deposits.
+export interface StorageRequestMessage {
+    targetBytes: number;
+    expectedRetrievalMultiplier: number; // Client predicts how heavily they will stream this over time
+    // ...
+}
 
-## Alternative Solution: Centralized Bandwidth Relays
-Delegate egress serving to a specialized set of high-availability "Gateway" nodes that subsidize bandwidth globally, while the majority of nodes strictly hold resting data.
+export interface StorageContractPayload {
+    allocatedRestToll: number;
+    allocatedEgressEscrow: number; // Funds specifically locked to pay for downloads
+}
+```
 
-### Pros
-- Simplifies routing and guarantees fast downloads for the end user.
-- Keeps typical node configurations lean without worrying about volatile pricing schemas.
+## 4. Execution Workflow
+1. **Request Orchestration:** The client originates a `StorageRequestMessage` and explicitly signals their `expectedRetrievalMultiplier`. For example, an active website asset might predict 10x retrieval monthly, whereas cold-storage predicts 0x.
+2. **Escrow Allocation:** `WalletManager` validates the client possesses the funds to map the host's `StoragePricingConfig.egressCostPerGB`.
+3. **Escrow Lock:** The resulting `CONTRACT` natively reserves the predicted `allocatedEgressEscrow`.
+4. **Data Retrieval:** When a network endpoint hits `DownloadFileHandler.ts`, the `WalletManager` performs an atomic decrement tracking the bytes transmitted. 
+5. **Funding Exhaustion:** If the escrow hits `0`, the node natively returns an HTTP `402 Payment Required` blocking the egress pipeline until a top-up `TRANSACTION` is submitted.
 
-### Cons
-- Introduces centralization and single points of failure (Gateway operators).
-- Distorts the `SYSTEM` tokenomic distribution by funneling excessive tokens narrowly to these relays.
+## 5. Implementation Task Checklist
+- [ ] Implement `StoragePricingConfig` inside `types/index.d.ts`.
+- [ ] Migrate the `StorageProvider` base class to expose and require initialization parameters for egress bandwidth.
+- [ ] Overhaul the `WalletManager.ts` ledger math to partition balances into `liquid` and `escrowed` segments.
+- [ ] Introduce a `deductEgressFunds(clientId, byteCount, providerId): Promise<boolean>` function into `WalletManager.ts`.
+- [ ] Map the `DownloadFileHandler.ts` pipeline bounds wrapping the read stream directly natively triggering the deduction hook cleanly.
