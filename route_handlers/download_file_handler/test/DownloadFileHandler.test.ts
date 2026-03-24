@@ -38,7 +38,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         let statusSet = 0;
         const res: any = {
             status: (s: number) => { statusSet = s; return res; },
-            send: () => res,
+            send: () => res, on: () => res,
             headersSent: false
         };
 
@@ -268,7 +268,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         let statusSet = 0;
         const res: any = {
             status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { return res; },
+            send: (b: any) => { return res; }, on: () => res,
             headersSent: false
         };
 
@@ -287,7 +287,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         let statusSet = 0;
         const res: any = {
             status: (s: number) => { statusSet = s; return res; },
-            send: () => { return res; }
+            send: () => { return res; }, on: () => res,
         };
 
         await handler.handle(req, res);
@@ -307,7 +307,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         let statusSet = 0; let message = '';
         const res: any = {
             status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { message = b; return res; }
+            send: (b: any) => { message = b; return res; }, on: () => res,
         };
 
         await handler.handle(req, res);
@@ -333,7 +333,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         let statusSet = 0; let message = '';
         const res: any = {
             status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { message = b; return res; }
+            send: (b: any) => { message = b; return res; }, on: () => res,
         };
 
         await handler.handle(req, res);
