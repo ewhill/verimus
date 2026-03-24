@@ -9,11 +9,15 @@ import logger from '../../logger/Logger';
 import type { Block, BlockPrivate, StorageContractPayload, PeerConnection } from '../../types';
 
 
+import { NodeRole } from '../../types/NodeRole';
 import BaseHandler from '../base_handler/BaseHandler';
 import { BLOCK_TYPES } from '../../constants';
 
 export default class UploadHandler extends BaseHandler {
     async handle(req: Request, res: Response) {
+    if (!this.node.roles.includes(NodeRole.ORIGINATOR)) {
+        return res.status(403).send('Forbidden: Node lacks ORIGINATOR parameter.');
+    }
     const files = req.files as Express.Multer.File[];
     if (!files || files.length === 0) {
         return res.status(400).send('No files uploaded.');

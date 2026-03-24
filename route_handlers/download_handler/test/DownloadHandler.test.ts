@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import DownloadHandler from '../DownloadHandler';
+import { NodeRole } from '../../../types/NodeRole';
 import { generateRSAKeyPair, signData, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
 import Bundler from '../../../bundler/Bundler';
 import { PassThrough } from 'stream';
@@ -8,7 +9,7 @@ import { PassThrough } from 'stream';
 describe('Backend: downloadHandler Unit Tests comprehensively mathematically natively successfully', () => {
 
     it('Returns HTTP 404 when requesting missing block hashes tracking ledger bounds', async () => {
-        const handler = new DownloadHandler({ 
+        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
             privateKey: 'PRIVKEY',
             ledger: { collection: { find: () => ({ toArray: async () => [] }) } }
         } as any);
@@ -30,7 +31,7 @@ describe('Backend: downloadHandler Unit Tests comprehensively mathematically nat
     it('Rejects HTTP 403 on invalid remote signature validations restricting downloads', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
         
-        const handler = new DownloadHandler({ 
+        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: {}, publicKey: publicKey, signature: 'bad_sig' }] }) } }
         } as any);
@@ -66,7 +67,7 @@ describe('Backend: downloadHandler Unit Tests comprehensively mathematically nat
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadHandler({ 
+        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
@@ -114,7 +115,7 @@ describe('Backend: downloadHandler Unit Tests comprehensively mathematically nat
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
         let streamDestroyed = false;
-        const handler = new DownloadHandler({ 
+        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
@@ -149,7 +150,7 @@ describe('Backend: downloadHandler Unit Tests comprehensively mathematically nat
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadHandler({ 
+        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
@@ -182,7 +183,7 @@ describe('Backend: downloadHandler Unit Tests comprehensively mathematically nat
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadHandler({ 
+        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
@@ -214,7 +215,7 @@ describe('Backend: downloadHandler Unit Tests comprehensively mathematically nat
     });
 
     it('Returns HTTP 500 resolving general try-catch payload parsing logic failures', async () => {
-        const handler = new DownloadHandler({ 
+        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
             privateKey: 'PRIV',
             ledger: null // Will throw
         } as any);
@@ -237,7 +238,7 @@ describe('Backend: downloadHandler Unit Tests comprehensively mathematically nat
         const encPriv = encryptPrivatePayload(publicKey, { bad: 'data'} as any); // Wrong structure
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadHandler({ 
+        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
             privateKey: generateRSAKeyPair().privateKey, // Wrong priv key to make it throw
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } }
         } as any);
@@ -265,7 +266,7 @@ describe('Backend: downloadHandler Unit Tests comprehensively mathematically nat
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadHandler({ 
+        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {

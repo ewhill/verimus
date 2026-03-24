@@ -16,7 +16,7 @@ The backend architecture enforces a rigorous, scalable encapsulation model:
 - **Tests command**: Execute tests uniformly by running `npm test`.
 
 ## 3. Strict Typing Practices
-Do **not** use `as any` casting unless actively monkey-patching poorly defined external dependency types (e.g., overriding `ringnet` connections). 
+Do **not** use `as any` casting unless actively monkey-patching poorly defined external dependency types (e.g., overriding `p2p` connections). 
 
 - Define interface mappings within `types/index.d.ts`. 
 - Avoid loose `JSON.parse` returns. Strictly type properties appropriately.

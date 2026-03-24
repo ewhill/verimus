@@ -6,10 +6,15 @@ import logger from '../../logger/Logger';
 import { Parse, Entry } from 'unzipper';
 import type { StorageContractPayload } from '../../types';
 
+import { NodeRole } from '../../types/NodeRole';
 import BaseHandler from '../base_handler/BaseHandler';
 
 export default class DownloadFileHandler extends BaseHandler {
     async handle(req: Request, res: Response) {
+        if (!this.node.roles.includes(NodeRole.STORAGE)) {
+            return res.status(403).send('Forbidden: Node lacks STORAGE parameter.');
+        }
+
         let { hash, filename } = req.params;
 
         if (Array.isArray(filename)) {

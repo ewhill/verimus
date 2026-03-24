@@ -1,12 +1,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import UploadHandler from '../UploadHandler';
+import { NodeRole } from '../../../types/NodeRole';
 import { generateRSAKeyPair } from '../../../crypto_utils/CryptoUtils';
 
 describe('Backend: uploadHandler Coverage Unit Tests', () => {
 
     it('Rejects requests attempting to stream zero bundled files', async () => {
-        const handler = new UploadHandler({} as any);
+        const handler = new UploadHandler({ roles: [NodeRole.ORIGINATOR] } as any);
 
         const req: any = { files: [] };
         let statusSet = 0;
@@ -28,6 +29,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
 
         const mockNode: any = {
             port: 3000,
+            roles: [NodeRole.ORIGINATOR],
             publicKey: publicKey,
             privateKey: privateKey,
             storageProvider: {
@@ -72,6 +74,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
 
     it('Handles and catches bubbled initialization API exception errors gracefully', async () => {
         const handler = new UploadHandler({
+            roles: [NodeRole.ORIGINATOR],
             storageProvider: {
                 createBlockStream: () => { throw new Error('Simulated Creation Error') }
             }
@@ -93,7 +96,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
     it('Maps custom string destination locations validating config fallback', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
         const handler = new UploadHandler({
-            publicKey, privateKey, port: 1234,
+            publicKey, privateKey, port: 1234, roles: [NodeRole.ORIGINATOR],
             storageProvider: { createBlockStream: () => ({ physicalBlockId: 'id', writeStream: { on: () => {} } }), getLocation: () => 'loc' },
             bundler: { streamBlockBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv' }) },
             consensusEngine: { handlePendingBlock: async () => {} },
@@ -115,7 +118,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
 
         const { publicKey, privateKey } = generateRSAKeyPair();
         const mockNode = {
-             publicKey, privateKey, port: 1234,
+             publicKey, privateKey, port: 1234, roles: [NodeRole.ORIGINATOR],
              storageProvider: { createBlockStream: () => ({ physicalBlockId: 'id', writeStream: { on: () => {} } }), getLocation: () => 'loc' },
              bundler: { streamBlockBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv' }) },
              consensusEngine: { handlePendingBlock: async () => { throw new Error('Converge Error for test'); } }, // Test handlePending catch log

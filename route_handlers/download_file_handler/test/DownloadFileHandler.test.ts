@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import DownloadFileHandler from '../DownloadFileHandler';
+import { NodeRole } from '../../../types/NodeRole';
 import { generateRSAKeyPair, signData, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
 import Bundler from '../../../bundler/Bundler';
 import { PassThrough } from 'stream';
@@ -8,7 +9,7 @@ import { PassThrough } from 'stream';
 describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically natively successfully', () => {
     
     it('Returns HTTP 404 mapping requesting missing block hashes independently', async () => {
-        const handler = new DownloadFileHandler({ 
+        const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: 'PRIVKEY',
             ledger: { collection: { find: () => ({ toArray: async () => [] }) } }
         } as any);
@@ -28,7 +29,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
     });
 
     it('Flattens array parameters extracting requested filename safely', async () => {
-        const handler = new DownloadFileHandler({ 
+        const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: 'PRIVKEY',
             ledger: { collection: { find: () => ({ toArray: async () => [] }) } }
         } as any);
@@ -48,7 +49,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
     it('Rejects HTTP 403 upon discovering invalid mathematical block signatures', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
         
-        const handler = new DownloadFileHandler({ 
+        const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: {}, publicKey: publicKey, signature: 'bad_sig' }] }) } }
         } as any);
@@ -84,7 +85,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadFileHandler({ 
+        const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
@@ -141,7 +142,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
         let streamDestroyed = false;
-        const handler = new DownloadFileHandler({ 
+        const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
@@ -184,7 +185,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadFileHandler({ 
+        const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
@@ -226,7 +227,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadFileHandler({ 
+        const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
@@ -258,7 +259,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
     });
 
     it('Captures parsing exceptions executing 500 fallback blocks safely', async () => {
-        const handler = new DownloadFileHandler({ 
+        const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: 'PRIV',
             ledger: null // Will throw during find
         } as any);
@@ -277,7 +278,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
 
     it('Throws HTTP 401 stopping stream pipelines detecting mismatched AES decryption mappings', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
-        const handler = new DownloadFileHandler({ 
+        const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: 'BAD_KEY',
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: 'CORRUPT', publicKey: publicKey, signature: 'sig' }] }) } }
         } as any);
@@ -297,7 +298,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         const encPriv = encryptPrivatePayload(publicKey, { bad: 'data'} as any); // Correctly encrypted but wrong struct
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadFileHandler({ 
+        const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: generateRSAKeyPair().privateKey, // Wrong priv key to make it throw
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } }
         } as any);
@@ -320,7 +321,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         const encPriv = encryptPrivatePayload(publicKey, { key: crypto.randomBytes(32).toString('hex'), iv: crypto.randomBytes(16).toString('hex'), files: [], physicalId: 'pid', location: { type: 'local' } } as any);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadFileHandler({ 
+        const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
@@ -346,7 +347,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         const encPriv = encryptPrivatePayload(publicKey, { key: crypto.randomBytes(32).toString('hex'), iv: crypto.randomBytes(16).toString('hex'), files: [], physicalId: 'pid', location: { type: 'local' } } as any);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadFileHandler({ 
+        const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
@@ -392,7 +393,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadFileHandler({ 
+        const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
