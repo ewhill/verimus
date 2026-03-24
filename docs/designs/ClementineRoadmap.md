@@ -39,12 +39,20 @@ Each phase below outlines a core architectural shift required by the design prop
 - **Behavior Sandboxing:** Sandbox logic so Validator nodes do not allocate massive physical storage bounds, but interact merely to participate in auditing sequences.
 - **Target Sub-Design:** `Phase2_PeerOperationalModes.md`
 
+## Phase 2b: Bandwidth Egress Pricing
+**Goal:** Introduce a dual pricing schema covering resting blocks and outbound retrieval traffic decoupling ISP network demands natively.
+- **Target Sub-Design:** `Phase2b_BandwidthPricing.md`
+
 ## Phase 3: The P2P Storage Marketplace
 **Goal:** Implement the preliminary contract negotiation stage where nodes confidently vie for localized storage rights governed by their wallet funds.
 - **Request Pipelining:** Create and dispatch the explicit `StorageRequestMessage` structure, validating `ChunkSize` limits and asserting `N`-node footprint bounds.
 - **Bid Collection & Triage:** Construct the `StorageBidMessage` logic and the receiver's evaluation loop (weighing required node counts against overall network latency economics).
 - **Contract Freezing:** Implement a two-phase mempool commit state, freezing funds from the requesting node actively within its `WalletManager` until consensus is firmly reached.
 - **Target Sub-Design:** `Phase3_P2PStorageMarketplace.md`
+
+## Phase 3b: Erasure Coding & Redundancy
+**Goal:** Deploy Reed-Solomon algorithms encoding payloads across partial $K/N$ fragment shards optimizing capacity mapping mitigating single-point hardware node drops natively.
+- **Target Sub-Design:** `Phase3b_ErasureCoding.md`
 
 ## Phase 4: Validated Data Seeding (Stream Hashes)
 **Goal:** Orchestrate the encrypted shard payload across TCP pathways while validating size constraints.
@@ -53,11 +61,23 @@ Each phase below outlines a core architectural shift required by the design prop
 - **Finalized Contract Block:** Mint the finalized `CONTRACT` block mapping these chunk-hash tables intrinsically onto the public ledger for auditing.
 - **Target Sub-Design:** `Phase4_ValidatedDataSeeding.md`
 
+## Phase 4b: Proof of Spacetime
+**Goal:** Deploy cryptographically sealed verifiable proofs executing mathematical boundaries strictly preventing hash dropping attacks across audit checks globally.
+- **Target Sub-Design:** `Phase4b_ProofOfSpacetime.md`
+
 ## Phase 5: Ongoing Network Auditing & Sortition
 **Goal:** Secure the overall ecosystem by mathematically forcing unannounced structural validation challenges to verify active nodes.
 - **Deterministic Sortition Algorithm:** Implement the `hash(StorageContractBlockId + IntervalTimestamp + LatestChainHash)` algorithm electing third-party auditors autonomously, eliminating RNG lotteries.
 - **The Audit Challenge Payload:** Build the P2P pathways for validators to request precomputed chunks and measure compliance.
 - **Financial Payout Execution:** Formally dispatch automated `TRANSACTION` tokens out of escrow, rewarding both the validated host node and the auditing node.
 - **Target Sub-Design:** `Phase5_NetworkAuditingSortition.md`
+
+## Phase 5b: Staking Collateral & Network Slashing
+**Goal:** Force network onboarding requiring $SYSTEM staking natively enforcing strict deterrent penalties globally for unreliability natively.
+- **Target Sub-Design:** `Phase5b_StakingAndSlashing.md`
+
+## Phase 6: Chain Scalability & Ledger Pruning
+**Goal:** Compress continuous historical ledger environments targeting overarching checkpoint epochs securely reclaiming massive node storage parameters.
+- **Target Sub-Design:** `Phase6_LedgerPruning.md`
 
 All sub-designs structurally follow the directives outlined in the local `AGENTS.md`.
