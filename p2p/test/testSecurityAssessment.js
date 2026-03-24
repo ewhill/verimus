@@ -147,3 +147,54 @@ test("Security: Peer DoS Max Socket Protection", async (assert) => {
     await peer.close();
     assert.end();
 });
+
+test("Security: AES-GCM Dynamic IV Rotation & Message Bounds", async (assert) => {
+    const mockConnection = new EventEmitter();
+    const sentData = [];
+    mockConnection.send = (data, cb) => {
+        sentData.push(data);
+        if (cb) cb();
+    };
+    mockConnection.addEventListener = mockConnection.on.bind(mockConnection);
+	mockConnection.removeEventListener = mockConnection.removeListener.bind(mockConnection);
+	
+    const client = new Client({
+        connection: mockConnection,
+        request: { connection: { remoteAddress: '127.0.0.1' }, headers: {} },
+        credentials: { rsaKeyPair: RSAKeyPair.generate() },
+        logger: { error: ()=>{}, warn: ()=>{}, info: ()=>{}, log: ()=>{} },
+		peerAddress: '127.0.0.1:0'
+    });
+	
+	client.isTrusted_ = true;
+	client.remoteCredentials_ = { rsaKeyPair: RSAKeyPair.generate() };
+
+	// 1. Test AES-GCM dynamic IV rotation
+	await client.send(new HelloMessage({ publicAddress: '0', publicKey: '1', nonce: 0 }));
+	await client.send(new HelloMessage({ publicAddress: '2', publicKey: '3', nonce: 1 }));
+
+    assert.equal(sentData.length, 2, 'Client emitted 2 encrypted payloads natively.');
+    
+    // Parse wrapped messages correctly (they arrive as Prefix{JSON})
+    const getIv = (payload) => {
+        const bracketIndex = payload.indexOf("{");
+        const jsonStr = payload.slice(bracketIndex);
+        return JSON.parse(jsonStr).header.iv;
+    };
+
+    const iv1 = getIv(sentData[0]);
+    const iv2 = getIv(sentData[1]);
+
+    assert.ok(iv1 && iv2, 'Messages organically bundled dynamic AES initialization vectors.');
+    assert.notEqual(iv1, iv2, 'AES-GCM uniquely rotated Initialization Vectors (IV) mitigating Galois Counter vulnerabilities natively.');
+
+    // 2. Test pre-parse JSON allocation bounding
+    let terminated = false;
+    mockConnection.terminate = () => { terminated = true; };
+
+    client.onMessage_(Buffer.alloc(6 * 1024 * 1024).toString('utf8'));
+
+    assert.ok(terminated, 'Client preemptively terminated 5MB+ WebSocket payload immediately prior to native JSON executions.');
+
+    assert.end();
+});

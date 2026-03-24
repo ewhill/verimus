@@ -19,7 +19,6 @@ const MAX_MESSAGE_SEND_TIMEOUT_MS = 30000; // 30s
 
 class Client {
 	cipher_ = {
-		iv: Buffer.from(crypto.randomBytes(16)),
 		key: Buffer.from(crypto.randomBytes(32))
 	};
 	created_ = utils.utcTimestamp();
@@ -238,6 +237,11 @@ class Client {
 		}
 
 		if (this.isTrusted) {
+			if (message.length > 5 * 1024 * 1024) {
+				this.logger_.error(`Message size exceeds 5MB limit. Terminating payload to prevent potential V8 parse exhaustion.`);
+				this.connection_.terminate();
+				return;
+			}
 			try {
 				message = JSON.parse(message);
 			} catch (e) {
@@ -255,8 +259,13 @@ class Client {
 			this.logger_.log(`Encrypted message body: ` +
 				`\n\t-> ${encryptedMessageBody.toString('base64')}`);
 
+			if (!message.header || !message.header.iv) {
+				this.logger_.error(`Message transmitted without required AES initialization vector in header. Rejecting payload.`);
+				return;
+			}
+			const messageIv = Buffer.from(message.header.iv, 'base64');
 			let decipher = crypto.createDecipheriv('aes-256-gcm',
-				this.remoteCipher_.key, this.remoteCipher_.iv);
+				this.remoteCipher_.key, messageIv);
 
 			if (message.header.authTag) {
 				decipher.setAuthTag(Buffer.from(message.header.authTag, 'base64'));
@@ -394,10 +403,9 @@ class Client {
 				const signature =
 					(this.credentials_.rsaKeyPair.sign(
 						JSON.stringify(message.body))).toString('base64');
-				clone.header = { signature };
-
+				const iv = crypto.randomBytes(12);
 				const cipher = crypto.createCipheriv(
-					'aes-256-gcm', this.cipher_.key, this.cipher_.iv);
+					'aes-256-gcm', this.cipher_.key, iv);
 
 				const messageBodyBuffer =
 					Buffer.from(JSON.stringify(message.body));
@@ -405,7 +413,11 @@ class Client {
 					Buffer.concat([cipher.update(messageBodyBuffer),
 					cipher.final()]);
 				clone.body = encryptedMessageBodyBuffer.toString('base64');
-				clone.header = { authTag: cipher.getAuthTag().toString('base64') };
+				clone.header = { 
+					authTag: cipher.getAuthTag().toString('base64'), 
+					signature, 
+					iv: iv.toString('base64') 
+				};
 			} catch (e) {
 				throw new Error(`Could not encrypt message!`);
 			}
@@ -566,14 +578,10 @@ class Client {
 		}
 
 		if (!this.hasSentSetupCipher_) {
-			const encytedIv =
-				this.remoteCredentials_.rsaKeyPair.encrypt(this.cipher_.iv)
-					.toString('base64');
 			const encryptedKey =
 				this.remoteCredentials_.rsaKeyPair.encrypt(this.cipher_.key)
 					.toString('base64');
 			let setupCipherMessage = new SetupCipherMessage({
-				iv: encytedIv,
 				key: encryptedKey,
 			});
 			setupCipherMessage.header = {
@@ -615,11 +623,9 @@ class Client {
 
 	setupCipherHandler(message, connection) {
 		try {
-			const iv = this.credentials_.rsaKeyPair.decrypt(
-				Buffer.from(message.iv, 'base64'));
 			const key = this.credentials_.rsaKeyPair.decrypt(
 				Buffer.from(message.key, 'base64'));
-			connection.remoteCipher_ = { iv, key };
+			connection.remoteCipher_ = { key };
 		} catch (e) {
 			return this.setupCipherPromiseReject_(new Error(
 				`Could not decrypt encryption properties from SetupCipher ` +
