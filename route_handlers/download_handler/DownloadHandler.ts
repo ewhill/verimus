@@ -63,9 +63,7 @@ export default class DownloadHandler extends BaseHandler {
             res.setHeader('Content-disposition', `attachment; filename=block_${hash}.zip`);
             res.setHeader('Content-type', 'application/zip');
 
-            const egressCostPerGB = (typeof this.node.storageProvider?.getEgressCostPerGB === 'function')
-                ? this.node.storageProvider.getEgressCostPerGB()
-                : 0;
+            const egressCostPerGB = this.node.storageProvider!.getEgressCostPerGB() ?? 0;
             let accumulatedCost = 0;
             const maxEscrow = privatePayload.remainingEgressEscrow ?? privatePayload.allocatedEgressEscrow ?? 0;
 

@@ -70,7 +70,7 @@ describe('Backend: downloadHandler Unit Tests comprehensively mathematically nat
         const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: {
+            storageProvider: { getEgressCostPerGB: () => 0.0,
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
                     rs.end(fullZip);
@@ -118,7 +118,7 @@ describe('Backend: downloadHandler Unit Tests comprehensively mathematically nat
         const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: {
+            storageProvider: { getEgressCostPerGB: () => 0.0,
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
                     const origDestroy = rs.destroy.bind(rs);
@@ -153,7 +153,7 @@ describe('Backend: downloadHandler Unit Tests comprehensively mathematically nat
         const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: {
+            storageProvider: { getEgressCostPerGB: () => 0.0,
                 getBlockReadStream: async () => ({ status: 'not_found' })
             }
         } as any);
@@ -186,7 +186,7 @@ describe('Backend: downloadHandler Unit Tests comprehensively mathematically nat
         const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: {
+            storageProvider: { getEgressCostPerGB: () => 0.0,
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
                     rs.end(Buffer.from('corrupt_aes_stream'));
@@ -269,7 +269,7 @@ describe('Backend: downloadHandler Unit Tests comprehensively mathematically nat
         const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: {
+            storageProvider: { getEgressCostPerGB: () => 0.0,
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
                     setTimeout(() => {

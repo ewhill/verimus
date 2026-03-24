@@ -66,9 +66,7 @@ export default class DownloadFileHandler extends BaseHandler {
 
             const decipher = createAESDecryptStream(privatePayload.key, privatePayload.iv, privatePayload.authTag);
 
-            const egressCostPerGB = (typeof this.node.storageProvider?.getEgressCostPerGB === 'function')
-                ? this.node.storageProvider.getEgressCostPerGB()
-                : 0;
+            const egressCostPerGB = this.node.storageProvider!.getEgressCostPerGB() ?? 0;
             let accumulatedCost = 0;
             const maxEscrow = privatePayload.remainingEgressEscrow ?? privatePayload.allocatedEgressEscrow ?? 0;
 

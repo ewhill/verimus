@@ -88,7 +88,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: {
+            storageProvider: { getEgressCostPerGB: () => 0.0,
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
                     rs.end(fullZip);
@@ -145,7 +145,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: {
+            storageProvider: { getEgressCostPerGB: () => 0.0,
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
                     const origDestroy = rs.destroy.bind(rs);
@@ -188,7 +188,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: {
+            storageProvider: { getEgressCostPerGB: () => 0.0,
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
                     rs.end(fullZip);
@@ -230,7 +230,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: {
+            storageProvider: { getEgressCostPerGB: () => 0.0,
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
                     rs.end(Buffer.from('corrupt_zip_data!')); // Corrupt zip
@@ -324,7 +324,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: {
+            storageProvider: { getEgressCostPerGB: () => 0.0,
                 getBlockReadStream: async (id: string) => ({ status: 'not_found' }) // simulate not found
             }
         } as any);
@@ -350,7 +350,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: {
+            storageProvider: { getEgressCostPerGB: () => 0.0,
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
                     setTimeout(() => {
@@ -396,7 +396,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: {
+            storageProvider: { getEgressCostPerGB: () => 0.0,
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
                     rs.end(fullZip);
