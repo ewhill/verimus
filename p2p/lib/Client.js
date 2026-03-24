@@ -162,7 +162,7 @@ class Client {
 					this.managedTimeouts_.setTimeout(() => {
 						return reject(new Error(
 							`Timeout occurred waiting for upgrade!`));
-					}, 30000);
+					}, 6000);
 
 				this.heloPromise
 					.then(() => this.setupCipherPromise)
@@ -448,9 +448,18 @@ class Client {
 		}
 
 		if (!this.hasSentHelo_) {
+			const publicKeyStr = this.credentials_.rsaKeyPair.public.toString('utf8');
+			let nonce = 0;
+			let hash = '';
+			do {
+				nonce++;
+				hash = crypto.createHash('sha256').update(publicKeyStr + nonce).digest('hex');
+			} while (!hash.startsWith('0000'));
+
 			let helloMessage = new HelloMessage({
 				publicAddress: this.address,
-				publicKey: this.credentials_.rsaKeyPair.public.toString('utf8')
+				publicKey: publicKeyStr,
+				nonce
 			});
 			helloMessage.header = {
 				signature: (this.credentials_.rsaKeyPair.sign(
@@ -474,7 +483,7 @@ class Client {
 				this.receiveHeloPromiseResolve_ = resolve;
 				this.receiveHeloPromiseReject_ = reject;
 				this.receiveHeloTimeout_ =
-					this.managedTimeouts_.setTimeout(reject, 15000);
+					this.managedTimeouts_.setTimeout(reject, 4000);
 				this.bind_(HelloMessage).to((message, connection) => {
 					this.heloHandler(message, connection);
 				});
@@ -494,6 +503,13 @@ class Client {
 	}
 
 	heloHandler(message, connection) {
+		const nonceHash = crypto.createHash('sha256')
+			.update(message.publicKey + message.nonce).digest('hex');
+		
+		if (!nonceHash.startsWith('0000')) {
+			return this.receiveHeloPromiseReject_(new Error(`Invalid Hashcash nonce bounds evaluated!`));
+		}
+
 		const peerAddress = message.publicAddress.toString('utf8');
 		const peerPublicKeyBuffer = Buffer.from(message.publicKey, 'utf8');
 		const peerRsaKeyPair =
@@ -586,7 +602,7 @@ class Client {
 				this.setupCipherPromiseResolve_ = resolve;
 				this.setupCipherPromiseReject_ = reject;
 				this.receiveSetupCipherTimeout_ =
-					this.managedTimeouts_.setTimeout(reject, 15000);
+					this.managedTimeouts_.setTimeout(reject, 4000);
 			}).then(() => {
 				this.managedTimeouts_.clearTimeout(
 					this.receiveSetupCipherTimeout_);

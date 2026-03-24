@@ -228,6 +228,12 @@ class Peer {
    *         connected and trusted.
    */
   async onWsConnection({ connection, request }) {
+    if (this.server_.wsServer.clients.size >= this.maxConnections_ * 2) {
+      this.logger_.warn(`Rejecting connection from ${request.socket.remoteAddress}: Peer socket cap exhausted.`);
+      connection.terminate();
+      return;
+    }
+
     this.logger_.log(`Received connection from remote peer:` +
       `\n\tAddress: ${request.socket.remoteAddress}` +
       `\n\tPort: ${request.socket.remotePort}`);

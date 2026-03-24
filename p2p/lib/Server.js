@@ -95,9 +95,12 @@ class Server extends EventEmitter {
 		}
 		return new Promise((resolve, reject) => {
 			let address = null;
-			const timeout = this.managedTimeouts_.setTimeout(reject, 30000);
+			const timeout = this.managedTimeouts_.setTimeout(reject, 10000);
+			const providers = ['api.ipify.org', 'icanhazip.com', 'ifconfig.me'];
+			const host = providers[Math.floor(Math.random() * providers.length)];
+
 			https.get({
-				host: 'api.ipify.org',
+				host,
 				path: '/'
 			}, (resp) => {
 				resp.on('data', (data = '') => {

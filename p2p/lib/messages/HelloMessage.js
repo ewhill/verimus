@@ -3,10 +3,11 @@ const Message = require('../Message');
 class HelloMessage extends Message {
 	constructor(options = {}) {
 		super();
-		const { publicAddress, publicKey, signature } = options;
+		const { publicAddress, publicKey, signature, nonce } = options;
 		this.publicAddress = publicAddress;
 		this.publicKey = publicKey;
 		this.signature = signature;
+		this.nonce = nonce;
 	}
 
 	get publicAddress() {
@@ -29,6 +30,9 @@ class HelloMessage extends Message {
 	set signature(signature) {
 		this.body.signature = signature;
 	}
+
+	get nonce() { return this.body.nonce; }
+	set nonce(nonce) { this.body.nonce = nonce; }
 }
 
 module.exports = HelloMessage;

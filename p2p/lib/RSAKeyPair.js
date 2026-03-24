@@ -144,7 +144,11 @@ class RSAKeyPair {
       throw new Error(`Cannot decrypt buffer because no private key is set.`);
     }
 
-    return crypto.privateDecrypt(this.private_, buffer);
+    return crypto.privateDecrypt({
+      key: this.private_,
+      padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+      oaepHash: 'sha256'
+    }, buffer);
   }
 
   /**
@@ -156,7 +160,11 @@ class RSAKeyPair {
    *         An encrypted buffer.
    */
   encrypt(buffer) {
-    const encrypted = crypto.publicEncrypt(this.public_, buffer);
+    const encrypted = crypto.publicEncrypt({
+      key: this.public_,
+      padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+      oaepHash: 'sha256'
+    }, buffer);
     return encrypted;
   }
 
