@@ -8,7 +8,7 @@ Currently, our network relies on an originating node storing encrypted data with
 ### 2.1 Block Typings & Peer Wallets
 The blockchain will transition from holding homogeneous blocks to supporting specific **"Types"**. Because Project Clementine is a formal hard fork, legacy data blocks are fully deprecated. The ledger acts exclusively as a marketplace configuration matrix tracking:
 - **`TRANSACTION` Blocks**: Tracks initial disbursements and ongoing balances across nodes.
-- **`CONTRACT` Blocks**: Finalized agreements recording storage shards across peers.
+- **`STORAGE_CONTRACT` Blocks**: Finalized agreements recording storage shards across peers.
 - **Wallet States**: The local ledger state will calculate active wallet balances for every peer recursively based on the chain's immutable history, preventing Double-Spending or Over-Drafting.
 
 ### 2.2 Ring Cryptographic Authentication
@@ -66,7 +66,7 @@ If the hashes succeed, the storage peer signs a `FulfillmentReceipt`.
 To prevent a malicious node from streaming data directly to `/dev/null` or deleting it post-contract formation, the economic payouts are distributed transactionally over the life of the contract rather than upfront.
 
 ### 5.1 The Verification Routine
-Since the precomputed chunk hashes are stored publicly in the minted `CONTRACT` block, any node on the network can verify the payload. 
+Since the precomputed chunk hashes are stored publicly in the minted `STORAGE_CONTRACT` block, any node on the network can verify the payload. 
 - **Predefined Intervals**: The contract encodes specific, predefined chronological intervals at which the data must be verified, spanning from the creation time until the contract termination.
 - **Third-Party Auditors (Deterministic Sortition)**: Rather than relying on a centralized or exploitable RNG lottery, the network selects the auditing peer via a decentralized cryptographic sortition model. At the start of each interval, all nodes independently compute a deterministic seed: `hash(StorageContractBlockId + IntervalTimestamp + LatestChainHash)`. The network peer whose public key hash falls closest to this seed (via XOR distance) becomes the undisputed verifier. This guarantees that all nodes universally agree on the chosen auditor without required communication, while the moving variables ensure the selection cycles evenly across all peers, eliminating hotspots.
 - **Transactional Rewards**: If the host successfully returns the correct hashes requested by the crypto-elected auditor, a `TRANSACTION` block is generated. This block transfers a payout from the seed's locked funds to **both** the storing node (for successfully hosting the data) and the verifying node (as a reward for executing network consensus labor).
@@ -76,7 +76,7 @@ Failing these recurring checks triggers an immediate suspension of all future co
 ## 6. Consensus & Final Block Minting
 
 A contract is initially established only if the seed verifies the data stream against all `N` contracted peers. 
-Once all `N` `FulfillmentReceipts` are collected, the seed broadcasts the finalized `CONTRACT` block to the network spanning:
+Once all `N` `FulfillmentReceipts` are collected, the seed broadcasts the finalized `STORAGE_CONTRACT` block to the network spanning:
 1. The initial contract conditions and payment intervals.
 2. The `1..N` fulfillment signatures of the host peers.
 3. The exact topological locations mapped for retrieval.

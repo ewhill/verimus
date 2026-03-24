@@ -124,7 +124,7 @@ export interface TransactionBlock extends BaseBlock {
 }
 
 export interface StorageContractBlock extends BaseBlock {
-    type: typeof BLOCK_TYPES.CONTRACT;
+    type: typeof BLOCK_TYPES.STORAGE_CONTRACT;
     payload: StorageContractPayload; // The encrypted payload securely mapped
 }
 

@@ -28,11 +28,11 @@ export interface MerkleProofResponse {
 ```
 
 ## 5. Execution Workflow
-1. **Contract Initialization:** During the upload phase, the `Bundler` splits shards into 64KB chunks and computes a full Merkle Tree. The `CONTRACT` registers the `merkleRoot`.
+1. **Contract Initialization:** During the upload phase, the `Bundler` splits shards into 64KB chunks and computes a full Merkle Tree. The `STORAGE_CONTRACT` registers the `merkleRoot`.
 2. **Auditor Election:** The `ConsensusEngine` asserts a matching node as the network auditor based on deterministic block heights.
 3. **Challenge Dispatch:** The auditor constructs a `MerkleProofChallenge` selecting a random `chunkIndex` (e.g., chunk 8,401 of 10,000) and sends it via a P2P `Message`.
 4. **Validation Generation:** The host retrieves chunk 8,401 from its physical drive, maps the requisite `merkleSiblings`, and transmits the physical bytes back.
-5. **Mathematical Verification:** The auditor hashes the sent physical bytes, layers the sibling hashes, and verifies the computed root matches the `CONTRACT` root. 
+5. **Mathematical Verification:** The auditor hashes the sent physical bytes, layers the sibling hashes, and verifies the computed root matches the `STORAGE_CONTRACT` root. 
 
 ## 6. Failure States & Boundary Conditions
 - **Missing Merkle Siblings:** If the host loses the file, it cannot produce the 64KB chunk or the correct sibling array. The auditor marks the challenge as failed.

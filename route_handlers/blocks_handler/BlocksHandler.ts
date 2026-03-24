@@ -41,7 +41,7 @@ export default class BlocksHandler extends BaseHandler {
                             index: -1,
                             timestamp: entry.originalTimestamp || Date.now(),
                         },
-                        type: entry.block.type || BLOCK_TYPES.CONTRACT,
+                        type: entry.block.type || BLOCK_TYPES.STORAGE_CONTRACT,
                         payload: entry.block.payload, // Added specifically to filter during search mapping
                         publicKey: entry.block.publicKey,
                         signature: entry.block.signature,

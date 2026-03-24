@@ -29,7 +29,7 @@ export interface StorageContractPayload {
 
 ## 5. Execution Workflow
 1. **Request Orchestration:** The uploading client signals an `expectedRetrievalMultiplier` estimating their monthly egress footprints.
-2. **Escrow Lock:** The ensuing `CONTRACT` payload locks the base rest payment and an `allocatedEgressEscrow` within `WalletManager`.
+2. **Escrow Lock:** The ensuing `STORAGE_CONTRACT` payload locks the base rest payment and an `allocatedEgressEscrow` within `WalletManager`.
 3. **HTTP Retrieval Trap:** An external client initiates a GET request against the `DownloadFileHandler`. 
 4. **Byte Counting Deduction:** As `fs.createReadStream` pipes the file payload to the client, the `DownloadFileHandler` triggers an asynchronous hook subtracting the exact byte matrix cost against `remainingEgressEscrow` in the `WalletManager`.
 5. **Funding Exhaustion:** If the escrow hits `0`, the node collapses the stream piping and returns an HTTP 402 status.
