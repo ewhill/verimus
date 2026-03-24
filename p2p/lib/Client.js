@@ -396,11 +396,11 @@ class Client {
 			}
 		}
 
-		const clone = Message.from(message);
+		let data;
 
 		if (this.isTrusted) {
 			try {
-				const signature =
+				const signature = message.header.signature ||
 					(this.credentials_.rsaKeyPair.sign(
 						JSON.stringify(message.body))).toString('base64');
 				const iv = crypto.randomBytes(12);
@@ -412,19 +412,27 @@ class Client {
 				const encryptedMessageBodyBuffer =
 					Buffer.concat([cipher.update(messageBodyBuffer),
 					cipher.final()]);
-				clone.body = encryptedMessageBodyBuffer.toString('base64');
-				clone.authTag = cipher.getAuthTag().toString('base64');
-				clone._signature = signature;
-				clone.iv = iv.toString('base64');
-				clone._hash = message.hash;
+				
+				const header = {
+					...message.header,
+					authTag: cipher.getAuthTag().toString('base64'),
+					signature,
+					iv: iv.toString('base64')
+				};
+
+				data = message.constructor.name + JSON.stringify({
+					header,
+					body: encryptedMessageBodyBuffer.toString('base64')
+				});
 			} catch (e) {
 				throw new Error(`Could not encrypt message!`);
 			}
+		} else {
+			const clone = Message.from(message);
+			data = message.constructor.name + clone.toString();
 		}
 
 		return new Promise((resolve, reject) => {
-			const data = message.constructor.name + clone.toString();
-
 			const sendCallback = (err, backoff, connection, data) => {
 				if (err) {
 					backoff *= 1.5;
@@ -435,9 +443,9 @@ class Client {
 					}
 
 					this.managedTimeouts_.setTimeout(() => {
-						this.connection_.send(message.toString(), (err) => {
+						this.connection_.send(data, (err) => {
 							sendCallback(
-								err, backoff, this.connection_, message);
+								err, backoff, this.connection_, data);
 						});
 					}, backoff);
 				} else {
