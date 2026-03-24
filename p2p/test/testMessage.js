@@ -49,7 +49,7 @@ test("Message", (assert) => {
     "Constructed with body solo property string should have body correctly set.");
 
   // Clone firstMessage
-  let clonedMessage = new Message(simpleStringMessage);
+  let clonedMessage = Message.from(simpleStringMessage);
 
   //firstMessage and secondMessage should be equal
   assert.deepEqual(simpleStringMessage, clonedMessage,

@@ -55,6 +55,10 @@ class Message {
     if (value.authTag) {
       this._authTag = value.authTag;
     }
+
+    if (value.iv) {
+      this._iv = value.iv;
+    }
   }
   get header() {
     return {
@@ -63,11 +67,14 @@ class Message {
       signature: this._signature,
       ttl: this._ttl,
       authTag: this._authTag,
+      iv: this._iv
     };
   }
   
   get authTag() { return this._authTag; }
   set authTag(value) { this._authTag = value; }
+  get iv() { return this._iv; }
+  set iv(value) { this._iv = value; }
   get ttl() { return this._ttl; }
   set ttl(value) { this._ttl = value; }
 

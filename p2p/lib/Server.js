@@ -247,16 +247,23 @@ class Server extends EventEmitter {
 	}
 
 	close() {
-		this.managedTimeouts_.destroy();
+		return new Promise((resolve) => {
+			this.managedTimeouts_.destroy();
 
-		if (this.wsServer_) {
-			this.wsServer_.close();
-		}
+			if (this.wsServer_ && typeof this.wsServer_.close === 'function') {
+				this.wsServer_.close();
+			}
 
-		if (this.httpsServerMode_ === HTTPS_SERVER_MODES.CREATE &&
-			this.httpsServer_) {
-			this.httpsServer_.close();
-		}
+			if (this.httpsServerMode_ === HTTPS_SERVER_MODES.CREATE &&
+				this.httpsServer_ && typeof this.httpsServer_.close === 'function') {
+				this.httpsServer_.close(() => {
+					resolve();
+				});
+				this.httpsServer_.closeAllConnections && this.httpsServer_.closeAllConnections();
+			} else {
+				resolve();
+			}
+		});
 	}
 
 	get publicAddress() {

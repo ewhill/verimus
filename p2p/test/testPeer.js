@@ -28,9 +28,9 @@ const before = async () => {
     publicKeyPath: "first.peer.pub",
     privateKeyPath: "first.peer.pem",
     httpsServerConfig: {
-      port: 26780,
+      port: 56880,
     },
-    publicAddress: "127.0.0.1:26780",
+    publicAddress: "127.0.0.1:56880",
     logger: fakeLogger
   });
 
@@ -38,15 +38,15 @@ const before = async () => {
     publicKeyPath: "second.peer.pub",
     privateKeyPath: "second.peer.pem",
     httpsServerConfig: {
-      port: 26781,
+      port: 56881,
     },
-    publicAddress: "127.0.0.1:26781",
+    publicAddress: "127.0.0.1:56881",
     logger: fakeLogger
   });
 
   await peer1.init();
   await peer2.init();
-  await peer2.discover(["127.0.0.1:26780"]);
+  await peer2.discover(["127.0.0.1:56880"]);
 };
 
 const after = async () => {

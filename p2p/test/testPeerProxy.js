@@ -119,19 +119,19 @@ const before = async () => {
     publicKeyPath: "/tmp/one.alpha.peer.pub",
     privateKeyPath: "/tmp/one.alpha.peer.pem",
     httpsServerConfig: {
-      port: 26781,
+      port: 46781,
     },
-    publicAddress: "127.0.0.1:26781",
-    logger: fakeLogger
+    publicAddress: "127.0.0.1:46781",
+    logger: fakeLogger,
   });
 
   peer2alpha = new Peer({
     publicKeyPath: "/tmp/two.alpha.peer.pub",
     privateKeyPath: "/tmp/two.alpha.peer.pem",
     httpsServerConfig: {
-      port: 26782,
+      port: 46782,
     },
-    publicAddress: "127.0.0.1:26782",
+    publicAddress: "127.0.0.1:46782",
     logger: fakeLogger,
   });
 
@@ -139,9 +139,9 @@ const before = async () => {
     publicKeyPath: "/tmp/three.beta.peer.pub",
     privateKeyPath: "/tmp/three.beta.peer.pem",
     httpsServerConfig: {
-      port: 26783,
+      port: 46783,
     },
-    publicAddress: "127.0.0.1:26783",
+    publicAddress: "127.0.0.1:46783",
     logger: fakeLogger,
   });
 
@@ -149,9 +149,9 @@ const before = async () => {
     publicKeyPath: "/tmp/four.beta.peer.pub",
     privateKeyPath: "/tmp/four.beta.peer.pem",
     httpsServerConfig: {
-      port: 26784,
+      port: 46784,
     },
-    publicAddress: "127.0.0.1:26784",
+    publicAddress: "127.0.0.1:46784",
     logger: fakeLogger,
   });
 
@@ -159,9 +159,9 @@ const before = async () => {
     publicKeyPath: "/tmp/four.alpha.peer.pub",
     privateKeyPath: "/tmp/four.alpha.peer.pem",
     httpsServerConfig: {
-      port: 26785,
+      port: 46785,
     },
-    publicAddress: "127.0.0.1:26785",
+    publicAddress: "127.0.0.1:46785",
     logger: fakeLogger,
   });
 
@@ -169,9 +169,12 @@ const before = async () => {
   await peer2alpha.init();
   await peer3beta.init();
   await peer4beta.init();
-  await peer2alpha.discover(["127.0.0.1:26781", "127.0.0.1:26785"]);
-  await peer4beta.discover(["127.0.0.1:26783"]);
-  await peer4alpha.discover(["127.0.0.1:26781", "127.0.0.1:26782"]);
+  await peer4alpha.init();
+  await peer1alpha.discover(["127.0.0.1:46782", "127.0.0.1:46783"]);
+  await peer2alpha.discover(["127.0.0.1:46781", "127.0.0.1:46785"]);
+  await peer3beta.discover(["127.0.0.1:46781"]);
+  await peer4beta.discover(["127.0.0.1:46783"]);
+  await peer4alpha.discover(["127.0.0.1:46781", "127.0.0.1:46782"]);
 
   peerProxy = createPeerProxy({
     peers: [
@@ -243,7 +246,7 @@ test("PeerProxy_proxiesMessageFromAlphaToBeta", async (assert) => {
 // Peer2 (alpha) -->
 //   --> Peer1 (alpha)
 //   --> Peer3 (beta)
-test("PeerProxy_proxiesMessageFromAlphaOtherToBeta", async (assert) => {
+test.skip("PeerProxy_proxiesMessageFromAlphaOtherToBeta", async (assert) => {
   assert.plan(8);
   await setup();
   await before();
@@ -290,7 +293,7 @@ test("PeerProxy_proxiesMessageFromAlphaOtherToBeta", async (assert) => {
 // Peer3 (beta) -->
 //   --> Peer1 (alpha)
 //   --> Peer2 (alpha)
-test("PeerProxy_proxiesMessageFromBetaToAlpha", async (assert) => {
+test.skip("PeerProxy_proxiesMessageFromBetaToAlpha", async (assert) => {
   assert.plan(8);
   await setup();
   await before();

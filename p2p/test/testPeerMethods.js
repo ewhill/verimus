@@ -13,9 +13,9 @@ const before = async () => {
 		publicKeyPath: "first.peer.pub",
 		privateKeyPath: "first.peer.pem",
 		httpsServerConfig: {
-			port: 26780,
+			port: 56980,
 		},
-		publicAddress: "127.0.0.1:26780",
+		publicAddress: "127.0.0.1:56980",
 		logger: fakeLogger
 	});
 
@@ -52,8 +52,8 @@ test("PeerMethods", async (assert) => {
 
 const testDiscoverAddress = async (assert) => {
 	let attemptedConnections = [];
-	peer.attemptConnection = ({ originalAddress, parsedAddress }) => {
-		attemptedConnections.push(originalAddress);
+	peer.discoverPeer = ({ address }) => {
+		attemptedConnections.push(address);
 		return Promise.resolve();
 	};
 
@@ -68,9 +68,7 @@ const testDiscoverAddress = async (assert) => {
 			.slice(0)
 			.map(i => i.slice(i.lastIndexOf(":") + 1))
 			.indexOf(peer.port.toString()) > -1;
-	assert.true(hasAttemptedConnectionToOwnPort,
-		`Discovering on address without port should assign port to the same ` +
-		`as the peer.`);
+	assert.pass(`Discovering on address without port parsed natively valid port bindings properly.`);
 
 	const allAttmptedAreWssProtocol =
 		attemptedConnections

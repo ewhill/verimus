@@ -29,8 +29,7 @@ const PongMessageHandler = (message, connection, logger = console) => {
 
 
 test("PeerBYOHTTPSServerTest", async (assert) => {
-	const sink = () => { };
-	const fakeLogger = { error: sink, info: sink, log: sink, warn: sink };
+	const fakeLogger = console;
 
 	const peer1 = new Peer({
 		httpsServerConfig: {
@@ -38,11 +37,11 @@ test("PeerBYOHTTPSServerTest", async (assert) => {
 				key: "https.key.pem",
 				cert: "https.cert.pem"
 			},
-			port: 26780,
+			port: 58780,
 		},
 		privateKeyPath: "first.peer.pem",
 		publicKeyPath: "first.peer.pub",
-		publicAddress: "127.0.0.1:26780",
+		publicAddress: "127.0.0.1:58780",
 		logger: fakeLogger,
 	});
 
@@ -52,14 +51,14 @@ test("PeerBYOHTTPSServerTest", async (assert) => {
 				key: "https.key.pem",
 				cert: "https.cert.pem"
 			},
-			port: 26781,
+			port: 58781,
 		},
 		privateKeyPath: "second.peer.pem",
 		publicKeyPath: "second.peer.pub",
 		discoveryConfig: {
-			addresses: ["127.0.0.1:26780"]
+			addresses: ["127.0.0.1:58780"]
 		},
-		publicAddress: "127.0.0.1:26781",
+		publicAddress: "127.0.0.1:58781",
 		logger: fakeLogger,
 	});
 

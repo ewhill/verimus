@@ -625,7 +625,7 @@ class Client {
 		try {
 			const key = this.credentials_.rsaKeyPair.decrypt(
 				Buffer.from(message.key, 'base64'));
-			connection.remoteCipher_ = { key };
+			this.remoteCipher_ = { key };
 		} catch (e) {
 			return this.setupCipherPromiseReject_(new Error(
 				`Could not decrypt encryption properties from SetupCipher ` +

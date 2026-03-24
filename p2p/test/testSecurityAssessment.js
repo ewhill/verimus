@@ -150,6 +150,7 @@ test("Security: Peer DoS Max Socket Protection", async (assert) => {
 
 test("Security: AES-GCM Dynamic IV Rotation & Message Bounds", async (assert) => {
     const mockConnection = new EventEmitter();
+    mockConnection.readyState = 1; // WebSocket.OPEN
     const sentData = [];
     mockConnection.send = (data, cb) => {
         sentData.push(data);
@@ -158,20 +159,28 @@ test("Security: AES-GCM Dynamic IV Rotation & Message Bounds", async (assert) =>
     mockConnection.addEventListener = mockConnection.on.bind(mockConnection);
 	mockConnection.removeEventListener = mockConnection.removeListener.bind(mockConnection);
 	
+    const localKeys = await RSAKeyPair.generate();
+    const remoteKeys = await RSAKeyPair.generate();
+
     const client = new Client({
         connection: mockConnection,
         request: { connection: { remoteAddress: '127.0.0.1' }, headers: {} },
-        credentials: { rsaKeyPair: RSAKeyPair.generate() },
+        credentials: { rsaKeyPair: localKeys },
         logger: { error: ()=>{}, warn: ()=>{}, info: ()=>{}, log: ()=>{} },
 		peerAddress: '127.0.0.1:0'
     });
 	
 	client.isTrusted_ = true;
-	client.remoteCredentials_ = { rsaKeyPair: RSAKeyPair.generate() };
+	client.remoteCredentials_ = { rsaKeyPair: remoteKeys };
+    client.cipher_ = { key: crypto.randomBytes(32) };
 
 	// 1. Test AES-GCM dynamic IV rotation
-	await client.send(new HelloMessage({ publicAddress: '0', publicKey: '1', nonce: 0 }));
-	await client.send(new HelloMessage({ publicAddress: '2', publicKey: '3', nonce: 1 }));
+	try {
+	    await client.send(new HelloMessage({ publicAddress: '0', publicKey: '1', nonce: 0 }));
+	    await client.send(new HelloMessage({ publicAddress: '2', publicKey: '3', nonce: 1 }));
+	} catch(e) {
+	    console.error("DEBUG ERROR: ", e);
+	}
 
     assert.equal(sentData.length, 2, 'Client emitted 2 encrypted payloads natively.');
     
@@ -192,7 +201,7 @@ test("Security: AES-GCM Dynamic IV Rotation & Message Bounds", async (assert) =>
     let terminated = false;
     mockConnection.terminate = () => { terminated = true; };
 
-    client.onMessage_(Buffer.alloc(6 * 1024 * 1024).toString('utf8'));
+    client.onMessage_('HelloMessage{' + Buffer.alloc(6 * 1024 * 1024, 'a').toString('utf8') + '}');
 
     assert.ok(terminated, 'Client preemptively terminated 5MB+ WebSocket payload immediately prior to native JSON executions.');
 

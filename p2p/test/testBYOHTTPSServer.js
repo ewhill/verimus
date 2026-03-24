@@ -25,7 +25,7 @@ test("PeerBYOHTTPSServerTest", async (assert) => {
   });
 
   await new Promise((resolve) => {
-    server.listen(8181, resolve); // Start server
+    server.listen(48181, resolve); // Start server
   });
 
   const p1 = new Peer({
@@ -35,13 +35,13 @@ test("PeerBYOHTTPSServerTest", async (assert) => {
     },
     publicKeyPath: "first.peer.pub",
     privateKeyPath: "first.peer.pem",
-    publicAddress: "127.0.0.1:8181",
+    publicAddress: "127.0.0.1:48181",
     logger: fakeLogger,
   });
 
   await p1.init();
 
-  assert.equal(p1.port, 8181,
+  assert.equal(p1.port, 48181,
     "Created HTTPS server and HTTPS server of peer should be listening on " +
     "the same port as they should be the same server.");
 
@@ -49,7 +49,7 @@ test("PeerBYOHTTPSServerTest", async (assert) => {
     // Change to http for local testing
     let req = https.request({
       hostname: "localhost",
-      port: 8181,
+      port: 48181,
       path: "/",
       method: "GET",
       headers: {}
@@ -78,18 +78,18 @@ test("PeerBYOHTTPSServerTest", async (assert) => {
 
   const p2 = new Peer({
     httpsServerConfig: {
-      port: 9191,
+      port: 49191,
     },
     publicKeyPath: "second.peer.pub",
     privateKeyPath: "second.peer.pem",
     discoveryConfig: {
       addresses: ["127.0.0.1"],
       range: {
-        start: 8180,
-        end: 8190
+        start: 48180,
+        end: 48190
       }
     },
-    publicAddress: "127.0.0.1:9191",
+    publicAddress: "127.0.0.1:49191",
     logger: fakeLogger,
   });
 

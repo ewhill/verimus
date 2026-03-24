@@ -17,9 +17,9 @@ test("PeerExportImportTest", async (assert) => {
     publicKeyPath: "first.peer.pub",
     privateKeyPath: "first.peer.pem",
     httpsServerConfig: {
-      port: 26780,
+      port: 57180,
     },
-    publicAddress: "127.0.0.1:26780",
+    publicAddress: "127.0.0.1:57180",
     logger: fakeLogger
   });
 

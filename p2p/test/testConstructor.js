@@ -10,10 +10,11 @@ const { Peer, Message } = require('../index.js');
 // -----------------------------------------------------------------------------
 
 test("PeerConstructor", async (assert) => {
-  const copyConstructorOptions = (o) => {
-    const sink = () => { };
-    const fakeLogger = { error: sink, info: sink, log: sink, warn: sink };
-    return { ...JSON.parse(JSON.stringify(o)), logger: fakeLogger };
+  const sink = () => { };
+  const fakeLogger = { error: sink, info: sink, log: sink, warn: sink };
+
+  const copyConstructorOptions = (opts) => {
+    return { ...JSON.parse(JSON.stringify(opts)), logger: fakeLogger };
   };
 
   const constructorThrowsWithMessage = async (options, msg, text) => {
@@ -31,25 +32,21 @@ test("PeerConstructor", async (assert) => {
   };
 
   let constructorOptions = {
-    httpsServerOptions: {
-      credentials: {
-        key: "https.key.pem",
-        cert: "https.cert.pem"
-      },
-      port: 26788,
+    httpsServerConfig: {
+      port: 56788,
     },
     publicKeyPath: "first.peer.pub",
     privateKeyPath: "first.peer.pem",
     discoveryConfig: {
+      addresses: ["127.0.0.1"],
       range: {
-        start: 26780,
-        end: 26790
-      },
+        start: 57080,
+        end: 57090
+      }
     },
-    publicAddress: "127.0.0.1:26785",
+    publicAddress: "127.0.0.1:56785",
+    logger: fakeLogger
   };
-
-
 
   // Missing peer `privateKey`:
   let missingPrivateKeyOptions = copyConstructorOptions(constructorOptions);

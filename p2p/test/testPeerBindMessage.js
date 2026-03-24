@@ -27,19 +27,19 @@ test("PeerBindMessage", async (assert) => {
     publicKeyPath: "first.peer.pub",
     privateKeyPath: "first.peer.pem",
     httpsServerConfig: {
-      port: 26784,
+      port: 56784,
     },
-    publicAddress: "127.0.0.1:26784",
-    logger: fakeLogger
+    publicAddress: "127.0.0.1:56784",
+    logger: fakeLogger,
   });
 
   let peer2 = new Peer({
     publicKeyPath: "second.peer.pub",
     privateKeyPath: "second.peer.pem",
     httpsServerConfig: {
-      port: 26785,
+      port: 56785,
     },
-    publicAddress: "127.0.0.1:26785",
+    publicAddress: "127.0.0.1:56785",
     logger: fakeLogger,
   });
 
@@ -60,7 +60,7 @@ test("PeerBindMessage", async (assert) => {
 
   await peer1.init();
   await peer2.init();
-  await peer2.discover(["127.0.0.1:26784"]);
+  await peer2.discover(["127.0.0.1:56784"]);
 
   peer2.bind(CustomMessage).to(testHandler);
   await peer1.broadcast(new CustomMessage({ data: testMessageData }));
