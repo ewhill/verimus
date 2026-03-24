@@ -131,7 +131,7 @@ test("Security: Peer DoS Max Socket Protection", async (assert) => {
 
     peer.peerRSAKeyPair_ = RSAKeyPair.generate();
     peer.server_ = new Server({ httpsServerConfig: { mode: Server.MODES.NONE } });
-    peer.server_.wsServer_ = { clients: { size: 10 } };
+    peer.server_.wsServer_ = { clients: { size: 10 }, close: () => {} };
     peer.logger_ = { log: ()=>{} , warn: ()=>{} , error: ()=>{} };
 
     let terminated = false;
@@ -144,5 +144,6 @@ test("Security: Peer DoS Max Socket Protection", async (assert) => {
 
     assert.ok(terminated, 'Peer forcefully terminated raw socket connection immediately exceeding WS limits.');
 
+    await peer.close();
     assert.end();
 });
