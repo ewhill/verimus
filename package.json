@@ -10,7 +10,7 @@
     "watch:ui": "npm --prefix ui run watch",
     "start:node": "tsx index.ts",
     "watch:node": "nodemon -x tsx -e ts --ignore data/ --ignore storage/ index.ts",
-    "test": "tsx --test \"!(ui|node_modules)/**/test/*.test.ts\" \"!(ui|node_modules)/**/*.test.ts\"",
+    "test": "tsx --test \"!(ui|node_modules)/**/test/*.test.ts\" \"!(ui|node_modules)/**/*.test.ts\" && npm --prefix p2p run test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -19,6 +19,7 @@
     "@aws-sdk/lib-storage": "^3.1010.0",
     "archiver": "^7.0.1",
     "express": "^5.2.1",
+    "glob": "^13.0.6",
     "mongodb": "^7.1.0",
     "multer": "^2.1.1",
     "node-fetch": "^2.7.0",

@@ -24,7 +24,7 @@ test("HeloMessage", (assert) => {
   heloMessage.signature = 'b';
   assert.equal(heloMessage.signature, 'b',
     "Provided value for signature via setter should set the signature.");
-    
+
   assert.end();
 });
 

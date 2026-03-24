@@ -7,8 +7,8 @@ class ExitCommand extends Command {
                   '\n' +
                   'Used to disconnect from all remote peers and exit the ' +
                   'program completely. The safe equivalent of Ctrl-C.\n' +
-                        '\tUsage:\n' +
-                        '\t\t> /exit');
+                  '\tUsage:\n' +
+                  '\t\t> /exit');
       }
 
       /**

@@ -79,7 +79,7 @@ class ConsoleIO {
   _sidebarSize = 32;
   _stdOutBuffer = [];
 
-  constructor(prompt='> ', sidebarEnabled=true) {
+  constructor(prompt = '> ', sidebarEnabled = true) {
     this._readInterface = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
@@ -87,15 +87,15 @@ class ConsoleIO {
 
     this._prompt = prompt;
 
-    if(sidebarEnabled) {
+    if (sidebarEnabled) {
       this.enableSidebar();
     } else {
       this.disableSidebar();
     }
 
     process.stdout.on('resize', () => {
-        this.render();
-      });
+      this.render();
+    });
   }
 
   get readInterface() {
@@ -108,11 +108,11 @@ class ConsoleIO {
 
   net = {
     _write: (netColors, message) => {
-      const format = 
+      const format =
         `${CONSOLE_COLORS.Reset}${netColors}`;
-      let output = `${format}[NET]: ` + 
-        (typeof message === 'string' ? 
-          message : util.inspect(message, {depth: null, colors: true }));
+      let output = `${format}[NET]: ` +
+        (typeof message === 'string' ?
+          message : util.inspect(message, { depth: null, colors: true }));
       output
         .split('\n')
         .map(line => `${format}${line}`)
@@ -131,7 +131,7 @@ class ConsoleIO {
   message = {
     _write: (messageColors, from, text) => {
       this.write(
-        `${messageColors}` + 
+        `${messageColors}` +
         `[${from}]: ` +
         `${CONSOLE_COLORS.Reset}${CONSOLE_COLORS.Foreground.White}` +
         `${text}`);
@@ -150,7 +150,7 @@ class ConsoleIO {
     this._isSidebarEnabled = true;
     this._readInterface.setPrompt(
       CONSOLE_COLORS.Background.White + CONSOLE_COLORS.Foreground.Black +
-      (new Array(this.sidebarSize + 1).join(' ')) + CONSOLE_COLORS.Reset + 
+      (new Array(this.sidebarSize + 1).join(' ')) + CONSOLE_COLORS.Reset +
       this._prompt);
   }
 
@@ -163,7 +163,7 @@ class ConsoleIO {
     this._activePeers = activePeers;
   }
 
-  _sizeOutput(output, size, padFormat=[CONSOLE_COLORS.Reset]) {
+  _sizeOutput(output, size, padFormat = [CONSOLE_COLORS.Reset]) {
     const pieces = output.split(/(\x1b\[[0-9]+m)/ig);
 
     let count = 0;
@@ -172,25 +172,25 @@ class ConsoleIO {
     for (let piece of pieces) {
       builder += piece;
 
-      if(/\x1b\[[0-9]+m/ig.test(piece)) {
-        continue; 
+      if (/\x1b\[[0-9]+m/ig.test(piece)) {
+        continue;
       }
 
       count += piece.length;
-      if(count > size) {
+      if (count > size) {
         return builder + piece.substr(0, size - builder.length);
       } else if (count === size) {
         return builder + piece;
       }
     }
 
-    return (builder + 
-      padFormat.join('') + 
+    return (builder +
+      padFormat.join('') +
       (new Array(size - count + 1)).join(' '));
   }
 
   render() {
-    for(let y=0; y<=process.stdout.rows; y++) {
+    for (let y = 0; y <= process.stdout.rows; y++) {
       process.stdout.cursorTo(0, y);
       this.renderSidebar(y);
       if (y < process.stdout.rows) {
@@ -202,21 +202,21 @@ class ConsoleIO {
   }
 
   renderSidebar(row) {
-    if(!this._isSidebarEnabled) {
+    if (!this._isSidebarEnabled) {
       return;
     }
 
-    let line = 
+    let line =
       CONSOLE_COLORS.Background.White + CONSOLE_COLORS.Foreground.Black;
     if (row === 0) {
-      if(this._activePeers.length > 0) {
+      if (this._activePeers.length > 0) {
         line += ' Active peers:';
       } else {
         line += ' No active peers.';
       }
-    } else if((row-1) > -1 && (row-1) < this._activePeers.length) {
-      line += 
-        ` ${CONSOLE_COLORS.Foreground.Green}●`+
+    } else if ((row - 1) > -1 && (row - 1) < this._activePeers.length) {
+      line +=
+        ` ${CONSOLE_COLORS.Foreground.Green}●` +
         `${CONSOLE_COLORS.Foreground.Black} ${this._activePeers[row - 1]}`;
     }
 
@@ -225,9 +225,9 @@ class ConsoleIO {
 
   renderChat(row) {
     let line = CONSOLE_COLORS.Reset;
-    const bufferIndex = 
+    const bufferIndex =
       this._stdOutBuffer.length - process.stdout.rows + row + 1;
-    if(bufferIndex > -1 && bufferIndex < this._stdOutBuffer.length) {
+    if (bufferIndex > -1 && bufferIndex < this._stdOutBuffer.length) {
       line += this._stdOutBuffer[bufferIndex];
     }
 
@@ -244,12 +244,12 @@ class ConsoleIO {
   }
 
   write(...args) {
-    const output = 
+    const output =
       args
         .reduce((prev, curr, index) => {
-          return prev + 
-            (index > 0 ? ' ' : '') + 
-            (typeof curr === 'string' ? 
+          return prev +
+            (index > 0 ? ' ' : '') +
+            (typeof curr === 'string' ?
               curr : util.inspect(curr, { depth: null, colors: true }));
         })
         .replace(/\t/ig, '   ');

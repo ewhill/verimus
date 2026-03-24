@@ -8,8 +8,8 @@ class AliasCommand extends Command {
                   'After successfully setting your alias, your messages will ' +
                   'apear as the value given to the command in your and ' +
                   'others\s chats.\n' +
-                        '\tUsage:\n' +
-                        '\t\t> /alias Bob');
+                  '\tUsage:\n' +
+                  '\t\t> /alias Bob');
       }
 
       /**

@@ -13,23 +13,23 @@ class PingMessage extends Message {
 class PongMessage extends Message {
 	constructor() {
 		super();
-		this.body = {direction: 'pong' };
+		this.body = { direction: 'pong' };
 	}
 }
 
-const PingMessageHandler = (message, connection, logger=console) => {
+const PingMessageHandler = (message, connection, logger = console) => {
 	// Send 'pong' in reply...
 	const pong = new PongMessage();
 	connection.send(pong);
 };
 
-const PongMessageHandler = (message, connection, logger=console) => {
+const PongMessageHandler = (message, connection, logger = console) => {
 	// Noop
 };
 
 
 test("PeerBYOHTTPSServerTest", async (assert) => {
-	const sink = () => {};
+	const sink = () => { };
 	const fakeLogger = { error: sink, info: sink, log: sink, warn: sink };
 
 	const peer1 = new Peer({
@@ -42,8 +42,6 @@ test("PeerBYOHTTPSServerTest", async (assert) => {
 		},
 		privateKeyPath: "first.peer.pem",
 		publicKeyPath: "first.peer.pub",
-		signaturePath: "first.peer.signature",
-		ringPublicKeyPath: ".ring.pub",
 		publicAddress: "127.0.0.1:26780",
 		logger: fakeLogger,
 	});
@@ -58,10 +56,8 @@ test("PeerBYOHTTPSServerTest", async (assert) => {
 		},
 		privateKeyPath: "second.peer.pem",
 		publicKeyPath: "second.peer.pub",
-		signaturePath: "second.peer.signature",
-		ringPublicKeyPath: ".ring.pub",
 		discoveryConfig: {
-			addresses: [ "127.0.0.1:26780" ]
+			addresses: ["127.0.0.1:26780"]
 		},
 		publicAddress: "127.0.0.1:26781",
 		logger: fakeLogger,

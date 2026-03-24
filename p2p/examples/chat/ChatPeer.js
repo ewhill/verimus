@@ -8,28 +8,28 @@ const URL = require("url").URL;
 
 const { Peer } = require('ringnet');
 const {
-    AliasMessage,
-    GoodbyeMessage,
-    TextMessage
-  } = require('./messages/index.js');
+  AliasMessage,
+  GoodbyeMessage,
+  TextMessage
+} = require('./messages/index.js');
 
 
 class ChatPeer extends Peer {
   static _sinkIo = {
     net: {
-      log: ()=>{},
-      error: ()=>{},
+      log: () => { },
+      error: () => { },
     },
     message: {
-      peer: ()=>{},
-      own: ()=>{},
+      peer: () => { },
+      own: () => { },
     },
   };
   static _sinkLogger = {
-    error: ()=>{},
-    info: ()=>{},
-    log: ()=>{},
-    warn: ()=>{},
+    error: () => { },
+    info: () => { },
+    log: () => { },
+    warn: () => { },
   };
 
   _aliases = {};
@@ -45,31 +45,31 @@ class ChatPeer extends Peer {
     this._io = io || this._sinkIo;
 
     this.bind(TextMessage).to((message, connection) => {
-        this._textMessageHandler(message, connection);
-      });
+      this._textMessageHandler(message, connection);
+    });
     this.bind(AliasMessage).to((message, connection) => {
-        this._aliasMessageHandler(message, connection);
-      });
+      this._aliasMessageHandler(message, connection);
+    });
     this.bind(GoodbyeMessage).to((message, connection) => {
-        this._goodbyeMessageHandler(message, connection);
-      });
+      this._goodbyeMessageHandler(message, connection);
+    });
 
     this.on('connection', (connection) => {
-        this._connectionHandler(connection);
-      });
+      this._connectionHandler(connection);
+    });
   }
 
   get activePeers() {
     return this.trustedPeers.map(
       p => (
-        this.hasAlias(p.remoteSignature) ? 
-          this.getAlias(p.remoteSignature) : 
+        this.hasAlias(p.remoteSignature) ?
+          this.getAlias(p.remoteSignature) :
           p.peerAddress));
   }
 
   _connectionHandler(connection) {
     this._io.updateActivePeers(this.activePeers);
-    if(this.hasAlias(connection)) {
+    if (this.hasAlias(connection)) {
       const alias = this.getAlias(connection.remoteSignature);
       this._io.net.log(`${alias} has rejoined the chat.`);
     } else {
@@ -89,7 +89,7 @@ class ChatPeer extends Peer {
     return this.hasAlias(signature) ? this._aliases[signature] : null;
   }
 
-  enableDebugMode(logger=console) {
+  enableDebugMode(logger = console) {
     this._isDebugModeEnabled = true;
     this.logger = logger;
   }
@@ -118,13 +118,13 @@ class ChatPeer extends Peer {
   }
 
   async _textMessageHandler(message, connection) {
-    const alias = 
+    const alias =
       this.getAlias(connection.remoteSignature) || connection.peerAddress;
     this._io.message.peer(alias, message.text);
   }
 
   async _aliasMessageHandler(message, connection) {
-    const alias = 
+    const alias =
       this.getAlias(connection.remoteSignature) || connection.peerAddress;
     this._addAlias(connection.remoteSignature, message.alias);
     this._io.updateActivePeers(this.activePeers);
@@ -135,13 +135,13 @@ class ChatPeer extends Peer {
 
   async _goodbyeMessageHandler(message, connection) {
     this._io.updateActivePeers(this.activePeers);
-    const alias = 
+    const alias =
       this.getAlias(connection.remoteSignature) || connection.peerAddress;
     this._io.net.log(`${alias} has left the chat.`);
   }
 
   async setOwnAlias(alias) {
-    if(typeof alias !== 'string' || alias.length < 1) {
+    if (typeof alias !== 'string' || alias.length < 1) {
       return;
     }
     this._addAlias(this.signature, alias);
@@ -149,15 +149,15 @@ class ChatPeer extends Peer {
     try {
       await this.broadcast(new AliasMessage({ alias }));
       this._io.net.log(`You are now known as "${alias}".`);
-    } catch(e) {
-        this._io.net.error(e.message);
+    } catch (e) {
+      this._io.net.error(e.message);
     }
   }
 
   async sendTextMessage(text) {
     const message = new TextMessage({ text });
 
-    if(this._isMessageQueueEnabled) {
+    if (this._isMessageQueueEnabled) {
       this._messageQueue.push(message);
       return Promise.resolve();
     }
@@ -166,7 +166,7 @@ class ChatPeer extends Peer {
       await this.broadcast(message);
       this._io.message.own(
         this.getAlias(this.signature) || 'You', message.text);
-    } catch(e) {
+    } catch (e) {
       this._io.net.error(e.message);
     }
   }
@@ -178,13 +178,13 @@ class ChatPeer extends Peer {
    *                   queue.
    */
   async sendQueue() {
-    if(!this._isMessageQueueEnabled) {
+    if (!this._isMessageQueueEnabled) {
       return Promise.resolve();
     }
 
     let promises = [];
-    while(this._messageQueue.length > 0) {
-      promises.push(this.sendTextMessage(this._messageQueue.splice(0,1)[0]));
+    while (this._messageQueue.length > 0) {
+      promises.push(this.sendTextMessage(this._messageQueue.splice(0, 1)[0]));
     }
     return Promise.all(promises);
   }
@@ -192,7 +192,7 @@ class ChatPeer extends Peer {
   async close() {
     try {
       await this.broadcast(new GoodbyeMessage())
-    } catch(e) {
+    } catch (e) {
       /* Do nothing. */
     }
     return super.close();

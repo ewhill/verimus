@@ -7,8 +7,8 @@ class SelfCommand extends Command {
                   '\n' +
                   'Used to view helpful information about this peer, ' +
                   'including settings used to intialize and execute.\n' +
-                        '\tUsage:\n' +
-                        '\t\t/self');
+                  '\tUsage:\n' +
+                  '\t\t/self');
       }
 
       /**

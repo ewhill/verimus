@@ -90,12 +90,12 @@ class Peer {
   }
 
   set logger(value) {
-    if(!value || 
-      !value.hasOwnProperty('error') || 
-      !value.hasOwnProperty('info') || 
-      !value.hasOwnProperty('log') || 
+    if (!value ||
+      !value.hasOwnProperty('error') ||
+      !value.hasOwnProperty('info') ||
+      !value.hasOwnProperty('log') ||
       !value.hasOwnProperty('warn')) {
-        throw new Error(`Invalid value for logger!`);
+      throw new Error(`Invalid value for logger!`);
     }
     this.logger_ = value;
   }
@@ -130,11 +130,11 @@ class Peer {
   }
 
   init() {
-    if(this.isReady_) {
+    if (this.isReady_) {
       return Promise.resolve();
     }
 
-    if(this.isInitializing_ && this.initializationOperation_) {
+    if (this.isInitializing_ && this.initializationOperation_) {
       return this.initializationOperation_;
     }
 
@@ -143,8 +143,8 @@ class Peer {
     const filesToCheck = [];
     if (!this.privateKey_) filesToCheck.push({ description: "Peer Private Key", location: this.privateKeyPath_ });
 
-    const checkPromise = filesToCheck.length > 0 
-      ? utils.checkFiles(filesToCheck, this.logger_) 
+    const checkPromise = filesToCheck.length > 0
+      ? utils.checkFiles(filesToCheck, this.logger_)
       : Promise.resolve();
 
     this.initializationOperation_ = checkPromise
@@ -152,7 +152,7 @@ class Peer {
         /* 
          * NOTE: Peer public is optional, can be derrived from private if not 
          * provided. All other files must exist in order to initialize peer.
-         */  
+         */
         const readPeerPrivateKeyPromise = !this.privateKey_ ?
           utils.readFileAsync(this.privateKeyPath_)
             .then(data => {
@@ -165,9 +165,9 @@ class Peer {
               this.publicKey_ = data;
             })
             .catch(err => {
-              if(!(err instanceof utils.NoSuchFileError) && 
+              if (!(err instanceof utils.NoSuchFileError) &&
                 !this.privateKeyPath_ && !this.privateKey_) {
-                  throw err;
+                throw err;
               }
             }) : Promise.resolve();
 
@@ -185,11 +185,11 @@ class Peer {
         this.logger_.log(`Peer identity derived natively.`);
 
         this.server_ = new Server({
-            httpsServerConfig: this.httpsServerConfig_,
-            wsServerConfig: this.wsServerConfig_,
-            publicAddress: this.publicAddress_,
-            logger: this.logger_,
-          });
+          httpsServerConfig: this.httpsServerConfig_,
+          wsServerConfig: this.wsServerConfig_,
+          publicAddress: this.publicAddress_,
+          logger: this.logger_,
+        });
 
         return this.server_.start();
       })
@@ -224,19 +224,19 @@ class Peer {
    */
   async onWsConnection({ connection, request }) {
     this.logger_.log(`Received connection from remote peer:` +
-      `\n\tAddress: ${request.socket.remoteAddress}` + 
+      `\n\tAddress: ${request.socket.remoteAddress}` +
       `\n\tPort: ${request.socket.remotePort}`);
 
     const client = new Client({
-        connection,
-        request,
-        credentials: {
-          rsaKeyPair: this.peerRSAKeyPair_
-        },
-        address: this.server_.publicAddress,
-        peerAddress: utils.getXForwardedFor(request),
-        logger: this.logger_,
-      });
+      connection,
+      request,
+      credentials: {
+        rsaKeyPair: this.peerRSAKeyPair_
+      },
+      address: this.server_.publicAddress,
+      peerAddress: utils.getXForwardedFor(request),
+      logger: this.logger_,
+    });
 
     try {
       await client.connect();
@@ -250,7 +250,7 @@ class Peer {
         `[${client.peerAddress}] Successfully upgraded remote peer.`);
 
       await this.setupClient(client);
-    } catch(e) {
+    } catch (e) {
       this.logger_.error(e.message);
       client.close();
     }
@@ -266,10 +266,10 @@ class Peer {
    */
   parseDiscoveryAddresses(addresses) {
     let ret = [];
-    for(let obj of addresses) {
+    for (let obj of addresses) {
       try {
         ret = ret.concat(this.parseAddress(obj));
-      } catch(e) {
+      } catch (e) {
         this.logger_.log(e.stack);
       }
     }
@@ -291,9 +291,9 @@ class Peer {
   parseAddress(obj) {
     let peer;
 
-    if(typeof obj === 'string') {
+    if (typeof obj === 'string') {
       peer = { address: obj, signature: null };
-    } else if(typeof obj === 'object') {
+    } else if (typeof obj === 'object') {
       peer = { address: obj.address, signature: obj.signature };
     } else {
       throw new Error(`Could not understand given addrress ${obj} because it ` +
@@ -303,35 +303,35 @@ class Peer {
 
     let addresses = [];
     let parsedAddress = utils.parseUrl(peer.address);
-    
+
     /*
      * If the parsed address doesn't contain a port and this peer has a given 
      * discovery range, expand the address into all discoverable addresses (for 
      * all ports specified in this peer's discovery range).
      */
-    if(!parsedAddress.port) {
+    if (!parsedAddress.port) {
       let ports = [];
 
-      if(!!this.discoveryConfig_ && 
+      if (!!this.discoveryConfig_ &&
         this.discoveryConfig_.hasOwnProperty('range')) {
-          const { start=this.port, end=this.port } = 
+        const { start = this.port, end = this.port } =
           this.discoveryConfig_.range;
 
-          if (utils.isValidRange(start, end)) {
-            ports = utils.expandRange(start, end);
-          }
+        if (utils.isValidRange(start, end)) {
+          ports = utils.expandRange(start, end);
+        }
       }
 
       // Avoid adding our own port if localhost (attempt to connect to self).
-      const addressIsLocalhost = 
-        parsedAddress.host === '127.0.0.1' || 
+      const addressIsLocalhost =
+        parsedAddress.host === '127.0.0.1' ||
         parsedAddress.host === 'localhost';
 
-      if(this.port && ports.includes(this.port) && addressIsLocalhost) {
+      if (this.port && ports.includes(this.port) && addressIsLocalhost) {
         ports.push(this.port);
       }
 
-      for(let port of ports) {
+      for (let port of ports) {
         const address = url.format({ ...parsedAddress, port });
         addresses.push({ address, signature: null });
       }
@@ -340,15 +340,15 @@ class Peer {
       addresses = [{ address, signature: null }];
     }
 
-    for(let i=addresses.length-1; i>=0; i--) {
+    for (let i = addresses.length - 1; i >= 0; i--) {
       const peer = addresses[i];
       const isConnectedTo = this.isConnectedTo(peer);
-      const isOwnSignature = 
+      const isOwnSignature =
         (peer.signature ? this.isOwnSignature(peer.signature) : false);
-        
+
       /* istanbul ignore else */
-      if(isConnectedTo || isOwnSignature) {
-        this.logger_.log(`Not connecting to peer ${JSON.stringify(peer)}`, 
+      if (isConnectedTo || isOwnSignature) {
+        this.logger_.log(`Not connecting to peer ${JSON.stringify(peer)}`,
           `\n\tisConnectedTo: ${isConnectedTo}`,
           `\n\tisOwnSignature: ${isOwnSignature}`);
         delete addresses[i];
@@ -367,11 +367,11 @@ class Peer {
    *         A promise that resolves when discovering is complete.
    */
   async discover(addresses = []) {
-    if(!this.isReady_) {
+    if (!this.isReady_) {
       await this.initializationOperation_;
     }
 
-    if(this.isDiscovering_ && this.discoveryOperation_) {
+    if (this.isDiscovering_ && this.discoveryOperation_) {
       await this.discoveryOperation_;
     }
 
@@ -381,8 +381,8 @@ class Peer {
      * If this is the first time running the discover operation, be sure to add 
      * in the addresses from `discoveryConfig` via the constructor.
      */
-    if(Array.isArray(this.discoveryConfig_.addresses)) {
-      const initAddresses = 
+    if (Array.isArray(this.discoveryConfig_.addresses)) {
+      const initAddresses =
         this.parseDiscoveryAddresses(this.discoveryConfig_.addresses);
       toDiscover = toDiscover.concat(initAddresses);
       delete this.discoveryConfig_.addresses;
@@ -392,14 +392,14 @@ class Peer {
      * Addresses not discovered prior, or addresses discovered prior, but at a 
      * time in the past (at least 5 minutes ago or earlier).
      */
-    toDiscover = 
-      toDiscover.filter(({ address }) => 
-        !this.discoveryAddressBook_.hasOwnProperty(address) || 
-          (Date.now() - this.discoveryAddressBook_[address] > 300000));
+    toDiscover =
+      toDiscover.filter(({ address }) =>
+        !this.discoveryAddressBook_.hasOwnProperty(address) ||
+        (Date.now() - this.discoveryAddressBook_[address] > 300000));
 
     this.isDiscovering_ = true;
 
-    this.discoveryOperation_ = 
+    this.discoveryOperation_ =
       Promise.all(
         toDiscover
           .map(({ address, signature }) => {
@@ -410,9 +410,9 @@ class Peer {
                 this.logger_.error(err.stack);
               })
           })
-        ).then(results => {
-          this.isDiscovering_ = false;
-        });
+      ).then(results => {
+        this.isDiscovering_ = false;
+      });
 
     return this.discoveryOperation_;
   }
@@ -428,22 +428,22 @@ class Peer {
    *         connecting to said peer.
    */
   discoverPeer(peerToDiscover) {
-    if(this.isConnectedTo(peerToDiscover)) {
+    if (this.isConnectedTo(peerToDiscover)) {
       throw new Error(`Already connected to given peer!`);
     }
 
-    if(this.isOwnSignature(peerToDiscover.signature)) {
+    if (this.isOwnSignature(peerToDiscover.signature)) {
       throw new Error(`Signature matches own signature!`);
     }
 
     this.logger_.log("------------------------------------------");
     this.logger_.log(JSON.stringify(peerToDiscover, true));
     this.logger_.log("------------------------------------------");
-    
+
     return this.attemptConnection({
-        originalAddress: utils.stripIpv4Prefix(peerToDiscover.address), 
-        parsedAddress: utils.parseUrl(peerToDiscover.address)
-      });
+      originalAddress: utils.stripIpv4Prefix(peerToDiscover.address),
+      parsedAddress: utils.parseUrl(peerToDiscover.address)
+    });
   };
 
   /**
@@ -463,18 +463,18 @@ class Peer {
 
     this.logger_.log(`Attempting connection to ${formattedAddress}`);
     const client = new Client({
-        connection: new WebSocket(formattedAddress, []),
-        credentials: {
-          rsaKeyPair: this.peerRSAKeyPair_
-        },
-        address: this.server_.publicAddress,
-        peerAddress: formattedAddress.replace(/^wss?:\/\//, ''),
-        logger: this.logger_,
-      });
+      connection: new WebSocket(formattedAddress, []),
+      credentials: {
+        rsaKeyPair: this.peerRSAKeyPair_
+      },
+      address: this.server_.publicAddress,
+      peerAddress: formattedAddress.replace(/^wss?:\/\//, ''),
+      logger: this.logger_,
+    });
 
     try {
       await client.connect();
-      
+
       this.logger_.log(
         `[${client.peerAddress}] Successfully connected to remote peer.`);
 
@@ -484,7 +484,7 @@ class Peer {
         `[${client.peerAddress}] Successfully upgraded remote peer.`);
 
       await this.setupClient(client);
-    } catch(e) {
+    } catch (e) {
       this.logger_.log(e.stack);
     }
   }
@@ -502,8 +502,8 @@ class Peer {
   async setupClient(client) {
     this.logger_.log(`Setting up client at ${client.peerAddress}...`);
     client.onMessage((...args) => {
-        this.onClientMessage.apply(this, args);
-      });
+      this.onClientMessage.apply(this, args);
+    });
 
     await this.sendPeersTo(client, 0);
 
@@ -514,7 +514,7 @@ class Peer {
     this.eventEmitter_.emit('connection', client);
   }
 
-  getPeersSince(since=this.peersSince_) {
+  getPeersSince(since = this.peersSince_) {
     return this.trustedPeers
       .filter(peer => peer.created.getTime() >= since)
       .map(peer => {
@@ -527,9 +527,9 @@ class Peer {
 
   async broadcastPeers() {
     const peersMessage = new PeersMessage({
-        peers: this.getPeersSince(this.peersSince_),
-        since: this.peersSince_,
-      });
+      peers: this.getPeersSince(this.peersSince_),
+      since: this.peersSince_,
+    });
     return this.broadcast(peersMessage)
       .then(() => {
         this.peersSince = utils.utcTimestamp().getTime();
@@ -540,11 +540,11 @@ class Peer {
       });
   }
 
-  async sendPeersTo(connection, since=this.peersSince_) {
+  async sendPeersTo(connection, since = this.peersSince_) {
     const peersMessage = new PeersMessage({
-        peers: this.getPeersSince(since),
-        since,
-      });
+      peers: this.getPeersSince(since),
+      since,
+    });
     return this.sendTo(connection, peersMessage)
       .catch(err => {
         /* Do nothing. */
@@ -554,7 +554,7 @@ class Peer {
 
   async onPeersMessage(message) {
     const { peers } = message;
-    if(!peers || !peers.length) {
+    if (!peers || !peers.length) {
       return;
     }
     return this.discover(peers)
@@ -600,9 +600,9 @@ class Peer {
    *         An optional filter for the remote address. Used to bind specific 
    *         messages to specific addresses.
    */
-  bind(RequestClass, addressFilter=new RegExp('^(.*)$', 'im')) {
+  bind(RequestClass, addressFilter = new RegExp('^(.*)$', 'im')) {
     const type = RequestClass.name;
-    if(!this.requestHandlers_.hasOwnProperty(type)) {
+    if (!this.requestHandlers_.hasOwnProperty(type)) {
       this.requestHandlers_[type] = [];
     }
     const handler = new RequestHandler(RequestClass, addressFilter);
@@ -618,7 +618,7 @@ class Peer {
    */
   unbindAll(RequestClass) {
     const type = RequestClass.name;
-    if(!this.requestHandlers_.hasOwnProperty(type)) {
+    if (!this.requestHandlers_.hasOwnProperty(type)) {
       throw new Error(`No handlers for ${type} are bound!`);
     }
 
@@ -638,7 +638,7 @@ class Peer {
    */
   unbind(RequestClass, handler) {
     const type = RequestClass.name;
-    if(!this.requestHandlers_.hasOwnProperty(type)) {
+    if (!this.requestHandlers_.hasOwnProperty(type)) {
       throw new Error(`No handlers for ${type} are bound!`);
     }
 
@@ -647,19 +647,19 @@ class Peer {
     }
 
     const handlerIds = RequestHandler.GetHandlerIds(handler);
-    if(!handlerIds || handlerIds.length < 1) {
+    if (!handlerIds || handlerIds.length < 1) {
       throw new Error(
         `Invalid value for parameter 'handler'; cannot get handler IDs!`);
     }
 
     let removed = [];
-    for(let i=this.requestHandlers_[type].length-1; i>=0; i--) {
-      if(handlerIds.indexOf(this.requestHandlers_[type][i].id) > -1) {
+    for (let i = this.requestHandlers_[type].length - 1; i >= 0; i--) {
+      if (handlerIds.indexOf(this.requestHandlers_[type][i].id) > -1) {
         removed.push(this.requestHandlers_[type].splice(i, 1)[0]);
       }
     }
 
-    if(removed.length === 0) {
+    if (removed.length === 0) {
       throw new Error(
         `Handler ${type} with id ${handlerId} is not bound!`);
     }
@@ -682,16 +682,16 @@ class Peer {
    * @return {void}
    */
   onClientMessage(connection, type, message) {
-    if(!this.requestHandlers_.hasOwnProperty(type)) {
+    if (!this.requestHandlers_.hasOwnProperty(type)) {
       this.logger_.error(`No handlers registered for ${type}.`);
       return;
     }
 
-    const handlersToInvoke = 
+    const handlersToInvoke =
       this.requestHandlers_[type].filter(
         handler => handler.matches(connection.peerAddress));
 
-    if(handlersToInvoke.length === 0) {
+    if (handlersToInvoke.length === 0) {
       this.logger_.error(`No handlers matching for ${type}.`);
       return;
     }
@@ -699,12 +699,12 @@ class Peer {
     this.logger_.log(`Upgrading message to ${type}...`);
     const messageObj = this.requestHandlers_[type][0].upgrade(message);
 
-    for(let handler of handlersToInvoke) {
+    for (let handler of handlersToInvoke) {
       try {
         this.logger_.log(
           `Invoking ${type} handler for ${connection.peerAddress}`);
         handler.invoke(messageObj, connection);
-      } catch(e) {
+      } catch (e) {
         this.logger_.error(e.stack);
       }
     }
@@ -722,15 +722,15 @@ class Peer {
    *         when or if there is an error in doing so.
    */
   async sendTo(client, message) {
-    if(!client) {
+    if (!client) {
       throw new Error(`Invalid connection!`);
     }
 
-    if(!message) {
+    if (!message) {
       throw new Error(`Invalid message!`);
     }
 
-    if(!this.isReady_) {
+    if (!this.isReady_) {
       await this.init();
     }
 
@@ -746,18 +746,18 @@ class Peer {
    */
   async broadcast(message) {
     // If there are no peers to broadcast to, return.
-    if(this.trustedPeers.length < 1) {
+    if (this.trustedPeers.length < 1) {
       throw new Error(`No connected and trusted to broadcast message to!`);
     }
 
     this.logger_.log(
-      `Broadcasting ${message.toString()} to ` + 
+      `Broadcasting ${message.toString()} to ` +
       `${this.trustedPeers.length} peers...`);
 
     let broadcastPromises = [];
-    
-    for(let peer of this.trustedPeers) {
-      const broadcastPromise = 
+
+    for (let peer of this.trustedPeers) {
+      const broadcastPromise =
         this.sendTo(peer, message)
           .catch((e) => {
             this.logger_.error(e.stack);
@@ -778,15 +778,15 @@ class Peer {
    *         Whether the given signature matches this peer's signature.
    */
   isOwnSignature(signature) {
-    if(signature) {
-      if(Buffer.isBuffer(signature)) {
+    if (signature) {
+      if (Buffer.isBuffer(signature)) {
         return signature.toString('utf8') === this.publicKey_.toString('utf8');
       }
       return signature === this.publicKey_.toString('utf8');
     }
     return false;
   }
-  
+
   /**
    * Checks if peer is connected to the given peer.
    * 
@@ -795,11 +795,11 @@ class Peer {
    * @return {Boolean}
    *         Whether this peer is connected to the given {Client}.
    */
-  isConnectedTo({ signature }) {
-    if (!signature) return false;
+  isConnectedTo({ publicKey }) {
+    if (!publicKey) return false;
     return this.connectedPeers
       .map(peer => peer.remotePublicKey)
-      .includes(signature);
+      .includes(publicKey);
   }
 
   /**
@@ -811,10 +811,10 @@ class Peer {
   async close() {
     this.managedTimeouts_.destroy();
 
-    for(const peer of this.peers) {
+    for (const peer of this.peers) {
       try {
         await peer.close();
-      } catch(err) {
+      } catch (err) {
         this.logger_.log(err.stack);
       }
     }

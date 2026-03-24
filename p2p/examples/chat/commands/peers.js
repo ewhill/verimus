@@ -8,8 +8,8 @@ class PeersCommand extends Command {
                   'Used to display a list of connected peers and any ' +
                   'aliases, if available, along with the time since ' +
                   'connection was established for each.\n' +
-                        '\tUsage:\n' +
-                        '\t\t> /peers');
+                  '\tUsage:\n' +
+                  '\t\t> /peers');
       }
 
       /**
@@ -26,15 +26,15 @@ class PeersCommand extends Command {
       async execute(context, ...args) {
             const { peer, io } = context;
             const peers = peer.trustedPeers.map(p => {
-                        let whoIs = p.peerAddress;
-                        if(peer.hasAlias(p.remoteSignature)) {
-                              whoIs = 
-                                    `${peer.getAlias(p.remoteSignature)} ` +
-                                    `(${whoIs})`;
-                        }
-                        return `${whoIs} -- ` +
-                              `online since ${p.created.toLocaleString()}`;
-                  });
+                  let whoIs = p.peerAddress;
+                  if (peer.hasAlias(p.remoteSignature)) {
+                        whoIs =
+                              `${peer.getAlias(p.remoteSignature)} ` +
+                              `(${whoIs})`;
+                  }
+                  return `${whoIs} -- ` +
+                        `online since ${p.created.toLocaleString()}`;
+            });
             io.net.log(`Connected peers:\n\t${peers.join('\n\t')}`);
             return Promise.resolve(true);
       }

@@ -14,7 +14,7 @@ test("RSA", (assert) => {
 		let err = null;
 		try {
 			fn();
-		} catch(e) {
+		} catch (e) {
 			err = e;
 		}
 		assert.notEqual(err, null, msg);
@@ -22,7 +22,7 @@ test("RSA", (assert) => {
 
 	key = new RSAKeyPair({ privateKeyPath, publicKeyPath });
 
-	assert.notEqual(key.private, null, 
+	assert.notEqual(key.private, null,
 		'Loaded private RSA key should not be null.');
 
 	assert.notEqual(key.public, null,
@@ -32,7 +32,7 @@ test("RSA", (assert) => {
 
 	assert.notEqual(signature, null, 'Generated signature should not be null.');
 
-	assert.ok(key.verify(testData, signature), 
+	assert.ok(key.verify(testData, signature),
 		'Signature verification should return true.');
 
 	const encrypted = key.encrypt(testData);
@@ -44,7 +44,7 @@ test("RSA", (assert) => {
 
 	const decrypted = key.decrypt(encrypted);
 
-	assert.equal(decrypted.toString('utf8'), testData.toString('utf8'), 
+	assert.equal(decrypted.toString('utf8'), testData.toString('utf8'),
 		'Decrypted buffer should equal original buffer');
 
 	key = new RSAKeyPair({ privateKeyPath });
@@ -54,7 +54,7 @@ test("RSA", (assert) => {
 
 	key = RSAKeyPair.generate();
 
-	assert.notEqual(key.private, null, 
+	assert.notEqual(key.private, null,
 		'Generated private RSA key should not be null.');
 
 	assert.notEqual(key.public, null,
@@ -64,77 +64,77 @@ test("RSA", (assert) => {
 
 	const exportedSignature = key.sign(testData);
 
-	assert.notEqual(exportedKeys.private, null, 
+	assert.notEqual(exportedKeys.private, null,
 		'Exported private RSA key should not be null.');
 
 	assert.notEqual(exportedKeys.public, null,
 		'Exported public RSA key should not be null.');
 
 	const importedKeys = new RSAKeyPair({
-			privateKeyBuffer: exportedKeys.private,
-			publicKeyBuffer: exportedKeys.public
-		});
+		privateKeyBuffer: exportedKeys.private,
+		publicKeyBuffer: exportedKeys.public
+	});
 
-	assert.notEqual(exportedKeys.private, null, 
+	assert.notEqual(exportedKeys.private, null,
 		'Import of exported private RSA key should not be null.');
 
 	assert.notEqual(exportedKeys.public, null,
 		'Import of exported public RSA key should not be null.');
 
-	assert.ok(importedKeys.verify(testData, exportedSignature), 
+	assert.ok(importedKeys.verify(testData, exportedSignature),
 		'Signature verification should return true when using imported keys.');
 
 	const loadedKeys = new RSAKeyPair({ privateKeyPath, publicKeyPath });
 
-	assert.doesThrow(() => { key.public = loadedKeys.public; }, 
-		'Attempting to set public key after private key value has already ' + 
+	assert.doesThrow(() => { key.public = loadedKeys.public; },
+		'Attempting to set public key after private key value has already ' +
 		'been set should throw an error.');
 
-	assert.doesThrow(() => { key.private = loadedKeys.private; }, 
-		'Attempting to set private key after value has already been set ' + 
+	assert.doesThrow(() => { key.private = loadedKeys.private; },
+		'Attempting to set private key after value has already been set ' +
 		'should throw an error.');
 
 	assert.doesThrow(() => { new RSAKeyPair({ privateKeyPath: '/InvalidPath' }); },
-		'Providing an incorrect value for the private key file path should ' + 
+		'Providing an incorrect value for the private key file path should ' +
 		'throw an error.');
 
-	assert.doesThrow(() => { new RSAKeyPair({ publicKeyPath: '/InvalidPath' }); }, 
-		'Providing an incorrect value for the public key file path should ' + 
+	assert.doesThrow(() => { new RSAKeyPair({ publicKeyPath: '/InvalidPath' }); },
+		'Providing an incorrect value for the public key file path should ' +
 		'throw an error.');
 
-	assert.doesThrow(() => { (new RSAKeyPair()).export({ mode: 'private' }); }, 
-		'Attempting to export private key when the private key is not set ' + 
+	assert.doesThrow(() => { (new RSAKeyPair()).export({ mode: 'private' }); },
+		'Attempting to export private key when the private key is not set ' +
 		'should throw an error.');
 
-	assert.doesThrow(() => { (new RSAKeyPair()).export({ mode: 'public' }); }, 
-		'Attempting to export public key when the public key is not set ' + 
+	assert.doesThrow(() => { (new RSAKeyPair()).export({ mode: 'public' }); },
+		'Attempting to export public key when the public key is not set ' +
 		'should throw an error.');
 
-	assert.doesThrow(() => { (new RSAKeyPair()).export({ mode: 'both' }); }, 
-		'Attempting to export keys when either key is not set ' + 
+	assert.doesThrow(() => { (new RSAKeyPair()).export({ mode: 'both' }); },
+		'Attempting to export keys when either key is not set ' +
 		'should throw an error.');
 
-	assert.doesThrow(() => { (new RSAKeyPair()).encrypt(Buffer.from('')); }, 
-		'Attempting to encrypt data when the public key is not set ' + 
+	assert.doesThrow(() => { (new RSAKeyPair()).encrypt(Buffer.from('')); },
+		'Attempting to encrypt data when the public key is not set ' +
 		'should throw an error.');
 
-	assert.doesThrow(() => { (new RSAKeyPair()).decrypt(Buffer.from('')); }, 
-		'Attempting to decrypt data when the private key is not set ' + 
+	assert.doesThrow(() => { (new RSAKeyPair()).decrypt(Buffer.from('')); },
+		'Attempting to decrypt data when the private key is not set ' +
 		'should throw an error.');
 
-	assert.doesThrow(() => { (new RSAKeyPair()).sign(Buffer.from('')); }, 
-		'Attempting to sign data when the private key is not set ' + 
+	assert.doesThrow(() => { (new RSAKeyPair()).sign(Buffer.from('')); },
+		'Attempting to sign data when the private key is not set ' +
 		'should throw an error.');
 
-	assert.doesThrow(() => { (new RSAKeyPair()).verify(Buffer.from('')); }, 
-		'Attempting to verify data when the public key is not set ' + 
+	assert.doesThrow(() => { (new RSAKeyPair()).verify(Buffer.from('')); },
+		'Attempting to verify data when the public key is not set ' +
 		'should throw an error.');
 
 	assert.doesThrow(
 		() => {
 			(new RSAKeyPair({ publicKeyPath })).public = loadedKeys.public;
 		},
-		'Attempting to set a new public key when one has already been ' + 
+		'Attempting to set a new public key when one has already been ' +
 		'defined should throw an error.');
 
 	assert.end();

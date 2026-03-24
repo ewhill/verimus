@@ -83,20 +83,14 @@ const args = argumentsParser.parse();
 if(args.h || args.help) {
   console.log(`\npeerSetup.js\n\nUSAGE:
     Typical:
-      $ node peerSetup.js -o=<fileNamePrefix> \\
-          -ring=<ringPrivateFilePath>,<ringPublicFilePath>
+      $ node peerSetup.js -o=<fileNamePrefix>
     Silent Mode:
-      $ node peerSetup.js -o=<fileNamePrefix> \\
-          -ring=<ringPrivateFilePath>,<ringPublicFilePath> -s
-    Create Ring Keys Also:
       $ node peerSetup.js -o=<fileNamePrefix> -s
     Just Sign (Peer Keys Provided):
       $ node peerSetup.js -o=<fileNamePrefix> \\
-          -ring=<ringPrivateFilePath>,<ringPublicFilePath> \\
           -peer=<peerPrivateFilePath>,<peerPublicFilePath>
     Specify Key Size (Must Be Multiple of 8):
-      $ node peerSetup.js -o=<fileNamePrefix> \\
-          -ring=<ringPrivateFilePath>,<ringPublicFilePath> -b=2048\n`);
+      $ node peerSetup.js -o=<fileNamePrefix> -b=2048\n`);
   process.exit(0);
 }
 
@@ -115,26 +109,7 @@ let fileName = args.o || args.out || "",
 var verbose = !(args.s || args.silent),
   debug = verbose ? console.log.bind(console) : ()=>{};
 
-debug(`Parsing / Generating ring keys...`);
 
-if(args.ring && Array.isArray(args.ring)) {
-  // We were given the command line option `-ring`
-  if(args.ring.length == 2) {
-    // Given BOTH private and public keys
-    ringRSAKeyPair = new RSAKeyPair({
-        privateKeyPath: args.ring[0],
-        publicKeyPath: args.ring[1]
-      });
-  } else if(args.ring.length == 1) {
-    // Given ONLY private key
-    ringRSAKeyPair = ringRSAKeyPair = new RSAKeyPair({
-        privateKeyPath: args.ring[0]
-      });
-  }
-} else {
-  createdRing = true;
-  ringRSAKeyPair = RSAKeyPair.generate({ modulusLength: keySize });
-}
 
 debug(`Parsing / Generating peer keys...`);
 
@@ -158,38 +133,14 @@ if(args.peer && Array.isArray(args.peer)) {
   peerRSAKeyPair = RSAKeyPair.generate({ modulusLength: keySize });
 }
 
-// Export the ring keys
-debug(`Exporting ring RSA keys...`);
-const ringKeys = 
-  ringRSAKeyPair.export({ mode: 'both', returnBuffer: true });
+
 
 // Export the peer keys
 debug(`Exporting peer RSA keys...`);
 const peerKeys = 
   peerRSAKeyPair.export({ mode: 'both', returnBuffer: true });
 
-// Sign peer public, write the signature to file
-debug(`Signing peer public key with ring private key...`);
-const peerSignatureBuffer = ringRSAKeyPair.sign(peerKeys.public);
-const peerSignature = peerSignatureBuffer.toString('hex');
 
-console.log(`\t${peerSignature}`);
-
-// Write our peer signature to file system
-debug(`Writing peer signature to file system...`);
-fs.writeFileSync(fileName + ".peer.signature", peerSignature, 'utf8');
-debug(`\t${fileName}.peer.signature`);
-
-if(createdRing) {
-  // Write our ring key pair to file system
-  debug(`Writing ring keys to file system...`);
-
-  fs.writeFileSync(ringFileName + ".ring.pem", ringKeys.private, 'utf8');
-  debug(`\t.ring.pem`);
-
-  fs.writeFileSync(ringFileName + ".ring.pub", ringKeys.public, 'utf8');
-  debug(`\t.ring.pub`);
-}
 
 if(createdPeer) {
   // Write our peer key pair to file system

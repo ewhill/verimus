@@ -17,5 +17,5 @@ module.exports = {
 	[queueCommand.command]: queueCommand,
 	[selfCommand.command]: selfCommand,
 	[sidebarCommand.command]: sidebarCommand,
-	'help': ()=>{},
+	'help': () => { },
 };

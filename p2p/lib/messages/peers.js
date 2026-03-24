@@ -3,7 +3,7 @@ const Message = require('../Message');
 class PeersMessage extends Message {
 	constructor(options = {}) {
 		super();
-		const { peers = [], since=0 } = options;
+		const { peers = [], since = 0 } = options;
 		this.peers = peers;
 		this.since = since;
 	}
@@ -11,7 +11,7 @@ class PeersMessage extends Message {
 	get peers() {
 		return this.body.peers;
 	}
-	set peers(peers=[]) {
+	set peers(peers = []) {
 		if (!Array.isArray(peers)) {
 			throw new Error(`Invalid type for PeersMessage 'peers' parameter.`);
 		}
@@ -21,7 +21,7 @@ class PeersMessage extends Message {
 	get since() {
 		return this.body.since;
 	}
-	set since(since=0) {
+	set since(since = 0) {
 		if (typeof since !== 'number') {
 			throw new Error(`Invalid type for PeersMessage 'since' parameter.`);
 		}

@@ -24,7 +24,7 @@ test("SetupCipherMessage", (assert) => {
   cipherMessage.iv = 'b';
   assert.equal(cipherMessage.iv, 'b',
     "Provided value for iv via setter should set the iv.");
-    
+
   assert.end();
 });
 

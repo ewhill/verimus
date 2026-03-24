@@ -10,7 +10,7 @@ const { Message } = require('ringnet');
 class AliasMessage extends Message {
   constructor(options = {}) {
     super();
-    const { alias='' } = options;
+    const { alias = '' } = options;
     this.alias = alias;
   }
 

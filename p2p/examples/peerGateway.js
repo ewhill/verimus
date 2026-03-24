@@ -10,19 +10,19 @@ const Server = require('../lib/Server.js');
 // ----------------------------------------------
 
 class TextMessage extends Message {
-  constructor(options = {}) {
-    super();
-    const { text='' } = options;
-    this.text = text;
-  }
+    constructor(options = {}) {
+        super();
+        const { text = '' } = options;
+        this.text = text;
+    }
 
-  get text() { return this.body.text; }
-  set text(value) { this.body.text = value; }
+    get text() { return this.body.text; }
+    set text(value) { this.body.text = value; }
 }
 
-const sink = () => {};
+const sink = () => { };
 const sinkLogger = { error: sink, info: sink, log: sink, warn: sink };
-const keyNames = ['first', 'second', 'third' ];
+const keyNames = ['first', 'second', 'third'];
 const nPeers = 3;
 let peers = {};
 
@@ -31,7 +31,7 @@ const httpServer = https.createServer({
     cert: fs.readFileSync('https.cert.pem')
 });
 
-for(let i=0; i<nPeers; i++) {
+for (let i = 0; i < nPeers; i++) {
     let options = {
         signaturePath: `${keyNames[i]}.peer.signature`,
         publicKeyPath: `${keyNames[i]}.peer.pub`,
@@ -51,9 +51,9 @@ for(let i=0; i<nPeers; i++) {
     const address = crypto.randomBytes(4).toString('hex');
 
     peer.bind(TextMessage).to((message, connection) => {
-            console.log(`${address} received message from ` + 
-                `${connection.address} which says: "${message.text}"`);
-        });
+        console.log(`${address} received message from ` +
+            `${connection.address} which says: "${message.text}"`);
+    });
 
     peers[address] = peer;
 }
@@ -63,30 +63,30 @@ for(let i=0; i<nPeers; i++) {
 
 class RingnetGateway {
     constructor({
-        httpServer  = false,
-        logger      = console,
-        map         = {},
-        port        = 26780
+        httpServer = false,
+        logger = console,
+        map = {},
+        port = 26780
     }) {
         this.logger = logger;
         this.map = map;
         this.port = port;
         this.server = httpServer;
 
-        if(this.server) {
+        if (this.server) {
             this.server.on('upgrade', (request, socket, head) => {
-                    this.onUpgrade(request, socket, head);
-                });
+                this.onUpgrade(request, socket, head);
+            });
             this.server.listen(this.port, () => {
-                    this.onListen();
-                });
+                this.onListen();
+            });
         }
     }
 
     onListen() {
         this.logger.log(`Ringnet gateway listening on port ${this.port}`);
         this.logger.log(`Mappings:`);
-        for(let route of Object.keys(this.map)) {
+        for (let route of Object.keys(this.map)) {
             this.logger.log(`\t${route}`);
         }
     }
@@ -95,7 +95,7 @@ class RingnetGateway {
         let pathname = url.parse(request.url).pathname;
         pathname = pathname.replace(/^([\/\\]*)(.*)$/i, '$2');
 
-        if(!this.map.hasOwnProperty(pathname)) {
+        if (!this.map.hasOwnProperty(pathname)) {
             this.logger.error(`No registered client for "${pathname}"!`);
             // There is no corresponding client, destroy socket.
             socket.destroy();
@@ -107,11 +107,11 @@ class RingnetGateway {
 
         return this.map[pathname].wsServer.handleUpgrade(
             request, socket, head, (ws) => {
-                    this.logger.log(
-                        `Emitting new WebSocket connection event...`);
-                    this.map[pathname].wsServer.emit(
-                        'connection', ws, request);
-                });
+                this.logger.log(
+                    `Emitting new WebSocket connection event...`);
+                this.map[pathname].wsServer.emit(
+                    'connection', ws, request);
+            });
     }
 }
 

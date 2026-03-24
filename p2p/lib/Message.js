@@ -12,7 +12,7 @@ class Message {
     const self = this;
     return new Proxy(this._body, {
       set(target, prop, value) {
-        if(!target.hasOwnProperty('prop') && target[prop] !== value) {
+        if (!target.hasOwnProperty('prop') && target[prop] !== value) {
           target[prop] = value;
           self.calculateHash();
         }
@@ -35,15 +35,15 @@ class Message {
   set header(value) {
     const { hash, timestamp, signature } = value;
 
-    if(hash) {
+    if (hash) {
       throw new Error(`Property 'hash' is not allowed to be set.`);
     }
 
-    if(timestamp) {
+    if (timestamp) {
       this.timestamp = timestamp;
     }
 
-    if(signature) {
+    if (signature) {
       this._signature = signature;
     }
   }
@@ -55,9 +55,9 @@ class Message {
     };
   }
 
-  get timestamp() {return this._timestamp; }
+  get timestamp() { return this._timestamp; }
   set timestamp(value) {
-    if(typeof value === 'string' || typeof value === 'number') {
+    if (typeof value === 'string' || typeof value === 'number') {
       value = new Date(value);
     }
 
@@ -66,13 +66,13 @@ class Message {
 
   calculateHash() {
     this._hash = crypto
-        .createHash('sha256')
-        .update(JSON.stringify(this._body))
-        .digest('hex');
+      .createHash('sha256')
+      .update(JSON.stringify(this._body))
+      .digest('hex');
   }
 
   static from(message) {
-    if(!(message instanceof Message)) {
+    if (!(message instanceof Message)) {
       throw new Error(`Parameter 'message' is not of type 'Message'!`);
     }
 
@@ -81,29 +81,29 @@ class Message {
     const ret = new Message();
     const { header, body } = message;
 
-    if(header) {
+    if (header) {
       const { hash, timestamp, signature } = header;
 
-      if(hash) {
+      if (hash) {
         ret._hash = hash;
       }
 
-      if(timestamp) {
+      if (timestamp) {
         ret._timestamp = timestamp;
       }
 
-      if(signature) {
+      if (signature) {
         ret._signature = signature;
       }
     }
 
-    if(body) {
+    if (body) {
       ret.body = body;
     }
 
-    return ret; 
+    return ret;
   }
-  
+
   toString() {
     return JSON.stringify({ header: this.header, body: this._body });
   }

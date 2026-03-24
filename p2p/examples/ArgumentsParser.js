@@ -18,11 +18,11 @@ class ArgumentsParser {
     let inString = false;
     let lastCommaIndex = 0;
     let ret = [];
-    for (let i=0; i<value.length; i++) {
+    for (let i = 0; i < value.length; i++) {
       if (value[i] === '"' || value[i] === '\'') {
-        if (i === 0 || (i>0 && value[i-1] !== '\\')) {
+        if (i === 0 || (i > 0 && value[i - 1] !== '\\')) {
           quoteChar = value[i];
-          if(!inString) {
+          if (!inString) {
             inString = true
           } else if (value[i] === quoteChar) {
             inString = false
@@ -31,7 +31,7 @@ class ArgumentsParser {
       }
       if (!inString && value[i] === ',') {
         ret.push(value.slice(lastCommaIndex, i));
-        lastCommaIndex = i+1;
+        lastCommaIndex = i + 1;
       }
     }
     if (lastCommaIndex < value.length) {
@@ -43,11 +43,11 @@ class ArgumentsParser {
   args = {};
 
   constructor(format) {
-    for (let i=0; i<process.argv.length; i++) {
+    for (let i = 0; i < process.argv.length; i++) {
       let parts = process.argv[i].toString();
       let name = parts;
       let value = true;
-      
+
       if (parts.indexOf('=') > -1) {
         parts = parts.split('=');
         name = parts[0].slice(1);

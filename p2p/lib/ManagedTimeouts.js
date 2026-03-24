@@ -8,28 +8,28 @@ class ManagedTimeouts {
 	}
 
 	setTimeout(f, d) {
-		if(!this.enabled) {
+		if (!this.enabled) {
 			return null;
 		}
 
-		if(!d || typeof d !== "number") {
+		if (!d || typeof d !== "number") {
 			d = 0;
 		}
-		
+
 		d = parseInt(d);
 
 		/* istanbul ignore if */
-		if(isNaN(d)) {
+		if (isNaN(d)) {
 			d = 0;
 		}
 
 		const id = this.timeoutId;
 
 		((self, id) => {
-		    self.timeouts[id] = setTimeout(function() {
+			self.timeouts[id] = setTimeout(function () {
 				delete self.timeouts[id];
 				f.apply(this, []);
-		    }, d);
+			}, d);
 		})(this, id);
 
 		this.timeoutId++;
@@ -42,28 +42,28 @@ class ManagedTimeouts {
 	}
 
 	setInterval(f, d) {
-		if(!this.enabled) {
+		if (!this.enabled) {
 			return null;
 		}
 
-		if(!d || typeof d !== "number") {
+		if (!d || typeof d !== "number") {
 			d = 0;
 		}
-		
+
 		d = parseInt(d);
 
 		/* istanbul ignore if */
-		if(isNaN(d)) {
+		if (isNaN(d)) {
 			d = 0;
 		}
 
 		const id = this.intervalId;
 
 		((self, id) => {
-		    self.intervals[id] = setInterval(function() {
-		    	delete self.intervals[id];
+			self.intervals[id] = setInterval(function () {
+				delete self.intervals[id];
 				f.apply(this, []);
-		    }, d);
+			}, d);
 		})(this, id);
 
 		this.intervalId++;
@@ -76,16 +76,16 @@ class ManagedTimeouts {
 	}
 
 	clearAll() {
-		for(let id of Object.keys(this.timeouts)) {
+		for (let id of Object.keys(this.timeouts)) {
 			try {
 				this.clearTimeout(id);
-			} catch(e) { /* Oh whale. */ }
+			} catch (e) { /* Oh whale. */ }
 		}
 
-		for(let id of Object.keys(this.intervals)) {
+		for (let id of Object.keys(this.intervals)) {
 			try {
 				this.clearInterval(id);
-			} catch(e) { /* Oh whale. */ }
+			} catch (e) { /* Oh whale. */ }
 		}
 	}
 

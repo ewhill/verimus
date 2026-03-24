@@ -4,7 +4,7 @@ const test = require('tape');
 
 const { Peer, Message } = require('../index.js');
 
-const sink = () => {};
+const sink = () => { };
 const fakeLogger = { error: sink, info: sink, log: sink, warn: sink };
 
 // ===========================================================================
@@ -13,7 +13,7 @@ const fakeLogger = { error: sink, info: sink, log: sink, warn: sink };
 class TestMessage extends Message {
   constructor(options = {}) {
     super();
-    const { data='' } = options;
+    const { data = '' } = options;
     this.data = data;
   }
 
@@ -25,10 +25,8 @@ let peer1, peer2;
 
 const before = async () => {
   peer1 = new Peer({
-    signaturePath: "first.peer.signature",
     publicKeyPath: "first.peer.pub",
     privateKeyPath: "first.peer.pem",
-    ringPublicKeyPath: ".ring.pub",
     httpsServerConfig: {
       port: 26780,
     },
@@ -37,10 +35,8 @@ const before = async () => {
   });
 
   peer2 = new Peer({
-    ringPublicKeyPath: ".ring.pub",
     publicKeyPath: "second.peer.pub",
     privateKeyPath: "second.peer.pem",
-    signaturePath: "second.peer.signature",
     httpsServerConfig: {
       port: 26781,
     },
@@ -75,8 +71,8 @@ test("PeerTest", async (assert) => {
 
 async function testSendReceivePeer1(assert) {
   return new Promise((resolve, reject) => {
-    const testHandler = (message, connection, logger=console) => {
-      assert.equal(message.data, "Howdy, it's peer1!!!", 
+    const testHandler = (message, connection, logger = console) => {
+      assert.equal(message.data, "Howdy, it's peer1!!!",
         "Message body sent by peer1 and received by peer2 should be equal");
 
       peer2.unbind(TestMessage);
@@ -90,8 +86,8 @@ async function testSendReceivePeer1(assert) {
 
 async function testSendReceivePeer2(assert) {
   return new Promise((resolve, reject) => {
-    const testHandler = (message, connection, logger=console) => {
-      assert.equal(message.data, "Hello, from peer2!!!", 
+    const testHandler = (message, connection, logger = console) => {
+      assert.equal(message.data, "Hello, from peer2!!!",
         "Message body sent by peer2 and received by peer1 should be equal.");
 
       peer1.unbind(TestMessage);
@@ -109,23 +105,23 @@ async function testMessageOrder(assert) {
     const sent = [];
     const received = [];
 
-    const testHandler = (message, connection, logger=console) => {
+    const testHandler = (message, connection, logger = console) => {
       received.push(message);
 
-      if(received.length < totalToSend) {
+      if (received.length < totalToSend) {
         return;
       }
 
       let failed = false;
-      for(let i=0; i<received.length; i++) {
+      for (let i = 0; i < received.length; i++) {
         failed = received[i].body.data !== sent[i].body.data;
-        assert.equal(received[i].body.data, sent[i].body.data, 
+        assert.equal(received[i].body.data, sent[i].body.data,
           `Received message at position ${i} should match sent.`);
       }
 
       peer2.unbind(TestMessage);
 
-      if(failed) {
+      if (failed) {
         return reject();
       } else {
         return resolve();
@@ -133,7 +129,7 @@ async function testMessageOrder(assert) {
     };
 
     peer2.bind(TestMessage).to(testHandler);
-    for(let i=0; i<totalToSend; i++) {
+    for (let i = 0; i < totalToSend; i++) {
       const msg = new TestMessage({ data: i });
       peer1.broadcast(msg);
       sent.push(msg);
@@ -150,10 +146,10 @@ async function testSendWhenClosed(assert) {
   let err;
   try {
     await peer2.broadcast(new TestMessage({ data: "asdasdasd" }));
-  } catch(e) {
+  } catch (e) {
     err = e;
   }
 
   assert.notEqual(err, undefined,
-      `Attempting to send to closed conneciton should throw.`);
+    `Attempting to send to closed conneciton should throw.`);
 }

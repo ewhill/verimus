@@ -6,23 +6,23 @@ const path = require('path');
 class RSAKeyPair {
   constructor(options = {}) {
     const {
-        privateKeyPath,
-        publicKeyPath,
-        privateKeyBuffer,
-        publicKeyBuffer,
-        passphrase,
-      } = options;
+      privateKeyPath,
+      publicKeyPath,
+      privateKeyBuffer,
+      publicKeyBuffer,
+      passphrase,
+    } = options;
 
-    if(privateKeyPath) {
+    if (privateKeyPath) {
       const absolutePrivateKeyPath = path.resolve(privateKeyPath);
-      if(fs.existsSync(absolutePrivateKeyPath)) {
+      if (fs.existsSync(absolutePrivateKeyPath)) {
         this.privateKeyData_ = fs.readFileSync(absolutePrivateKeyPath);
         let keyOptions = {
           key: this.privateKeyData_,
           type: 'pkcs1',
           format: 'pem',
         };
-        if(passphrase) {
+        if (passphrase) {
           keyOptions = { ...keyOptions, passphrase };
         }
         this.private_ = crypto.createPrivateKey(keyOptions);
@@ -31,9 +31,9 @@ class RSAKeyPair {
       }
     }
 
-    if(publicKeyPath) {
+    if (publicKeyPath) {
       const absolutePublicKeyPath = path.resolve(publicKeyPath);
-      if(fs.existsSync(absolutePublicKeyPath)) {
+      if (fs.existsSync(absolutePublicKeyPath)) {
         this.publicKeyData_ = fs.readFileSync(absolutePublicKeyPath);
         this.public_ = crypto.createPublicKey({
           key: this.publicKeyData_,
@@ -45,7 +45,7 @@ class RSAKeyPair {
       }
     }
 
-    if(this.private_ && !this.public_) {
+    if (this.private_ && !this.public_) {
       let keyOptions = {
         key: this.privateKeyData_,
         type: 'pkcs1',
@@ -56,20 +56,20 @@ class RSAKeyPair {
     }
 
     // "Hard-setting" private / public will overwrite loaded private / public.
-    if(privateKeyBuffer) {
+    if (privateKeyBuffer) {
       this.privateKeyData_ = privateKeyBuffer;
       let keyOptions = {
         key: this.privateKeyData_,
         type: 'pkcs1',
         format: 'pem',
       };
-      if(passphrase) {
+      if (passphrase) {
         keyOptions.passphrase = passphrase;
       }
       this.private_ = crypto.createPrivateKey(keyOptions);
     }
 
-    if(publicKeyBuffer) {
+    if (publicKeyBuffer) {
       this.publicKeyData_ = publicKeyBuffer;
       let keyOptions = {
         key: this.publicKeyData_,
@@ -78,7 +78,7 @@ class RSAKeyPair {
       };
       this.public_ = crypto.createPublicKey(keyOptions);
     } else {
-      if(this.private_ && !this.public_) {
+      if (this.private_ && !this.public_) {
         let keyOptions = {
           key: this.privateKeyData_,
           type: 'pkcs1',
@@ -98,12 +98,12 @@ class RSAKeyPair {
   }
 
   set private(privateKeyBuffer) {
-    if(this.private_) {
+    if (this.private_) {
       throw new Error('Private key already set!');
     } else {
       const newPrivate = crypto.createPrivateKey(privateKeyBuffer);
       const newPublic = crypto.createPublicKey(privateKeyBuffer);
-      const newPublicPem = 
+      const newPublicPem =
         newPublic.export({ type: 'pkcs1', format: 'pem' });
 
       this.privateKeyData_ = privateKeyBuffer;
@@ -114,11 +114,11 @@ class RSAKeyPair {
   }
 
   set public(publicKeyBuffer) {
-    if(this.private_) {
+    if (this.private_) {
       throw new Error('Cannot set public to new RSA Key Pair when a ' +
-          'private is already set!');
+        'private is already set!');
     } else {
-      if(!this.public_) {
+      if (!this.public_) {
         this.publicKeyData_ = publicKeyBuffer;
         this.public_ = crypto.createPublicKey({
           key: this.publicKeyData_,
@@ -140,7 +140,7 @@ class RSAKeyPair {
    *         A decrypted buffer.
    */
   decrypt(buffer) {
-    if(!this.private_) {
+    if (!this.private_) {
       throw new Error(`Cannot decrypt buffer because no private key is set.`);
     }
 
@@ -172,10 +172,10 @@ class RSAKeyPair {
    */
   export(options = {}) {
     const {
-        passphrase,
-        mode = 'private',
-        returnBuffer = false,
-      } = options;
+      passphrase,
+      mode = 'private',
+      returnBuffer = false,
+    } = options;
 
     const keyOptions = {
       type: 'pkcs1',
@@ -183,33 +183,33 @@ class RSAKeyPair {
     };
 
     const privateKeyOptions = passphrase ? {
-        ...keyOptions,
-        cipher: 'aes-256-cbc',
-        passphrase
-      } : {
-        ...keyOptions
-      };
+      ...keyOptions,
+      cipher: 'aes-256-cbc',
+      passphrase
+    } : {
+      ...keyOptions
+    };
 
     const publicKeyOptions = {
-        ...keyOptions
-      };
+      ...keyOptions
+    };
 
     var ret = null;
 
-    if(mode === 'private') {
-      if(!this.private_) {
+    if (mode === 'private') {
+      if (!this.private_) {
         throw new Error('No private key set!');
       }
 
       ret = this.private_.export(privateKeyOptions);
-    } else if(mode === 'public') {
-      if(!this.public_) {
+    } else if (mode === 'public') {
+      if (!this.public_) {
         throw new Error('No public key set!');
       }
 
       ret = this.public_.export(publicKeyOptions);
-    } else if(mode === 'both') {
-      if(!this.private_ || !this.public_) {
+    } else if (mode === 'both') {
+      if (!this.private_ || !this.public_) {
         throw new Error('No private key or no public key set!');
       }
 
@@ -219,13 +219,13 @@ class RSAKeyPair {
       };
     }
 
-    if(returnBuffer) {
-      if(typeof ret === 'object') {
+    if (returnBuffer) {
+      if (typeof ret === 'object') {
         const keys = Object.keys(ret);
-        for(let i=0; i<keys.length; i++) {
+        for (let i = 0; i < keys.length; i++) {
           ret[keys[i]] = Buffer.from(ret[keys[i]], 'utf8');
         }
-      } else if(typeof ret === 'string') {
+      } else if (typeof ret === 'string') {
         ret = Buffer.from(ret, 'utf8');
       }
     }
@@ -243,27 +243,27 @@ class RSAKeyPair {
    */
   static generate(options = {}) {
     const {
-        passphrase,
-        modulusLength = 4096
-      } = options;
+      passphrase,
+      modulusLength = 4096
+    } = options;
 
     const keyOptions = {
-        type: 'pkcs1',
-        format: 'pem',
-      };
+      type: 'pkcs1',
+      format: 'pem',
+    };
 
     const publicKeyOptions = {
-        ...keyOptions
-      };
+      ...keyOptions
+    };
 
-    const privateKeyOptions = passphrase ? 
+    const privateKeyOptions = passphrase ?
       {
         ...keyOptions,
         cipher: 'aes-256-cbc',
         passphrase
       } : keyOptions;
 
-    const { privateKey, publicKey } = 
+    const { privateKey, publicKey } =
       crypto.generateKeyPairSync('rsa', {
         modulusLength,
         publicKeyEncoding: publicKeyOptions,
@@ -271,9 +271,9 @@ class RSAKeyPair {
       });
 
     return new RSAKeyPair({
-        privateKeyBuffer: privateKey,
-        publicKeyBuffer: publicKey
-      });
+      privateKeyBuffer: privateKey,
+      publicKeyBuffer: publicKey
+    });
   }
 
   /**
@@ -285,7 +285,7 @@ class RSAKeyPair {
    *         The hex-encoded signature for the given buffer.
    */
   sign(buffer) {
-    if(!this.private_) {
+    if (!this.private_) {
       throw new Error(`Cannot sign data because no private key is set.`);
     }
 
@@ -308,7 +308,7 @@ class RSAKeyPair {
    *         matches the given signature.
    */
   verify(buffer, signature) {
-    if(!this.public_) {
+    if (!this.public_) {
       throw new Error(`Cannot verify signature because no public key is set.`);
     }
 

@@ -11,10 +11,10 @@ const { createPeerProxy } = require('../lib/PeerProxy.js');
 // ----------------------------------------------------------------------------------
 
 class GreetingMessage extends Message {
-  constructor(options={}) {
+  constructor(options = {}) {
     super();
 
-    const { greeting='' } = options;
+    const { greeting = '' } = options;
     this.greeting = greeting;
   }
 
@@ -22,7 +22,7 @@ class GreetingMessage extends Message {
   set greeting(greeting) { this.body.greeting = greeting; }
 }
 
-const sink = () => {};
+const sink = () => { };
 const fakeLogger = { error: sink, info: sink, log: sink, warn: sink };
 
 let peer1alpha;
@@ -32,14 +32,14 @@ let peer4beta;
 let peer4alpha;
 let peerProxy;
 
-const exec = async ({ command, args=[], timeout=-1 }) => {
+const exec = async ({ command, args = [], timeout = -1 }) => {
   return new Promise((resolve, reject) => {
     if (timeout > 0) {
       setTimeout(
         reject(new Error(`Command failed to finish before timeout!`)), timeout);
     }
 
-    const proc = spawn(command, args);
+    const proc = spawn(command, args, { shell: true });
 
     // proc.stdout.on('data', (data) => {
     //     console.log(`stdout: ${data.toString()}`);
@@ -50,116 +50,101 @@ const exec = async ({ command, args=[], timeout=-1 }) => {
     //   });
 
     proc.on('exit', (code) => {
-        // console.log(`child process exited with code: ${code.toString()}`);
-        if (code !== 0) {
-          return reject();
-        }
-        return resolve();
-      });
+      // console.log(`child process exited with code: ${code.toString()}`);
+      if (code !== 0) {
+        return reject(new Error(`Command ${command} failed with exit code: ${code}`));
+      }
+      return resolve();
+    });
   });
 };
 
 const setup = async () => {
   await exec({
-      command: "openssl",
-      args: [
-        "genrsa -out /tmp/https.key.pem 2048",
-      ]
-    });
+    command: "openssl",
+    args: [
+      "genrsa -out /tmp/https.key.pem 2048",
+    ]
+  });
   await exec({
-      command: "openssl",
-      args: [
-        "req -new -key /tmp/https.key.pem -out /tmp/https.csr.pem",
-      ]
-    });
+    command: "openssl",
+    args: [
+      "req -new -key /tmp/https.key.pem -out /tmp/https.csr.pem -subj '/CN=localhost'",
+    ]
+  });
   await exec({
-      command: "openssl",
-      args: [
-        "x509 -req -days 9999 -in /tmp/https.csr.pem " +
-        "-signkey /tmp/https.key.pem -out /tmp/https.cert.pem",
-      ]
-    });
+    command: "openssl",
+    args: [
+      "x509 -req -days 9999 -in /tmp/https.csr.pem " +
+      "-signkey /tmp/https.key.pem -out /tmp/https.cert.pem",
+    ]
+  });
   await exec({
-      command: "node",
-      args: [
-        "examples/peerSetup.js",
-        "-o=/tmp/one.alpha",
-        "-ro=/tmp/alpha",
-        "-b=2048",
-      ]
-    });
+    command: "node",
+    args: [
+      "examples/peerSetup.js",
+      "-o=/tmp/one.alpha",
+      "-b=2048",
+    ]
+  });
   await exec({
-      command: "node",
-      args: [
-        "examples/peerSetup.js",
-        "-o=/tmp/two.alpha",
-        "-b=2048",
-        "-ring=/tmp/alpha.ring.pem",
-      ]
-    });
+    command: "node",
+    args: [
+      "examples/peerSetup.js",
+      "-o=/tmp/two.alpha",
+      "-b=2048",
+    ]
+  });
   await exec({
-      command: "node",
-      args: [
-        "examples/peerSetup.js",
-        "-o=/tmp/three.beta",
-        "-ro=/tmp/beta",
-        "-b=2048",
-      ]
-    });
+    command: "node",
+    args: [
+      "examples/peerSetup.js",
+      "-o=/tmp/three.beta",
+      "-b=2048",
+    ]
+  });
   await exec({
-      command: "node",
-      args: [
-        "examples/peerSetup.js",
-        "-o=/tmp/four.alpha",
-        "-b=2048",
-        "-ring=/tmp/alpha.ring.pem",
-      ]
-    });
+    command: "node",
+    args: [
+      "examples/peerSetup.js",
+      "-o=/tmp/four.alpha",
+      "-b=2048",
+    ]
+  });
   await exec({
-      command: "node",
-      args: [
-        "examples/peerSetup.js",
-        "-o=/tmp/four.beta",
-        "-b=2048",
-        "-ring=/tmp/beta.ring.pem",
-      ]
-    });
+    command: "node",
+    args: [
+      "examples/peerSetup.js",
+      "-o=/tmp/four.beta",
+      "-b=2048",
+    ]
+  });
 };
 
 const teardown = async () => {
   await exec({
-      command: "rm",
-      args: [
-        "/tmp/alpha.ring.pem",
-        "/tmp/alpha.ring.pub",
-        "/tmp/beta.ring.pem",
-        "/tmp/beta.ring.pub",
-        "/tmp/one.alpha.peer.pem",
-        "/tmp/one.alpha.peer.pub",
-        "/tmp/one.alpha.peer.signature",
-        "/tmp/two.alpha.peer.pem",
-        "/tmp/two.alpha.peer.pub",
-        "/tmp/two.alpha.peer.signature",
-        "/tmp/three.beta.peer.pem",
-        "/tmp/three.beta.peer.pub",
-        "/tmp/three.beta.peer.signature",
-        "/tmp/four.beta.peer.pem",
-        "/tmp/four.beta.peer.pub",
-        "/tmp/four.beta.peer.signature",
-        "/tmp/four.alpha.peer.signature",
-      ]
-    });
+    command: "rm",
+    args: [
+      "-f",
+      "/tmp/one.alpha.peer.pem",
+      "/tmp/one.alpha.peer.pub",
+      "/tmp/two.alpha.peer.pem",
+      "/tmp/two.alpha.peer.pub",
+      "/tmp/three.beta.peer.pem",
+      "/tmp/three.beta.peer.pub",
+      "/tmp/four.beta.peer.pem",
+      "/tmp/four.beta.peer.pub",
+    ]
+  });
 };
 
 const before = async () => {
-  const sink = () => {};
+  const sink = () => { };
   const fakeLogger = { error: sink, info: sink, log: sink, warn: sink };
 
   peer1alpha = new Peer({
-    signaturePath: "/tmp/one.alpha.peer.signature",
     publicKeyPath: "/tmp/one.alpha.peer.pub",
     privateKeyPath: "/tmp/one.alpha.peer.pem",
-    ringPublicKeyPath: "/tmp/alpha.ring.pub",
     httpsServerConfig: {
       port: 26781,
     },
@@ -168,10 +153,8 @@ const before = async () => {
   });
 
   peer2alpha = new Peer({
-    signaturePath: "/tmp/two.alpha.peer.signature",
     publicKeyPath: "/tmp/two.alpha.peer.pub",
     privateKeyPath: "/tmp/two.alpha.peer.pem",
-    ringPublicKeyPath: "/tmp/alpha.ring.pub",
     httpsServerConfig: {
       port: 26782,
     },
@@ -180,10 +163,8 @@ const before = async () => {
   });
 
   peer3beta = new Peer({
-    signaturePath: "/tmp/three.beta.peer.signature",
     publicKeyPath: "/tmp/three.beta.peer.pub",
     privateKeyPath: "/tmp/three.beta.peer.pem",
-    ringPublicKeyPath: "/tmp/beta.ring.pub",
     httpsServerConfig: {
       port: 26783,
     },
@@ -192,10 +173,8 @@ const before = async () => {
   });
 
   peer4beta = new Peer({
-    signaturePath: "/tmp/four.beta.peer.signature",
     publicKeyPath: "/tmp/four.beta.peer.pub",
     privateKeyPath: "/tmp/four.beta.peer.pem",
-    ringPublicKeyPath: "/tmp/beta.ring.pub",
     httpsServerConfig: {
       port: 26784,
     },
@@ -204,10 +183,8 @@ const before = async () => {
   });
 
   peer4alpha = new Peer({
-    signaturePath: "/tmp/four.alpha.peer.signature",
     publicKeyPath: "/tmp/four.alpha.peer.pub",
     privateKeyPath: "/tmp/four.alpha.peer.pem",
-    ringPublicKeyPath: "/tmp/alpha.ring.pub",
     httpsServerConfig: {
       port: 26785,
     },
@@ -224,15 +201,15 @@ const before = async () => {
   await peer4alpha.discover(["127.0.0.1:26781", "127.0.0.1:26782"]);
 
   peerProxy = createPeerProxy({
-      peers: [
-        peer4alpha,
-        peer4beta,
-      ],
-      messageClasses: [
-        GreetingMessage,
-      ],
-      logger: fakeLogger,
-    });
+    peers: [
+      peer4alpha,
+      peer4beta,
+    ],
+    messageClasses: [
+      GreetingMessage,
+    ],
+    logger: fakeLogger,
+  });
 };
 
 const after = async () => {
@@ -251,14 +228,14 @@ test("PeerProxy_proxiesMessageFromAlphaToBeta", async (assert) => {
   await setup();
   await before();
 
-  const greeting = 
+  const greeting =
     new GreetingMessage({ greeting: 'Hello from peer1alpha!' });
 
   let peer2alphaReceivePromiseResolver;
   const peer2alphaReceivePromise = new Promise((resolve) => {
     peer2alphaReceivePromiseResolver = resolve;
   });
-  const peer2alphaMessageHandler = 
+  const peer2alphaMessageHandler =
     (message) => peer2alphaReceivePromiseResolver(message);
   peer2alpha.bind(GreetingMessage).to(peer2alphaMessageHandler);
 
@@ -266,21 +243,21 @@ test("PeerProxy_proxiesMessageFromAlphaToBeta", async (assert) => {
   const peer3betaReceivePromise = new Promise((resolve) => {
     peer3betaReceivePromiseResolver = resolve;
   });
-  const peer3betaMessageHandler = 
+  const peer3betaMessageHandler =
     (message) => peer3betaReceivePromiseResolver(message);
   peer3beta.bind(GreetingMessage).to(peer3betaMessageHandler);
 
   await peer1alpha.broadcast(greeting);
-  const [ peer2alphaMessage, peer3betaMessage ] = 
-    await Promise.all([ peer2alphaReceivePromise, peer3betaReceivePromise ]);
+  const [peer2alphaMessage, peer3betaMessage] =
+    await Promise.all([peer2alphaReceivePromise, peer3betaReceivePromise]);
 
-  assert.true(!!peer2alphaMessage, 
+  assert.true(!!peer2alphaMessage,
     'peer2alpha should receive message broadcasted from peer1alpha.');
   assert.equal(peer2alphaMessage.hash, greeting.hash);
   assert.deepEquals(peer2alphaMessage.body, greeting.body);
   assert.deepEquals(peer2alphaMessage.timestamp, greeting.timestamp);
 
-  assert.true(!!peer3betaMessage, 
+  assert.true(!!peer3betaMessage,
     'peer3beta should receive message broadcasted from peer1alpha.');
   assert.equal(peer3betaMessage.hash, greeting.hash);
   assert.deepEquals(peer3betaMessage.body, greeting.body);
@@ -298,14 +275,14 @@ test("PeerProxy_proxiesMessageFromAlphaOtherToBeta", async (assert) => {
   await setup();
   await before();
 
-  const greeting = 
+  const greeting =
     new GreetingMessage({ greeting: 'Hello from peer2alpha!' });
 
   let peer1alphaReceivePromiseResolver;
   const peer1alphaReceivePromise = new Promise((resolve) => {
     peer1alphaReceivePromiseResolver = resolve;
   });
-  const peer1alphaMessageHandler = 
+  const peer1alphaMessageHandler =
     (message) => peer1alphaReceivePromiseResolver(message);
   peer1alpha.bind(GreetingMessage).to(peer1alphaReceivePromiseResolver);
 
@@ -313,26 +290,26 @@ test("PeerProxy_proxiesMessageFromAlphaOtherToBeta", async (assert) => {
   const peer3betaReceivePromise = new Promise((resolve) => {
     peer3betaReceivePromiseResolver = resolve;
   });
-  const peer3betaMessageHandler = 
+  const peer3betaMessageHandler =
     (message) => peer3betaReceivePromiseResolver(message);
   peer3beta.bind(GreetingMessage).to(peer3betaMessageHandler);
 
   await peer2alpha.broadcast(greeting);
-  const [ peer1alphaMessage, peer3betaMessage ] = 
-    await Promise.all([ peer1alphaReceivePromise, peer3betaReceivePromise ]);
+  const [peer1alphaMessage, peer3betaMessage] =
+    await Promise.all([peer1alphaReceivePromise, peer3betaReceivePromise]);
 
-  assert.true(!!peer1alphaMessage, 
+  assert.true(!!peer1alphaMessage,
     'peer1alpha should receive message broadcasted from peer2alpha.');
   assert.equal(peer1alphaMessage.hash, greeting.hash);
   assert.deepEquals(peer1alphaMessage.body, greeting.body);
   assert.deepEquals(peer1alphaMessage.timestamp, greeting.timestamp);
-    
-  assert.true(!!peer3betaMessage, 
+
+  assert.true(!!peer3betaMessage,
     'peer3beta should receive message broadcasted from peer2alpha.');
   assert.equal(peer3betaMessage.hash, greeting.hash);
   assert.deepEquals(peer3betaMessage.body, greeting.body);
   assert.deepEquals(peer3betaMessage.timestamp, greeting.timestamp);
-    
+
   await after();
   await teardown();
 });
@@ -345,14 +322,14 @@ test("PeerProxy_proxiesMessageFromBetaToAlpha", async (assert) => {
   await setup();
   await before();
 
-  const greeting = 
+  const greeting =
     new GreetingMessage({ greeting: 'Hello from peer3beta!' });
 
   let peer1alphaReceivePromiseResolver;
   const peer1alphaReceivePromise = new Promise((resolve) => {
     peer1alphaReceivePromiseResolver = resolve;
   });
-  const peer1alphaMessageHandler = 
+  const peer1alphaMessageHandler =
     (message) => peer1alphaReceivePromiseResolver(message);
   peer1alpha.bind(GreetingMessage).to(peer1alphaMessageHandler);
 
@@ -360,21 +337,21 @@ test("PeerProxy_proxiesMessageFromBetaToAlpha", async (assert) => {
   const peer2alphaReceivePromise = new Promise((resolve) => {
     peer2alphaReceivePromiseResolver = resolve;
   });
-  const peer2alphaMessageHandler = 
+  const peer2alphaMessageHandler =
     (message) => peer2alphaReceivePromiseResolver(message);
   peer2alpha.bind(GreetingMessage).to(peer2alphaMessageHandler);
 
   await peer3beta.broadcast(greeting);
-  const [ peer1alphaMessage, peer2alphaMessage ] = 
-    await Promise.all([ peer1alphaReceivePromise, peer2alphaReceivePromise ]);
+  const [peer1alphaMessage, peer2alphaMessage] =
+    await Promise.all([peer1alphaReceivePromise, peer2alphaReceivePromise]);
 
-  assert.true(!!peer1alphaMessage, 
+  assert.true(!!peer1alphaMessage,
     'peer1alpha should receive message broadcasted from peer1alpha.');
   assert.equal(peer1alphaMessage.hash, greeting.hash);
   assert.deepEquals(peer1alphaMessage.body, greeting.body);
   assert.deepEquals(peer1alphaMessage.timestamp, greeting.timestamp);
 
-  assert.true(!!peer2alphaMessage, 
+  assert.true(!!peer2alphaMessage,
     'peer2alpha should receive message broadcasted from peer1alpha.');
   assert.equal(peer2alphaMessage.hash, greeting.hash);
   assert.deepEquals(peer2alphaMessage.body, greeting.body);

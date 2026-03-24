@@ -10,7 +10,7 @@ const { Message } = require('ringnet');
 class TextMessage extends Message {
   constructor(options = {}) {
     super();
-    const { text='' } = options;
+    const { text = '' } = options;
     this.text = text;
   }
 

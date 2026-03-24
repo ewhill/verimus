@@ -6,10 +6,10 @@ const utils = require('../../lib/utils');
 test("PeersMessage", (assert) => {
   const emptyPeersMessage = new PeersMessage();
 
-  assert.deepEqual(emptyPeersMessage.since, new Date(0), 
+  assert.deepEqual(emptyPeersMessage.since, new Date(0),
     "Default value of since should be provided via constructor.");
 
-  assert.deepEqual(emptyPeersMessage.peers, [], 
+  assert.deepEqual(emptyPeersMessage.peers, [],
     "Default value of peers should be provided via constructor.");
 
   assert.throws(() => { emptyPeersMessage.since = 'a'; },
@@ -27,18 +27,18 @@ test("PeersMessage", (assert) => {
     "Default value of peers should be provided via property setter.");
 
   const nowDate = new Date(Date.now());
-  const peersList = [ {a: 'a'}, {b: 'b'} ];
+  const peersList = [{ a: 'a' }, { b: 'b' }];
   let peersMessage = new PeersMessage({
-      since: nowDate.getTime(),
-      peers: peersList,
-    });
+    since: nowDate.getTime(),
+    peers: peersList,
+  });
 
-  assert.deepEqual(peersMessage.since, nowDate, 
+  assert.deepEqual(peersMessage.since, nowDate,
     "Set and get since property value should be equal");
 
-  assert.deepEqual(peersMessage.peers, peersList, 
+  assert.deepEqual(peersMessage.peers, peersList,
     "Set and get since property value should be equal");
-    
+
   assert.end();
 });
 

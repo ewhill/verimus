@@ -4,7 +4,7 @@ const { Peer, Message } = require('../index');
 class MySuperCoolMessage extends Message {
   constructor(options = {}) {
     super();
-    const { data='' } = options;
+    const { data = '' } = options;
     this.data = data;
   }
 
@@ -57,17 +57,17 @@ const secondPeer = new Peer({
 const main = async () => {
   await firstPeer.init();
   await secondPeer.init();
-  await secondPeer.discover([ '127.0.0.1:26780' ]);
+  await secondPeer.discover(['127.0.0.1:26780']);
 
   let received = 0;
   let receivedPromiseResolve;
   let receivedPromiseTimeout;
   const receivedPromise = new Promise((resolve, reject) => {
-      receivedPromiseResolve = resolve;
-      receivedPromiseTimeout = setTimeout(reject, 5000);
-    }).then(() => {
-      clearTimeout(receivedPromiseTimeout);
-    });
+    receivedPromiseResolve = resolve;
+    receivedPromiseTimeout = setTimeout(reject, 5000);
+  }).then(() => {
+    clearTimeout(receivedPromiseTimeout);
+  });
 
   const mySuperCoolMessageHandler = (message, connection) => {
     // The 'message' argument is here is given as an upgraded 
@@ -76,7 +76,7 @@ const main = async () => {
     // manually.
     console.log(message.data);
 
-    if(++received === 2) {
+    if (++received === 2) {
       receivedPromiseResolve();
     }
   };
@@ -85,7 +85,7 @@ const main = async () => {
   secondPeer.bind(MySuperCoolMessage).to(mySuperCoolMessageHandler);
 
   firstPeer.broadcast(new MySuperCoolMessage({ data: 'Hello from first!' }));
-  secondPeer.broadcast(new MySuperCoolMessage({ data: 'Hello from second!'}));
+  secondPeer.broadcast(new MySuperCoolMessage({ data: 'Hello from second!' }));
 
   await receivedPromise;
 

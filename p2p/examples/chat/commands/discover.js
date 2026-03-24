@@ -7,11 +7,11 @@ class DiscoverCommand extends Command {
                   '\n' +
                   'Used to connect to a new peer or set of peers at a given ' +
                   'address. Results will be printed to the chat.\n' +
-                        '\tUsage:\n' +
-                        '\t\tSimple discovery: ' +
-                        '> /discover ws://123.123.123.123:26780\n' +
-                        '\t\tRange discovery: > /discover 123.123.123.123\n' +
-                        '\t\tAddress discovery: > /discover peer.remote.com');
+                  '\tUsage:\n' +
+                  '\t\tSimple discovery: ' +
+                  '> /discover ws://123.123.123.123:26780\n' +
+                  '\t\tRange discovery: > /discover 123.123.123.123\n' +
+                  '\t\tAddress discovery: > /discover peer.remote.com');
       }
 
       /**
@@ -29,12 +29,12 @@ class DiscoverCommand extends Command {
             const addresses = args.join(' ').split(',').map(a => a.trim());
             io.net.log(`Now discovering on ["${addresses.join('", "')}"].`);
             try {
-              const results = await peer.discover(addresses);
-              io.net.log(
-                `Discovery completed on ["${addresses.join('", "')}"]: ${results}`);
-            } catch(err) {
-              io.net.error((new Error(
-                    `Failed to discover on ["${addresses.join('", "')}"].`)).stack);
+                  const results = await peer.discover(addresses);
+                  io.net.log(
+                        `Discovery completed on ["${addresses.join('", "')}"]: ${results}`);
+            } catch (err) {
+                  io.net.error((new Error(
+                        `Failed to discover on ["${addresses.join('", "')}"].`)).stack);
             }
             return Promise.resolve(true);
       }

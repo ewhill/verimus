@@ -20,14 +20,14 @@ class Command {
 	}
 
 	set command(command) {
-		if(!helpText || typeof helpText !== 'string') {
+		if (!helpText || typeof helpText !== 'string') {
 			throw new Error(`Invalid value for property 'helpText'!`);
 		}
 		this._command = command;
 	}
 
 	set helpText(helpText) {
-		if(!helpText || typeof helpText !== 'string') {
+		if (!helpText || typeof helpText !== 'string') {
 			throw new Error(`Invalid value for property 'helpText'!`);
 		}
 		this._helpText = helpText;
