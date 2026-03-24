@@ -11,6 +11,13 @@ Each phase below outlines a core architectural shift required by the design prop
 - **Application Layer Trust:** Delegate all Byzantine fault tolerance and peer banishment logic entirely to the Application Layer (`ReputationManager`), enabling anyone to join the network anonymously.
 - **Target Sub-Design:** `Phase0_PermissionlessTransport.md`
 
+## Phase 0b: Epidemic Routing (Gossip Protocol) Overlay
+**Goal:** Transition the transport layer from a fully-connected mesh to a strictly capped epidemic-routing overlay capable of scaling to hundreds of thousands of nodes.
+- **Connection Limits & Triage:** Enforce static maximum thresholds on active sockets (e.g., 50 neighbors) to prevent individual peer node exhaustion, triaging dead connections cleanly.
+- **Epidemic Relaying (LRU & TTL):** Configure message propagation to bounce epidemically from node to neighbor, restricted strictly by a static Time-To-Live (TTL) field (e.g., 20) and severed by a local Seen Message Cache (LRU) to eliminate broadcast storms.
+- **Decentralized Discoverability (PEX):** Introduce Peer Exchange patterns (`GetPeersMessage` & `PeersResponseMessage`) enabling nodes to harvest dynamic neighbor IP lists seamlessly without immediate connection coupling.
+- **Target Sub-Design:** `Phase0b_GossipProtocol.md`
+
 ## Phase 1: Blockchain Economics (Wallets & Transactions)
 **Goal:** Shift the homogeneous ledger into a multi-type blockchain that supports node funds and programmatic economy tracking.
 - **Architectural Shift:** Introduce a `BlockType` schema (e.g., `TRANSACTION`, `STORAGE_CONTRACT`). Project Clementine operates strictly as a hard fork; legacy `DATA` blocks are fully deprecated and no longer supported on the native ledger.
