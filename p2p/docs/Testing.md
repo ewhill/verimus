@@ -1,13 +1,13 @@
 # P2P Isolation Testing Strategy
 
-The Verimus P2P integration enforces strict continuous validation bounds natively through the `./test` folder executing standard `tape` assertions spanning local structures without instantiating full cluster topology dependencies blindly.
+The Verimus P2P integration enforces testing bounds through the `./test` folder executing `tape` assertions spanning local structures without instantiating full cluster topology dependencies.
 
 ### Suite Mechanics
-- Utilize `$ npm test` directly within the isolated `p2p` module.
-- Over `105` test scenarios specifically mimic individual abstractions covering bounds explicitly validating network operations gracefully.
+- Execute `npm test` within the isolated `p2p` module.
+- Over `105` test scenarios simulate abstract endpoints verifying core protocols.
 
 ### Key Covered Parameters
-1. **Network Topology Configurations**: `PeerProxy` checks specifically route isolated instances communicating solely via intermediate servers proving active gossip bounds.
-2. **Payload Parsing Bounds**: Identifies `Message.js` constructors instantiating explicit mappings natively extracting cryptographic properties precisely.
-3. **PEX Routing Limitations**: Evaluates localized `limit` and `since` properties across structured payload handlers specifically simulating address book populations gracefully.
-4. **Hermetic Memory Simulation**: Tape isolates endpoints explicitly opening temporary arbitrary local server bounds natively tearing down configurations gracefully ceasing port leakage.
+1. **Network Topology Configurations**: `PeerProxy` tests route isolated instances communicating via intermediate servers verifying active gossip protocols.
+2. **Payload Parsing Bounds**: Identifies `Message.js` constructors extracting cryptographic properties.
+3. **PEX Routing Limitations**: Evaluates `limit` and `since` properties across structured payload handlers simulating address book logic.
+4. **Hermetic Memory Simulation**: Tape isolates endpoints opening temporary local server bounds while tearing down configurations preventing port leakage.

@@ -1,14 +1,14 @@
 # Verimus P2P - Transport Layer
-The `p2p` module constitutes the secure, peer-to-peer execution environment supporting the broader Verimus network footprint. It derives dynamic, cryptographic identities locally per peer context and seamlessly discovers endpoints using robust, decentralized epidemic messaging patterns. 
+The `p2p` module constitutes the peer-to-peer execution environment supporting the Verimus network. It derives cryptographic identities per peer context and discovers endpoints using epidemic messaging patterns.
 
-Built atop HTTPS WebSockets utilizing `RSA-2048` and authenticated `AES-256-GCM` encryption algorithms independently.
+Built atop HTTPS WebSockets utilizing `RSA-2048` and authenticated `AES-256-GCM` encryption algorithms.
 
 ### Documentation Directory
-For deep architectural insights, refer directly to the `./docs/` folder:
-- **[Component Architecture](./docs/Architecture.md)** - Topologies of the localized subsystems.
+For architectural insights, refer to the `./docs/` folder:
+- **[Component Architecture](./docs/Architecture.md)** - Topologies of the subsystems.
 - **[Gossip Mechanics](./docs/GossipMechanics.md)** - Peer Exchange protocols, duplicate caches, and routing matrices.
 - **[Network Security](./docs/Security.md)** - Cryptographic handshake protocols, AEAD implementations, and identity bounds.
-- **[Test Coverage](./docs/Testing.md)** - Test expectations, environment setups, and component validation frameworks.
+- **[Test Coverage](./docs/Testing.md)** - Test expectations, environment setups, and validation frameworks.
 
 ## Installation
 This package operates within the global `/p2p/` workspace bounds.
@@ -25,19 +25,19 @@ const peer = new Peer({
   httpsServerConfig: { port: 26780 },
   publicKeyPath: 'myPeerPublicKey.pub',
   privateKeyPath: 'myPeerPrivateKey.pem',
-  maxConnections: 50 // Enforces maximum neighbor mapping securely 
+  maxConnections: 50 // Enforces maximum neighbor mapping
 });
 ```
 
-### 2. Initialization and PEX Bounding
-Peers instantiate asynchronously matching port mapping bindings securely:
+### 2. Initialization and PEX 
+Peers instantiate asynchronously matching port mapping bindings:
 ```js
 await peer.init();
 await peer.discover(["127.0.0.1:26781"]); 
 ```
 
 ### 3. Emitting Context Driven Messages
-Define localized extensions using explicitly defined payload templates natively:
+Define localized extensions using payload templates:
 ```js
 class MyCustomMessage extends Message {
   constructor(options = {}) {
@@ -49,12 +49,12 @@ class MyCustomMessage extends Message {
   set value(v) { this.body.value = v; }
 }
 
-// Emits via dynamic Epidemic Routing protocols
+// Emits via Epidemic Routing protocols
 await peer.broadcast(new MyCustomMessage({ value: "Hello Network!" }));
 ```
 
 ### 4. Listening for Overlays
-Seamlessly structure endpoint handler dependencies mapped locally:
+Structure endpoint handler dependencies:
 ```js
 const dynamicHandler = (message, connection) => {
   console.log('Received Message Payload: ', message.value);
