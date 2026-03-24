@@ -21,7 +21,7 @@ export default class PeersHandler extends BaseHandler {
             const pg = mongoPeers.find(p => p.publicKey === pubKey);
             return {
                 address: conn.peerAddress || 'unknown',
-                signature: conn.remoteSignature ? conn.remoteSignature.toString('hex').slice(-16) : null,
+                signature: pubKey ? Buffer.from(pubKey).toString('base64').slice(-16) : null,
                 status: conn.isConnected ? (conn.isTrusted ? 'connected' : 'upgrading') : 'disconnected',
                 score: pg ? pg.score : 100,
                 isBanned: pg ? pg.isBanned : false,
@@ -33,7 +33,7 @@ export default class PeersHandler extends BaseHandler {
         const selfPg = mongoPeers.find(p => p.publicKey === this.node.publicKey);
         const self = {
             address: `127.0.0.1:${this.node.port}`,
-            signature: this.node.peer.signature ? this.node.peer.signature.toString('hex').slice(-16) : null,
+            signature: this.node.publicKey ? Buffer.from(this.node.publicKey).toString('base64').slice(-16) : null,
             status: 'self',
             score: selfPg ? selfPg.score : 100,
             isBanned: selfPg ? selfPg.isBanned : false,

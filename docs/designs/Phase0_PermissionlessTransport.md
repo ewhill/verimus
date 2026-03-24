@@ -39,9 +39,9 @@ In a permissionless environment, malicious actors will seamlessly join the defau
 
 ## 4. Execution Task Checklist
 
-- [ ] Copy the `ringnet` source directory natively into `p2p/`.
-- [ ] Uninstall the legacy `ringnet` npm package and execute `npm install`.
-- [ ] Mass refactor all import domains globally shifting from the external package to the local `p2p/` entrypoint.
-- [ ] Refactor the `p2p/` Handshake logic (or equivalent challenge logic) to evaluate unique RSA signatures rather than symmetric or shared key verifications.
-- [ ] Refactor `spawn_nodes.sh`, `index.ts`, and our `GenerateKeys.ts` routines to eliminate passing global `ring.pem` files during peer boots.
-- [ ] Validate `npm test` to ensure native mocking schemas pointing to the P2P layer reflect the missing master key logic flawlessly.
+- [x] Copy the `ringnet` source directory natively into `p2p/`.
+- [x] Uninstall the legacy `ringnet` npm package and execute `npm install`.
+- [x] Mass refactor all import domains globally shifting from the external package to the local `p2p/` entrypoint.
+- [x] Refactor the `p2p/` Handshake logic (or equivalent challenge logic) to evaluate unique RSA signatures rather than symmetric or shared key verifications.
+- [x] Refactor `spawn_nodes.sh`, `index.ts`, and our `GenerateKeys.ts` routines to eliminate passing global `ring.pem` files during peer boots.
+- [x] Validate `npm test` to ensure native mocking schemas pointing to the P2P layer reflect the missing master key logic flawlessly.

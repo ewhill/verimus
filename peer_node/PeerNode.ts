@@ -19,6 +19,8 @@ import SyncEngine from '../peer_handlers/sync_engine/SyncEngine';
 import { ReputationManager } from '../peer_handlers/reputation_manager/ReputationManager';
 import setupExpressApp from '../api_server/ApiServer';
 import logger from '../logger/Logger';
+import { IncomingMessage } from 'http';
+import { WebSocket } from 'ws';
 
 class PeerNode {
     port: number;
@@ -129,20 +131,16 @@ class PeerNode {
                 noServer: true
             },
             publicAddress: this.publicAddress || undefined,
-            ringPublicKeyPath: this.keyPaths.ringPublicKeyPath,
             publicKeyPath: this.keyPaths.publicKeyPath,
             privateKeyPath: this.keyPaths.privateKeyPath,
-            signaturePath: this.keyPaths.signaturePath,
-            ringPublicKey: this.keyPaths.ringPublicKey,
             publicKey: this.keyPaths.publicKey,
-            privateKey: this.keyPaths.privateKey,
-            signature: this.keyPaths.signature
+            privateKey: this.keyPaths.privateKey
         });
 
-        httpServer.on('upgrade', (request: any, socket: Socket, head: any) => {
-            if (this.peer && (this.peer as any).wsServer) {
-                (this.peer as any).wsServer.handleUpgrade(request, socket, head, (ws: WebSocket) => {
-                    (this.peer as any).wsServer.emit('connection', ws, request);
+        httpServer.on('upgrade', (request: IncomingMessage, socket: Socket, head: any) => {
+            if (this.peer && this.peer.wsServer) {
+                this.peer.wsServer.handleUpgrade(request, socket, head, (client: WebSocket) => {
+                    this.peer!.wsServer!.emit('connection', client, request);
                 });
             }
         });

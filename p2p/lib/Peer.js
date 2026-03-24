@@ -38,8 +38,6 @@ class Peer {
   // Private Class Properties Assigned Via Constructor Params
   privateKeyPath_;
   publicKeyPath_;
-  signaturePath_;
-  ringPublicKeyPath_;
   publicAddress_;
   logger_;
   discoveryConfig_;
@@ -55,14 +53,10 @@ class Peer {
     // Required Parameters (Paths)
     privateKeyPath,
     publicKeyPath,
-    signaturePath,
-    ringPublicKeyPath,
 
     // Raw Key Overrides
     privateKey,
     publicKey,
-    signature,
-    ringPublicKey,
 
     // Optional / Configurable Parameters
     httpsServerConfig = {},
@@ -79,13 +73,9 @@ class Peer {
   }) {
     this.privateKeyPath_ = privateKeyPath;
     this.publicKeyPath_ = publicKeyPath;
-    this.signaturePath_ = signaturePath;
-    this.ringPublicKeyPath_ = ringPublicKeyPath;
 
     this.privateKey_ = privateKey;
     this.publicKey_ = publicKey;
-    this.signature_ = signature;
-    this.ringPublicKey_ = ringPublicKey;
 
     this.httpsServerConfig_ = httpsServerConfig;
     this.wsServerConfig_ = { ...this.wsServerConfig_, ...wsServerConfig };
@@ -134,9 +124,6 @@ class Peer {
     return this.connectedPeers.filter(peer => peer.isTrusted);
   }
 
-  get signature() {
-    return this.signature_.toString('hex');
-  }
 
   get isReady() {
     return this.isReady_;
@@ -154,9 +141,7 @@ class Peer {
     this.isInitializing_ = true;
 
     const filesToCheck = [];
-    if (!this.ringPublicKey_) filesToCheck.push({ description: "Ring Public Key", location: this.ringPublicKeyPath_ });
     if (!this.privateKey_) filesToCheck.push({ description: "Peer Private Key", location: this.privateKeyPath_ });
-    if (!this.signature_) filesToCheck.push({ description: "Signature", location: this.signaturePath_ });
 
     const checkPromise = filesToCheck.length > 0 
       ? utils.checkFiles(filesToCheck, this.logger_) 
@@ -186,23 +171,9 @@ class Peer {
               }
             }) : Promise.resolve();
 
-        const readRingPublicKeyPromise = !this.ringPublicKey_ ?
-          utils.readFileAsync(this.ringPublicKeyPath_)
-            .then(data => {
-              this.ringPublicKey_ = data;
-            }) : Promise.resolve();
-
-        const readSignaturePromise = !this.signature_ ?
-          utils.readFileAsync(this.signaturePath_)
-            .then(data => {
-              this.signature_ = data;
-            }) : Promise.resolve();
-
         return Promise.all([
           readPeerPrivateKeyPromise,
-          readPeerPublicKeyPromise,
-          readRingPublicKeyPromise,
-          readSignaturePromise
+          readPeerPublicKeyPromise
         ]);
       })
       .then(() => {
@@ -211,23 +182,7 @@ class Peer {
           publicKeyBuffer: this.publicKey_
         });
 
-        this.ringRSAKeyPair_ = 
-          new RSAKeyPair({ publicKeyBuffer: this.ringPublicKey_ });
-
-        const signatureBuffer = Buffer.from(this.signature_, 'hex');
-        const isValidSignature = 
-          this.ringRSAKeyPair_.verify(this.peerRSAKeyPair_.public, 
-            signatureBuffer);
-
-        if(!isValidSignature) {
-          throw new Error(`Invalid signature for given peer public key ` + 
-            `and ring public key.`);
-        }
-
-        this.signature_ = signatureBuffer;
-        
-        this.logger_.log(`Peer signature (last 8 bytes): ` + 
-          `${this.signature_.toString('hex').slice(-16)}`);
+        this.logger_.log(`Peer identity derived natively.`);
 
         this.server_ = new Server({
             httpsServerConfig: this.httpsServerConfig_,
@@ -276,13 +231,10 @@ class Peer {
         connection,
         request,
         credentials: {
-          rsaKeyPair: this.peerRSAKeyPair_,
-          signature: this.signature_
+          rsaKeyPair: this.peerRSAKeyPair_
         },
-        ringRsaKeyPair: this.ringRSAKeyPair_,
         address: this.server_.publicAddress,
         peerAddress: utils.getXForwardedFor(request),
-        signatureValidator: (s) => this.validateNewClientSignature(s),
         logger: this.logger_,
       });
 
@@ -513,13 +465,10 @@ class Peer {
     const client = new Client({
         connection: new WebSocket(formattedAddress, []),
         credentials: {
-          rsaKeyPair: this.peerRSAKeyPair_,
-          signature: this.signature_
+          rsaKeyPair: this.peerRSAKeyPair_
         },
-        ringRsaKeyPair: this.ringRSAKeyPair_,
         address: this.server_.publicAddress,
         peerAddress: formattedAddress.replace(/^wss?:\/\//, ''),
-        signatureValidator: (s) => this.validateNewClientSignature(s),
         logger: this.logger_,
       });
 
@@ -540,23 +489,7 @@ class Peer {
     }
   }
 
-  /**
-   * Validates a given signature, used to verify {HeloMessage} and continue 
-   * trust setup in {Client} and throws an error if the signature is not valid.
-   * 
-   * @param  {String} signature
-   *         The signature to validate.
-   * @return {boolean}
-   *         Whether the signature is valid, throws an error if not.
-   */
-  validateNewClientSignature(signature) {
-    if(this.isConnectedTo({ signature })) {
-      throw new Error(`Already connected to peer with signature: ${signature}`);
-    } else if (this.isOwnSignature(signature)) {
-      throw new Error(`Signature matches own: ${signature}`);
-    }
-    return true;
-  }
+
 
   /**
    * Performs basic setup on a new {Client} and adds it to this peer's list of 
@@ -587,7 +520,7 @@ class Peer {
       .map(peer => {
         return {
           address: utils.stripIpv4Prefix(peer.peerAddress),
-          signature: peer.remoteSignature.toString('hex'),
+          signature: peer.remotePublicKey,
         };
       });
   }
@@ -847,9 +780,9 @@ class Peer {
   isOwnSignature(signature) {
     if(signature) {
       if(Buffer.isBuffer(signature)) {
-        return signature.toString('hex') === this.signature_.toString('hex');
+        return signature.toString('utf8') === this.publicKey_.toString('utf8');
       }
-      return signature === this.signature_.toString('hex');
+      return signature === this.publicKey_.toString('utf8');
     }
     return false;
   }
@@ -863,8 +796,9 @@ class Peer {
    *         Whether this peer is connected to the given {Client}.
    */
   isConnectedTo({ signature }) {
+    if (!signature) return false;
     return this.connectedPeers
-      .map(peer => peer.remoteSignature.toString('hex'))
+      .map(peer => peer.remotePublicKey)
       .includes(signature);
   }
 
@@ -897,8 +831,6 @@ class Peer {
     return JSON.stringify({
       privateKeyPath: this.privateKeyPath_,
       publicKeyPath: this.publicKeyPath_,
-      signaturePath: this.signaturePath_,
-      ringPublicKeyPath: this.ringPublicKeyPath_,
       discoveryConfig: this.discoveryConfig_,
       httpsServerConfig: this.server_.httpsConfig,
       wsServerConfig: this.server_.wsConfig,

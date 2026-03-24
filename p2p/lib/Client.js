@@ -30,10 +30,8 @@ class Client {
 
 	connection_;
 	credentials_;
-	ringRsaKeyPair_;
 	address_;
 	peerAddress_;
-	signatureValidator = () => true;
 	logger_ = console;
 
 	isConnected_ = false;
@@ -61,24 +59,20 @@ class Client {
 	constructor({
 		connection,
 		credentials,
-		ringRsaKeyPair,
 		address,
 		peerAddress,
-		signatureValidator = this.signatureValidator_,
 		logger = this.logger_,
 	}) {
 
-		const { rsaKeyPair, signature } = credentials;
-		if (!rsaKeyPair || !signature) {
+		const { rsaKeyPair } = credentials;
+		if (!rsaKeyPair) {
 			throw new Error(`Invalid credentials!`);
 		}
 
 		this.connection_ = connection;
 		this.credentials_ = credentials;
-		this.ringRsaKeyPair_ = ringRsaKeyPair;
 		this.address_ = address;
 		this.peerAddress_ = peerAddress;
-		this.signatureValidator_ = signatureValidator;
 		this.logger_ = logger;
 
 		this.setupConnection();
@@ -450,8 +444,7 @@ class Client {
 		if (!this.hasSentHelo_) {
 			let heloMessage = new HeloMessage({
 				publicAddress: this.address,
-				publicKey: this.credentials_.rsaKeyPair.public.toString('utf8'),
-				signature: this.credentials_.signature.toString('hex'),
+				publicKey: this.credentials_.rsaKeyPair.public.toString('utf8')
 			});
 			heloMessage.header = {
 				signature: (this.credentials_.rsaKeyPair.sign(
@@ -495,79 +488,36 @@ class Client {
 	}
 
 	heloHandler(message, connection) {
-		/*
-		 * Check that the signature and public key the peer 
-		 * gave us were indeed signed by the same private 
-		 * key that 'this' publicKey was signed with (aka 
-		 * the ring private).
-		 */
 		const peerAddress = message.publicAddress.toString('utf8');
 		const peerPublicKeyBuffer = Buffer.from(message.publicKey, 'utf8');
-		const peerSignature = Buffer.from(message.signature, 'hex');
 		const peerRsaKeyPair =
 			new RSAKeyPair({ publicKeyBuffer: peerPublicKeyBuffer });
 
-		if (!peerRsaKeyPair || !peerSignature) {
+		if (!peerRsaKeyPair) {
 			return this.receiveHeloPromiseReject_(new Error(
 				`Message did not contain credentials!`));
 		}
 
-		const ownSignatureHex = this.credentials_.signature.toString('hex');
-		const remoteSignatureHex = peerSignature.toString('hex');
+		const ownPublicKey = this.credentials_.rsaKeyPair.public.toString('utf8');
+		const remotePublicKey = peerPublicKeyBuffer.toString('utf8');
 
-		if (ownSignatureHex === remoteSignatureHex) {
-			const formattedOwn =
-				ownSignatureHex
-					.match(new RegExp('.{1,64}', 'g')).join('\n\t\t');
-			const formattedRemote =
-				remoteSignatureHex
-					.match(new RegExp('.{1,64}', 'g')).join('\n\t\t');
+		if (ownPublicKey === remotePublicKey) {
 			return this.receiveHeloPromiseReject_(new Error(
-				`Received signature matching own signature from peer. ` +
-				`Closing connection so as to prevent potential connection to ` +
-				`self.\n` +
-				`\tLocal:\n\t\t${formattedOwn}\n` +
-				`\tRemote:\n\t\t${formattedRemote}`));
+				`Received public key matching own public key from peer. ` +
+				`Closing connection so as to prevent potential connection to self.`));
 		}
 
-		if (typeof this.signatureValidator_ === 'function') {
-			try {
-				const isValid = this.signatureValidator_(remoteSignatureHex);
-				if (!isValid) {
-					return this.receiveHeloPromiseReject_(
-						new Error(`Failed to validate remote signature: ` +
-							`${remoteSignature}`))
-				}
-			} catch (e) {
-				return this.receiveHeloPromiseReject_(e);
-			}
-		}
-
-		try {
-			if (!this.ringRsaKeyPair_.verify(message.publicKey, peerSignature)) {
-				throw new Error(`Key not signed by same ring private.`);
-			}
-		} catch (e) {
-			return this.receiveHeloPromiseReject_(e);
-		}
-
-		const formattedSignature =
-			remoteSignatureHex
-				.match(new RegExp('.{1,64}', 'g'))
-				.join('\n\t\t');
 		const formattedPublicKey =
 			peerRsaKeyPair.public.toString('utf8')
 				.replace(new RegExp('\n', 'ig'), '\n\t\t');
 
 		this.logger_.log(
 			`Remote peer @ ${peerAddress}\n` +
-			`\t-> Signature:\n\t\t${formattedSignature}\n` +
 			`\t-> Public key:\n\t\t${formattedPublicKey}`);
 
 		this.peerAddress_ = peerAddress;
 		this.remoteCredentials_ = {
-			rsaKeyPair: peerRsaKeyPair,
-			signature: peerSignature
+			rsaKeyPair: peerRsaKeyPair
 		};
 
 		return this.receiveHeloPromiseResolve_();
@@ -689,11 +639,9 @@ class Client {
 	get isConnecting() { return this.isConnecting_; }
 	get isUpgrading() { return this.isUpgrading_; }
 	get isTrusted() { return this.isTrusted_; }
-	get signature() { return this.credentials_.signature.toString('hex'); }
-	get remotePublicKey() { return this.remotePublicKey_; }
-	set remotePublicKey(value) { this.remotePublicKey_ = value; }
-	get remoteSignature() { return this.remoteCredentials_.signature; }
-	set remoteSignature(value) { this.remoteCredentials_.signature = value; }
+	get isTrusted() { return this.isTrusted_; }
+	get remotePublicKey() { return this.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8'); }
+	get remoteSignature() { return this.remotePublicKey; }
 }
 
 module.exports = Client;
