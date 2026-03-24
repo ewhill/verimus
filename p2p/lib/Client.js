@@ -413,11 +413,10 @@ class Client {
 					Buffer.concat([cipher.update(messageBodyBuffer),
 					cipher.final()]);
 				clone.body = encryptedMessageBodyBuffer.toString('base64');
-				clone.header = { 
-					authTag: cipher.getAuthTag().toString('base64'), 
-					signature, 
-					iv: iv.toString('base64') 
-				};
+				clone.authTag = cipher.getAuthTag().toString('base64');
+				clone._signature = signature;
+				clone.iv = iv.toString('base64');
+				clone._hash = message.hash;
 			} catch (e) {
 				throw new Error(`Could not encrypt message!`);
 			}

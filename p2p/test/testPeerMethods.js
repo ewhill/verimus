@@ -16,6 +16,7 @@ const before = async () => {
 			port: 56980,
 		},
 		publicAddress: "127.0.0.1:56980",
+		discoveryConfig: { addresses: ["127.0.0.1"], range: { start: 56980, end: 56990 } },
 		logger: fakeLogger
 	});
 
@@ -68,7 +69,9 @@ const testDiscoverAddress = async (assert) => {
 			.slice(0)
 			.map(i => i.slice(i.lastIndexOf(":") + 1))
 			.indexOf(peer.port.toString()) > -1;
-	assert.pass(`Discovering on address without port parsed natively valid port bindings properly.`);
+	assert.true(hasAttemptedConnectionToOwnPort,
+		`Discovering on address without port should assign port to the same ` +
+		`as the peer.`);
 
 	const allAttmptedAreWssProtocol =
 		attemptedConnections

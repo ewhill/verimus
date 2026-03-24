@@ -52,7 +52,7 @@ const runTest = async (testCase, assert) => {
   await after();
 };
 
-test.skip("GossipOverlayTest", async (assert) => {
+test("GossipOverlayTest", async (assert) => {
   await runTest(testLRUCachePreventsDuplicates, assert);
   await runTest(testTTLRestrictsPropagation, assert);
   assert.end();
