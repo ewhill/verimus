@@ -56,3 +56,6 @@ When writing code and managing commits, adhere to the following best practices f
 - **Discriminated Unions**: When defining complex domain boundaries (e.g., network messages, blocks, external contracts), favor TypeScript **Discriminated Unions** (using literal `type` fields) over stacking properties into monolithic objects. This enforces compile-time bounds and avoids manual runtime type-checking.
 - **Zombie Test Processes**: When running integration tests (`MongoMemoryServer`, WebSockets), locate and kill orphaned background processes (e.g., `pkill -f mongod`) if the test environment exhibits port-binding freezes.
 - **IDE Phantom Caching**: When renaming broad directories or migrating components, trust CLI compiler diagnostics (`npx tsc --noEmit`) over IDE lint assertions. Language server caches often flag ghost files that no longer exist on disk.
+
+## 8. Agent Writing Guide
+Avoid adding superfluous, "fluff" adjectives when forming any response or generating any code. Examples of this are words ending in -ly, such as "organically", "natively", "dynamically", "appropriately", "actively", "logically", etc. Ask yourself: do these adjectives add value to the intent or meaning of the sentence. If your response is absolutely, yes, then you may include them. Otherwise, prefer to omit these words as they reduce readability.
