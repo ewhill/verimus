@@ -96,10 +96,8 @@ for (let i = 0; i < nPeers; i++) {
         end: 26790,
       }
     },
-    signaturePath: `${keyNames[i]}.peer.signature`,
-    publicKeyPath: `${keyNames[i]}.peer.pub`,
     privateKeyPath: `${keyNames[i]}.peer.pem`,
-    ringPublicKeyPath: `.ring.pub`,
+    publicKeyPath: `${keyNames[i]}.peer.pub`,
     publicAddress: `127.0.0.1:${port}`,
     logger: fakeLogger
   };

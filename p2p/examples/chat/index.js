@@ -14,14 +14,10 @@ const COMMANDS = require('./commands/index');
 // -----------------------------------------------------------------------------
 
 const argumentsParser = new ArgumentsParser({
-  // --signature=path<str> [REQUIRED] Path to peer signature.
-  'signature': ArgumentsParser.ARGUMENT_TYPE_ENUM.STRING,
   // --port=port<int> [OPTIONAL] Defaults to 26780.
   'port': ArgumentsParser.ARGUMENT_TYPE_ENUM.INT,
   // --peers=peer<list<str>> [OPTIONAL] Defaults to [].
   'peers': ArgumentsParser.ARGUMENT_TYPE_ENUM.STRING_ARRAY,
-  // --ring=path<str> [OPTIONAL] Defaults to "ring.pub".
-  'ring': ArgumentsParser.ARGUMENT_TYPE_ENUM.STRING,
   // --private=path<str> [OPTIONAL] Defaults to "peer.pem".
   'private': ArgumentsParser.ARGUMENT_TYPE_ENUM.STRING,
   // --public=path<str> [OPTIONAL] Defaults to "peer.pub".
@@ -44,10 +40,8 @@ const args = argumentsParser.parse();
 
 const io = new ConsoleIO();
 const peer = new ChatPeer({
-  signaturePath: args.signature,
   publicKeyPath: args.public,
   privateKeyPath: args.private,
-  ringPublicKeyPath: args.ring,
   httpsServerConfig: {
     port: args.port,
   },

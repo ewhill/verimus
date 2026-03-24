@@ -79,46 +79,19 @@ const setup = async () => {
       "-signkey /tmp/https.key.pem -out /tmp/https.cert.pem",
     ]
   });
-  await exec({
-    command: "node",
-    args: [
-      "examples/peerSetup.js",
-      "-o=/tmp/one.alpha",
-      "-b=2048",
-    ]
-  });
-  await exec({
-    command: "node",
-    args: [
-      "examples/peerSetup.js",
-      "-o=/tmp/two.alpha",
-      "-b=2048",
-    ]
-  });
-  await exec({
-    command: "node",
-    args: [
-      "examples/peerSetup.js",
-      "-o=/tmp/three.beta",
-      "-b=2048",
-    ]
-  });
-  await exec({
-    command: "node",
-    args: [
-      "examples/peerSetup.js",
-      "-o=/tmp/four.alpha",
-      "-b=2048",
-    ]
-  });
-  await exec({
-    command: "node",
-    args: [
-      "examples/peerSetup.js",
-      "-o=/tmp/four.beta",
-      "-b=2048",
-    ]
-  });
+  const fs = require('fs');
+  const RSAKeyPair = require('../lib/RSAKeyPair.js');
+  const writeKey = (pathPre) => {
+    const k = RSAKeyPair.generate();
+    const e = k.export({mode: 'both', returnBuffer: false});
+    fs.writeFileSync(`${pathPre}.peer.pem`, e.private);
+    fs.writeFileSync(`${pathPre}.peer.pub`, e.public);
+  };
+  writeKey('/tmp/one.alpha');
+  writeKey('/tmp/two.alpha');
+  writeKey('/tmp/three.beta');
+  writeKey('/tmp/four.alpha');
+  writeKey('/tmp/four.beta');
 };
 
 const teardown = async () => {

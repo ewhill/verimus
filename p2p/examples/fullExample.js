@@ -26,10 +26,8 @@ const firstPeer = new Peer({
     },
     port: 26780,
   },
-  ringPublicKeyPath: '.ring.pub',
   publicKeyPath: 'first.peer.pub',
   privateKeyPath: 'first.peer.pem',
-  signaturePath: 'first.peer.signature',
   publicAddress: '127.0.0.1:26780',
 });
 
@@ -47,10 +45,8 @@ const secondPeer = new Peer({
     },
     port: 26781,
   },
-  ringPublicKeyPath: '.ring.pub',
   publicKeyPath: 'second.peer.pub',
   privateKeyPath: 'second.peer.pem',
-  signaturePath: 'second.peer.signature',
   publicAddress: '127.0.0.1:26781',
 });
 

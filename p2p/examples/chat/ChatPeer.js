@@ -62,31 +62,31 @@ class ChatPeer extends Peer {
   get activePeers() {
     return this.trustedPeers.map(
       p => (
-        this.hasAlias(p.remoteSignature) ?
-          this.getAlias(p.remoteSignature) :
+        this.hasAlias(p.remotePublicKey) ?
+          this.getAlias(p.remotePublicKey) :
           p.peerAddress));
   }
 
   _connectionHandler(connection) {
     this._io.updateActivePeers(this.activePeers);
-    if (this.hasAlias(connection)) {
-      const alias = this.getAlias(connection.remoteSignature);
+    if (this.hasAlias(connection.remotePublicKey)) {
+      const alias = this.getAlias(connection.remotePublicKey);
       this._io.net.log(`${alias} has rejoined the chat.`);
     } else {
       this._io.net.log(`${connection.peerAddress} has joined the chat.`);
     }
   }
 
-  _addAlias(signature, alias) {
-    this._aliases[signature] = alias;
+  _addAlias(publicKey, alias) {
+    this._aliases[publicKey] = alias;
   }
 
-  hasAlias(signature) {
-    return this._aliases.hasOwnProperty(signature);
+  hasAlias(publicKey) {
+    return this._aliases.hasOwnProperty(publicKey);
   }
 
-  getAlias(signature) {
-    return this.hasAlias(signature) ? this._aliases[signature] : null;
+  getAlias(publicKey) {
+    return this.hasAlias(publicKey) ? this._aliases[publicKey] : null;
   }
 
   enableDebugMode(logger = console) {
@@ -119,14 +119,14 @@ class ChatPeer extends Peer {
 
   async _textMessageHandler(message, connection) {
     const alias =
-      this.getAlias(connection.remoteSignature) || connection.peerAddress;
+      this.getAlias(connection.remotePublicKey) || connection.peerAddress;
     this._io.message.peer(alias, message.text);
   }
 
   async _aliasMessageHandler(message, connection) {
     const alias =
-      this.getAlias(connection.remoteSignature) || connection.peerAddress;
-    this._addAlias(connection.remoteSignature, message.alias);
+      this.getAlias(connection.remotePublicKey) || connection.peerAddress;
+    this._addAlias(connection.remotePublicKey, message.alias);
     this._io.updateActivePeers(this.activePeers);
     this._io.net.log(
       `${connection.peerAddress} (previously ${alias}), will now be known ` +
@@ -136,7 +136,7 @@ class ChatPeer extends Peer {
   async _goodbyeMessageHandler(message, connection) {
     this._io.updateActivePeers(this.activePeers);
     const alias =
-      this.getAlias(connection.remoteSignature) || connection.peerAddress;
+      this.getAlias(connection.remotePublicKey) || connection.peerAddress;
     this._io.net.log(`${alias} has left the chat.`);
   }
 
@@ -144,7 +144,7 @@ class ChatPeer extends Peer {
     if (typeof alias !== 'string' || alias.length < 1) {
       return;
     }
-    this._addAlias(this.signature, alias);
+    this._addAlias(this.peerRSAKeyPair_.public.toString('utf8'), alias);
     this._io.updateActivePeers(this.activePeers);
     try {
       await this.broadcast(new AliasMessage({ alias }));
@@ -165,7 +165,7 @@ class ChatPeer extends Peer {
     try {
       await this.broadcast(message);
       this._io.message.own(
-        this.getAlias(this.signature) || 'You', message.text);
+        this.getAlias(this.peerRSAKeyPair_.public.toString('utf8')) || 'You', message.text);
     } catch (e) {
       this._io.net.error(e.message);
     }

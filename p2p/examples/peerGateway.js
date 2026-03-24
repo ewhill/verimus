@@ -33,10 +33,8 @@ const httpServer = https.createServer({
 
 for (let i = 0; i < nPeers; i++) {
     let options = {
-        signaturePath: `${keyNames[i]}.peer.signature`,
         publicKeyPath: `${keyNames[i]}.peer.pub`,
         privateKeyPath: `${keyNames[i]}.peer.pem`,
-        ringPublicKeyPath: ".ring.pub",
         httpsServerConfig: {
             mode: Server.MODES.PASS,
             server: httpServer,

@@ -88,8 +88,6 @@ class CliInputHandler extends EventEmitter {
 }
 
 const argumentsParser = new ArgumentsParser({
-  // --signature=path<str> [REQUIRED] Path to peer signature.
-  'signature': ArgumentsParser.ARGUMENT_TYPE_ENUM.STRING,
   // --d=enabled<bool> [OPTIONAL] Defaults to false.
   'daemon': ArgumentsParser.ARGUMENT_TYPE_ENUM.BOOL,
   'debug': ArgumentsParser.ARGUMENT_TYPE_ENUM.BOOL,
@@ -167,7 +165,6 @@ const main = async () => {
     'ringPublicKey': args.ring,
     'publicKey': args.public,
     'privateKey': args.private,
-    'signature': args.signature,
     'publicAddress': `127.0.0.1:${args.port}`,
     'debug': args.debug || args.v || args.verbose
   });

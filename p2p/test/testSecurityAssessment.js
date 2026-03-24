@@ -126,9 +126,7 @@ test("Security: Peer DoS Max Socket Protection", async (assert) => {
         httpsServerConfig: { mode: Server.MODES.NONE },
         maxConnections: 5,
         privateKeyPath: './first.peer.pem',
-        publicKeyPath: './first.peer.pub',
-        ringPublicKeyPath: './ring.pub',
-        signaturePath: './first.peer.signature'
+        publicKeyPath: './first.peer.pub'
     });
 
     peer.peerRSAKeyPair_ = RSAKeyPair.generate();
