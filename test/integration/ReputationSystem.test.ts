@@ -1,13 +1,21 @@
-import { describe, it, before, after } from 'node:test';
-import assert from 'node:assert';
-import PeerNode from '../../peer_node/PeerNode';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import Bundler from '../../bundler/Bundler';
-import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
 import crypto from 'crypto';
 import fs from 'fs';
-import path from 'path';
+import assert from 'node:assert';
+import { describe, it, before, after } from 'node:test';
+import * as url from 'node:url';
 import os from 'os';
+import path from 'path';
+
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
+import Bundler from '../../bundler/Bundler';
+import { hashData } from '../../crypto_utils/CryptoUtils';
+import { ChainStatusRequestMessage } from '../../messages/chain_status_request_message/ChainStatusRequestMessage';
+import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
+import RSAKeyPair from '../../p2p/lib/rsakeypair';
+import PeerNode from '../../peer_node/PeerNode';
+import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
+
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
@@ -20,7 +28,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
         mongod = await MongoMemoryServer.create();
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rep-test-'));
 
-        const RSAKeyPair = require('../../p2p/lib/rsakeypair');
+
         const ringKeys = RSAKeyPair.generate();
         fs.writeFileSync(path.join(tempDir, 'ring.pub'), ringKeys.public);
 
@@ -36,7 +44,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
             const dbUri = mongod.getUri(`node${i}`);
 
             // Nodes sequentially connect to Node 1 (using ephemeral 0 originally)
-            const trusted: string[] = []; // Explicitly let discover bypass initially cleanly optimally natively dynamically gracefully effectively automatically naturally intuitively
+            const trusted: string[] = []; // let discover bypass initially
             const keyPaths = {
                 publicKeyPath: path.join(tempDir, `node${i}.pub`),
                 privateKeyPath: path.join(tempDir, `node${i}.pem`),
@@ -46,22 +54,22 @@ describe('Integration: Reputation System (5 Nodes)', () => {
 
             const node = new PeerNode(0, trusted, new MemoryStorageProvider() as any, new Bundler(tempDir) as any, dbUri, undefined, keyPaths, tempDir);
 
-            // Mock discover locally to prevent long polling hangs inside init() loop natively
+            // Mock discover locally to prevent long polling hangs inside init() loop
             if (node.peer) {
                 node.peer.discover = async () => { };
             }
 
             await node.init();
 
-            // Assign ephemeral port physically manually cleanly naturally automatically rationally gracefully
+            // Assign ephemeral port manually
             node.port = (node.httpServer!.address() as any).port;
             (node.peer as any).publicAddress_ = `127.0.0.1:${node.port}`;
 
             nodes.push(node);
         }
 
-        // Manually connect organically now that servers are all properly bound
-        const url = require('url');
+        // Manually connect now that servers are all bound
+
         for (let i = 1; i < 5; i++) {
             const addr = `wss://127.0.0.1:${nodes[0].port}`;
             await (nodes[i].peer as any)?.attemptConnection({ originalAddress: addr, parsedAddress: url.parse(addr) });
@@ -87,10 +95,10 @@ describe('Integration: Reputation System (5 Nodes)', () => {
 
     it('Nodes establish P2P WebSocket connections', async () => {
         const rootPeerCount = nodes[0].peer?.peers?.length || 0;
-        assert.ok(rootPeerCount >= 4, 'Root node directly tracks 4 explicit peers structurally');
+        assert.ok(rootPeerCount >= 4, 'Root node directly tracks 4 explicit peers');
 
         const childPeerCount = nodes[4].peer?.peers?.length || 0;
-        assert.ok(childPeerCount >= 1, 'Child node gracefully connects cleanly securely');
+        assert.ok(childPeerCount >= 1, 'Child node connects');
     });
 
     it('Enforces structural penalty (-10) for corrupted hashes', async () => {
@@ -108,13 +116,15 @@ describe('Integration: Reputation System (5 Nodes)', () => {
 
         const connToNode1 = node2.peer?.peers[0];
 
-        const { PendingBlockMessage } = require('../../messages/pending_block_message/PendingBlockMessage');
+
+console.log('SENDING FAKE BLOCK!');
+console.log(connToNode1?.send ? 'METHOD EXISTS' : 'UNDEFINED METHOD');
         connToNode1?.send(new PendingBlockMessage({ block: fakeBlock as any }));
 
         await new Promise(r => setTimeout(r, 500));
 
         const node2ScoreRecord = await node1.ledger.peersCollection?.findOne({ publicKey: node2.publicKey });
-        assert.ok(node2ScoreRecord, 'Node 1 created active reputation record safely');
+        assert.ok(node2ScoreRecord, 'Node 1 created active reputation record');
         assert.strictEqual(node2ScoreRecord?.score, 90, 'Node 1 correctly docked Node 2 (-10)');
     });
 
@@ -122,7 +132,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
         const node1 = nodes[0];
         const node3 = nodes[2];
 
-        const { hashData } = require('../../crypto_utils/CryptoUtils');
+
         const block = {
             metadata: { index: 99, timestamp: Date.now() },
             previousHash: 'fake',
@@ -135,7 +145,8 @@ describe('Integration: Reputation System (5 Nodes)', () => {
 
         const connToNode1 = node3.peer?.peers[0];
 
-        const { PendingBlockMessage } = require('../../messages/pending_block_message/PendingBlockMessage');
+
+console.log('SENDING INVALID SIG BLOCK!');
         connToNode1?.send(new PendingBlockMessage({ block: block as any }));
 
         await new Promise(r => setTimeout(r, 500));
@@ -149,7 +160,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
         const node1 = nodes[0];
         const node3 = nodes[2];
 
-        // The banned hook in peerNode closes physical sockets natively intelligently explicitly intuitively efficiently cleanly gracefully
+        // The banned hook in peerNode closes physical sockets
         await new Promise(r => setTimeout(r, 500));
 
         const connToNode1 = node3.peer?.peers[0];
@@ -162,7 +173,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
 
         const connToNode1 = node4.peer?.peers[0];
 
-        const { ChainStatusRequestMessage } = require('../../messages/chain_status_request_message/ChainStatusRequestMessage');
+
 
         for (let i = 0; i < 5; i++) {
             const msg = new ChainStatusRequestMessage();

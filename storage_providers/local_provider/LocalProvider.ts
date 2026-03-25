@@ -1,8 +1,8 @@
 import fs from 'fs';
 import path from 'path';
+
 import { hashData } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
-
 import BaseStorageProvider, { GetBlockReadStreamResult } from '../base_provider/BaseProvider';
 
 export interface LocalCredentials {

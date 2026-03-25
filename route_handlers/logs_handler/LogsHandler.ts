@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
 
 import logger from '../../logger/Logger';
-
-
 import BaseHandler from '../base_handler/BaseHandler';
 
 export default class LogsHandler extends BaseHandler {

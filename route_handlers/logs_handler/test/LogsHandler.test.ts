@@ -1,7 +1,8 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import logsHandler from '../LogsHandler';
+import { describe, it } from 'node:test';
+
 import logger from '../../../logger/Logger';
+import logsHandler from '../LogsHandler';
 
 describe('Backend: logsHandler Integrity', () => {
     it('Parses local winston logfile returning ordered output mapping', async () => {

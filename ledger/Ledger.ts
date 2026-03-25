@@ -1,8 +1,9 @@
-import { MongoClient, Db, Collection } from 'mongodb';
 import { EventEmitter } from 'events';
 
-import { hashData } from '../crypto_utils/CryptoUtils';
+import { MongoClient, Db, Collection } from 'mongodb';
+
 import { BLOCK_TYPES } from '../constants';
+import { hashData } from '../crypto_utils/CryptoUtils';
 import type { Block, PeerReputation, BlockType } from '../types';
 
 
@@ -38,7 +39,7 @@ class Ledger {
         // Enforce strict mathematical sequence indexing to prevent silent ledger race bounds mapping identical heights 
         await this.collection.createIndex({ "metadata.index": 1 }, { unique: true });
 
-        // Ensure peer lookups by publicKey are securely bound mathematically O(1) matching uniquely natively
+        // Ensure peer lookups by publicKey are bound mathematically O(1) matching uniquely
         await this.peersCollection.createIndex({ "publicKey": 1 }, { unique: true });
 
         await this.ownedBlocksCollection.createIndex({ hash: 1 }, { unique: true });

@@ -1,8 +1,15 @@
-const fs = require('fs');
-const https = require('https');
-const path = require('path');
-const FormData = require('form-data');
-const crypto = require('crypto');
+import https from 'https';
+import * as crypto from 'node:crypto';
+import * as fs from 'node:fs';
+import path from 'path';
+
+import FormData from 'form-data';
+
+
+
+
+
+
 
 async function runTest() {
     console.log("Starting API Test...");

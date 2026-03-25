@@ -1,22 +1,22 @@
 import Bundler from './bundler/Bundler';
-import PeerNode from './peer_node/PeerNode';
-import { NodeRole } from './types/NodeRole';
-import logger from './logger/Logger';
 import { Credentials, PeerCredentials } from './credential_provider/CredentialProvider';
-import { RemoteFSCredentials } from './storage_providers/remote_fs_provider/RemoteFSProvider';
-import { S3Credentials } from './storage_providers/s3_provider/S3Provider';
-import { LocalCredentials } from './storage_providers/local_provider/LocalProvider';
-import { SambaCredentials } from './storage_providers/samba_provider/SambaProvider';
-import { GlacierCredentials } from './storage_providers/glacier_provider/GlacierProvider';
-import BaseStorageProvider from './storage_providers/base_provider/BaseProvider';
-import S3StorageProvider from './storage_providers/s3_provider/S3Provider';
-import GlacierStorageProvider from './storage_providers/glacier_provider/GlacierProvider';
-import SambaStorageProvider from './storage_providers/samba_provider/SambaProvider';
-import RemoteFSStorageProvider from './storage_providers/remote_fs_provider/RemoteFSProvider';
-import LocalStorageProvider from './storage_providers/local_provider/LocalProvider';
-import GithubStorageProvider, { GithubCredentials } from './storage_providers/github_provider/GithubProvider';
-import MemoryStorageProvider from './storage_providers/memory_provider/MemoryProvider';
 import { CredentialProvider } from './credential_provider/CredentialProvider';
+import logger from './logger/Logger';
+import PeerNode from './peer_node/PeerNode';
+import BaseStorageProvider from './storage_providers/base_provider/BaseProvider';
+import GithubStorageProvider, { GithubCredentials } from './storage_providers/github_provider/GithubProvider';
+import { GlacierCredentials } from './storage_providers/glacier_provider/GlacierProvider';
+import GlacierStorageProvider from './storage_providers/glacier_provider/GlacierProvider';
+import { LocalCredentials } from './storage_providers/local_provider/LocalProvider';
+import LocalStorageProvider from './storage_providers/local_provider/LocalProvider';
+import MemoryStorageProvider from './storage_providers/memory_provider/MemoryProvider';
+import { RemoteFSCredentials } from './storage_providers/remote_fs_provider/RemoteFSProvider';
+import RemoteFSStorageProvider from './storage_providers/remote_fs_provider/RemoteFSProvider';
+import { S3Credentials } from './storage_providers/s3_provider/S3Provider';
+import S3StorageProvider from './storage_providers/s3_provider/S3Provider';
+import { SambaCredentials } from './storage_providers/samba_provider/SambaProvider';
+import SambaStorageProvider from './storage_providers/samba_provider/SambaProvider';
+import { NodeRole } from './types/NodeRole';
 
 async function main() {
     logger.info("Starting Verimus Secure Storage Node...");
@@ -72,10 +72,10 @@ async function main() {
     const mongoUri = `mongodb://${mongoHost}:${mongoPort}`;
     logger.info(`Configured MongoDB URI: ${mongoUri}`);
 
-    // Resolve credentials securely mapping environments
+    // Resolve credentials mapping environments
     const credentials = CredentialProvider.resolve();
 
-    // Setup Storage Provider dynamically
+    // Setup Storage Provider
     let storageProvider: BaseStorageProvider;
     const providerCreds = credentials[storageType.toLowerCase() as keyof Credentials];
 

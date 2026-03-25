@@ -1,7 +1,8 @@
-import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import FilesHandler from '../FilesHandler';
+import { describe, it, beforeEach } from 'node:test';
+
 import { generateRSAKeyPair, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
+import FilesHandler from '../FilesHandler';
 
 describe('Backend: filesHandler Coverage', () => {
     let mockNode: any;
@@ -36,7 +37,7 @@ describe('Backend: filesHandler Coverage', () => {
         };
     });
 
-    it('Returns empty array natively isolating blank node mapping payloads', async () => {
+    it('Returns empty array isolating blank node mapping payloads', async () => {
         const handler = new FilesHandler(mockNode as any);
         await handler.handle(req as any, res as any);
         
@@ -129,7 +130,7 @@ describe('Backend: filesHandler Coverage', () => {
         assert.strictEqual(file.versions[1].hash, 'hash1');
     });
 
-    it('Gracefully traps payload decryption pipeline errors bypassing invalid blocks', async () => {
+    it(' traps payload decryption pipeline errors bypassing invalid blocks', async () => {
         mockNode.ownedBlocksCache = ['badBlock'];
         mockNode.ledger.collection.find = () => ({
             toArray: async () => [
@@ -145,7 +146,7 @@ describe('Backend: filesHandler Coverage', () => {
         assert.strictEqual(responseData.files.length, 0);
     });
 
-    it('Identifies unknown backend storage models casting fallback defaults seamlessly', async () => {
+    it('Identifies unknown backend storage models casting fallback defaults', async () => {
         const encrypted = encryptPrivatePayload(keys.publicKey, { 
             files: [{ path: 'no-loc.txt' }] 
         });

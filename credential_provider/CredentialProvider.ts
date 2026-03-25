@@ -1,10 +1,11 @@
-import logger from '../logger/Logger';
 import * as fs from 'fs';
-import { LocalCredentials } from '../storage_providers/local_provider/LocalProvider';
-import { S3Credentials } from '../storage_providers/s3_provider/S3Provider';
+
+import logger from '../logger/Logger';
 import { GlacierCredentials } from '../storage_providers/glacier_provider/GlacierProvider';
-import { SambaCredentials } from '../storage_providers/samba_provider/SambaProvider';
+import { LocalCredentials } from '../storage_providers/local_provider/LocalProvider';
 import { RemoteFSCredentials } from '../storage_providers/remote_fs_provider/RemoteFSProvider';
+import { S3Credentials } from '../storage_providers/s3_provider/S3Provider';
+import { SambaCredentials } from '../storage_providers/samba_provider/SambaProvider';
 
 export interface KeyPaths {
     ringPublicKeyPath?: string;
@@ -36,7 +37,7 @@ export interface Credentials {
 }
 
 /**
- * Resolves enterprise credentials securely prioritizing Host metadata (Env variables) 
+ * Resolves enterprise credentials prioritizing Host metadata (Env variables) 
  * over deprecated flat files statically.
  */
 export class CredentialProvider {
@@ -45,7 +46,7 @@ export class CredentialProvider {
 
         // 1. Attempt dynamic injection from environment variables (Highest Priority)
         if (process.env.STORAGE_CREDS_ACTIVE === 'true' || process.env.S3_ACCESS_KEY || process.env.SFTP_PASSWORD || process.env.GITHUB_TOKEN || process.env.PEER_PRIVATE_KEY || process.env.PEER_PRIVATE_KEY_PATH) {
-            logger.info("Resolving node and storage credentials dynamically via Host Environment Metadata.");
+            logger.info("Resolving node and storage credentials via Host Environment Metadata.");
             return {
                 s3: {
                     accessKey: process.env.S3_ACCESS_KEY!,
@@ -90,7 +91,7 @@ export class CredentialProvider {
             } as Credentials;
         }
 
-        // 2. Fallback strictly to legacy JSON definitions gracefully (Deprecated)
+        // 2. Fallback strictly to legacy JSON definitions (Deprecated)
         if (fs.existsSync('credentials.json')) {
             try {
                 logger.warn("WARNING: Utilizing flat-file credentials.json mapping. Consider migrating to Environment variables for enhanced security.");

@@ -1,17 +1,18 @@
-import { describe, it, before, after } from 'node:test';
-import assert from 'node:assert';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import PeerNode from '../../peer_node/PeerNode';
-import BaseProvider, { GetBlockReadStreamResult } from '../../storage_providers/base_provider/BaseProvider';
-import Bundler from '../../bundler/Bundler';
 import fs from 'fs';
-import path from 'path';
-import os from 'os';
-import { Readable } from 'stream';
 import http from 'http';
 import https from 'https';
-
+import assert from 'node:assert';
+import { describe, it, before, after } from 'node:test';
+import os from 'os';
+import path from 'path';
+import { Readable } from 'stream';
 import stream from 'stream';
+
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
+import Bundler from '../../bundler/Bundler';
+import PeerNode from '../../peer_node/PeerNode';
+import BaseProvider, { GetBlockReadStreamResult } from '../../storage_providers/base_provider/BaseProvider';
 
 class NullStorageProvider extends BaseProvider {
     createBlockStream(): { physicalBlockId: string, writeStream: NodeJS.WritableStream } {
@@ -72,7 +73,7 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
         await node.ledger.init(32000);
         await node.loadOwnedBlocksCache();
 
-        // Pass integration escrows organically mapping stream limits bypassing real topologies
+        // Pass integration escrows mapping stream limits bypassing real topologies
         node.consensusEngine.walletManager.verifyFunds = async () => true;
         node.consensusEngine.node.syncEngine.orchestrateStorageMarket = async () => {
             return [{ peerId: 'mock-1', connection: {} }];
@@ -113,7 +114,7 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
              }
         });
 
-        // We build a manual multipart-form POST dynamically for the extreme stream mapping cleanly
+        // We build a manual multipart-form POST for the extreme stream mapping
         const boundary = '--------------------------extremeBoundary123';
         const postDataStart = Buffer.from(
             `--${boundary}\r\n` +

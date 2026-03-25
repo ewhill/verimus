@@ -1,15 +1,15 @@
 import * as crypto from 'crypto';
 
-import { AdoptForkMessage } from '../../messages/adopt_fork_message/AdoptForkMessage';
 import { GENESIS_TIMESTAMP, BLOCK_TYPES } from '../../constants';
 import { hashData, signData, verifySignature } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
-import Mempool from '../../models/mempool/Mempool';
-import PeerNode from '../../peer_node/PeerNode';
+import { AdoptForkMessage } from '../../messages/adopt_fork_message/AdoptForkMessage';
 import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
 import { ProposeForkMessage } from '../../messages/propose_fork_message/ProposeForkMessage';
-import type { Block, PeerConnection, TransactionPayload } from '../../types';
 import { VerifyBlockMessage } from '../../messages/verify_block_message/VerifyBlockMessage';
+import Mempool from '../../models/mempool/Mempool';
+import PeerNode from '../../peer_node/PeerNode';
+import type { Block, PeerConnection, TransactionPayload } from '../../types';
 import WalletManager from '../../wallet_manager/WalletManager';
 
 
@@ -47,7 +47,7 @@ class ConsensusEngine {
         }
 
         if (!block || !block.publicKey || !block.signature || !block.payload || !block.metadata) {
-            logger.info(`[Peer ${this.node.port}] Rejected structurally malformed block from ${connection.peerAddress}`);
+            logger.info(`[Peer ${this.node.port}] Rejected malformed block from ${connection.peerAddress}`);
             if (block && block.publicKey) {
                 await this.node.reputationManager.penalizeMajor(block.publicKey, "Structural Failure");
             }

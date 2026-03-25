@@ -1,12 +1,11 @@
-import { Request, Response } from 'express';
 import { Transform } from 'stream';
-import { verifySignature, decryptPrivatePayload, createAESDecryptStream } from '../../crypto_utils/CryptoUtils';
 
-import logger from '../../logger/Logger';
-
+import { Request, Response } from 'express';
 import { Parse, Entry } from 'unzipper';
-import type { StorageContractPayload } from '../../types';
 
+import { verifySignature, decryptPrivatePayload, createAESDecryptStream } from '../../crypto_utils/CryptoUtils';
+import logger from '../../logger/Logger';
+import type { StorageContractPayload } from '../../types';
 import { NodeRole } from '../../types/NodeRole';
 import BaseHandler from '../base_handler/BaseHandler';
 
@@ -122,7 +121,7 @@ export default class DownloadFileHandler extends BaseHandler {
                     const normalizedEntry = entry.path.replace(/^\/+/, '');
 
                     // Archiver typically strips leading slashes, so using the normalized paths ensures
-                    // files uploaded with absolute paths can still be accurately matched.
+                    // files uploaded with absolute paths can still be matched.
                     if (entry.path === targetFileName || normalizedEntry === normalizedTarget) {
                         found = true;
 

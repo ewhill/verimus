@@ -1,11 +1,10 @@
-import { Request, Response } from 'express';
 import { Transform } from 'stream';
+
+import { Request, Response } from 'express';
 
 import { verifySignature, decryptPrivatePayload, createAESDecryptStream } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
-
 import type { StorageContractPayload } from '../../types';
-
 import { NodeRole } from '../../types/NodeRole';
 import BaseHandler from '../base_handler/BaseHandler';
 

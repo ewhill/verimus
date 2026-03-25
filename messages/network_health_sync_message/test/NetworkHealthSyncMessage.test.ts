@@ -1,7 +1,8 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { NetworkHealthSyncMessage } from '../NetworkHealthSyncMessage';
+import { describe, it } from 'node:test';
+
 import { NodeRole } from '../../../types/NodeRole';
+import { NetworkHealthSyncMessage } from '../NetworkHealthSyncMessage';
 
 describe('Messages: NetworkHealthSyncMessage', () => {
 
@@ -12,19 +13,19 @@ describe('Messages: NetworkHealthSyncMessage', () => {
         assert.deepEqual(msg.score_payloads, payloads);
     });
 
-    it('Initializes via nested payload properties seamlessly', () => {
+    it('Initializes via nested payload properties', () => {
         const msg = new NetworkHealthSyncMessage({ body: { score_payloads: payloads } });
         assert.deepEqual(msg.score_payloads, payloads);
     });
 
-    it('Updates attributes accurately leveraging class dynamic setters', () => {
+    it('Updates attributes leveraging class dynamic setters', () => {
         const msg = new NetworkHealthSyncMessage();
         msg.score_payloads = payloads;
         assert.deepEqual(msg.score_payloads, payloads);
         assert.deepEqual(msg.body.score_payloads, payloads);
     });
 
-    it('Returns empty array mapping if null naturally', () => {
+    it('Returns empty array mapping if null', () => {
         const msg = new NetworkHealthSyncMessage();
         assert.deepEqual(msg.score_payloads, []);
     });

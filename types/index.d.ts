@@ -1,13 +1,12 @@
 import { NodeRole } from './NodeRole';
+import { BLOCK_TYPES } from '../constants';
 
 export interface PeerConnection {
     peerAddress: string;
     send(message: object): void;
     remoteCredentials_?: { rsaKeyPair?: { public?: Buffer } };
-    roles?: NodeRole[]; // Dynamically threaded role bounds per connection 
+    roles?: NodeRole[]; // threaded role bounds per connection 
 }
-
-import { BLOCK_TYPES } from '../constants';
 
 export type BlockType = typeof BLOCK_TYPES[keyof typeof BLOCK_TYPES];
 
@@ -140,7 +139,7 @@ export interface TransactionBlock extends BaseBlock {
 
 export interface StorageContractBlock extends BaseBlock {
     type: typeof BLOCK_TYPES.STORAGE_CONTRACT;
-    payload: StorageContractPayload; // The encrypted payload securely mapped
+    payload: StorageContractPayload; // The encrypted payload mapped
 }
 
 export type Block = TransactionBlock | StorageContractBlock;

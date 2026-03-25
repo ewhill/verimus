@@ -51,13 +51,13 @@ describe('ApiService', () => {
             expect(mockDispatch).not.toHaveBeenCalledWith({ type: 'SET_BLOCKS', payload: expect.anything() });
         });
         
-        it('Handles 500 error body gracefully', async () => {
+        it('Handles 500 error body', async () => {
             const mockResponse = {
                 success: false,
                 message: 'Internal Server Error'
             };
             
-            // fetch doesn't throw on 500 automatically, it returns response
+            // fetch doesn't throw on 500, it returns response
             global.fetch.mockResolvedValue({
                 json: vi.fn().mockResolvedValue(mockResponse)
             });

@@ -83,7 +83,7 @@ describe('useStore UI State Persistence', () => {
     it('Persists UI filtering and sorting states into localStorage', () => {
         const { dispatch } = useStore.getState();
         
-        // Dispatches to mutate the state dynamically
+        // Dispatches to mutate the state
         dispatch({ type: 'SET_FILES_SEARCH', payload: 'findMe123' });
         dispatch({ type: 'SET_FILES_FILTER', payload: 'remote' });
         dispatch({ type: 'SET_FILTER_OWN', payload: false });
@@ -96,12 +96,12 @@ describe('useStore UI State Persistence', () => {
         expect(state.filterOwn).toBe(false);
         expect(state.currentView).toBe('list');
 
-        // Extract JSON representation explicitly cached by the `persist` Zustand middleware 
+        // Extract JSON representation cached by the `persist` Zustand middleware 
         const storedJSON = localStorage.getItem('verimus-ui-storage');
         expect(storedJSON).not.toBeNull();
         
         const cachedStore = JSON.parse(storedJSON);
-        // The persist middleware namespaces properties structurally under `.state`
+        // The persist middleware namespaces properties under `.state`
         expect(cachedStore.state).toBeDefined();
         expect(cachedStore.state.filesSearchQuery).toBe('findMe123');
         expect(cachedStore.state.filesLocationFilter).toBe('remote');

@@ -1,12 +1,13 @@
-import PeerNode from '../../peer_node/PeerNode';
+import * as cryptoUtils from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
-import { ChainStatusRequestMessage } from '../../messages/chain_status_request_message/ChainStatusRequestMessage';
-import { ChainStatusResponseMessage } from '../../messages/chain_status_response_message/ChainStatusResponseMessage';
 import { BlockSyncRequestMessage } from '../../messages/block_sync_request_message/BlockSyncRequestMessage';
 import { BlockSyncResponseMessage } from '../../messages/block_sync_response_message/BlockSyncResponseMessage';
-import { StorageRequestMessage } from '../../messages/storage_request_message/StorageRequestMessage';
-import { StorageBidMessage } from '../../messages/storage_bid_message/StorageBidMessage';
+import { ChainStatusRequestMessage } from '../../messages/chain_status_request_message/ChainStatusRequestMessage';
+import { ChainStatusResponseMessage } from '../../messages/chain_status_response_message/ChainStatusResponseMessage';
 import { NetworkHealthSyncMessage } from '../../messages/network_health_sync_message/NetworkHealthSyncMessage';
+import { StorageBidMessage } from '../../messages/storage_bid_message/StorageBidMessage';
+import { StorageRequestMessage } from '../../messages/storage_request_message/StorageRequestMessage';
+import PeerNode from '../../peer_node/PeerNode';
 import type { Block, PeerConnection } from '../../types';
 import { NodeRole } from '../../types/NodeRole';
 
@@ -64,14 +65,14 @@ class SyncEngine {
         this.node.peer?.bind(StorageRequestMessage).to(async (m: StorageRequestMessage, c: PeerConnection) => this.handleStorageRequest(m, c));
         this.node.peer?.bind(StorageBidMessage).to(async (m: StorageBidMessage, c: PeerConnection) => this.handleStorageBid(m, c));
 
-        // Start native background polling effectively
+        // Start native background polling
         if (this.node.peer) {
             this.syncInterval = setInterval(async () => {
                 if (!this.node.ledger.peersCollection) return;
                 const peers = await this.node.ledger.peersCollection.find({}).toArray();
                 const score_payloads = peers.map(p => ({ publicKey: p.publicKey, score: p.score, roles: p.roles }));
                 
-                // Also broadcast our own native node roles mapped organically
+                // Also broadcast our own native node roles mapped
                 score_payloads.push({ publicKey: this.node.publicKey, score: 100, roles: this.node.roles });
                 if (score_payloads.length > 0) {
                     this.node.peer!.broadcast(new NetworkHealthSyncMessage({ score_payloads })).catch(() => {});
@@ -89,10 +90,10 @@ class SyncEngine {
                 // Drift Fix: Preserve internal cutoff bounds if local score is drastically lower (Sybil defense)
                 if (localPeer.isBanned || localPeer.score === 0) continue; // Banned locally, permanently isolated
                 if (localPeer.score < remoteScore.score && (remoteScore.score - localPeer.score) > 20) {
-                    continue; // Discard whitewashing attempts securely preserving underlying local bounds natively
+                    continue; // Discard whitewashing attempts preserving underlying local bounds
                 }
 
-                // Assert aggregation smoothly ignoring 0 swings 
+                // Assert aggregation ignoring 0 swings 
                 if (remoteScore.score === 0) continue;
                 
                 let updatedScore = Math.floor((localPeer.score + remoteScore.score) / 2);
@@ -106,7 +107,7 @@ class SyncEngine {
                     );
                 }
             } else if (remoteScore.score > 0) {
-                // Safely ingest new metrics explicitly tracking natively cleanly
+                // ingest new metrics tracking
                 await this.node.ledger.peersCollection.insertOne({
                      publicKey: remoteScore.publicKey,
                      score: Math.min(remoteScore.score, 100),
@@ -163,7 +164,7 @@ class SyncEngine {
     }
 
     async orchestrateStorageMarket(requestId: string, fileSizeBytes: number, chunkSizeBytes: number, requiredNodes: number, maxCostPerGB: number): Promise<any[]> {
-        // Broadcast the limit order globally across the swarm natively
+        // Broadcast the limit order globally across the swarm
         this.activeStorageMarkets.set(requestId, {
             bids: [],
             requiredNodes,
@@ -182,7 +183,7 @@ class SyncEngine {
         
         await this.node.peer!.broadcast(reqMsg);
 
-        // Await N valid bids filling the order book instantly, or timeout gracefully
+        // Await N valid bids filling the order book instantly, or timeout
         return new Promise((resolve) => {
             const market = this.activeStorageMarkets.get(requestId)!;
             market.resolve = resolve;
@@ -193,27 +194,27 @@ class SyncEngine {
                     finalMarket.resolve(finalMarket.bids);
                     this.activeStorageMarkets.delete(requestId);
                 }
-            }, 10000); // 10 second maximum timeout boundary natively
+            }, 10000); // 10 second maximum timeout boundary
         });
     }
 
     async handleStorageRequest(msg: StorageRequestMessage, connection: PeerConnection) {
-        // Only valid if this node operates the STORAGE role explicitly natively
+        // Only valid if this node operates the STORAGE role
         if (!this.node.roles.includes(NodeRole.STORAGE)) return;
 
-        // Ensure we are not bidding on our own packets mapping isolated networks gracefully
+        // Ensure we are not bidding on our own packets mapping isolated networks
         if (msg.senderId === this.node.publicKey) return;
 
-        // Check if we can beat the maxCost limit organically
+        // Check if we can beat the maxCost limit
         const egressCost = this.node.storageProvider?.getEgressCostPerGB ? this.node.storageProvider.getEgressCostPerGB() : 0.00;
-        if (egressCost > msg.maxCostPerGB) return; // Drop request naturally
+        if (egressCost > msg.maxCostPerGB) return; // Drop request
 
         // Formulate returning Bid payload successfully 
         const bidMsg = new StorageBidMessage({
             storageRequestId: msg.storageRequestId,
             storageHostId: this.node.publicKey,
             proposedCostPerGB: egressCost,
-            guaranteedUptimeMs: 86400000 // Mock 24h guarantee for now mappings dynamically
+            guaranteedUptimeMs: 86400000 // Mock 24h guarantee for now mappings
         });
 
         connection.send(bidMsg);
@@ -226,7 +227,7 @@ class SyncEngine {
         // If cost exceeds our strict ceiling limit order mappings drop it
         if (msg.proposedCostPerGB > market.maxCostPerGB) return;
 
-        // Record the limit order bid natively safely
+        // Record the limit order bid
         market.bids.push({
             peerId: msg.storageHostId,
             cost: msg.proposedCostPerGB,
@@ -234,7 +235,7 @@ class SyncEngine {
             connection
         });
 
-        // Triage Cutoff logic! If array hits 'N' required limit boundaries exactly natively stop the timer early!
+        // Triage Cutoff logic! If array hits 'N' required limit boundaries exactly stop the timer early!
         if (market.bids.length >= market.requiredNodes) {
              market.resolve(market.bids);
              this.activeStorageMarkets.delete(msg.storageRequestId);
@@ -300,7 +301,7 @@ class SyncEngine {
                 const validNetworkNodes = highestConsensusPeers;
 
                 if (validNetworkNodes.length === 0) {
-                    logger.error(`[Peer ${this.node.port}] Dropping sync synchronization loop natively over null majority counts!`);
+                    logger.error(`[Peer ${this.node.port}] Dropping sync synchronization loop over null majority counts!`);
                     break;
                 }
 
@@ -330,15 +331,15 @@ class SyncEngine {
                     }
                 }
 
-                const { hashData } = require('../../crypto_utils/CryptoUtils');
+
                 const clonedBlock = { ...mainBlock };
                 delete clonedBlock.hash;
                 delete clonedBlock._id;
 
                 const structuralPrevious = await this.node.ledger.getLatestBlock();
 
-                if (hashData(JSON.stringify(clonedBlock)) !== mainBlock.hash || mainBlock.previousHash !== structuralPrevious.hash) {
-                    logger.error(`[Peer ${this.node.port}] Dropping structurally invalid mathematical cryptographic sync index ${i}!`);
+                if (cryptoUtils.hashData(JSON.stringify(clonedBlock)) !== mainBlock.hash || mainBlock.previousHash !== structuralPrevious.hash) {
+                    logger.error(`[Peer ${this.node.port}] Dropping invalid mathematical cryptographic sync index ${i}!`);
                     break;
                 }
 
@@ -354,7 +355,7 @@ class SyncEngine {
             logger.info(`[Peer ${this.node.port}] Mathematical consensus fully synchronized scaling network bounds globally up to speed!`);
         }
 
-        logger.info(`[Peer ${this.node.port}] Completing Active Sync - Processing Buffer Arrays dynamically spanning [${this.syncBuffer.length} objects] intercepted natively`);
+        logger.info(`[Peer ${this.node.port}] Completing Active Sync - Processing Buffer Arrays spanning [${this.syncBuffer.length} objects] intercepted`);
         this.isSyncing = false;
 
         const tempNativeQueue = [...this.syncBuffer];

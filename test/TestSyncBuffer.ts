@@ -1,5 +1,9 @@
-const assert = require('assert');
-const PeerNode = require('../peer_node/PeerNode');
+import assert from 'assert';
+
+import PeerNode from '../peer_node/PeerNode';
+
+
+
 
 async function runTest() {
     console.log("=== Testing 'Bridging Active State (Buffering)' ===");
@@ -40,7 +44,7 @@ async function runTest() {
     
     node.consensusEngine.handlePendingBlock = async (b, p, ts) => {
         if (node.syncEngine.isSyncing) return await originalPending(b, p, ts);
-        mockPendingHandled++; // Count successful executions post-drain safely
+        mockPendingHandled++; // Count successful executions post-drain
     };
     node.consensusEngine.handleAdoptFork = async (f, ft, p) => {
         if (node.syncEngine.isSyncing) return await originalAdopt(f, ft, p);
@@ -51,7 +55,7 @@ async function runTest() {
 
     const dummyBlock = { signature: "MOCK_SIG", publicKey: "MOCK_PUB", payload: "MOCK_PRIV" };
     
-    // Fire events into the node explicitly mocking upstream triggers natively
+    // Fire events into the node mocking upstream triggers
     await node.consensusEngine.handlePendingBlock(dummyBlock, '127.0.0.1:8002', Date.now());
     await node.consensusEngine.handlePendingBlock(dummyBlock, '127.0.0.1:8003', Date.now());
     await node.consensusEngine.handleAdoptFork('abc1234', 'def5678', '127.0.0.1:8002');
@@ -59,7 +63,7 @@ async function runTest() {
     console.log(`[Test] Assertions whilst locked => Processed Pending: ${mockPendingHandled}, Processed Adopt: ${mockAdoptHandled}`);
     assert.strictEqual(mockPendingHandled, 0, "Failed: Handled pending block mid-sync!");
     assert.strictEqual(mockAdoptHandled, 0, "Failed: Handled adopt fork mid-sync!");
-    assert.strictEqual(node.syncEngine.syncBuffer.length, 3, "Failed: Buffer did not properly cache 3 active payloads!");
+    assert.strictEqual(node.syncEngine.syncBuffer.length, 3, "Failed: Buffer did not cache 3 active payloads!");
 
     console.log("[Test] Triggering manual buffer drain mechanism simulating sync complete!");
     

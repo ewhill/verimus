@@ -1,7 +1,8 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { BlockSyncResponseMessage } from '../BlockSyncResponseMessage';
+import { describe, it } from 'node:test';
+
 import type { Block } from '../../../types';
+import { BlockSyncResponseMessage } from '../BlockSyncResponseMessage';
 
 describe('Messages: BlockSyncResponseMessage', () => {
 
@@ -19,12 +20,12 @@ describe('Messages: BlockSyncResponseMessage', () => {
         assert.deepEqual(msg.block, mockBlock);
     });
 
-    it('Initializes via nested payload properties seamlessly', () => {
+    it('Initializes via nested payload properties', () => {
         const msg = new BlockSyncResponseMessage({ body: { block: mockBlock } });
         assert.deepEqual(msg.block, mockBlock);
     });
 
-    it('Updates attributes accurately leveraging class dynamic setters', () => {
+    it('Updates attributes leveraging class dynamic setters', () => {
         const msg = new BlockSyncResponseMessage();
         msg.block = mockBlock;
         assert.deepEqual(msg.block, mockBlock);

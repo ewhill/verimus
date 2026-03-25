@@ -1,5 +1,6 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
+
 import { StorageRequestMessage } from '../StorageRequestMessage';
 
 describe('Messages: StorageRequestMessage Definitions', () => {
@@ -22,7 +23,7 @@ describe('Messages: StorageRequestMessage Definitions', () => {
         assert.strictEqual(msg.senderId, 'PUBKEY');
     });
 
-    it('Initializes via nested payload properties seamlessly', () => {
+    it('Initializes via nested payload properties', () => {
         const msg = new StorageRequestMessage({
             body: {
                 storageRequestId: 'req-ABC',
@@ -42,7 +43,7 @@ describe('Messages: StorageRequestMessage Definitions', () => {
         assert.strictEqual(msg.senderId, 'PUBKEY2');
     });
 
-    it('Mutates structured data payloads accurately supporting dynamic setters', () => {
+    it('Mutates structured data payloads supporting dynamic setters', () => {
         const msg = new StorageRequestMessage();
         msg.senderId = 'MOCK_KEY';
         msg.maxCostPerGB = 0.8;

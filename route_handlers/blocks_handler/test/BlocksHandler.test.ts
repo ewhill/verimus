@@ -1,7 +1,8 @@
-import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import BlocksHandler from '../BlocksHandler';
+import { describe, it, beforeEach } from 'node:test';
+
 import { generateRSAKeyPair, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
+import BlocksHandler from '../BlocksHandler';
 
 describe('Backend: blocksHandler Coverage', () => {
     let mockNode: any;
@@ -37,7 +38,7 @@ describe('Backend: blocksHandler Coverage', () => {
         };
     });
 
-    it('Returns empty blocks list automatically', async () => {
+    it('Returns empty blocks list', async () => {
         const handler = new BlocksHandler(mockNode as any);
         await handler.handle(req as any, res as any);
         
@@ -46,7 +47,7 @@ describe('Backend: blocksHandler Coverage', () => {
         assert.strictEqual(responseData.blocks.length, 0);
     });
 
-    it('Returns fetched blocks automatically', async () => {
+    it('Returns fetched blocks', async () => {
         const encrypted = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'test.txt' }] });
         
         mockNode.ledger.collection.find = () => ({
@@ -86,7 +87,7 @@ describe('Backend: blocksHandler Coverage', () => {
         assert.strictEqual(responseData.blocks[0].hash, 'hash1');
     });
     
-    it('Appends pending blocks automatically automatically', async () => {
+    it('Appends pending blocks', async () => {
         const encrypted = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'pending.txt' }] });
         mockNode.mempool.pendingBlocks.set('some-sig', { 
             committed: false,
@@ -101,7 +102,7 @@ describe('Backend: blocksHandler Coverage', () => {
         assert.strictEqual(responseData.blocks[0].metadata.index, -1);
     });
 
-    it('Automatically returns automatically automatically automatically 500 automatically error automat...', async () => {
+    it(' returns 500 error automat...', async () => {
         const handler = new BlocksHandler(null as any);
         await handler.handle(req as any, res as any);
         assert.strictEqual(res.statusObj, 500);

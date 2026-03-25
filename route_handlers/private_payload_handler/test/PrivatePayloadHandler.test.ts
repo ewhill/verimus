@@ -1,7 +1,8 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import PrivatePayloadHandler from '../PrivatePayloadHandler';
+import { describe, it } from 'node:test';
+
 import * as cryptoUtils from '../../../crypto_utils/CryptoUtils';
+import PrivatePayloadHandler from '../PrivatePayloadHandler';
 
 describe('Backend: privatePayloadHandler Coverage', () => {
 
@@ -107,7 +108,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         assert.strictEqual(jsonRes.message, 'Invalid block signature.');
     });
 
-    it('Returns HTTP 401 handling invalid decryption validation automatically', async () => {
+    it('Returns HTTP 401 handling invalid decryption validation', async () => {
         const { publicKey, privateKey } = cryptoUtils.generateRSAKeyPair();
         
         const priv = { physicalId: 'pid', key: 'key', iv: 'iv', location: { type: 'local'}, files: [] };

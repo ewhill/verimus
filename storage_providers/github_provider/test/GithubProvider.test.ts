@@ -1,11 +1,13 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import GithubStorageProvider from '../GithubProvider';
+import { describe, it } from 'node:test';
 import { PassThrough } from 'stream';
+
+import GithubStorageProvider from '../GithubProvider';
+
 
 describe('Backend: githubProvider Integrity', () => {
 
-    it('Initializes GitHub repository connectivity mapping API properly', async () => {
+    it('Initializes GitHub repository connectivity mapping API', async () => {
         const prov = GithubStorageProvider.parseArgs(
             ['--github-owner', 'octocat', '--github-repo', 'hello-world', '--github-token', 'tkn', '--github-branch', 'dev'],
             {}
@@ -30,10 +32,10 @@ describe('Backend: githubProvider Integrity', () => {
         assert.strictEqual(prov, null);
     });
 
-    it('Validates fallback fetching mechanism logic correctly integrating with native fetch API natively', async () => {
+    it('Validates fallback fetching mechanism logic correctly integrating with native fetch API', async () => {
         const prov = new GithubStorageProvider('owner', 'repo', 'tkn', 'main');
         
-        // Mock fetch natively mapped to the environment globally
+        // Mock fetch mapped to the environment globally
         let fetchedUrl = '';
         let fetchedOpts: any = null;
         global.fetch = async (url: any, opts: any) => {
@@ -61,7 +63,7 @@ describe('Backend: githubProvider Integrity', () => {
         assert.strictEqual(readChunks, 'hello');
     });
 
-    it('Handles 404 cleanly and explicitly when fetching github artifacts fails dynamically', async () => {
+    it('Handles 404 and when fetching github artifacts fails', async () => {
          const prov = new GithubStorageProvider('owner', 'repo', 'tkn', 'main');
          
          global.fetch = async () => ({ ok: false, status: 404 }) as any;
@@ -69,7 +71,7 @@ describe('Backend: githubProvider Integrity', () => {
          assert.deepStrictEqual(pt, { status: 'not_found' });
     });
 
-    it('Throws gracefully explicitly mapping stream errors cleanly logically properly', async () => {
+    it('Throws mapping stream errors', async () => {
          const prov = new GithubStorageProvider('owner', 'repo', 'tkn', 'main');
          
          global.fetch = async () => ({ ok: false, status: 500, statusText: 'Internal Server Error' }) as any;
@@ -78,7 +80,7 @@ describe('Backend: githubProvider Integrity', () => {
          assert.deepStrictEqual(pt, { status: 'not_found' });
     });
 
-    it('Processes createBlockStream pipelines appropriately piping logic logically explicitly natively', async () => {
+    it('Processes createBlockStream pipelines piping logic', async () => {
         const prov = new GithubStorageProvider('owner', 'repo', 'tkn', 'main');
         
         let fetchedOpts: any = null;

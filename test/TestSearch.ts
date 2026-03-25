@@ -1,11 +1,12 @@
-const fs = require('fs');
+import * as fs from 'node:fs';
+
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 async function uploadBlock(port, filename, content) {
     fs.writeFileSync(filename, content);
     
-    // Polyfill using FormData inside Node.js natively
+    // Polyfill using FormData inside Node.js
     const form = new FormData();
     const fileContent = fs.readFileSync(filename);
     form.append('files', new Blob([fileContent]), filename);
@@ -73,7 +74,7 @@ async function runTest() {
         console.error("ERROR: Block incorrectly returned when searching for an invalid filename.", (searchInvalid as any).blocks);
         process.exit(1);
     } else {
-        console.log("SUCCESS: Block properly filtered out for an invalid search term.");
+        console.log("SUCCESS: Block filtered out for an invalid search term.");
     }
 
     console.log("\nAll search feature tests passed successfully!");

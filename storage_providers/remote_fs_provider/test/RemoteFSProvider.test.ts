@@ -1,9 +1,10 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
+
 import RemoteFSStorageProvider from '../RemoteFSProvider';
 
 describe('Backend: remoteFSProvider Integrity', () => {
-    it('Initializes SFTP remote filesystem connection configuration mapped natively', async () => {
+    it('Initializes SFTP remote filesystem connection configuration mapped', async () => {
         const prov = RemoteFSStorageProvider.parseArgs(['--remote-host', '1.2.3.4', '--remote-port', '2222', '--remote-user', 'usr', '--remote-pass', 'pwd', '--remote-dir', '/var/data'], { host: 'h' });
         const loc = prov.getLocation();
         assert.strictEqual(loc.type, 'remote-fs');

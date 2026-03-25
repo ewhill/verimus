@@ -1,4 +1,5 @@
-const fs = require('fs');
+import * as fs from 'node:fs';
+
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 

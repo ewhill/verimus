@@ -187,7 +187,7 @@ class Peer {
           publicKeyBuffer: this.publicKey_
         });
 
-        this.logger_.log(`Peer identity derived natively.`);
+        this.logger_.log(`Peer identity derived.`);
 
         this.server_ = new Server({
           httpsServerConfig: this.httpsServerConfig_,
@@ -578,7 +578,7 @@ class Peer {
       peers = peers.slice(0, 100);
     }
 
-    // Add discovered addresses cleanly to local registry book decoupled from sockets
+    // Add discovered addresses to local registry book decoupled from sockets
     peers.forEach(peer => {
       // Memory limit discoveryAddressBook
       if (Object.keys(this.discoveryAddressBook_).length > 20000) {
@@ -731,7 +731,7 @@ class Peer {
     if (message && message.header && message.header.timestamp) {
       const drift = Math.abs(Date.now() - new Date(message.header.timestamp).getTime());
       if (drift > (1000 * 60 * 5)) {
-        this.logger_.warn(`Message dropped implicitly due to excessive sequential timestamp drift limiting replication replay attacks natively.`);
+        this.logger_.warn(`Message dropped implicitly due to excessive sequential timestamp drift limiting replication replay attacks.`);
         return;
       }
     }

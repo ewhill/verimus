@@ -1,8 +1,9 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import UploadHandler from '../UploadHandler';
-import { NodeRole } from '../../../types/NodeRole';
+import { describe, it } from 'node:test';
+
 import { generateRSAKeyPair } from '../../../crypto_utils/CryptoUtils';
+import { NodeRole } from '../../../types/NodeRole';
+import UploadHandler from '../UploadHandler';
 
 describe('Backend: uploadHandler Coverage Unit Tests', () => {
 
@@ -80,10 +81,10 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         await handler.handle(req, res);
         assert.strictEqual(statusSet, 202);
         assert.strictEqual(jsonPayload.success, true);
-        assert.ok(blockHandled, 'Should intelligently kick off a consensus settlement correctly intrinsically');
+        assert.ok(blockHandled, 'Should kick off a consensus settlement correctly intrinsically');
     });
 
-    it('Handles and catches bubbled initialization API exception errors gracefully', async () => {
+    it('Handles and catches bubbled initialization API exception errors', async () => {
         const handler = new UploadHandler({
             roles: [NodeRole.ORIGINATOR],
             storageProvider: {
@@ -134,7 +135,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         await handler.handle(req, res); // We just need it to hit the paths catch block
     });
 
-    it('Identifies and halts timed out unresolved block streaming operations seamlessly', async (t: any) => {
+    it('Identifies and halts timed out unresolved block streaming operations', async (t: any) => {
         if (t?.mock?.timers) { t.mock.timers.enable({ apis: ['setTimeout'] }); }
         else {
             // fallback if mock is absent

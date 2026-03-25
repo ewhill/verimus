@@ -1,9 +1,11 @@
-import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
-import WalletManager from '../WalletManager';
-import Ledger from '../../ledger/Ledger';
+import { describe, it, before, after } from 'node:test';
+
 import { MongoMemoryServer } from 'mongodb-memory-server';
+
 import { BLOCK_TYPES } from '../../constants';
+import Ledger from '../../ledger/Ledger';
+import WalletManager from '../WalletManager';
 
 describe('WalletManager', () => {
     let mongod: MongoMemoryServer;
@@ -51,7 +53,7 @@ describe('WalletManager', () => {
         assert.strictEqual(balance, 0);
     });
 
-    it('Verifies boundaries accurately checking mathematical state natively', async () => {
+    it('Verifies boundaries checking mathematical state', async () => {
          mockLedger = {
             collection: {
                 find: () => ({
@@ -70,7 +72,7 @@ describe('WalletManager', () => {
         assert.strictEqual(hasInsufficient, false);
     });
 
-    it('Allocates valid transactions smoothly blocking invalid mappings cleanly', async () => {
+    it('Allocates valid transactions blocking invalid mappings', async () => {
          mockLedger = {
             collection: {
                 find: () => ({
@@ -91,7 +93,7 @@ describe('WalletManager', () => {
         assert.strictEqual(blocked, null);
     });
 
-    it('Tests SYSTEM boundary checks effectively verifying infinite mint capabilities', async () => {
+    it('Tests SYSTEM boundary checks verifying infinite mint capabilities', async () => {
         const mockLedger = {
             collection: { find: () => ({ toArray: async () => [] }) }
         } as unknown as Ledger;
@@ -107,7 +109,7 @@ describe('WalletManager', () => {
         assert.strictEqual(approved.amount, 500000);
     });
 
-    it('Calculates fractional block rewards explicitly via continuous mathematical scaling formulas', async () => {
+    it('Calculates fractional block rewards via continuous mathematical scaling formulas', async () => {
         const genesisTimestamp = 1774310400000;
         
         // Exact genesis time mappings reward full node payload bounds
@@ -127,13 +129,13 @@ describe('WalletManager', () => {
         // expected: 50 * exp(-ln2 * 10 / 4) = 50 * exp(-1.7328) = 50 * 0.17677 = 8.838
         assert.ok(tenYearReward > 8.8 && tenYearReward < 8.9);
 
-        // Sub-genesis blocks revert natively mapping exactly 50
+        // Sub-genesis blocks revert mapping exactly 50
         const preGenesis = genesisTimestamp - 1000000;
         const preGenesisReward = WalletManager.calculateSystemReward(preGenesis, genesisTimestamp);
         assert.strictEqual(preGenesisReward, 50.0);
     });
 
-    it('Freezes funds calculating actively frozen limits preventing double spending cleanly', async () => {
+    it('Freezes funds calculating frozen limits preventing double spending', async () => {
         mockLedger = {
             collection: {
                 find: () => ({
@@ -163,7 +165,7 @@ describe('WalletManager', () => {
         const releasedBalance = await walletManager.calculateBalance('peerX');
         assert.strictEqual(releasedBalance, 300);
 
-        // Commit funds clears the lock natively
+        // Commit funds clears the lock
         walletManager.freezeFunds('peerX', 250, 'contract-B');
         assert.strictEqual(await walletManager.calculateBalance('peerX'), 50);
         walletManager.commitFunds('contract-B');

@@ -1,9 +1,10 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
+
 import peersHandler from '../PeersHandler';
 
 describe('Backend: peersHandler Integrity', () => {
-    it('Returns empty array safely when no peer data exists globally', async () => {
+    it('Returns empty array when no peer data exists globally', async () => {
         let jsonStr = '';
         const req = {};
         const res = { json(data: any) { jsonStr = JSON.stringify(data); return this; } };
@@ -71,7 +72,7 @@ describe('Backend: peersHandler Integrity', () => {
         assert.strictEqual(data.peers.length, 1); // Only self
     });
 
-    it('Catches automatically', async () => {
+    it('Catches', async () => {
         let statusObj = 200; let jsonStr = '';
         const req = {};
         const res = { 

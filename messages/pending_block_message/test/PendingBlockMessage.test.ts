@@ -1,7 +1,8 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { PendingBlockMessage } from '../PendingBlockMessage';
+import { describe, it } from 'node:test';
+
 import type { Block } from '../../../types';
+import { PendingBlockMessage } from '../PendingBlockMessage';
 
 describe('Messages: PendingBlockMessage', () => {
 
@@ -19,12 +20,12 @@ describe('Messages: PendingBlockMessage', () => {
         assert.deepEqual(msg.block, mockBlock);
     });
 
-    it('Initializes via nested payload properties seamlessly', () => {
+    it('Initializes via nested payload properties', () => {
         const msg = new PendingBlockMessage({ body: { block: mockBlock } });
         assert.deepEqual(msg.block, mockBlock);
     });
 
-    it('Updates attributes accurately leveraging class dynamic setters', () => {
+    it('Updates attributes leveraging class dynamic setters', () => {
         const msg = new PendingBlockMessage();
         msg.block = mockBlock;
         assert.deepEqual(msg.block, mockBlock);

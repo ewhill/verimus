@@ -1,7 +1,10 @@
-import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
-import Ledger from '../Ledger';
+import { describe, it, before, after } from 'node:test';
+
 import { MongoMemoryServer } from 'mongodb-memory-server';
+
+import Ledger from '../Ledger';
+
 
 describe('Backend: Ledger Integrity and Tamper Evidence', () => {
     let ledger: Ledger;
@@ -34,7 +37,7 @@ describe('Backend: Ledger Integrity and Tamper Evidence', () => {
     it('Initializes with a Genesis Block', async () => {
         const latest = await ledger.getLatestBlock();
         assert.ok(latest, 'Genesis block should successfully exist');
-        assert.strictEqual(latest.metadata.index, 0, 'Genesis block logically maps index 0');
+        assert.strictEqual(latest.metadata.index, 0, 'Genesis block maps index 0');
         assert.strictEqual(latest.previousHash, '', 'Genesis block lacks previous hash definitionally');
     });
 
@@ -78,7 +81,7 @@ describe('Backend: Ledger Integrity and Tamper Evidence', () => {
         await ledger.purgeChain();
 
         const peer = await ledger.peersCollection!.findOne({ publicKey: 'HONEST_NODE' });
-        assert.ok(peer, 'Peers collection data must absolutely survive ledger sequence wiping natively');
+        assert.ok(peer, 'Peers collection data must absolutely survive ledger sequence wiping');
         assert.strictEqual(peer.score, 100, 'Peer score mappings inherently immutable across DB lifecycle operations');
     });
 });

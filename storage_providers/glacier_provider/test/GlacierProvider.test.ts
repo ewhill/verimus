@@ -1,5 +1,7 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
+import { PassThrough } from 'stream';
+
 import GlacierStorageProvider from '../GlacierProvider';
 
 describe('Backend: glacierProvider Integrity', () => {
@@ -24,7 +26,7 @@ describe('Backend: glacierProvider Integrity', () => {
         assert.ok(sendInvoked);
 
         const { physicalBlockId: physErr, writeStream: wsErr } = prov.createBlockStream();
-        (prov as any).client.send = async () => { throw new Error('Glacier send failure explicitly solidly naturally cleverly natively'); };
+        (prov as any).client.send = async () => { throw new Error('Glacier send failure'); };
         wsErr.end();
         await new Promise(r => setTimeout(r, 10));
         
@@ -39,7 +41,7 @@ describe('Backend: glacierProvider Integrity', () => {
         assert.strictEqual(readStreamFail.status, 'not_found');
     });
 
-    it('Accurately tracks active jobs and smoothly pivots from pending to available safely natively', async () => {
+    it(' tracks active jobs and pivots from pending to available', async () => {
         const prov = GlacierStorageProvider.parseArgs(['--glacier-vault', 'v', '--glacier-region', 'us-east-1'], { vaultName: 'v' });
         
         let invokeCount = 0;
@@ -50,7 +52,7 @@ describe('Backend: glacierProvider Integrity', () => {
             } else if (cmd.constructor.name === 'DescribeJobCommand') {
                 return { Completed: invokeCount >= 3 };
             } else if (cmd.constructor.name === 'GetJobOutputCommand') {
-                const { PassThrough } = require('stream');
+
                 const pt = new PassThrough();
                 pt.end(Buffer.from('hello glacier'));
                 return { body: pt };

@@ -18,7 +18,7 @@ test("Security: RSA OAEP Padding Enforced", (assert) => {
 
 	assert.notEqual(encrypted, null, 'Encrypted buffer generated via OAEP should not be null.');
 	
-	// Test decryption using explicitly forced padding to check Bleichenbacher mitigation
+	// Test decryption using forced padding to check Bleichenbacher mitigation
 	const decrypted = crypto.privateDecrypt({
 		key: key.private,
 		padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
@@ -32,7 +32,7 @@ test("Security: RSA OAEP Padding Enforced", (assert) => {
 });
 
 test("Security: HelloMessage Hashcash PoW Validation", (assert) => {
-    // Mock the client components required to test `heloHandler` natively
+    // Mock the client components required to test `heloHandler`
     const mockConnection = new EventEmitter();
     mockConnection.addEventListener = mockConnection.on.bind(mockConnection);
     const client = new Client({
@@ -51,7 +51,7 @@ test("Security: HelloMessage Hashcash PoW Validation", (assert) => {
     });
 
     client.receiveHeloPromiseReject_ = (err) => {
-        assert.ok(err.message.includes('Hashcash'), 'Properly rejects un-mined Hashcash bindings.');
+        assert.ok(err.message.includes('Hashcash'), ' rejects un-mined Hashcash bindings.');
     };
 
     client.heloHandler(invalidMessage, null);
@@ -71,16 +71,16 @@ test("Security: HelloMessage Hashcash PoW Validation", (assert) => {
 
     client.receiveHeloPromiseReject_ = (err) => {
         if (err.message.includes('Hashcash')) {
-            assert.fail('Valid Hashcash mapping was rejected natively.');
+            assert.fail('Valid Hashcash mapping was rejected.');
         }
     };
 
-    // The handler will throw downstream on missing RSA keys, but should pass the Hashcash check natively
+    // The handler will throw downstream on missing RSA keys, but should pass the Hashcash check
     try {
         client.heloHandler(validMessage, null);
     } catch(e) {
         // We only care that it passed the Hashcash check, which it did if it throws "Message did not contain credentials"
-        assert.ok(e.message.includes('credentials') || true, 'Proceeds past Hashcash bounds cleanly.');
+        assert.ok(e.message.includes('credentials') || true, 'Proceeds past Hashcash bounds.');
     }
 
 	assert.end();
@@ -89,7 +89,7 @@ test("Security: HelloMessage Hashcash PoW Validation", (assert) => {
 test("Security: Decentralized IP Validation (SPOF removal)", async (assert) => {
     const server = new Server({ httpsServerMode: Server.MODES.NONE });
     
-    // Mock HTTPS natively to track the requested host
+    // Mock HTTPS to track the requested host
     const originalGet = https.get;
     const requestedHosts = new Set();
     
@@ -112,11 +112,11 @@ test("Security: Decentralized IP Validation (SPOF removal)", async (assert) => {
         await server.getPublicAddress();
     }
 
-    // Restore HTTPS safely
+    // Restore HTTPS
     https.get = originalGet;
     
     assert.ok(requestedHosts.has('api.ipify.org') || requestedHosts.has('icanhazip.com') || requestedHosts.has('ifconfig.me'),
-        `Successfully dynamically load-balanced IP resolutions across multiple pools: ${Array.from(requestedHosts).join(', ')}`);
+        `Successfully load-balanced IP resolutions across multiple pools: ${Array.from(requestedHosts).join(', ')}`);
         
     server.close();
     assert.end();
@@ -183,7 +183,7 @@ test("Security: AES-GCM Dynamic IV Rotation & Message Bounds", async (assert) =>
 	    console.error("DEBUG ERROR: ", e);
 	}
 
-    assert.equal(sentData.length, 2, 'Client emitted 2 encrypted payloads natively.');
+    assert.equal(sentData.length, 2, 'Client emitted 2 encrypted payloads.');
     
     // Parse wrapped messages correctly (they arrive as Prefix{JSON})
     const getIv = (payload) => {
@@ -195,8 +195,8 @@ test("Security: AES-GCM Dynamic IV Rotation & Message Bounds", async (assert) =>
     const iv1 = getIv(sentData[0]);
     const iv2 = getIv(sentData[1]);
 
-    assert.ok(iv1 && iv2, 'Messages organically bundled dynamic AES initialization vectors.');
-    assert.notEqual(iv1, iv2, 'AES-GCM uniquely rotated Initialization Vectors (IV) mitigating Galois Counter vulnerabilities natively.');
+    assert.ok(iv1 && iv2, 'Messages bundled dynamic AES initialization vectors.');
+    assert.notEqual(iv1, iv2, 'AES-GCM uniquely rotated Initialization Vectors (IV) mitigating Galois Counter vulnerabilities.');
 
     // 2. Test pre-parse JSON allocation bounding
     let terminated = false;

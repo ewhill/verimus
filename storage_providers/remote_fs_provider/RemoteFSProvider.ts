@@ -1,8 +1,10 @@
-import SftpClient from 'ssh2-sftp-client';
-import logger from '../../logger/Logger';
-import BaseStorageProvider, { GetBlockReadStreamResult } from '../base_provider/BaseProvider';
 import crypto from 'crypto';
 import { PassThrough } from 'stream';
+
+import SftpClient from 'ssh2-sftp-client';
+
+import logger from '../../logger/Logger';
+import BaseStorageProvider, { GetBlockReadStreamResult } from '../base_provider/BaseProvider';
 
 export interface RemoteFSCredentials {
     host?: string;

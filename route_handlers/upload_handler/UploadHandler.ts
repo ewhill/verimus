@@ -1,17 +1,16 @@
 
 
 import * as crypto from 'crypto';
+
 import { Request, Response } from 'express';
 
-import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
+import { BLOCK_TYPES } from '../../constants';
 import { encryptPrivatePayload, signData } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
+import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
 import type { Block, BlockPrivate, StorageContractPayload, PeerConnection } from '../../types';
-
-
 import { NodeRole } from '../../types/NodeRole';
 import BaseHandler from '../base_handler/BaseHandler';
-import { BLOCK_TYPES } from '../../constants';
 
 export default class UploadHandler extends BaseHandler {
     async handle(req: Request, res: Response) {
@@ -39,7 +38,7 @@ export default class UploadHandler extends BaseHandler {
         if (isNaN(redundancy) || redundancy < 1) return res.status(400).send('Invalid redundancy parameter.');
         if (isNaN(maxCost) || maxCost <= 0) return res.status(400).send('Invalid maxCost boundary.');
 
-        // Cap minimum redundancy safely natively bounds
+        // Cap minimum redundancy bounds
         if (redundancy > 5) redundancy = 5; 
 
         let paths: string[] = [];
@@ -55,32 +54,32 @@ export default class UploadHandler extends BaseHandler {
         const theoreticalMaxCost = maxCost * redundancy * Math.max((totalSize / (1024 * 1024 * 1024)), 0.000001);
         const marketReqId = crypto.randomUUID();
 
-        // Escrow phase explicitly tracking theoretical spend limits securely natively mapping against double-spends
+        // Escrow phase tracking theoretical spend limits mapping against double-spends
         const hasFunds = await this.node.consensusEngine.walletManager.verifyFunds(publicKey, theoreticalMaxCost);
         if (!hasFunds && publicKey !== 'SYSTEM') {
-            return res.status(402).send('Insufficient Wallet Funds allocating explicitly constrained P2P limit orders dynamically.');
+            return res.status(402).send('Insufficient Wallet Funds allocating constrained P2P limit orders.');
         }
 
         this.node.consensusEngine.walletManager.freezeFunds(publicKey, theoreticalMaxCost, marketReqId);
-        logger.info(`[Peer ${this.node.port}] Initiating async storage limit order ${marketReqId} searching mapping ${redundancy} hosts safely natively...`);
+        logger.info(`[Peer ${this.node.port}] Initiating async storage limit order ${marketReqId} searching mapping ${redundancy} hosts...`);
 
-        // Triage Bid Harvesting explicitly parsing bounds dynamically against TCP buffers natively!
+        // Triage Bid Harvesting parsing bounds against TCP buffers!
         const bids = await this.node.consensusEngine.node.syncEngine.orchestrateStorageMarket(
             marketReqId, totalSize, chunkSizeBytes, redundancy, maxCost
         );
 
         if (bids.length < redundancy) {
             this.node.consensusEngine.walletManager.releaseFunds(marketReqId);
-            return res.status(422).send(`Decentralized market triage loop timed out actively pulling isolated P2P arrays natively smoothly! Acquired hosts: ${bids.length}`);
+            return res.status(422).send(`Decentralized market triage loop timed out pulling isolated P2P arrays! Acquired hosts: ${bids.length}`);
         }
 
-        logger.info(`[Peer ${this.node.port}] Decentralized array acquired mapping 100% boundary limits smoothly. Hosts: ${bids.map((b: any) => b.peerId.slice(0, 8)).join(', ')}`);
+        logger.info(`[Peer ${this.node.port}] Decentralized array acquired mapping 100% boundary limits. Hosts: ${bids.map((b: any) => b.peerId.slice(0, 8)).join(', ')}`);
 
         // Physical Archiving (Mock logical routing onto local boundary, integrating streaming next phase)
         const bundleResult = await this.node.bundler!.streamBlockBundle(files, writeStream, paths);
         if (!bundleResult) {
-            this.node.consensusEngine.walletManager.releaseFunds(marketReqId); // Release if fail zip natively
-            return res.status(500).send('Internal Node Array Zip mapping collapsed explicitly.');
+            this.node.consensusEngine.walletManager.releaseFunds(marketReqId); // Release if fail zip
+            return res.status(500).send('Internal Node Array Zip mapping collapsed.');
         }
 
         // 7. Generate Pending Block and initiate consensus
@@ -124,7 +123,7 @@ export default class UploadHandler extends BaseHandler {
 
         // Process our own pending block using the EXACT same timestamp that will be broadcasted
         this.node.consensusEngine.handlePendingBlock(pendingBlock, { peerAddress: `127.0.0.1:${this.node.port}` } as any, Date.now()).catch(err => {
-            logger.warn(`[Peer ${this.node.port}] Local pending block convergence exception caught gracefully avoiding crash loop: ${err.message}`);
+            logger.warn(`[Peer ${this.node.port}] Local pending block convergence exception caught avoiding crash loop: ${err.message}`);
         });
 
         // Broadcast Pending Block
@@ -145,8 +144,8 @@ export default class UploadHandler extends BaseHandler {
 
         this.node.events.once(`settled:${blockId}`, (settledBlock) => {
             clearTimeout(timeout);
-            this.node.consensusEngine.walletManager.commitFunds(marketReqId); // Flushes local mapped lock smoothly safely
-            logger.info(`[Peer ${this.node.port}] Block ${settledBlock.hash.slice(0, 8)} consensus achieved resolving limit orders securely directly!`);
+            this.node.consensusEngine.walletManager.commitFunds(marketReqId); // Flushes local mapped lock
+            logger.info(`[Peer ${this.node.port}] Block ${settledBlock.hash.slice(0, 8)} consensus achieved resolving limit orders directly!`);
         });
 
         // Respond immediately to UI

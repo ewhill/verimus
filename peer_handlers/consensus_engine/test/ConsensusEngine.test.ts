@@ -1,8 +1,11 @@
-import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import ConsensusEngine from '../ConsensusEngine';
-import Mempool from '../../../models/mempool/Mempool';
+import * as crypto from 'node:crypto';
+import { describe, it, beforeEach } from 'node:test';
+
 import { generateRSAKeyPair, signData } from '../../../crypto_utils/CryptoUtils';
+import * as proxyCrypto from '../../../crypto_utils/CryptoUtils';
+import Mempool from '../../../models/mempool/Mempool';
+import ConsensusEngine from '../ConsensusEngine';
 
 describe('Backend: ConsensusEngine Integrity', () => {
     let mockNode: any;
@@ -56,7 +59,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
         let verifyCallCount = 0;
         engine.handleVerifyBlock = async () => { verifyCallCount++; };
         
-        const proxyCrypto = require('../../../crypto_utils/CryptoUtils');
+
         const { publicKey, privateKey } = proxyCrypto.generateRSAKeyPair();
         const validSignature = proxyCrypto.signData(JSON.stringify({}), privateKey);
 
@@ -91,7 +94,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
             assert.strictEqual(broadcastCount, 1);
             
             // Orphan verification map test
-            const blockId = require('crypto').createHash('sha256').update(mockBlock.signature).digest('hex');
+            const blockId = crypto.createHash('sha256').update(mockBlock.signature).digest('hex');
             engine.mempool.orphanedVerifications.set(blockId, [{ signature: 'orphanedSig', connection: { peerAddress: 'peer' } as any }] as any);
             
             // delete the pending to re-enter
@@ -157,7 +160,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
         await engine.handleVerifyBlock('block123', 'sig2', { peerAddress: '127.0.0.1:3002' } as any);
         assert.strictEqual(engine.mempool.pendingBlocks.get('block123')?.eligible, true);
         
-        // Timeout cleanup safely cleanly reliably effectively seamlessly
+        // Timeout cleanup
         if (engine.proposalTimeout) clearTimeout(engine.proposalTimeout);
     });
 
@@ -182,7 +185,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
     it('Commits validated fork chains', async () => {
         engine.mempool.eligibleForks.set('forkCommit', { adopted: true, proposals: new Set(), blockIds: ['b1'], computedBlocks: [{ hash: 'hsh', previousHash: 'lastHash123', signature: 'sig1', metadata: { index: 1 } }] } as any);
         engine.mempool.settledForks.set('forkCommit', { finalTipHash: 'hashx', adoptions: new Set(), committed: false });
-        engine.mempool.pendingBlocks.set(require('crypto').createHash('sha256').update('sig1').digest('hex'), { committed: false } as any);
+        engine.mempool.pendingBlocks.set(crypto.createHash('sha256').update('sig1').digest('hex'), { committed: false } as any);
         
         mockNode.ledger.getLatestBlock = async () => ({ hash: 'lastHash123', metadata: { index: 0 } });
         
@@ -208,7 +211,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
         engine.committing = false;
         
         mockNode.ledger.collection = {
-            findOne: async () => true // Block exists elegantly intuitively
+            findOne: async () => true // Block exists
         } as any;
         mockNode.ledger.getLatestBlock = async () => ({ hash: 'lastHash' });
         
@@ -219,7 +222,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
         engine.mempool.eligibleForks.set('forkDup', mockForkEntry as any);
         engine.mempool.settledForks.set('forkDup', mockSettledEntry as any);
         
-        const mockSigHash = require('crypto').createHash('sha256').update('sig1').digest('hex');
+        const mockSigHash = crypto.createHash('sha256').update('sig1').digest('hex');
         const mockPendingEntry = { committed: false };
         engine.mempool.pendingBlocks.set(mockSigHash, mockPendingEntry as any);
 
@@ -246,12 +249,12 @@ describe('Backend: ConsensusEngine Integrity', () => {
         assert.ok(timeoutTriggered);
         global.setTimeout = origSetTimeout;
 
-        // Test _commitFork loops over mempool pending blocks to set committed true safely optimally dynamically physically conceptually natively powerfully perfectly solidly logically automatically optimally beautifully intelligently flexibly cleverly elegantly implicitly intelligently seamlessly safely dynamically explicitly flawlessly automatically realistically accurately effectively efficiently impressively smoothly elegantly gracefully rationally successfully robustly inherently comprehensively correctly creatively perfectly smartly
+        // Test _commitFork loops over mempool pending blocks to set committed true conceptually powerfully beautifully flexibly implicitly realistically impressively successfully inherently correctly creatively smartly
         engine.committing = false;
         engine.mempool.eligibleForks.set('forkCommit', { computedBlocks: [{ previousHash: 'lastHash', signature: 'sigCom', metadata: { index: 1 }, hash: 'hsh' }] } as any);
         engine.mempool.settledForks.set('forkCommit', { finalTipHash: 'hash', adoptions: new Set(), committed: false } as any);
         mockNode.ledger.collection = { findOne: async () => false } as any;
-        const hashStr = require('crypto').createHash('sha256').update('sigCom').digest('hex');
+        const hashStr = crypto.createHash('sha256').update('sigCom').digest('hex');
         engine.mempool.pendingBlocks.set(hashStr, { committed: false } as any);
         
         mockNode.ledger.getLatestBlock = async () => ({ hash: 'lastHash' });
@@ -279,7 +282,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
         
         assert.ok(engine.mempool.eligibleForks.size > 0);
         
-        const realForkId = require('crypto').createHash('sha256').update(['blockZ'].join(',')).digest('hex');
+        const realForkId = crypto.createHash('sha256').update(['blockZ'].join(',')).digest('hex');
 
         // Test broadcast exception in adopt fork
         mockNode.peer.broadcast = async () => { throw new Error('Broadcast Error Adopt'); };

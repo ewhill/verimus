@@ -1,12 +1,15 @@
-import { describe, it, before, after } from 'node:test';
+import fs from 'fs';
 import assert from 'node:assert';
+import { describe, it, before, after } from 'node:test';
+import os from 'os';
+import path from 'path';
+
 import { MongoMemoryServer } from 'mongodb-memory-server';
+
+import Bundler from '../../bundler/Bundler';
 import PeerNode from '../../peer_node/PeerNode';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
-import Bundler from '../../bundler/Bundler';
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
+
 
 describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation (Phase 3)', () => {
     let mongod1: MongoMemoryServer;
@@ -89,15 +92,15 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
         (node3.peer as any).trustedPeers = ['127.0.0.1:31001'];
         
         const majority = node3.getMajorityCount();
-        assert.strictEqual(majority, 2, 'Node 3 natively bounds a local perception majority counting correctly.');
+        assert.strictEqual(majority, 2, 'Node 3 bounds a local perception majority counting correctly.');
 
-        // Node 3 tries to formulate a rogue fork on its own isolated chain mappings natively
+        // Node 3 tries to formulate a rogue fork on its own isolated chain mappings
         node3.mempool.pendingBlocks.set('rogue_block', { eligible: true, originalTimestamp: Date.now() } as any);
         node3.mempool.eligibleForks.set('rogue_fork', { blockIds: ['rogue_block'], proposals: new Set(['127.0.0.1:31003']) } as any);
         
         await node3.consensusEngine.handleProposeFork('rogue_fork', ['rogue_block'], { peerAddress: '127.0.0.1:31003' } as any);
         
-        // Assert the fork is NOT adopted because it didn't cross the threshold dynamically
+        // Assert the fork is NOT adopted because it didn't cross the threshold
         const fork = node3.mempool.eligibleForks.get('rogue_fork');
         assert.ok(!fork?.adopted, 'Partitioned node legitimately stalled preventing anomalous fork inclusion!');
     });
@@ -105,10 +108,10 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
     it('Coordinates adoption across majority segments', async () => {
         node1.mempool.eligibleForks.set('valid_fork', { blockIds: ['valid_block'], proposals: new Set(['127.0.0.1:31001']) } as any);
         
-        // Node 2 votes for Node 1's proposal forming the required majority mapping smoothly
+        // Node 2 votes for Node 1's proposal forming the required majority mapping
         await node1.consensusEngine.handleProposeFork('valid_fork', ['valid_block'], { peerAddress: '127.0.0.1:31002' } as any);
         
         const fork = node1.mempool.eligibleForks.get('valid_fork');
-        assert.ok(fork?.adopted, 'Primary partition dynamically scaled and mathematically executed the fork adoption over majority boundaries.');
+        assert.ok(fork?.adopted, 'Primary partition scaled and mathematically executed the fork adoption over majority boundaries.');
     });
 });

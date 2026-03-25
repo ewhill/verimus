@@ -1,8 +1,10 @@
-import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import SyncEngine from '../SyncEngine';
-import { ChainStatusResponseMessage } from '../../../messages/chain_status_response_message/ChainStatusResponseMessage';
+import { describe, it, beforeEach } from 'node:test';
+
+import * as cryptoUtils from '../../../crypto_utils/CryptoUtils';
 import { BlockSyncResponseMessage } from '../../../messages/block_sync_response_message/BlockSyncResponseMessage';
+import { ChainStatusResponseMessage } from '../../../messages/chain_status_response_message/ChainStatusResponseMessage';
+import SyncEngine from '../SyncEngine';
 
 describe('Backend: SyncEngine Integrity', () => {
     let mockNode: any;
@@ -59,7 +61,7 @@ describe('Backend: SyncEngine Integrity', () => {
         };
         await syncEngine.handleBlockSyncRequest(2, mockConnection as any);
         assert.ok(sentMessage !== null);
-        // It should match the mock mapped correctly successfully logically actively
+        // It should match the mock mapped correctly successfully
         assert.strictEqual(sentMessage instanceof BlockSyncResponseMessage, true);
         assert.strictEqual(sentMessage.block.hash, 'block2Hash');
     });
@@ -104,9 +106,9 @@ describe('Backend: SyncEngine Integrity', () => {
 
         const mockNewBlock = { hash: 'h10', previousHash: 'h9', metadata: { index: 10 } };
         // We need cryptoUtils to return h10
-        const cryptoUtils = require('../../../crypto_utils/CryptoUtils');
+
         const origHashData = cryptoUtils.hashData;
-        cryptoUtils.hashData = () => 'h10';
+        (cryptoUtils as any).hashData = () => 'h10';
 
         syncEngine._blockSyncResponses.set('10_addr1', mockNewBlock as any);
         let blockAdded = false;
@@ -114,7 +116,7 @@ describe('Backend: SyncEngine Integrity', () => {
 
         await syncEngine.performInitialSync();
 
-        cryptoUtils.hashData = origHashData;
+        (cryptoUtils as any).hashData = origHashData;
         global.setTimeout = originalSetTimeout;
 
         assert.strictEqual(syncEngine.isSyncing, false);
@@ -123,7 +125,7 @@ describe('Backend: SyncEngine Integrity', () => {
     it('Rejects arrays with hash inconsistencies', async () => {
         mockNode.peer.broadcast = async () => { };
 
-        // Simulating corrupted local chain cleanly conceptually
+        // Simulating corrupted local chain conceptually
         mockNode.ledger.isChainValid = async () => false;
 
         let purged = false;
@@ -245,7 +247,7 @@ describe('Backend: SyncEngine Integrity', () => {
 
         const mockConn1 = { peerAddress: 'addr1', send: () => { } };
 
-        const cryptoUtils = require('../../../crypto_utils/CryptoUtils');
+
         const origHash = cryptoUtils.hashData;
 
         const computedHash1 = origHash(JSON.stringify({ metadata: { index: 1 }, previousHash: 'h0' }));
@@ -264,20 +266,20 @@ describe('Backend: SyncEngine Integrity', () => {
 
         await syncEngine.performInitialSync();
         global.setTimeout = originalSetTimeout;
-        cryptoUtils.hashData = origHash;
+        (cryptoUtils as any).hashData = origHash;
 
         assert.strictEqual(syncEngine.isSyncing, false);
         assert.strictEqual(addedCount, 1);
     });
 
-    it('Broadcasts limit orders and successfully maps required bids organically', async () => {
+    it('Broadcasts limit orders and successfully maps required bids', async () => {
         let sentMessage: any = null;
         mockNode.peer.broadcast = async (msg: any) => { sentMessage = msg; };
         
         // Let orchestrate storage market run, but we will fulfill the market manually simulating the network
         const promise = syncEngine.orchestrateStorageMarket('req-1', 1000, 250, 2, 0.10);
 
-        // Before timeout, manually ingest 2 bids natively
+        // Before timeout, manually ingest 2 bids
         const market = syncEngine.activeStorageMarkets.get('req-1');
         assert.ok(market);
         
@@ -289,7 +291,7 @@ describe('Backend: SyncEngine Integrity', () => {
         assert.strictEqual(syncEngine.activeStorageMarkets.has('req-1'), false);
     });
 
-    it('Ignores storage requests securely if role is not strictly STORAGE mapping limits cleanly', async () => {
+    it('Ignores storage requests if role is not strictly STORAGE mapping limits', async () => {
         let sentMessage: any = null;
         const mockConnection = { send: (msg: any) => { sentMessage = msg; } };
         
@@ -306,13 +308,13 @@ describe('Backend: SyncEngine Integrity', () => {
         assert.ok(sentMessage !== null);
         assert.strictEqual((sentMessage as any).proposedCostPerGB, 0.05);
 
-        // Tests gracefully dropping requests when internal limit mappings exceed ceiling naturally
+        // Tests dropping requests when internal limit mappings exceed ceiling
         sentMessage = null;
         await syncEngine.handleStorageRequest({ storageRequestId: 'r-3', senderId: 'remote', maxCostPerGB: 0.01 } as any, mockConnection as any);
         assert.strictEqual(sentMessage, null); 
     });
 
-    it('Triage timeout naturally drops expired orders gracefully returning gathered arrays natively', async () => {
+    it('Triage timeout drops expired orders returning gathered arrays', async () => {
         mockNode.peer.broadcast = async () => {};
         const originalSetTimeout = global.setTimeout;
         

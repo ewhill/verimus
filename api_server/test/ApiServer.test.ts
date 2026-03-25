@@ -1,5 +1,6 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
+
 import setupExpressApp from '../ApiServer';
 
 describe('Backend: apiServer Integrity Check', () => {

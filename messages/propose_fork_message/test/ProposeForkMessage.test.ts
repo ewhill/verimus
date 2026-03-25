@@ -1,5 +1,6 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
+
 import { ProposeForkMessage } from '../ProposeForkMessage';
 
 describe('Messages: ProposeForkMessage', () => {
@@ -10,13 +11,13 @@ describe('Messages: ProposeForkMessage', () => {
         assert.deepEqual(msg.blockIds, ['b1', 'b2']);
     });
 
-    it('Initializes via nested payload properties seamlessly', () => {
+    it('Initializes via nested payload properties', () => {
         const msg = new ProposeForkMessage({ body: { forkId: 'fork-B', blockIds: ['b3'] } });
         assert.strictEqual(msg.forkId, 'fork-B');
         assert.deepEqual(msg.blockIds, ['b3']);
     });
 
-    it('Updates attributes accurately leveraging class dynamic setters', () => {
+    it('Updates attributes leveraging class dynamic setters', () => {
         const msg = new ProposeForkMessage();
         msg.forkId = 'fork-C';
         msg.blockIds = ['b4'];

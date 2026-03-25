@@ -97,7 +97,7 @@ const testSignature = async (assert) => {
 	peer.peers_ = [testPeer];
 
 	assert.true(peer.isConnectedTo({ publicKey: 'asdasdasd' }),
-		`Properly reports if peer is connected to another peer.`);
+		` reports if peer is connected to another peer.`);
 
 	await assert.doesThrow(async () => {
 		await peer.discoverPeer(testPeer);
@@ -108,7 +108,7 @@ const testSignature = async (assert) => {
 	const testPeerSignatureBuffer = Buffer.from('aaa', 'utf8');
 	peer.publicKey_ = testPeerSignatureBuffer;
 	assert.true(peer.isOwnSignature(testPeerSignatureBuffer),
-		`Properly reports if given signature is equal to this peer.`);
+		` reports if given signature is equal to this peer.`);
 
 	peer.peers_ = [];
 	await assert.doesThrow(async () => {

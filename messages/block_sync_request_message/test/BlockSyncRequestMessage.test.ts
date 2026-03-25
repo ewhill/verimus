@@ -1,5 +1,6 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
+
 import { BlockSyncRequestMessage } from '../BlockSyncRequestMessage';
 
 describe('Messages: BlockSyncRequestMessage', () => {
@@ -9,12 +10,12 @@ describe('Messages: BlockSyncRequestMessage', () => {
         assert.strictEqual(msg.index, 5);
     });
 
-    it('Initializes via nested payload properties seamlessly', () => {
+    it('Initializes via nested payload properties', () => {
         const msg = new BlockSyncRequestMessage({ body: { index: 10 } });
         assert.strictEqual(msg.index, 10);
     });
 
-    it('Updates attributes accurately leveraging class dynamic setters', () => {
+    it('Updates attributes leveraging class dynamic setters', () => {
         const msg = new BlockSyncRequestMessage();
         msg.index = 15;
         assert.strictEqual(msg.index, 15);

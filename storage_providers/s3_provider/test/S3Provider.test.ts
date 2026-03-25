@@ -1,5 +1,6 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
+
 import S3StorageProvider from '../S3Provider';
 
 describe('Backend: s3Provider Integrity', () => {

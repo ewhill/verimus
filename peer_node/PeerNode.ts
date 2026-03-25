@@ -1,26 +1,29 @@
 import EventEmitter from 'events';
-import Server from '../p2p/lib/Server';
-import * as https from 'https';
-import { Peer } from '../p2p';
-import { Db } from 'mongodb';
-import { Socket } from 'net';
-import { Http2ServerRequest } from 'http2';
 import * as fs from 'fs';
+import { IncomingMessage } from 'http';
+import { Http2ServerRequest } from 'http2';
+import * as https from 'https';
+import { Socket } from 'net';
 
+import { Db } from 'mongodb';
+import { WebSocket } from 'ws';
+
+import setupExpressApp from '../api_server/ApiServer';
+import Bundler from '../bundler/Bundler';
+import { PeerCredentials } from '../credential_provider/CredentialProvider';
 import Ledger from '../ledger/Ledger';
+import logger from '../logger/Logger';
+import Mempool from '../models/mempool/Mempool';
+import { Peer } from '../p2p';
+import Server from '../p2p/lib/Server';
+import ConsensusEngine from '../peer_handlers/consensus_engine/ConsensusEngine';
+import { ReputationManager } from '../peer_handlers/reputation_manager/ReputationManager';
+import SyncEngine from '../peer_handlers/sync_engine/SyncEngine';
 import BaseProvider from '../storage_providers/base_provider/BaseProvider';
 import { Block } from '../types';
 import { NodeRole } from '../types/NodeRole';
-import { PeerCredentials } from '../credential_provider/CredentialProvider';
-import Bundler from '../bundler/Bundler';
-import Mempool from '../models/mempool/Mempool';
-import ConsensusEngine from '../peer_handlers/consensus_engine/ConsensusEngine';
-import SyncEngine from '../peer_handlers/sync_engine/SyncEngine';
-import { ReputationManager } from '../peer_handlers/reputation_manager/ReputationManager';
-import setupExpressApp from '../api_server/ApiServer';
-import logger from '../logger/Logger';
-import { IncomingMessage } from 'http';
-import { WebSocket } from 'ws';
+
+
 
 class PeerNode {
     port: number;
@@ -88,13 +91,13 @@ class PeerNode {
 
         this.reputationManager.on('banned', (pubKey: string) => {
             if (this.peer && this.peer.peers) {
-                // Find and disconnect the banned peer actively
+                // Find and disconnect the banned peer
                 const bannedClient = this.peer.peers.find((p: any) => p.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8') === pubKey);
                 if (bannedClient && typeof bannedClient.close === 'function') {
-                    logger.warn(`[Peer ${this.port}] Actively terminating network pipeline for banned peer ${bannedClient.peerAddress}`);
+                    logger.warn(`[Peer ${this.port}] terminating network pipeline for banned peer ${bannedClient.peerAddress}`);
                     bannedClient.close();
                 } else if (bannedClient && bannedClient.connection_ && typeof bannedClient.connection_.close === 'function') {
-                    logger.warn(`[Peer ${this.port}] Actively terminating physical socket bounds for banned peer ${bannedClient.peerAddress}`);
+                    logger.warn(`[Peer ${this.port}] terminating physical socket bounds for banned peer ${bannedClient.peerAddress}`);
                     bannedClient.connection_.close();
                 }
             }
@@ -164,7 +167,7 @@ class PeerNode {
                     if (remotePubKey) {
                         const isBanned = await this.reputationManager.isBanned(remotePubKey);
                         if (isBanned) {
-                            logger.warn(`[Peer ${this.port}] Dropping packet natively from banned peer ${connection.peerAddress}`);
+                            logger.warn(`[Peer ${this.port}] Dropping packet from banned peer ${connection.peerAddress}`);
                             return;
                         }
                     }
@@ -175,10 +178,10 @@ class PeerNode {
                     logger.info(`[Peer ${this.port}] Discovering ${discoveryAddrs.join(', ')}...`);
                     await this.peer!.discover();
                     setTimeout(() => {
-                        this.syncEngine.performInitialSync().catch(err => logger.warn(`[Peer ${this.port}] Initial Sync Exception safely ignored: ${err.message}`));
+                        this.syncEngine.performInitialSync().catch(err => logger.warn(`[Peer ${this.port}] Initial Sync Exception ignored: ${err.message}`));
                     }, 5000);
                 } else {
-                    logger.info(`[Peer ${this.port}] Genesis node detected (no discovery topology). Initialized safely.`);
+                    logger.info(`[Peer ${this.port}] Genesis node detected (no discovery topology). Initialized.`);
                 }
                 
                 resolve();
@@ -199,7 +202,7 @@ class PeerNode {
             }
 
             if (ownedDocsCount === 0 && dbBlockCount > 1) {
-                // Initial migration or recovery: fetch all owned blocks from main collection and index them natively
+                // Initial migration or recovery: fetch all owned blocks from main collection and index them
                 const blocks = await this.ledger.collection!.find({ publicKey: this.publicKey }).toArray();
                 this.ownedBlocksCache = blocks.map(b => b.hash!);
                 
@@ -215,7 +218,7 @@ class PeerNode {
                 logger.info(`[Peer ${this.port}] Loaded ${this.ownedBlocksCache.length} owned blocks from MongoDB`);
             }
         } catch (e: any) {
-            logger.error(`[Peer ${this.port}] Error loading owned blocks cache natively: ${e.message}`);
+            logger.error(`[Peer ${this.port}] Error loading owned blocks cache: ${e.message}`);
             this.ownedBlocksCache = [];
         }
     }

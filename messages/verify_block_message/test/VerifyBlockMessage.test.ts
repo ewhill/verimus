@@ -1,5 +1,6 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
+
 import { VerifyBlockMessage } from '../VerifyBlockMessage';
 
 describe('Messages: VerifyBlockMessage', () => {
@@ -10,13 +11,13 @@ describe('Messages: VerifyBlockMessage', () => {
         assert.strictEqual(msg.signature, 'SIG');
     });
 
-    it('Initializes via nested payload properties seamlessly', () => {
+    it('Initializes via nested payload properties', () => {
         const msg = new VerifyBlockMessage({ body: { blockId: 'b-888', signature: 'SIG2' } });
         assert.strictEqual(msg.blockId, 'b-888');
         assert.strictEqual(msg.signature, 'SIG2');
     });
 
-    it('Updates attributes accurately leveraging class dynamic setters', () => {
+    it('Updates attributes leveraging class dynamic setters', () => {
         const msg = new VerifyBlockMessage();
         msg.blockId = 'b-777';
         msg.signature = 'SIG3';

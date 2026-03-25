@@ -1,5 +1,5 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
 
 describe('Backend: messages Integrity', () => {
     it('Exports network payload parsing definitions', async () => {

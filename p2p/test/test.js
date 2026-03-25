@@ -73,7 +73,7 @@ test("PeerBYOHTTPSServerTest", async (assert) => {
 		await peer1.close();
 		await peer2.close();
 
-		assert.pass('Peers can communicate properly.');
+		assert.pass('Peers can communicate.');
 		assert.end();
 	});
 

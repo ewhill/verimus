@@ -1,12 +1,15 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import DownloadFileHandler from '../DownloadFileHandler';
-import { NodeRole } from '../../../types/NodeRole';
-import { generateRSAKeyPair, signData, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
-import Bundler from '../../../bundler/Bundler';
+import * as crypto from 'node:crypto';
+import { describe, it } from 'node:test';
 import { PassThrough } from 'stream';
 
-describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically natively successfully', () => {
+import Bundler from '../../../bundler/Bundler';
+import { generateRSAKeyPair, signData, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
+import { NodeRole } from '../../../types/NodeRole';
+import DownloadFileHandler from '../DownloadFileHandler';
+
+
+describe('Backend: downloadFileHandler Unit Tests mathematically successfully', () => {
     
     it('Returns HTTP 404 mapping requesting missing block hashes independently', async () => {
         const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
@@ -28,7 +31,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         assert.strictEqual(bodyPayload, 'Block not found.');
     });
 
-    it('Flattens array parameters extracting requested filename safely', async () => {
+    it('Flattens array parameters extracting requested filename', async () => {
         const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: 'PRIVKEY',
             ledger: { collection: { find: () => ({ toArray: async () => [] }) } }
@@ -125,7 +128,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
             };
             
             handler.handle(req, res).then(() => {
-                // Let the stream end naturally creatively nicely smoothly expertly organically implicitly safely smartly realistically realistically proactively actively
+                // Let the stream end creatively nicely expertly implicitly smartly realistically realistically
                 setTimeout(() => resolve(undefined), 10);
             });
         });
@@ -133,7 +136,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         assert.ok(bodyPayload.length > 0);
     });
 
-    it('Intercepts active status tracking requests when statusOnly flag is flipped correctly cancelling full zip rendering proactively safely', async () => {
+    it('Intercepts active status tracking requests when statusOnly flag is flipped correctly cancelling full zip rendering', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
         
         const pt = new PassThrough();
@@ -216,9 +219,9 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         assert.ok(bodyPayload.includes('File not found'));
     });
 
-    it('Halts emitting HTTP 500 gracefully when unzip streams experience corruption', async () => {
+    it('Halts emitting HTTP 500 when unzip streams experience corruption', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
-        const crypto = require('crypto');
+
         const priv = { 
             key: crypto.randomBytes(32).toString('hex'), 
             iv: crypto.randomBytes(16).toString('hex'), 
@@ -258,7 +261,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         assert.ok(bodyPayload.includes('Extraction failed'));
     });
 
-    it('Captures parsing exceptions executing 500 fallback blocks safely', async () => {
+    it('Captures parsing exceptions executing 500 fallback blocks', async () => {
         const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: 'PRIV',
             ledger: null // Will throw during find
@@ -317,7 +320,7 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
 
     it('Flags HTTP 404 observing offline remote storage mapping constraints', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
-        const crypto = require('crypto');
+
         const encPriv = encryptPrivatePayload(publicKey, { key: crypto.randomBytes(32).toString('hex'), iv: crypto.randomBytes(16).toString('hex'), files: [], physicalId: 'pid', location: { type: 'local' } } as any);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
@@ -341,9 +344,9 @@ describe('Backend: downloadFileHandler Unit Tests comprehensively mathematically
         assert.ok(message.includes('Block not found'));
     });
 
-    it('Intercepts node ReadStream errors converting pipeline exceptions safely', async () => {
+    it('Intercepts node ReadStream errors converting pipeline exceptions', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
-        const crypto = require('crypto');
+
         const encPriv = encryptPrivatePayload(publicKey, { key: crypto.randomBytes(32).toString('hex'), iv: crypto.randomBytes(16).toString('hex'), files: [], physicalId: 'pid', location: { type: 'local' } } as any);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 

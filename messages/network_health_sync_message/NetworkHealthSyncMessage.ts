@@ -1,6 +1,6 @@
 import { Message } from '../../p2p';
-import { MessageOptions } from '../types/Types';
 import { NodeRole } from '../../types/NodeRole';
+import { MessageOptions } from '../types/Types';
 
 export interface ScorePayload {
     publicKey: string;

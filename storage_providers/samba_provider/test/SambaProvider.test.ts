@@ -1,9 +1,10 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
+
 import SambaStorageProvider from '../SambaProvider';
 
 describe('Backend: sambaProvider Integrity', () => {
-    it('Initializes Samba storage provider module properly', async () => {
+    it('Initializes Samba storage provider module', async () => {
         const prov = SambaStorageProvider.parseArgs(['--samba-share', '\\\\\\\\host\\\\share', '--samba-user', 'u', '--samba-pass', 'p', '--samba-domain', 'd'], { share: '\\\\\\\\host\\\\share' });
         const loc = prov.getLocation();
         assert.strictEqual(loc.type, 'samba');

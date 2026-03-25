@@ -1,5 +1,9 @@
-const fetch = require('node-fetch');
-const https = require('https');
+import https from 'https';
+
+import fetch from 'node-fetch';
+
+
+
 const agent = new https.Agent({ rejectUnauthorized: false });
 
 async function verifyPayloads() {

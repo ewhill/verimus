@@ -38,7 +38,7 @@ describe('Bundler: Erasure Coding Geometry Metrics', () => {
         
         try {
             await Bundler.reconstructErasureShards(brokenShards, K, N, payloadBuf.length);
-            assert.fail('Should evaluate failure throwing bounds accurately');
+            assert.fail('Should evaluate failure throwing bounds');
         } catch (e: any) {
             assert.ok(e.message.includes('code: 10'), 'Erasure boundaries successfully failed resolving limits.');
         }

@@ -1,7 +1,9 @@
-import { Collection } from 'mongodb';
 import { EventEmitter } from 'events';
-import type { PeerReputation } from '../../types';
+
+import { Collection } from 'mongodb';
+
 import logger from '../../logger/Logger';
+import type { PeerReputation } from '../../types';
 
 export class ReputationManager extends EventEmitter {
     private peersCollection: Collection<PeerReputation> | null;
@@ -16,21 +18,21 @@ export class ReputationManager extends EventEmitter {
 
         let peer: any = await this.peersCollection.findOne({ publicKey });
         if (!peer) {
-            // Implicitly bootstrap new honest peer records securely natively tracking 100 mapping baseline bounds
+            // Implicitly bootstrap new honest peer records tracking 100 mapping baseline bounds
             peer = { publicKey, score: 100, strikeCount: 0, isBanned: false, lastOffense: null };
             await this.peersCollection.insertOne(peer);
         }
 
-        // Apply mathematical score adjustments cleanly natively
+        // Apply mathematical score adjustments
         let newScore = peer.score + scoreDelta;
         
-        // Ensure bounds mapping structurally avoids negative space or over-reward mapping cleanly
+        // Ensure bounds mapping avoids negative space or over-reward mapping
         if (newScore > 100) newScore = 100;
         if (newScore < 0) newScore = 0;
 
         const isBanned = newScore === 0;
 
-        // Apply strike tracking structurally counting active infractions accurately natively
+        // Apply strike tracking counting active infractions
         const strikeCount = scoreDelta < 0 ? peer.strikeCount + 1 : peer.strikeCount;
         const lastOffense = scoreDelta < 0 ? (offense || peer.lastOffense) : peer.lastOffense;
 
@@ -48,7 +50,7 @@ export class ReputationManager extends EventEmitter {
         }
         
         if (isBanned && peer.score > 0) { // Just reached 0
-            logger.warn(`Peer ${publicKey.substring(0, 16)}... HAS BEEN BANNED natively across network metrics.`);
+            logger.warn(`Peer ${publicKey.substring(0, 16)}... HAS BEEN BANNED across network metrics.`);
             this.emit('banned', publicKey);
         }
 

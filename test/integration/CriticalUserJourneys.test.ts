@@ -1,27 +1,29 @@
-import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
-import type { AddressInfo } from 'node:net';
-import PeerNode from '../../peer_node/PeerNode';
 import fs from 'node:fs';
+import type { AddressInfo } from 'node:net';
+import { describe, it, before, after } from 'node:test';
+
 import { MongoMemoryServer } from 'mongodb-memory-server';
+
 import Bundler from '../../bundler/Bundler';
+import { BLOCK_TYPES } from '../../constants';
+import PeerNode from '../../peer_node/PeerNode';
 import LocalFileStorageProvider from '../../storage_providers/local_provider/LocalProvider';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
-import { BLOCK_TYPES } from '../../constants';
 
 describe('Integration: UI Critical User Journeys (Frontend/Backend System Contract)', () => {
     let node: PeerNode;
     let baseUrl: string;
     let mongod: MongoMemoryServer;
 
-    const mockDataDir = ''; // unused by bundler physically
+    const mockDataDir = ''; // unused by bundler
 
     before(async () => {
         try {
             mongod = await MongoMemoryServer.create();
             const mongoUri = mongod.getUri();
 
-            // Create an actual node locally interacting natively using an ephemeral port
+            // Create an actual node locally interacting using an ephemeral port
             node = new PeerNode(0, [], new MemoryStorageProvider() as any, new Bundler(mockDataDir) as any, mongoUri, undefined, {
                 ringPublicKeyPath: 'keys/ring.ring.pub',
                 publicKeyPath: 'keys/peer_26780.peer.pub',
@@ -51,7 +53,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
     });
 
     after(async () => {
-        // Halt physical servers explicitly shutting down network sockets allowing Node to exit
+        // Halt physical servers shutting down network sockets allowing Node to exit
         if (node) {
             if (node.httpServer) {
                 node.httpServer.close();
@@ -68,7 +70,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             }
         }
 
-        // Hermetic cleanup natively mapped
+        // Hermetic cleanup mapped
         if (mongod) {
             await mongod.stop();
         }
@@ -80,7 +82,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             assert.strictEqual(response.status, 200, 'Express successfully handled the config request');
             const data: any = await response.json();
 
-            assert.ok(data.port !== undefined, 'UI configuration surface exposed natively');
+            assert.ok(data.port !== undefined, 'UI configuration surface exposed');
             assert.ok(data.publicKey, 'Generated RSA definitions mapped');
         } catch(e: any) {
             console.error('Config Error:', e);
@@ -91,7 +93,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
     it('Uploads payload mimicking File Form submission', async () => {
         try {
             const formDataPayload = new FormData();
-            const testFileBlob = new Blob(['Integration test payload data mapping natively'], { type: 'text/plain' });
+            const testFileBlob = new Blob(['Integration test payload data mapping'], { type: 'text/plain' });
             formDataPayload.append('files', testFileBlob, 'integration.txt');
 
             const response = await fetch(`${baseUrl}/api/upload?trustedPeers=`, {
@@ -99,12 +101,12 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
                 body: formDataPayload as any // TS casting for standard native FormData mechanics
             });
 
-            assert.strictEqual(response.status, 202, 'Upload resolved smoothly saving file natively');
+            assert.strictEqual(response.status, 202, 'Upload resolved saving file');
             const data: any = await response.json();
             
-            assert.strictEqual(data.success, true, 'Block formally committed mapping physical blocks natively');
-            assert.ok(data.hash, 'Uploaded block hash structured appropriately natively');
-            assert.ok(data.aesKey, 'Encryption definitions returned safely dynamically natively');
+            assert.strictEqual(data.success, true, 'Block formally committed mapping physical blocks');
+            assert.ok(data.hash, 'Uploaded block hash structured');
+            assert.ok(data.aesKey, 'Encryption definitions returned');
         } catch (e: any) {
             console.error('Upload Error:', e);
             throw e;
@@ -116,12 +118,12 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             let ledger: any = { blocks: [] };
             for (let i = 0; i < 20; i++) {
                 const response = await fetch(`${baseUrl}/api/blocks`);
-                assert.strictEqual(response.status, 200, 'Ledger endpoint parsed synchronously appropriately');
+                assert.strictEqual(response.status, 200, 'Ledger endpoint parsed synchronously');
                 ledger = await response.json();
                 if (ledger.blocks && ledger.blocks.length >= 1) break;
                 await new Promise(r => setTimeout(r, 100));
             }
-            assert.ok(ledger.blocks.length >= 1, 'Genesis block logically instantiated actively natively');
+            assert.ok(ledger.blocks.length >= 1, 'Genesis block instantiated');
         } catch(e: any) {
             console.error('Ledger Error:', e);
             throw e;
@@ -130,24 +132,24 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
 
     it('Fetches network file trees', async () => {
         const response = await fetch(`${baseUrl}/api/files`);
-        assert.strictEqual(response.status, 200, 'Files view instantiated neatly dynamically natively');
+        assert.strictEqual(response.status, 200, 'Files view instantiated neatly');
 
         const parsed: any = await response.json();
-        assert.strictEqual(parsed.success, true, 'Files array executed natively sequentially logically');
+        assert.strictEqual(parsed.success, true, 'Files array executed sequentially');
 
         // We uploaded integration.txt previously via the simulated journey correctly
         const fileEntry = parsed.files.find((f: any) => f.path === 'integration.txt');
-        assert.ok(fileEntry, 'Aggregated parsed trees reflect logical filesystem natively structurally');
-        assert.strictEqual(fileEntry.versions.length, 1, 'Versions grouped mapping historical hashes efficiently');
+        assert.ok(fileEntry, 'Aggregated parsed trees reflect logical filesystem');
+        assert.strictEqual(fileEntry.versions.length, 1, 'Versions grouped mapping historical hashes');
     });
 
     it('Requests block structures for Peers View', async () => {
         try {
             const response = await fetch(`${baseUrl}/api/peers`);
-            assert.strictEqual(response.status, 200, 'Peers payload dispatched structurally cleanly intelligently');
+            assert.strictEqual(response.status, 200, 'Peers payload dispatched');
 
             const peersData: any = await response.json();
-            assert.ok(Array.isArray(peersData.peers), 'Peers payload formally evaluates physical boundaries structurally natively');
+            assert.ok(Array.isArray(peersData.peers), 'Peers payload formally evaluates physical boundaries');
         } catch (e: any) {
             console.error('Peers Error:', e);
             throw e;
@@ -164,13 +166,13 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
                 if (targetBlock) break;
                 await new Promise(r => setTimeout(r, 200));
             }
-            assert.ok(targetBlock, 'Previously committed block accessible locally naturally');
+            assert.ok(targetBlock, 'Previously committed block accessible locally');
 
             const decryptRes = await fetch(`${baseUrl}/api/blocks/${targetBlock.hash}/private?privateKey=${encodeURIComponent(node.privateKey)}`);
-            assert.strictEqual(decryptRes.status, 200, 'Private payload decryption mapping completed seamlessly comprehensively');
+            assert.strictEqual(decryptRes.status, 200, 'Private payload decryption mapping completed');
             
             const decryptedPayload: any = await decryptRes.json();
-            assert.strictEqual(decryptedPayload.payload.files[0].path, 'integration.txt', 'Raw structures resolved cleanly mapped locally natively');
+            assert.strictEqual(decryptedPayload.payload.files[0].path, 'integration.txt', 'Raw structures resolved mapped locally');
         } catch (e: any) {
             console.error('Decrypt Error:', e);
             throw e;
@@ -188,7 +190,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
                 if (targetBlock) break;
                 await new Promise(r => setTimeout(r, 200));
             }
-            assert.ok(targetBlock, 'Previously committed block natively tracked and physically structured');
+            assert.ok(targetBlock, 'Previously committed block tracked and structured');
 
             const downloadRes = await fetch(`${baseUrl}/api/download/${targetBlock.hash}/file/integration.txt?privateKey=${encodeURIComponent(node.privateKey)}`);
 
@@ -196,10 +198,10 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
                 const text = await downloadRes.text();
                 console.error('Download 404 text:', text);
             }
-            assert.strictEqual(downloadRes.status, 200, 'Download payload streaming dynamically handled gracefully');
+            assert.strictEqual(downloadRes.status, 200, 'Download payload streaming handled');
             const buffer = await downloadRes.text();
             
-            assert.strictEqual(buffer, 'Integration test payload data mapping natively', 'AES stream natively mapped perfectly recovering original payload dynamically seamlessly natively');
+            assert.strictEqual(buffer, 'Integration test payload data mapping', 'AES stream mapped recovering original payload');
         } catch (e: any) {
             console.error('Download Error:', e);
             throw e;

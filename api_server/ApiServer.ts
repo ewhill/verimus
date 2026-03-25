@@ -1,18 +1,20 @@
-import express from 'express';
-import multer from 'multer';
 import os from 'os';
 import path from 'path';
+
+import express from 'express';
+import multer from 'multer';
+
 import PeerNode from '../peer_node/PeerNode';
-import NodeConfigHandler from '../route_handlers/node_config_handler/NodeConfigHandler';
 import BlocksHandler from '../route_handlers/blocks_handler/BlocksHandler';
-import PeersHandler from '../route_handlers/peers_handler/PeersHandler';
-import UploadHandler from '../route_handlers/upload_handler/UploadHandler';
-import DownloadHandler from '../route_handlers/download_handler/DownloadHandler';
+import DefaultHandler from '../route_handlers/default_handler/DefaultHandler';
 import DownloadFileHandler from '../route_handlers/download_file_handler/DownloadFileHandler';
-import PrivatePayloadHandler from '../route_handlers/private_payload_handler/PrivatePayloadHandler';
+import DownloadHandler from '../route_handlers/download_handler/DownloadHandler';
 import FilesHandler from '../route_handlers/files_handler/FilesHandler';
 import LogsHandler from '../route_handlers/logs_handler/LogsHandler';
-import DefaultHandler from '../route_handlers/default_handler/DefaultHandler';
+import NodeConfigHandler from '../route_handlers/node_config_handler/NodeConfigHandler';
+import PeersHandler from '../route_handlers/peers_handler/PeersHandler';
+import PrivatePayloadHandler from '../route_handlers/private_payload_handler/PrivatePayloadHandler';
+import UploadHandler from '../route_handlers/upload_handler/UploadHandler';
 
 export default function setupExpressApp(peerNode: PeerNode) {
     const app = express();

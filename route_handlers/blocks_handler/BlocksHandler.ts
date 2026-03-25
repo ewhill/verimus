@@ -1,12 +1,10 @@
 import { Request, Response } from 'express';
 import { Filter } from 'mongodb';
 
-import logger from '../../logger/Logger';
-import { decryptPrivatePayload } from '../../crypto_utils/CryptoUtils';
 import { BLOCK_TYPES } from '../../constants';
+import { decryptPrivatePayload } from '../../crypto_utils/CryptoUtils';
+import logger from '../../logger/Logger';
 import type { Block, StorageContractPayload } from '../../types';
-
-
 import BaseHandler from '../base_handler/BaseHandler';
 
 export default class BlocksHandler extends BaseHandler {
@@ -24,7 +22,7 @@ export default class BlocksHandler extends BaseHandler {
 
         const searchQuery = req.query.q ? (req.query.q as string).toLowerCase() : null;
 
-        // Fetch all matching blocks to memory so we can decrypt and filter properly
+        // Fetch all matching blocks to memory so we can decrypt and filter
         let blocks = await this.node.ledger.collection!.find(query)
             .sort({ "metadata.index": sortOrder })
             .toArray();

@@ -1,7 +1,9 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
 import { Transform } from 'stream';
+import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
+
 import { 
     createAESStream, 
     createAESDecryptStream,
@@ -52,14 +54,14 @@ describe('Backend: Crypto Utils Unit Tests', () => {
             }
         });
 
-        const { Readable } = require('stream');
+
         await pipeline(
             Readable.from(Buffer.concat(encryptedChunks)),
             decryptStream,
             outputStream
         );
 
-        assert.strictEqual(decryptedOutput, testData, 'Decrypted output must perfectly match original stream data');
+        assert.strictEqual(decryptedOutput, testData, 'Decrypted output must match original stream data');
     });
 
     it('Generates RSA 2048-bit keypair Strings', async () => {
@@ -89,6 +91,6 @@ describe('Backend: Crypto Utils Unit Tests', () => {
 
         assert.strictEqual(decrypted.key, privatePayload.key, 'Decrypted payload KEY must match');
         assert.strictEqual(decrypted.iv, privatePayload.iv, 'Decrypted payload IV must match');
-        assert.strictEqual(decrypted.physicalId, privatePayload.physicalId, 'Decrypted properties must perfectly match original payload structure');
+        assert.strictEqual(decrypted.physicalId, privatePayload.physicalId, 'Decrypted properties must match original payload structure');
     });
 });

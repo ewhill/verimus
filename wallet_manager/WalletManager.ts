@@ -1,8 +1,7 @@
-import type { Block, TransactionBlock, TransactionPayload, StorageContractBlock, StorageContractPayload } from '../types';
+import { BLOCK_TYPES } from '../constants';
 import type Ledger from '../ledger/Ledger';
 import logger from '../logger/Logger';
-
-import { BLOCK_TYPES } from '../constants';
+import type { Block, TransactionBlock, TransactionPayload, StorageContractBlock, StorageContractPayload } from '../types';
 export default class WalletManager {
     private ledger: Ledger;
     private frozenEscrows: Map<string, { peerId: string; amount: number }> = new Map();
@@ -105,7 +104,7 @@ export default class WalletManager {
      * @param recipientId Inbound destination
      * @param amount Float mapped volume 
      * @param senderSignature Cryto verification
-     * @returns Configures transaction payload mapped cleanly
+     * @returns Configures transaction payload mapped
      */
     async allocateFunds(senderId: string, recipientId: string, amount: number, senderSignature: string): Promise<TransactionPayload | null> {
         const hasFunds = await this.verifyFunds(senderId, amount);
@@ -159,7 +158,7 @@ export default class WalletManager {
     }
 
     /**
-     * Releases froze temporary limit orders returning funds to the pool if handshakes timeout or crash gracefully.
+     * Releases froze temporary limit orders returning funds to the pool if handshakes timeout or crash.
      * @param requestId Bounding limit UUID 
      */
     releaseFunds(requestId: string): void {
@@ -169,7 +168,7 @@ export default class WalletManager {
     /**
      * Executed when the overarching network mints the Contract. The underlying Ledger array intrinsically maps the 
      * cost, so the memory lock is purely expunged preventing duplicate tracking. 
-     * @param requestId Boundary UUID mapped cleanly to storage negotiations
+     * @param requestId Boundary UUID mapped to storage negotiations
      */
     commitFunds(requestId: string): void {
         this.frozenEscrows.delete(requestId);

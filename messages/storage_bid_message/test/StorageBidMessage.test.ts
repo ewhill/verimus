@@ -1,5 +1,6 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
+
 import { StorageBidMessage } from '../StorageBidMessage';
 
 describe('Messages: StorageBidMessage Integrity Limits', () => {
@@ -18,7 +19,7 @@ describe('Messages: StorageBidMessage Integrity Limits', () => {
         assert.strictEqual(msg.guaranteedUptimeMs, 86400000);
     });
 
-    it('Recovers properties spanning nested payload arrays accurately', () => {
+    it('Recovers properties spanning nested payload arrays', () => {
         const msg = new StorageBidMessage({
             body: {
                 storageRequestId: 'req-999',

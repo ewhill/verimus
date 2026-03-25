@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
-const RSAKeyPair = require('../p2p/lib/RSAKeyPair');
+
+import RSAKeyPair from '../p2p/lib/RSAKeyPair';
+
 
 const PORTS = [26780, 26781, 26782, 26783, 26784];
 const KEYS_DIR = path.join(__dirname, 'keys');
@@ -33,4 +35,4 @@ for (const port of PORTS) {
     }
 }
 
-console.log("All keys generated dynamically cleanly.");
+console.log("All keys generated.");

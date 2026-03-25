@@ -190,7 +190,7 @@ class Client {
 	}
 
 	/**
-	 * Cleans up and tries to close the connection gracefully. Returns an 
+	 * Cleans up and tries to close the connection. Returns an 
 	 * always-resolving promise that resolves when the work has been completed. 
 	 * If the connection does not close within an adequet amount of time (5 
 	 * seconds), it will be forcefully closed instead.
@@ -270,7 +270,7 @@ class Client {
 					this.remoteCipher_.key, messageIv);
 
 				if (!message.header.authTag) {
-					this.logger_.error(`AES GCM Requires an Authentication Tag natively verifying payload integrity! Rejecting.`);
+					this.logger_.error(`AES GCM Requires an Authentication Tag verifying payload integrity! Rejecting.`);
 					return;
 				}
 				decipher.setAuthTag(Buffer.from(message.header.authTag, 'base64'));
@@ -278,7 +278,7 @@ class Client {
 				decryptedMessageBody = (Buffer.concat([
 					decipher.update(encryptedMessageBody), decipher.final()]));
 			} catch(e) {
-				this.logger_.error(`Decryption failed natively. MITM or payload corruption detected.`);
+				this.logger_.error(`Decryption failed. MITM or payload corruption detected.`);
 				return;
 			}
 
@@ -295,7 +295,7 @@ class Client {
 					/*
 					* We're probably here as a result of a decrpytion error or 
 					* verification error, in which case the message may have 
-					* been corrupted. Best to exit gracefully...
+					* been corrupted. Best to exit...
 					*/
 					this.logger_.error(
 						`A trusted message was received but either ` +
@@ -565,8 +565,8 @@ class Client {
 
 		if (this.expectedSignature_ && remotePublicKey !== this.expectedSignature_) {
 			return this.receiveHeloPromiseReject_(new Error(
-				`Received public key did not match actively expected pinned signature identity. ` +
-				`Dropping MITM socket natively.`));
+				`Received public key did not match expected pinned signature identity. ` +
+				`Dropping MITM socket.`));
 		}
 
 		const formattedPublicKey =

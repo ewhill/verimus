@@ -1,12 +1,15 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import DownloadHandler from '../DownloadHandler';
-import { NodeRole } from '../../../types/NodeRole';
-import { generateRSAKeyPair, signData, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
-import Bundler from '../../../bundler/Bundler';
+import * as crypto from 'node:crypto';
+import { describe, it } from 'node:test';
 import { PassThrough } from 'stream';
 
-describe('Backend: downloadHandler Unit Tests comprehensively mathematically natively successfully', () => {
+import Bundler from '../../../bundler/Bundler';
+import { generateRSAKeyPair, signData, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
+import { NodeRole } from '../../../types/NodeRole';
+import DownloadHandler from '../DownloadHandler';
+
+
+describe('Backend: downloadHandler Unit Tests mathematically successfully', () => {
 
     it('Returns HTTP 404 when requesting missing block hashes tracking ledger bounds', async () => {
         const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
@@ -106,7 +109,7 @@ describe('Backend: downloadHandler Unit Tests comprehensively mathematically nat
         assert.ok(bodyPayload.length > 20);
     });
 
-    it('Intercepts active status tracking requests when statusOnly flag is flipped correctly cancelling full zip rendering proactively safely', async () => {
+    it('Intercepts active status tracking requests when statusOnly flag is flipped correctly cancelling full zip rendering', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
         
         const pt = new PassThrough();
@@ -174,7 +177,7 @@ describe('Backend: downloadHandler Unit Tests comprehensively mathematically nat
 
     it('Returns HTTP 500 capturing storage layer instantiation errors', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
-        const crypto = require('crypto');
+
         const priv = { 
             key: crypto.randomBytes(32).toString('hex'), 
             iv: crypto.randomBytes(16).toString('hex'), 
@@ -255,9 +258,9 @@ describe('Backend: downloadHandler Unit Tests comprehensively mathematically nat
         assert.strictEqual(message, 'Failed to decrypt private payload.');
     });
 
-    it('Intercepts node ReadStream exceptions emitting HTTP 500 safely', async () => {
+    it('Intercepts node ReadStream exceptions emitting HTTP 500', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
-        const crypto = require('crypto');
+
         const priv = { 
             key: crypto.randomBytes(32).toString('hex'), 
             iv: crypto.randomBytes(16).toString('hex'), 

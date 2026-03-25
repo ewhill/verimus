@@ -2,9 +2,7 @@ import { Request, Response } from 'express';
 
 import { decryptPrivatePayload } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
-
 import type { StorageContractPayload, Block } from '../../types';
-
 import BaseHandler from '../base_handler/BaseHandler';
 
 export default class FilesHandler extends BaseHandler {
@@ -38,7 +36,7 @@ export default class FilesHandler extends BaseHandler {
                     if (decodedObj && decodedObj.files) {
                         for (const file of decodedObj.files) {
                             if (file.path) {
-                                // Extract the underlying location object cleanly mapped by the upload bundler organically
+                                // Extract the underlying location object mapped by the upload bundler
                                 const locationInfo = decodedObj.location || { type: "unknown" };
                                 const locationLabel = locationInfo.type === 'samba' ? locationInfo.share
                                     : locationInfo.type === 'remote-fs' ? `${locationInfo.host}:${locationInfo.dir}`

@@ -98,7 +98,7 @@ async function testTTLRestrictsPropagation(assert) {
 
     peer2.bind(OverlayMessage).to(testHandler);
 
-    // Explicitly manipulate TTL to 0 to simulate an exhausted routing payload
+    // manipulate TTL to 0 to simulate an exhausted routing payload
     const msg = new OverlayMessage({ data: "exhausted-ttl-payload", ttl: 0 });
 
     await peer1.broadcast(msg);
@@ -106,8 +106,8 @@ async function testTTLRestrictsPropagation(assert) {
     // Wait slightly to permit ingestion
     await new Promise(r => setTimeout(r, 200));
 
-    // Peer1's broadcast routine organically dropped the payload because TTL bounds were exhausted
-    assert.equal(receivedCount, 0, "Broadcast bounds should instinctively halt propagation natively if TTL drops to zero");
+    // Peer1's broadcast routine dropped the payload because TTL bounds were exhausted
+    assert.equal(receivedCount, 0, "Broadcast bounds should instinctively halt propagation if TTL drops to zero");
 
     peer2.unbind(OverlayMessage);
     resolve();

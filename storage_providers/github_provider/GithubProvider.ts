@@ -1,6 +1,7 @@
+import { PassThrough } from 'stream';
+
 import { hashData } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
-import { PassThrough } from 'stream';
 import BaseStorageProvider, { GetBlockReadStreamResult } from '../base_provider/BaseProvider';
 export interface GithubCredentials {
     token?: string;

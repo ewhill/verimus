@@ -1,6 +1,7 @@
+import { PassThrough } from 'stream';
+
 import { hashData } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
-import { PassThrough } from 'stream';
 import BaseStorageProvider, { GetBlockReadStreamResult } from '../base_provider/BaseProvider';
 class MemoryStorageProvider extends BaseStorageProvider {
     // In-memory persistent map mimicking physical storage bound by physicalBlockId
@@ -22,7 +23,7 @@ class MemoryStorageProvider extends BaseStorageProvider {
     }
 
     static parseArgs(args: string[], credentials: Record<string, unknown> = {}) {
-        logger.info(`[MemoryStorageProvider] Initialized natively`);
+        logger.info(`[MemoryStorageProvider] Initialized`);
         return new MemoryStorageProvider();
     }
 
@@ -43,7 +44,7 @@ class MemoryStorageProvider extends BaseStorageProvider {
         pt.on('end', () => {
             const compiledBlock = Buffer.concat(bufs);
             this.storage.set(physicalBlockId, compiledBlock);
-            logger.info(`[MemoryStorageProvider] Block ${physicalBlockId} flushed into mapped memory seamlessly`);
+            logger.info(`[MemoryStorageProvider] Block ${physicalBlockId} flushed into mapped memory`);
         });
 
         // Simulating physical file stream limits
@@ -52,7 +53,7 @@ class MemoryStorageProvider extends BaseStorageProvider {
 
     async getBlockReadStream(physicalBlockId: string): Promise<GetBlockReadStreamResult> {
         if (!this.storage.has(physicalBlockId)) {
-            return { status: 'not_found' }; // Return cleanly mimicking unreadable mapped files natively
+            return { status: 'not_found' }; // Return mimicking unreadable mapped files
         }
 
         const data = this.storage.get(physicalBlockId);

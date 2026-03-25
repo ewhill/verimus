@@ -34,6 +34,6 @@ test("Security: Uncaught Exception Dos Prevented", async (assert) => {
         threw = true;
     }
     
-    assert.ok(!threw, "The client elegantly swallowed internal syntax exceptions without crashing the Node process locally.");
+    assert.ok(!threw, "The client swallowed internal syntax exceptions without crashing the Node process locally.");
     assert.end();
 });

@@ -1,5 +1,6 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
+
 import { AdoptForkMessage } from '../AdoptForkMessage';
 
 describe('Messages: AdoptForkMessage', () => {
@@ -14,7 +15,7 @@ describe('Messages: AdoptForkMessage', () => {
         assert.strictEqual(msg.finalTipHash, 'hash-abc');
     });
 
-    it('Initializes via nested payload properties seamlessly', () => {
+    it('Initializes via nested payload properties', () => {
         const msg = new AdoptForkMessage({
             body: {
                 forkId: 'fork-2',
@@ -26,7 +27,7 @@ describe('Messages: AdoptForkMessage', () => {
         assert.strictEqual(msg.finalTipHash, 'hash-def');
     });
 
-    it('Updates attributes accurately leveraging class dynamic setters', () => {
+    it('Updates attributes leveraging class dynamic setters', () => {
         const msg = new AdoptForkMessage();
         msg.forkId = 'fork-3';
         msg.finalTipHash = 'hash-ghi';

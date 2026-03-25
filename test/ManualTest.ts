@@ -1,20 +1,29 @@
+import http from 'http';
+import * as fsLib from 'node:fs';
+import osLib from 'os';
+import pathLib from 'path';
+
+import FormData from 'form-data';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
+import Bundler from '../bundler/Bundler';
+import RSAKeyPair from '../p2p/lib/RSAKeyPair';
 import PeerNode from '../peer_node/PeerNode';
 import MemoryStorageProvider from '../storage_providers/memory_provider/MemoryProvider';
-import Bundler from '../bundler/Bundler';
-import http from 'http';
-import FormData from 'form-data';
+
+
 
 // Ensure ephemeral Mongo mapping globally
-const { MongoMemoryServer } = require('mongodb-memory-server');
+
 
 async function runManualTest() {
     console.log("Starting Ephemeral Test Environment for All Enterprise Phases...");
     const mongod = await MongoMemoryServer.create();
     const uri = mongod.getUri();
 
-    const fsLib = require('fs');
-    const pathLib = require('path');
-    const osLib = require('os');
+
+
+
     const tmp1 = fsLib.mkdtempSync(pathLib.join(osLib.tmpdir(), 'verimus-'));
     // Node 1
     const node1 = new PeerNode(26780, ['127.0.0.1:26781', '127.0.0.1:26782'], new MemoryStorageProvider(), new Bundler(tmp1), uri, undefined, {
@@ -42,10 +51,10 @@ async function runManualTest() {
         signaturePath: 'keys/peer_26782.peer.signature'
     }, tmp3);
 
-    // Generate keys dynamically to prevent errors
+    // Generate keys to prevent errors
     [node1, node2, node3].forEach((node, index) => {
-        const fsLib = require('fs');
-        const RSAKeyPair = require('../p2p/lib/RSAKeyPair');
+
+
         const baseKey = `keys/peer_2678${index}`;
         if (!fsLib.existsSync('keys')) fsLib.mkdirSync('keys');
         if (!fsLib.existsSync('keys/ring.ring.pem')) {
@@ -102,7 +111,7 @@ async function runManualTest() {
         const blocksReq = await fetch("http://127.0.0.1:27782/api/blocks");
         const blocksData: any = await blocksReq.json();
         const uploadedBlock = blocksData.blocks.find((b: any) => b.metadata && b.metadata.index > 0);
-        if (!uploadedBlock) throw new Error("Block not found traversing Ledger natively.");
+        if (!uploadedBlock) throw new Error("Block not found traversing Ledger.");
         console.log("Node 3 Ledger Sync matching index:", uploadedBlock.metadata.index, `Hash: ${uploadedBlock.hash.substring(0,8)}`);
         
         console.log("\n--- 3. Verifying Decryption using Authenticated Crypto primitives (Phase 1) ---");
@@ -110,11 +119,11 @@ async function runManualTest() {
         if (dlRes.status !== 200) throw new Error(await dlRes.text());
         console.log("Download Payload Stream Contents:", await dlRes.text());
         
-        console.log("\n--- 4. Fetching Winston logs structurally (Phase 2) ---");
+        console.log("\n--- 4. Fetching Winston logs (Phase 2) ---");
         const logsRes = await fetch("http://127.0.0.1:27781/api/logs");
         const logsData: any = await logsRes.json();
         if (logsData.length > 0) {
-             console.log("Winston mapping successful, logs dynamically formatted! First log:", JSON.stringify(logsData[logsData.length-1]).substring(0, 80));
+             console.log("Winston mapping successful, logs formatted! First log:", JSON.stringify(logsData[logsData.length-1]).substring(0, 80));
         }
 
         console.log("\n--- 5. Simulating Network Partition (Phase 3 Resilience) ---");
@@ -138,11 +147,11 @@ async function runManualTest() {
         const rogueBlocks: any = await (await fetch("http://127.0.0.1:27782/api/blocks")).json();
         const rogueFound = rogueBlocks.blocks.some((b: any) => b.payload && b.signature === rogueData.signature);
         if (rogueFound) throw new Error("CRITICAL: Partition bypassed quorum limits!");
-        console.log("SUCCESS: Isolated node stalled cleanly preventing corrupt blockchain commitments natively matching Math.floor(N/2)+1.");
+        console.log("SUCCESS: Isolated node stalled preventing corrupt blockchain commitments matching Math.floor(N/2)+1.");
 
         console.log("\n--- 6. Verifying Massive Memory Optimization (Phase 3 Load Stress) ---");
         const initialMem = process.memoryUsage().heapUsed;
-        const TARGET_SIZE = 50 * 1024 * 1024; // 50MB simulation directly tracking overheads efficiently
+        const TARGET_SIZE = 50 * 1024 * 1024; // 50MB simulation directly tracking overheads
 
         const boundary = 'extremeLoadBoundary123';
         const rawHeaders = `--${boundary}\r\nContent-Disposition: form-data; name="files"; filename="massive.bin"\r\nContent-Type: application/octet-stream\r\n\r\n`;
@@ -187,7 +196,7 @@ async function runManualTest() {
         console.error("\n❌ TEST ERROR THROWN:");
         console.error(e);
     } finally {
-        console.log("Tearing down infrastructure gracefully.");
+        console.log("Tearing down infrastructure.");
         await node1.peer?.close();
         await node2.peer?.close();
         await node3.peer?.close();
@@ -201,7 +210,7 @@ async function runManualTest() {
         await node2.ledger.client?.close();
         await node3.ledger.client?.close();
         await mongod.stop();
-        console.log("Teardown completed cleanly.");
+        console.log("Teardown completed.");
         process.exit(0);
     }
 }

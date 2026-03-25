@@ -2,9 +2,7 @@ import { Request, Response } from 'express';
 
 import { verifySignature, decryptPrivatePayload } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
-
 import type { StorageContractPayload } from '../../types';
-
 import BaseHandler from '../base_handler/BaseHandler';
 
 export default class PrivatePayloadHandler extends BaseHandler {
@@ -55,7 +53,7 @@ export default class PrivatePayloadHandler extends BaseHandler {
             return res.status(401).json({ success: false, message: 'Failed to decrypt private payload.' });
         }
 
-        // Explicitly format standard outputs mapping native logic mapping
+        // format standard outputs mapping native logic mapping
         res.json({ success: true, payload: privatePayload });
 
     } catch (error) {

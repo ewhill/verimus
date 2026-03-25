@@ -1,5 +1,7 @@
-const https = require('https');
-const fs = require('fs');
+import https from 'https';
+import * as fs from 'node:fs';
+
+
 
 async function runTest() {
     const agent = new https.Agent({ rejectUnauthorized: false });

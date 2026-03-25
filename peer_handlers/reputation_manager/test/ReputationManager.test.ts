@@ -1,5 +1,6 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
+
 import { ReputationManager } from '../ReputationManager';
 
 class MockCollection {
@@ -21,7 +22,7 @@ describe('Backend: ReputationManager Analytics and Threshold Parsing', () => {
         const mockCollection = new MockCollection() as any;
         const manager = new ReputationManager(mockCollection);
         
-        await manager.rewardValidSync('test_honest'); // Starts at 100 natively 
+        await manager.rewardValidSync('test_honest'); // Starts at 100 
         const updatedScore = await manager.getScore('test_honest');
         
         // Assert mathematical bound caps at precisely 100 without overextending
@@ -38,7 +39,7 @@ describe('Backend: ReputationManager Analytics and Threshold Parsing', () => {
         const score = await manager.getScore('test_malicious');
         const bannedStatus = await manager.isBanned('test_malicious');
         
-        // Assert strict baseline limits dynamically
+        // Assert strict baseline limits
         assert.strictEqual(score, 0);
         assert.strictEqual(bannedStatus, true);
     });
@@ -70,6 +71,6 @@ describe('Backend: ReputationManager Analytics and Threshold Parsing', () => {
 
         const peer = await mockCollection.findOne({ publicKey: 'test_node' });
         assert.strictEqual(peer.score, 96);
-        assert.strictEqual(peer.strikeCount, 1); // Reward MUST NOT artificially alter strike metrics natively
+        assert.strictEqual(peer.strikeCount, 1); // Reward MUST NOT artificially alter strike metrics
     });
 });

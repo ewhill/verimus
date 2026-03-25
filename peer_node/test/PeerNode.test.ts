@@ -1,12 +1,13 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import * as fs from 'node:fs';
+import { describe, it } from 'node:test';
 
 describe('Backend: PeerNode Logical Verification Check', () => {
 
     it('Initializes standard P2P Express configurations', async () => {
         const mod = await import('../PeerNode');
-        assert.ok(mod !== undefined, 'PeerNode structure correctly parses TS natively mapping modules');
-        assert.ok(mod.default !== undefined, 'PeerNode effectively surfaces default instantiator cleanly');
+        assert.ok(mod !== undefined, 'PeerNode structure correctly parses TS mapping modules');
+        assert.ok(mod.default !== undefined, 'PeerNode surfaces default instantiator');
     });
 
     it('Instantiates ReputationManager mapped to the database', async () => {
@@ -19,8 +20,8 @@ describe('Backend: PeerNode Logical Verification Check', () => {
         
         mockNode.loadOwnedBlocksCache = async () => {};
         
-        // Mock fs appropriately to bypass internal syncs natively
-        const fs = require('fs');
+        // Mock fs to bypass internal syncs
+
         const origReadFileSync = fs.readFileSync;
         (fs as any).readFileSync = () => 'MOCK_KEY';
 
@@ -28,8 +29,8 @@ describe('Backend: PeerNode Logical Verification Check', () => {
            await mockNode.init().catch(e => {}); // Only care about internal instantiation sequence
         } catch(e) {}
 
-        assert.ok(mockNode.reputationManager !== undefined, 'ReputationManager MUST naturally exist seamlessly post-initialization natively');
-        assert.ok((mockNode.reputationManager as any).peersCollection.testMarker, 'ReputationManager perfectly logically bridged native persistent Mongo DB Collections properly securely');
+        assert.ok(mockNode.reputationManager !== undefined, 'ReputationManager MUST exist post-initialization');
+        assert.ok((mockNode.reputationManager as any).peersCollection.testMarker, 'ReputationManager bridged native persistent Mongo DB Collections');
 
         (fs as any).readFileSync = origReadFileSync;
     });
@@ -78,7 +79,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
         
         assert.strictEqual(mockNode.ownedBlocksCache.length, 1);
         assert.ok(mockNode.ownedBlocksCache.includes('hash2'));
-        assert.strictEqual(insertedHash, 'hash2', 'Native MongoDB insertion fired explicitly');
+        assert.strictEqual(insertedHash, 'hash2', 'Native MongoDB insertion fired');
     });
 
     it('Bypasses cache population when cache matches ledger', async () => {
@@ -117,7 +118,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
 
         await mockNode.loadOwnedBlocksCache();
         
-        assert.strictEqual(mockNode.ownedBlocksCache.length, 0); // Fails gracefully
+        assert.strictEqual(mockNode.ownedBlocksCache.length, 0); // Fails
         assert.strictEqual(deleted, true);
     });
 
