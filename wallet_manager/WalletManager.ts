@@ -5,6 +5,7 @@ import logger from '../logger/Logger';
 import { BLOCK_TYPES } from '../constants';
 export default class WalletManager {
     private ledger: Ledger;
+    private frozenEscrows: Map<string, { peerId: string; amount: number }> = new Map();
 
     constructor(ledger: Ledger) {
         this.ledger = ledger;
@@ -47,6 +48,13 @@ export default class WalletManager {
 
         } catch (error) {
             logger.error(`Error calculating balance for peer ${peerId}: ${(error as Error).message}`);
+        }
+
+        // Deduct locally frozen escrows executing limit order bounds
+        for (const escrow of this.frozenEscrows.values()) {
+            if (escrow.peerId === peerId) {
+                balance -= escrow.amount;
+            }
         }
 
         return balance;
@@ -136,5 +144,34 @@ export default class WalletManager {
             { hash: blockHash },
             { $set: { "payload.remainingEgressEscrow": newRemaining } }
         );
+    }
+
+    /**
+     * Freezes a portion of the user's available balance into a temporary memory map during active Market negotiations.
+     * Prevents double-spend exploitation where the user triggers concurrent network storage uploads.
+     * @param peerId The Originator's public identifier
+     * @param amount The theoretical maximum byte ceiling of the contract
+     * @param requestId Bounding UUID tracking limit orders
+     */
+    freezeFunds(peerId: string, amount: number, requestId: string): void {
+        if (peerId === 'SYSTEM') return;
+        this.frozenEscrows.set(requestId, { peerId, amount });
+    }
+
+    /**
+     * Releases froze temporary limit orders returning funds to the pool if handshakes timeout or crash gracefully.
+     * @param requestId Bounding limit UUID 
+     */
+    releaseFunds(requestId: string): void {
+        this.frozenEscrows.delete(requestId);
+    }
+
+    /**
+     * Executed when the overarching network mints the Contract. The underlying Ledger array intrinsically maps the 
+     * cost, so the memory lock is purely expunged preventing duplicate tracking. 
+     * @param requestId Boundary UUID mapped cleanly to storage negotiations
+     */
+    commitFunds(requestId: string): void {
+        this.frozenEscrows.delete(requestId);
     }
 }

@@ -132,4 +132,41 @@ describe('WalletManager', () => {
         const preGenesisReward = WalletManager.calculateSystemReward(preGenesis, genesisTimestamp);
         assert.strictEqual(preGenesisReward, 50.0);
     });
+
+    it('Freezes funds calculating actively frozen limits preventing double spending cleanly', async () => {
+        mockLedger = {
+            collection: {
+                find: () => ({
+                    toArray: async () => [
+                        { type: BLOCK_TYPES.TRANSACTION, payload: { senderId: 'SYSTEM', recipientId: 'peerX', amount: 300 } }
+                    ]
+                })
+            }
+        };
+
+        const walletManager = new WalletManager(mockLedger);
+        // Initially 300
+        const initialBalance = await walletManager.calculateBalance('peerX');
+        assert.strictEqual(initialBalance, 300);
+
+        // Freeze 200 for contract A
+        walletManager.freezeFunds('peerX', 200, 'contract-A');
+        const activeBalance = await walletManager.calculateBalance('peerX');
+        assert.strictEqual(activeBalance, 100);
+
+        // Try to allocate 150 which should fail since active is 100
+        const blocked = await walletManager.allocateFunds('peerX', 'peerY', 150, 'sig');
+        assert.strictEqual(blocked, null);
+
+        // Release funds
+        walletManager.releaseFunds('contract-A');
+        const releasedBalance = await walletManager.calculateBalance('peerX');
+        assert.strictEqual(releasedBalance, 300);
+
+        // Commit funds clears the lock natively
+        walletManager.freezeFunds('peerX', 250, 'contract-B');
+        assert.strictEqual(await walletManager.calculateBalance('peerX'), 50);
+        walletManager.commitFunds('contract-B');
+        assert.strictEqual(await walletManager.calculateBalance('peerX'), 300);
+    });
 });
