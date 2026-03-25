@@ -28,13 +28,12 @@ done
 # Small delay to ensure ports are released
 sleep 1
 
-echo "Starting Native Hermetic Memory MongoDB (Port 27018 RAM)..."
-node "$(dirname "$0")/memory_mongo_daemon.mjs" > /dev/null 2>&1 &
-sleep 5
-
-
 echo "2. Validating and generating keys..."
 npm run keygen
+
+echo "Starting Native Hermetic Memory MongoDB (Port 27018 RAM) and Seeding Limits..."
+node "$(dirname "$0")/memory_mongo_daemon.mjs" > /dev/null 2>&1 &
+sleep 5
 
 
 echo "3. Starting 5 peer nodes..."
@@ -52,11 +51,6 @@ for i in {1..4}; do
     "$(dirname "$0")/spawn_node.sh" --watch --skip-ui --mongo-port 27018 --port $PORT --discover $DISCOVER --public-address 127.0.0.1:$PORT --force > /dev/null 2>&1 &
     echo "Started Node $((i+1)) on port $PORT"
     sleep 3
-done
-
-echo "3.5. Injecting offline genesis funds into database resolving test net limits natively..."
-sleep 5
-node "$(dirname "$0")/seed_funds.mjs"
 
 echo "Waiting for network convergence..."
 MAX_RETRIES=30
