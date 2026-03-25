@@ -4,6 +4,8 @@ import { ChainStatusRequestMessage } from '../../messages/chain_status_request_m
 import { ChainStatusResponseMessage } from '../../messages/chain_status_response_message/ChainStatusResponseMessage';
 import { BlockSyncRequestMessage } from '../../messages/block_sync_request_message/BlockSyncRequestMessage';
 import { BlockSyncResponseMessage } from '../../messages/block_sync_response_message/BlockSyncResponseMessage';
+import { StorageRequestMessage } from '../../messages/storage_request_message/StorageRequestMessage';
+import { StorageBidMessage } from '../../messages/storage_bid_message/StorageBidMessage';
 import { NetworkHealthSyncMessage } from '../../messages/network_health_sync_message/NetworkHealthSyncMessage';
 import type { Block, PeerConnection } from '../../types';
 import { NodeRole } from '../../types/NodeRole';
@@ -36,6 +38,12 @@ class SyncEngine {
     _blockSyncResponses: Map<string, Block>;
     spamTracker: Map<string, number[]>;
     syncInterval: NodeJS.Timeout | null = null;
+    activeStorageMarkets: Map<string, {
+        bids: { peerId: string, cost: number, uptime: number, connection: PeerConnection }[],
+        requiredNodes: number,
+        maxCostPerGB: number,
+        resolve: (bids: any[]) => void
+    }>;
 
     constructor(node: PeerNode) {
         this.node = node;
@@ -44,6 +52,7 @@ class SyncEngine {
         this._chainStatusResponses = [];
         this._blockSyncResponses = new Map();
         this.spamTracker = new Map();
+        this.activeStorageMarkets = new Map();
     }
 
     bindHandlers() {
@@ -52,6 +61,8 @@ class SyncEngine {
         this.node.peer?.bind(BlockSyncRequestMessage).to(async (m: BlockSyncRequestMessage, c: PeerConnection) => this.handleBlockSyncRequest(m.index, c));
         this.node.peer?.bind(BlockSyncResponseMessage).to(async (m: BlockSyncResponseMessage, c: PeerConnection) => this.handleBlockSyncResponse(m.block, c));
         this.node.peer?.bind(NetworkHealthSyncMessage).to(async (m: NetworkHealthSyncMessage, c: PeerConnection) => this.handleNetworkHealthSync(m.score_payloads, c));
+        this.node.peer?.bind(StorageRequestMessage).to(async (m: StorageRequestMessage, c: PeerConnection) => this.handleStorageRequest(m, c));
+        this.node.peer?.bind(StorageBidMessage).to(async (m: StorageBidMessage, c: PeerConnection) => this.handleStorageBid(m, c));
 
         // Start native background polling effectively
         if (this.node.peer) {
@@ -148,6 +159,85 @@ class SyncEngine {
         if (this.isSyncing && this._blockSyncResponses) {
             const key = `${block.metadata.index}_${connection.peerAddress}`;
             this._blockSyncResponses.set(key, block);
+        }
+    }
+
+    async orchestrateStorageMarket(requestId: string, fileSizeBytes: number, chunkSizeBytes: number, requiredNodes: number, maxCostPerGB: number): Promise<any[]> {
+        // Broadcast the limit order globally across the swarm natively
+        this.activeStorageMarkets.set(requestId, {
+            bids: [],
+            requiredNodes,
+            maxCostPerGB,
+            resolve: () => {}
+        });
+
+        const reqMsg = new StorageRequestMessage({
+            storageRequestId: requestId,
+            fileSizeBytes,
+            chunkSizeBytes,
+            requiredNodes,
+            maxCostPerGB,
+            senderId: this.node.publicKey
+        });
+        
+        await this.node.peer!.broadcast(reqMsg);
+
+        // Await N valid bids filling the order book instantly, or timeout gracefully
+        return new Promise((resolve) => {
+            const market = this.activeStorageMarkets.get(requestId)!;
+            market.resolve = resolve;
+            
+            setTimeout(() => {
+                const finalMarket = this.activeStorageMarkets.get(requestId);
+                if (finalMarket) {
+                    finalMarket.resolve(finalMarket.bids);
+                    this.activeStorageMarkets.delete(requestId);
+                }
+            }, 10000); // 10 second maximum timeout boundary natively
+        });
+    }
+
+    async handleStorageRequest(msg: StorageRequestMessage, connection: PeerConnection) {
+        // Only valid if this node operates the STORAGE role explicitly natively
+        if (!this.node.roles.includes(NodeRole.STORAGE)) return;
+
+        // Ensure we are not bidding on our own packets mapping isolated networks gracefully
+        if (msg.senderId === this.node.publicKey) return;
+
+        // Check if we can beat the maxCost limit organically
+        const egressCost = this.node.storageProvider?.getEgressCostPerGB ? this.node.storageProvider.getEgressCostPerGB() : 0.00;
+        if (egressCost > msg.maxCostPerGB) return; // Drop request naturally
+
+        // Formulate returning Bid payload successfully 
+        const bidMsg = new StorageBidMessage({
+            storageRequestId: msg.storageRequestId,
+            storageHostId: this.node.publicKey,
+            proposedCostPerGB: egressCost,
+            guaranteedUptimeMs: 86400000 // Mock 24h guarantee for now mappings dynamically
+        });
+
+        connection.send(bidMsg);
+    }
+
+    async handleStorageBid(msg: StorageBidMessage, connection: PeerConnection) {
+        const market = this.activeStorageMarkets.get(msg.storageRequestId);
+        if (!market) return; // Invalid or expired order
+
+        // If cost exceeds our strict ceiling limit order mappings drop it
+        if (msg.proposedCostPerGB > market.maxCostPerGB) return;
+
+        // Record the limit order bid natively safely
+        market.bids.push({
+            peerId: msg.storageHostId,
+            cost: msg.proposedCostPerGB,
+            uptime: msg.guaranteedUptimeMs,
+            connection
+        });
+
+        // Triage Cutoff logic! If array hits 'N' required limit boundaries exactly natively stop the timer early!
+        if (market.bids.length >= market.requiredNodes) {
+             market.resolve(market.bids);
+             this.activeStorageMarkets.delete(msg.storageRequestId);
         }
     }
 
