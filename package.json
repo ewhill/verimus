@@ -17,6 +17,7 @@
     "@aws-sdk/client-glacier": "^3.1010.0",
     "@aws-sdk/client-s3": "^3.1010.0",
     "@aws-sdk/lib-storage": "^3.1010.0",
+    "@subspace/reed-solomon-erasure.wasm": "^0.2.5",
     "archiver": "^7.0.1",
     "express": "^5.2.1",
     "glob": "^13.0.6",

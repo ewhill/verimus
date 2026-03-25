@@ -33,6 +33,17 @@ export interface TransactionPayload {
     amount: number;         
 }
 
+export interface ErasureParameters {
+    N: number; 
+    K: number; 
+}
+
+export interface NodeShardMapping {
+    nodeId: string;
+    shardIndex: number;
+    shardHash: string; 
+}
+
 export interface StorageContractPayload {
     encryptedPayloadBase64: string;
     encryptedKeyBase64: string;
@@ -43,6 +54,8 @@ export interface StorageContractPayload {
     remainingEgressEscrow?: number;
     marketId?: string;
     activeHosts?: string[];
+    erasureParams?: ErasureParameters;
+    fragmentMap?: NodeShardMapping[];
 }
 
 export interface BlockPrivateFile {

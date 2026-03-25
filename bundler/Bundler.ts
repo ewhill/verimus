@@ -12,6 +12,80 @@ class Bundler {
     }
 
     /**
+     * Translates a linear payload buffer into an Erasure Coding N/K matrix seamlessly natively.
+     */
+    static async encodeErasureShards(buffer: Buffer, K: number, N: number): Promise<Buffer[]> {
+        const { ReedSolomonErasure } = require('@subspace/reed-solomon-erasure.wasm');
+        const wasmPath = require.resolve('@subspace/reed-solomon-erasure.wasm/dist/reed_solomon_erasure_bg.wasm');
+        const rs = ReedSolomonErasure.fromBytes(require('fs').readFileSync(wasmPath));
+
+        const P = N - K;
+        if (P < 0) throw new Error("Parity shards cannot be negative natively mapping.");
+
+        // Pad buffer so it divides evenly by K
+        const shardSize = Math.ceil(buffer.length / K);
+        const paddedLength = shardSize * K;
+
+        const shardsBuf = Buffer.alloc(shardSize * N);
+        buffer.copy(shardsBuf, 0); 
+
+        // Pad the remainder of the K data shards with zeroes if needed
+        if (buffer.length < paddedLength) {
+            shardsBuf.fill(0, buffer.length, paddedLength);
+        }
+
+        const uint8Shards = new Uint8Array(shardsBuf.buffer, shardsBuf.byteOffset, shardsBuf.byteLength);
+        const result = rs.encode(uint8Shards, K, P);
+        if (result !== ReedSolomonErasure.RESULT_OK) {
+            throw new Error(`Erasure encoding failed mapping bounds with code: ${result}`);
+        }
+
+        const outputShards: Buffer[] = [];
+        for (let i = 0; i < N; i++) {
+            outputShards.push(Buffer.from(uint8Shards.buffer, uint8Shards.byteOffset + i * shardSize, shardSize));
+        }
+        return outputShards;
+    }
+
+    /**
+     * Reconstructs an original buffer given an array of physical fragments cleanly recursively natively.
+     */
+    static async reconstructErasureShards(shards: (Buffer | null)[], K: number, N: number, originalLength: number): Promise<Buffer> {
+        if (shards.length !== N) throw new Error("Shards array physically strictly must match N bounds!");
+
+        const { ReedSolomonErasure } = require('@subspace/reed-solomon-erasure.wasm');
+        const wasmPath = require.resolve('@subspace/reed-solomon-erasure.wasm/dist/reed_solomon_erasure_bg.wasm');
+        const rs = ReedSolomonErasure.fromBytes(require('fs').readFileSync(wasmPath));
+
+        const P = N - K;
+        
+        let shardSize = 0;
+        for (const s of shards) {
+             if (s) { shardSize = s.length; break; }
+        }
+        if (shardSize === 0) throw new Error("No physical shard fragments available matching reconstruction recursively.");
+
+        const shardsAvailable = shards.map(s => s !== null);
+        const shardsBuf = Buffer.alloc(shardSize * N);
+
+        for (let i = 0; i < N; i++) {
+            if (shards[i]) {
+                shards[i]!.copy(shardsBuf, i * shardSize);
+            }
+        }
+
+        const uint8Shards = new Uint8Array(shardsBuf.buffer, shardsBuf.byteOffset, shardsBuf.byteLength);
+
+        const result = rs.reconstruct(uint8Shards, K, P, shardsAvailable);
+        if (result !== ReedSolomonErasure.RESULT_OK) {
+            throw new Error(`Erasure reconstruction failed structurally with code: ${result}`);
+        }
+
+        const reconstructedData = Buffer.from(uint8Shards.buffer, uint8Shards.byteOffset, K * shardSize);
+        return reconstructedData.subarray(0, originalLength); 
+    }
+
+    /**
      * Takes an array of uploaded files and bundles them into a block.
      */
     createBlockBundle(uploadedFiles: { originalname: string; buffer: Buffer }[]) {
