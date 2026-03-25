@@ -112,7 +112,7 @@ describe('Backend: SyncEngine Integrity', () => {
 
         syncEngine._blockSyncResponses.set('10_addr1', mockNewBlock as any);
         let blockAdded = false;
-        mockNode.ledger.addBlockToChain = async (b: any) => { blockAdded = true; };
+        mockNode.ledger.addBlockToChain = async (_b: any) => { blockAdded = true; };
 
         await syncEngine.performInitialSync();
 
@@ -133,7 +133,7 @@ describe('Backend: SyncEngine Integrity', () => {
 
         const mockConn1 = {
             peerAddress: 'addr1',
-            send: (m: any) => { }
+            send: (_m: any) => { }
         };
 
         syncEngine._chainStatusResponses = [
@@ -148,7 +148,7 @@ describe('Backend: SyncEngine Integrity', () => {
         };
 
         const originalSetTimeout = global.setTimeout;
-        (global as any).setTimeout = (cb: any, ms: any) => {
+        (global as any).setTimeout = (cb: any, _ms: any) => {
             syncEngine._chainStatusResponses = [
                 { latestIndex: 10, latestHash: 'h10', connection: mockConn1 as any }
             ];
@@ -180,7 +180,7 @@ describe('Backend: SyncEngine Integrity', () => {
         mockNode.peer.broadcast = async () => { };
         mockNode.ledger.isChainValid = async () => true;
 
-        const mockConn1 = { peerAddress: 'addr1', send: (m: any) => { } };
+        const mockConn1 = { peerAddress: 'addr1', send: (_m: any) => { } };
         syncEngine._chainStatusResponses = [{ latestIndex: 10, latestHash: 'h10', connection: mockConn1 as any }];
         mockNode.ledger.getLatestBlock = async () => ({ metadata: { index: 10 }, hash: 'h10' });
 
@@ -192,7 +192,7 @@ describe('Backend: SyncEngine Integrity', () => {
         };
 
         const originalSetTimeout = global.setTimeout;
-        (global as any).setTimeout = (cb: any, ms: any) => {
+        (global as any).setTimeout = (cb: any, _ms: any) => {
             syncEngine._chainStatusResponses = [{ latestIndex: 10, latestHash: 'h10', connection: mockConn1 as any }];
             syncEngine.syncBuffer = [
                 { type: 'PendingBlock', block: {} as any, connection: mockConn1 as any, timestamp: 123 },
@@ -218,7 +218,7 @@ describe('Backend: SyncEngine Integrity', () => {
         const mockConn2 = { peerAddress: 'addr2', send: () => { } };
 
         const originalSetTimeout = global.setTimeout;
-        (global as any).setTimeout = (cb: any, ms: any) => {
+        (global as any).setTimeout = (cb: any, _ms: any) => {
             // set responses inside mock
             syncEngine._chainStatusResponses = [
                 { latestIndex: 1, latestHash: 'h1', connection: mockConn1 as any },
@@ -253,7 +253,7 @@ describe('Backend: SyncEngine Integrity', () => {
         const computedHash1 = origHash(JSON.stringify({ metadata: { index: 1 }, previousHash: 'h0' }));
 
         const originalSetTimeout = global.setTimeout;
-        (global as any).setTimeout = (cb: any, ms: any) => {
+        (global as any).setTimeout = (cb: any, _ms: any) => {
             syncEngine._chainStatusResponses = [
                 { latestIndex: 2, latestHash: 'h2', connection: mockConn1 as any }
             ];
@@ -275,17 +275,17 @@ describe('Backend: SyncEngine Integrity', () => {
     it('Broadcasts limit orders and successfully maps required bids', async () => {
         let sentMessage: any = null;
         mockNode.peer.broadcast = async (msg: any) => { sentMessage = msg; };
-        
+
         // Let orchestrate storage market run, but we will fulfill the market manually simulating the network
         const promise = syncEngine.orchestrateStorageMarket('req-1', 1000, 250, 2, 0.10);
 
         // Before timeout, manually ingest 2 bids
         const market = syncEngine.activeStorageMarkets.get('req-1');
         assert.ok(market);
-        
+
         await syncEngine.handleStorageBid({ storageRequestId: 'req-1', storageHostId: 'host-1', proposedCostPerGB: 0.05, guaranteedUptimeMs: 1 } as any, {} as any);
         await syncEngine.handleStorageBid({ storageRequestId: 'req-1', storageHostId: 'host-2', proposedCostPerGB: 0.08, guaranteedUptimeMs: 1 } as any, {} as any);
-        
+
         const result = await promise;
         assert.strictEqual(result.length, 2);
         assert.strictEqual(syncEngine.activeStorageMarkets.has('req-1'), false);
@@ -294,16 +294,16 @@ describe('Backend: SyncEngine Integrity', () => {
     it('Ignores storage requests if role is not STORAGE', async () => {
         let sentMessage: any = null;
         const mockConnection = { send: (msg: any) => { sentMessage = msg; } };
-        
-        mockNode.roles = ['ORIGINATOR']; 
+
+        mockNode.roles = ['ORIGINATOR'];
         await syncEngine.handleStorageRequest({ storageRequestId: 'r-2', senderId: 'remote', maxCostPerGB: 0.10 } as any, mockConnection as any);
-        
-        assert.strictEqual(sentMessage, null); 
-        
+
+        assert.strictEqual(sentMessage, null);
+
         mockNode.roles = ['STORAGE'];
         mockNode.publicKey = 'local-storage';
         mockNode.storageProvider = { getEgressCostPerGB: () => 0.05 };
-        
+
         await syncEngine.handleStorageRequest({ storageRequestId: 'r-2', senderId: 'remote', maxCostPerGB: 0.10 } as any, mockConnection as any);
         assert.ok(sentMessage !== null);
         assert.strictEqual((sentMessage as any).proposedCostPerGB, 0.05);
@@ -311,26 +311,26 @@ describe('Backend: SyncEngine Integrity', () => {
         // Tests dropping requests when internal limit mappings exceed ceiling
         sentMessage = null;
         await syncEngine.handleStorageRequest({ storageRequestId: 'r-3', senderId: 'remote', maxCostPerGB: 0.01 } as any, mockConnection as any);
-        assert.strictEqual(sentMessage, null); 
+        assert.strictEqual(sentMessage, null);
     });
 
     it('Triage timeout drops expired orders returning gathered bids', async () => {
-        mockNode.peer.broadcast = async () => {};
+        mockNode.peer.broadcast = async () => { };
         const originalSetTimeout = global.setTimeout;
-        
+
         // Mock setTimeout to immediately execute preventing async drift
-        (global as any).setTimeout = (cb: any, ms: any) => { cb(); return {} as any; };
-        
+        (global as any).setTimeout = (cb: any, _ms: any) => { cb(); return {} as any; };
+
         const promise = syncEngine.orchestrateStorageMarket('req-timeout', 1000, 250, 5, 0.10);
-        
+
         // Inject 1 partial bid mapping
         const market = syncEngine.activeStorageMarkets.get('req-timeout');
         market?.bids.push({ peerId: 'host-1', cost: 0.05, uptime: 10, connection: {} as any });
-        
+
         const result = await promise;
         assert.strictEqual(result.length, 1);
         assert.strictEqual(syncEngine.activeStorageMarkets.has('req-timeout'), false);
-        
+
         global.setTimeout = originalSetTimeout;
     });
 });

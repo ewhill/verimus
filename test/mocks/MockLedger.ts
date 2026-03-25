@@ -8,14 +8,14 @@ import type { Block, PeerReputation } from '../../types';
 export class MockCollection<T extends { [key: string]: any }> {
     data: T[] = [];
     testMarker: boolean = true;
-    
+
     async countDocuments(): Promise<number> { return this.data.length; }
-    
+
     async insertOne(doc: T): Promise<InsertOneResult<T>> {
         this.data.push(doc);
         return { acknowledged: true, insertedId: null as any };
     }
-    
+
     find() {
         return {
             sort: () => this,
@@ -23,11 +23,11 @@ export class MockCollection<T extends { [key: string]: any }> {
             toArray: async (): Promise<T[]> => this.data
         };
     }
-    
+
     async findOne(query: any): Promise<T | null> {
         return this.data.length > 0 ? this.data[0] : null;
     }
-    
+
     async insertMany(docs: T[]): Promise<any> {
         this.data.push(...docs);
         return { acknowledged: true, insertedCount: docs.length };
@@ -39,14 +39,14 @@ export class MockLedger extends Ledger {
     // @ts-ignore - suppressing strict MongoClient overlaps to simulate collections offline natively
     client: MongoClient = {};
     db: Db | null = null;
-    
+
     // @ts-ignore
     collection: Collection<Block> | null = null;
     // @ts-ignore
     peersCollection: Collection<PeerReputation> | null = null;
     // @ts-ignore
     ownedBlocksCollection: Collection<any> | null = null;
-    
+
     events: EventEmitter;
 
     constructor() {
