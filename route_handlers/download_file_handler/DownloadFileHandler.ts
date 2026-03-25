@@ -52,7 +52,7 @@ export default class DownloadFileHandler extends BaseHandler {
 
             let readStream: any;
             const payload = block.payload as StorageContractPayload;
-            
+
             if (!payload.erasureParams) {
                 const readStreamResult = await this.node.storageProvider!.getBlockReadStream(privatePayload.physicalId);
                 if (readStreamResult.status === 'not_found') {
@@ -63,92 +63,92 @@ export default class DownloadFileHandler extends BaseHandler {
                 }
 
                 if (req.query?.statusOnly === 'true') {
-                     if (typeof (readStreamResult.stream as any)?.destroy === 'function') {
-                         (readStreamResult.stream as any).destroy();
-                     }
-                     return res.status(200).send('Available');
+                    if (typeof (readStreamResult.stream as any)?.destroy === 'function') {
+                        (readStreamResult.stream as any).destroy();
+                    }
+                    return res.status(200).send('Available');
                 }
                 readStream = readStreamResult.stream;
             } else {
                 const requiredK = payload.erasureParams.k;
                 const marketId = crypto.randomBytes(16).toString('hex');
-                
+
                 const fetchPromises = payload.fragmentMap!.map(async (mapping: any) => {
-                     return new Promise<{ shardIndex: number, buffer: Buffer | null }>((resReq) => {
-                         const timeout = setTimeout(() => {
-                             this.node.events.removeAllListeners(`shard_retrieve:${marketId}:${mapping.physicalId}`);
-                             resReq({ shardIndex: mapping.shardIndex, buffer: null });
-                         }, 10000);
+                    return new Promise<{ shardIndex: number, buffer: Buffer | null }>((resReq) => {
+                        const timeout = setTimeout(() => {
+                            this.node.events.removeAllListeners(`shard_retrieve:${marketId}:${mapping.physicalId}`);
+                            resReq({ shardIndex: mapping.shardIndex, buffer: null });
+                        }, 10000);
 
-                         this.node.events.once(`shard_retrieve:${marketId}:${mapping.physicalId}`, (respMsg: any) => {
-                             clearTimeout(timeout);
-                             if (respMsg.success) resReq({ shardIndex: mapping.shardIndex, buffer: Buffer.from(respMsg.shardDataBase64, 'base64') });
-                             else resReq({ shardIndex: mapping.shardIndex, buffer: null });
-                         });
+                        this.node.events.once(`shard_retrieve:${marketId}:${mapping.physicalId}`, (respMsg: any) => {
+                            clearTimeout(timeout);
+                            if (respMsg.success) resReq({ shardIndex: mapping.shardIndex, buffer: Buffer.from(respMsg.shardDataBase64, 'base64') });
+                            else resReq({ shardIndex: mapping.shardIndex, buffer: null });
+                        });
 
-                         try {
-                              if (mapping.nodeId === this.node.publicKey) {
-                                  this.node.storageProvider!.getBlockReadStream(mapping.physicalId).then(readRes => {
-                                      if (readRes.status !== 'available' || !readRes.stream) {
-                                          this.node.events.emit(`shard_retrieve:${marketId}:${mapping.physicalId}`, { success: false });
-                                          return;
-                                      }
-                                      const chunks: Buffer[] = [];
-                                      readRes.stream.on('data', c => chunks.push(c));
-                                      readRes.stream.on('error', () => {
-                                          this.node.events.emit(`shard_retrieve:${marketId}:${mapping.physicalId}`, { success: false });
-                                      });
-                                      readRes.stream.on('end', () => {
-                                          const finalBuf = Buffer.concat(chunks);
-                                          this.node.events.emit(`shard_retrieve:${marketId}:${mapping.physicalId}`, { success: true, shardDataBase64: finalBuf.toString('base64') });
-                                      });
-                                  }).catch(() => {
-                                       this.node.events.emit(`shard_retrieve:${marketId}:${mapping.physicalId}`, { success: false });
-                                  });
-                              } else {
-                                  const reqMsg = new StorageShardRetrieveRequestMessage({ marketId, physicalId: mapping.physicalId });
-                                  const activeConnection = this.node.peer!.connectedPeers.find(c => c.remotePublicKey === mapping.nodeId);
-                                  if (activeConnection) activeConnection.send(reqMsg);
-                                  else {
-                                      // Local bounds simulate connected loopbacks for integration tests flawlessly mapping topological constraints natively
-                                      if (this.node.peer!.connectedPeers.length === 0) {
-                                          this.node.events.emit(`shard_retrieve:${marketId}:${mapping.physicalId}`, { success: false });
-                                      } else {
-                                          clearTimeout(timeout); resReq({ shardIndex: mapping.shardIndex, buffer: null });
-                                      }
-                                  }
-                              }
-                         } catch (e) {
-                              clearTimeout(timeout);
-                              resReq({ shardIndex: mapping.shardIndex, buffer: null });
-                         }
-                     });
+                        try {
+                            if (mapping.nodeId === this.node.publicKey) {
+                                this.node.storageProvider!.getBlockReadStream(mapping.physicalId).then(readRes => {
+                                    if (readRes.status !== 'available' || !readRes.stream) {
+                                        this.node.events.emit(`shard_retrieve:${marketId}:${mapping.physicalId}`, { success: false });
+                                        return;
+                                    }
+                                    const chunks: Buffer[] = [];
+                                    readRes.stream.on('data', c => chunks.push(c));
+                                    readRes.stream.on('error', () => {
+                                        this.node.events.emit(`shard_retrieve:${marketId}:${mapping.physicalId}`, { success: false });
+                                    });
+                                    readRes.stream.on('end', () => {
+                                        const finalBuf = Buffer.concat(chunks);
+                                        this.node.events.emit(`shard_retrieve:${marketId}:${mapping.physicalId}`, { success: true, shardDataBase64: finalBuf.toString('base64') });
+                                    });
+                                }).catch(() => {
+                                    this.node.events.emit(`shard_retrieve:${marketId}:${mapping.physicalId}`, { success: false });
+                                });
+                            } else {
+                                const reqMsg = new StorageShardRetrieveRequestMessage({ marketId, physicalId: mapping.physicalId });
+                                const activeConnection = this.node.peer!.connectedPeers.find(c => c.remotePublicKey === mapping.nodeId);
+                                if (activeConnection) activeConnection.send(reqMsg);
+                                else {
+                                    // Local bounds simulate connected loopbacks for integration tests flawlessly mapping topological constraints natively
+                                    if (this.node.peer!.connectedPeers.length === 0) {
+                                        this.node.events.emit(`shard_retrieve:${marketId}:${mapping.physicalId}`, { success: false });
+                                    } else {
+                                        clearTimeout(timeout); resReq({ shardIndex: mapping.shardIndex, buffer: null });
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            clearTimeout(timeout);
+                            resReq({ shardIndex: mapping.shardIndex, buffer: null });
+                        }
+                    });
                 });
 
                 const rawResults = await Promise.all(fetchPromises);
-                
+
                 const N = payload.erasureParams.n;
                 const shardsInput = new Array(N).fill(null);
                 let validCount = 0;
-                
+
                 for (const res of rawResults) {
-                     if (res.buffer) {
-                         shardsInput[res.shardIndex] = res.buffer;
-                         validCount++;
-                     }
+                    if (res.buffer) {
+                        shardsInput[res.shardIndex] = res.buffer;
+                        validCount++;
+                    }
                 }
-                
+
                 if (validCount < requiredK) {
-                     return res.status(502).send('Insufficient redundant shards available enforcing mathematical boundaries.');
+                    return res.status(502).send('Insufficient redundant shards available enforcing mathematical boundaries.');
                 }
-                
+
                 const reconstructed = await Bundler.reconstructErasureShards(
-                     shardsInput, 
-                     payload.erasureParams.k, 
-                     payload.erasureParams.n, 
-                     payload.erasureParams.originalSize
+                    shardsInput,
+                    payload.erasureParams.k,
+                    payload.erasureParams.n,
+                    payload.erasureParams.originalSize
                 );
-                
+
                 // Truncate padded 0 byte streams returning strict sizing mapped exclusively protecting unzipper headers
                 readStream = Readable.from(reconstructed.subarray(0, payload.erasureParams.originalSize));
             }
@@ -160,7 +160,7 @@ export default class DownloadFileHandler extends BaseHandler {
             const maxEscrow = privatePayload.remainingEgressEscrow ?? privatePayload.allocatedEgressEscrow ?? 0;
 
             const byteSpooler = new Transform({
-                transform(chunk, _encoding, callback) {
+                transform(chunk, encoding, callback) {
                     if (egressCostPerGB > 0) {
                         const iterationCost = (chunk.length / (1024 * 1024 * 1024)) * egressCostPerGB;
                         accumulatedCost += iterationCost;
@@ -187,7 +187,7 @@ export default class DownloadFileHandler extends BaseHandler {
                 logger.warn(`Egress cutoff triggered: ${err.message}`);
                 if (!res.headersSent) res.status(402).send(err.message);
                 else res.end();
-                
+
                 if (typeof (readStream as any).destroy === 'function') {
                     (readStream as any).destroy();
                 }
