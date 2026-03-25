@@ -61,3 +61,5 @@ When writing code and managing commits, adhere to the following best practices f
 
 ## 8. Agent Writing Guide
 Avoid adding superfluous, "fluff" adverbs when forming any response or generating any code. Examples of this are words ending in -ly, such as "organically", "natively", "dynamically", "appropriately", "actively", "logically", etc. Ask yourself: do these adverbs add value to the intent or meaning of the sentence. If your response is absolutely, yes, then you may include them. Otherwise, prefer to omit these words as they reduce readability.
+
+**Critical NLP/Replacement Constraint**: When agents are instructed to rewrite documentation, comments, or test definitions to remove fluff or adjust styling, they **must not** use global regex replacement scripts (e.g., `sed`). Agents must explicitly use designated IDE file-replacement tools to rewrite the entire sentence contextually to ensure the resulting grammar remains valid. Structural architecture guardrails (like restricting `require()` in ESM setups) must stay entirely isolated from human-prose string-matching hooks.

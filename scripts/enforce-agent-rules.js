@@ -41,14 +41,16 @@ try {
         const content = fs.readFileSync(file, 'utf-8');
         const lines = content.split('\n');
 
-        // Check for adverbs
+        // Check for adverbs in markdown files exclusively
         lines.forEach((line, index) => {
-            const lowerLine = line.toLowerCase();
-            for (const adverb of BANNED_ADVERBS) {
-                if (lowerLine.includes(adverb)) {
-                    console.error(`❌ Fluff Adverb Blocked: Found "${adverb}" in ${file}:${index + 1}`);
-                    console.error(`   > ${line.trim()}`);
-                    hasErrors = true;
+            if (file.endsWith('.md')) {
+                const lowerLine = line.toLowerCase();
+                for (const adverb of BANNED_ADVERBS) {
+                    if (lowerLine.includes(adverb)) {
+                        console.error(`❌ Fluff Adverb Blocked: Found "${adverb}" in ${file}:${index + 1}`);
+                        console.error(`   > ${line.trim()}`);
+                        hasErrors = true;
+                    }
                 }
             }
 
