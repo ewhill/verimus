@@ -76,10 +76,10 @@ When evaluating `WalletManager.getBalance(key)`, the return must reflect:
 
 ## 5. Execution Task Checklist
 
-- [ ]  Create `StorageRequestMessage` and `<handler>` inside `messages/` and `peer_handlers/`.
-- [ ]  Create `StorageBidMessage` and `<handler>`.
-- [ ]  Implement the asynchronous Triage gathering loop inside `SyncEngine`.
-- [ ]  Update `WalletManager` to implement `freezeFunds`, `releaseFunds`, tracking active memory-state escrows and tracking `balance` modifications.
-- [ ]  Verify `WalletManager` via explicit unit tests mapping double-spend isolation behaviors against asynchronous timeouts.
-- [ ]  Modify `UploadView` and corresponding API endpoint structures to ingest and format the new `maxCost` and `redundancy` payload definitions.
-- [ ]  Update `AGENTS.md` and standard project `.md` documentation verifying newly instantiated logic constraints mirror implementations.
+- [x]  Create `StorageRequestMessage` and `<handler>` inside `messages/` and `peer_handlers/`.
+- [x]  Create `StorageBidMessage` and `<handler>`.
+- [x]  Implement the asynchronous Triage gathering loop inside `SyncEngine`.
+- [x]  Update `WalletManager` to implement `freezeFunds`, `releaseFunds`, tracking active memory-state escrows and tracking `balance` modifications.
+- [x]  Verify `WalletManager` via explicit unit tests mapping double-spend isolation behaviors against asynchronous timeouts.
+- [x]  Modify `UploadView` and corresponding API endpoint structures to ingest and format the new `maxCost` and `redundancy` payload definitions.
+- [x]  Update `AGENTS.md` and standard project `.md` documentation verifying newly instantiated logic constraints mirror implementations.
