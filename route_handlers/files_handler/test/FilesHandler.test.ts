@@ -79,8 +79,13 @@ describe('Backend: filesHandler Coverage', () => {
         assert.strictEqual(responseData.files[0].path, 'pendingDoc.txt');
     });
 
-    it('Bypasses cache handling query param overrides returning raw responses', async () => {
-        const handler = new FilesHandler(null as unknown as PeerNode);
+    it('Gracefully catches and returns 500 on internal processor failure', async () => {
+        const brokenNode = mockNode.asPeerNode();
+        brokenNode.ownedBlocksCache = ['trigger_db_query_hash'];
+        // @ts-ignore - explicitly inducing simulated database failure isolating crash handlers natively
+        brokenNode.ledger = null;
+        
+        const handler = new FilesHandler(brokenNode);
         await handler.handle(req.asRequest(), res.asResponse());
         assert.strictEqual(res.statusCode, 500);
         const responseData = res.body;

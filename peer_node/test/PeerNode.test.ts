@@ -2,12 +2,29 @@ import assert from 'node:assert';
 import * as fs from 'node:fs';
 import { describe, it } from 'node:test';
 
-import type Bundler from '../../bundler/Bundler';
+import Bundler from '../../bundler/Bundler';
 import type { PeerCredentials } from '../../credential_provider/CredentialProvider';
 import type Ledger from '../../ledger/Ledger';
-import type Mempool from '../../models/mempool/Mempool';
+import Mempool from '../../models/mempool/Mempool';
 import type { Peer } from '../../p2p';
-import type BaseProvider from '../../storage_providers/base_provider/BaseProvider';
+import BaseProvider from '../../storage_providers/base_provider/BaseProvider';
+import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
+import { MockLedger } from '../../test/mocks/MockLedger';
+
+const getMockCredentials = (): PeerCredentials => ({
+    ringPublicKeyPath: 'ring.pub',
+    publicKeyPath: 'peer.pub',
+    privateKeyPath: 'peer.pem',
+    signaturePath: 'peer.sig'
+});
+
+const getMockNode = async (PeerNodeClass: any) => {
+    const node = new PeerNodeClass(3002, [], new MemoryStorageProvider(), new Bundler('data'), 'mongodb://localhost:27017/test', 'mockPubKey', getMockCredentials(), 'data');
+    node.ledger = new MockLedger();
+    await node.ledger.init();
+    node.mempool = new Mempool();
+    return node;
+};
 
 describe('Backend: PeerNode Logical Verification Check', () => {
 
@@ -18,12 +35,9 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     });
 
     it('Instantiates ReputationManager mapped to the database', async () => {
-        const PeerNode = (await import('../PeerNode')).default;
+        const PeerNodeClass = (await import('../PeerNode')).default;
         
-        const mockNode = new PeerNode(3002, [], undefined as unknown as BaseProvider, undefined as unknown as Bundler, 'mongodb://localhost:27017/test', undefined as unknown as string, {} as unknown as PeerCredentials, 'data');
-        mockNode.ledger = {
-            init: async () => {}, collection: {}, events: { on: () => {} }, peersCollection: { testMarker: true } 
-        } as unknown as Ledger;
+        const mockNode = await getMockNode(PeerNodeClass);
         
         mockNode.loadOwnedBlocksCache = async () => {};
         
@@ -43,20 +57,18 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     });
 
     it('Restores block caching arrays on initialization from MongoDB', async () => {
-        const PeerNode = (await import('../PeerNode')).default;
+        const PeerNodeClass = (await import('../PeerNode')).default;
         
-        const mockNode = new PeerNode(3002, [], undefined as unknown as BaseProvider, undefined as unknown as Bundler, 'mongodb://localhost:27017/test', undefined as unknown as string, {} as unknown as PeerCredentials, 'data');
+        const mockNode = await getMockNode(PeerNodeClass);
         mockNode.publicKey = 'myPubKey';
-        mockNode.ledger = {
-            collection: {
-                 countDocuments: async () => 5,
-                 find: () => ({ toArray: async () => [{ hash: 'hash1', publicKey: 'myPubKey' }] })
-            },
-            ownedBlocksCollection: {
-                 countDocuments: async () => 0, // Force migration path
-                 insertMany: async () => {}
-            }
-        } as unknown as Ledger;
+        // @ts-ignore - intentionally forcing internal array yields securely limiting active collection mutations
+        mockNode.ledger.collection.countDocuments = async () => 5;
+        // @ts-ignore
+        mockNode.ledger.collection.find = () => ({ toArray: async () => [{ hash: 'hash1', publicKey: 'myPubKey' }] });
+        // @ts-ignore
+        mockNode.ledger.ownedBlocksCollection.countDocuments = async () => 0;
+        // @ts-ignore
+        mockNode.ledger.ownedBlocksCollection.insertMany = async () => {};
 
         await mockNode.loadOwnedBlocksCache();
         
@@ -90,17 +102,17 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     });
 
     it('Bypasses cache population when cache matches ledger', async () => {
-        const PeerNode = (await import('../PeerNode')).default;
+        const PeerNodeClass = (await import('../PeerNode')).default;
         
-        const mockNode = new PeerNode(3002, [], undefined as unknown as BaseProvider, undefined as unknown as Bundler, 'mongodb://localhost:27017/test', undefined as unknown as string, {} as unknown as PeerCredentials, 'data');
+        const mockNode = await getMockNode(PeerNodeClass);
         mockNode.publicKey = 'myPubKey';
-        mockNode.ledger = {
-            collection: { countDocuments: async () => 5 },
-            ownedBlocksCollection: { 
-                 countDocuments: async () => 1,
-                 find: () => ({ toArray: async () => [{ hash: 'hash_from_cache' }] })
-            }
-        } as unknown as Ledger;
+        
+        // @ts-ignore
+        mockNode.ledger.collection.countDocuments = async () => 5;
+        // @ts-ignore
+        mockNode.ledger.ownedBlocksCollection.countDocuments = async () => 1;
+        // @ts-ignore
+        mockNode.ledger.ownedBlocksCollection.find = () => ({ toArray: async () => [{ hash: 'hash_from_cache' }] });
         
         await mockNode.loadOwnedBlocksCache();
         
@@ -109,12 +121,12 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     });
 
     it('Auto-invalidates stale cache if database appears purged', async () => {
-        const PeerNode = (await import('../PeerNode')).default;
-        
-        const mockNode = new PeerNode(3002, [], undefined as unknown as BaseProvider, undefined as unknown as Bundler, 'mongodb://localhost:27017/test', undefined as unknown as string, {} as unknown as PeerCredentials, 'data');
+        const PeerNodeClass = (await import('../PeerNode')).default;
+        const mockNode = await getMockNode(PeerNodeClass);
         mockNode.publicKey = 'myPubKey';
         
         let deleted = false;
+        mockNode.ownedBlocksCache = ['hash1']; // Simulate existing cache
         mockNode.ledger = {
             collection: { countDocuments: async () => 1 }, // Only Genesis
             ownedBlocksCollection: { 
@@ -130,9 +142,8 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     });
 
     it('Handles outer wrapper failures during cache recovery', async () => {
-        const PeerNode = (await import('../PeerNode')).default;
-        
-        const mockNode = new PeerNode(3002, [], undefined as unknown as BaseProvider, undefined as unknown as Bundler, 'mongodb://localhost:27017/test', undefined as unknown as string, {} as unknown as PeerCredentials, 'data');
+        const PeerNodeClass = (await import('../PeerNode')).default;
+        const mockNode = await getMockNode(PeerNodeClass);
         mockNode.ledger = {
             collection: { countDocuments: async () => { throw new Error('DB Crash'); } }
         } as unknown as Ledger;
@@ -143,16 +154,14 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     });
 
     it('Synchronizes deletion from unverified blocks', async () => {
-        const PeerNode = (await import('../PeerNode')).default;
-        
-        const mockNode = new PeerNode(3002, [], undefined as unknown as BaseProvider, undefined as unknown as Bundler, 'mongodb://localhost:27017/test', undefined as unknown as string, {} as unknown as PeerCredentials, 'data');
+        const PeerNodeClass = (await import('../PeerNode')).default;
+        const mockNode = await getMockNode(PeerNodeClass);
         mockNode.publicKey = 'myPubKey';
-        mockNode.ownedBlocksCache = [];
         
         mockNode.mempool = {
              pendingBlocks: new Map()
         } as unknown as Mempool;
-        mockNode.mempool.pendingBlocks.set('hash3', { hash: 'hash3' } as unknown as any);
+        mockNode.mempool.pendingBlocks.set('hash3', { block: { hash: 'hash3' } } as unknown as any);
 
         mockNode.ledger = {
             ownedBlocksCollection: {

@@ -45,7 +45,7 @@ async function runTest() {
     // 2. Search Node 1 for exact match
     console.log(`\nQuerying Node 1 (26780) with q=${filename}...`);
     let searchExact = await searchBlocks(26780, filename);
-    let exactFound = (searchExact as any).blocks.some((b: any) => b.hash === hash);
+    let exactFound = (searchExact as { blocks: any[] }).blocks.some((b: any) => b.hash === hash);
     if (!exactFound) {
         console.error("ERROR: Block not found when searching for its exact filename.");
         process.exit(1);
@@ -57,7 +57,7 @@ async function runTest() {
     const partialName = filename.substring(0, 11).toUpperCase(); // e.g., "SEARCH_TEST"
     console.log(`\nQuerying Node 1 (26780) with partial/case-insensitive q=${partialName}...`);
     let searchPartial = await searchBlocks(26780, partialName);
-    let partialFound = (searchPartial as any).blocks.some((b: any) => b.hash === hash);
+    let partialFound = (searchPartial as { blocks: any[] }).blocks.some((b: any) => b.hash === hash);
     if (!partialFound) {
         console.error("ERROR: Block not found when searching partial/case-insensitive filename.");
         process.exit(1);
@@ -69,9 +69,9 @@ async function runTest() {
     const invalidQuery = `not_a_real_file_${Date.now()}`;
     console.log(`\nQuerying Node 1 (26780) with invalid q=${invalidQuery}...`);
     let searchInvalid = await searchBlocks(26780, invalidQuery);
-    let invalidFound = (searchInvalid as any).blocks.some((b: any) => b.hash === hash);
+    let invalidFound = (searchInvalid as { blocks: any[] }).blocks.some((b: any) => b.hash === hash);
     if (invalidFound) {
-        console.error("ERROR: Block incorrectly returned when searching for an invalid filename.", (searchInvalid as any).blocks);
+        console.error("ERROR: Block incorrectly returned when searching for an invalid filename.", (searchInvalid as { blocks: any[] }).blocks);
         process.exit(1);
     } else {
         console.log("SUCCESS: Block filtered out for an invalid search term.");

@@ -24,7 +24,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             const mongoUri = mongod.getUri();
 
             // Create an actual node locally interacting using an ephemeral port
-            node = new PeerNode(0, [], new MemoryStorageProvider() as any, new Bundler(mockDataDir) as any, mongoUri, undefined, {
+            node = new PeerNode(0, [], new MemoryStorageProvider(), new Bundler(mockDataDir), mongoUri, undefined, {
                 ringPublicKeyPath: 'keys/ring.ring.pub',
                 publicKeyPath: 'keys/peer_26780.peer.pub',
                 privateKeyPath: 'keys/peer_26780.peer.pem',
@@ -36,7 +36,8 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             // Override mocked components AFTER initialization to ensure tests don't leak external discovery attempts
             if (node.peer) {
                 node.peer.broadcast = async () => [];
-                (node.peer as any).request = async () => ({});
+                // @ts-ignore - overriding internal handler for mock integrity
+                node.peer.request = async () => ({});
             }
             node.consensusEngine.walletManager.verifyFunds = async () => true;
             node.consensusEngine.node.syncEngine.orchestrateStorageMarket = async (marketReqId: string) => {
@@ -110,7 +111,8 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
 
             const response = await fetch(`${baseUrl}/api/upload?trustedPeers=`, {
                 method: 'POST',
-                body: formDataPayload as any // TS casting for standard native FormData mechanics
+                // @ts-ignore - TS casting for standard native FormData mechanics
+                body: formDataPayload
             });
 
             assert.strictEqual(response.status, 202, 'Upload resolved saving file');

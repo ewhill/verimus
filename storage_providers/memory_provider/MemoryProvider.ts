@@ -61,6 +61,10 @@ class MemoryStorageProvider extends BaseStorageProvider {
         pt.end(data);
         return { status: 'available', stream: pt };
     }
+
+    generatePhysicalBlockId(physicalBlockId: string): string {
+        return `mem-${physicalBlockId}`;
+    }
 }
 
 export default MemoryStorageProvider;

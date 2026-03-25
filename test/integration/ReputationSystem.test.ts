@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import fs from 'fs';
+import type { AddressInfo } from 'net';
 import assert from 'node:assert';
 import { describe, it, before, after } from 'node:test';
 import * as url from 'node:url';
@@ -9,12 +10,14 @@ import path from 'path';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import Bundler from '../../bundler/Bundler';
+import { BLOCK_TYPES } from '../../constants';
 import { hashData } from '../../crypto_utils/CryptoUtils';
 import { ChainStatusRequestMessage } from '../../messages/chain_status_request_message/ChainStatusRequestMessage';
 import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
 import RSAKeyPair from '../../p2p/lib/RSAKeyPair';
 import PeerNode from '../../peer_node/PeerNode';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
+import type { Block } from '../../types';
 
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -52,7 +55,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
                 ringPublicKeyPath: path.join(tempDir, `ring.pub`)
             };
 
-            const node = new PeerNode(0, trusted, new MemoryStorageProvider() as any, new Bundler(tempDir) as any, dbUri, undefined, keyPaths, tempDir);
+            const node = new PeerNode(0, trusted, new MemoryStorageProvider(), new Bundler(tempDir), dbUri, undefined, keyPaths, tempDir);
 
             // Mock discover locally to prevent long polling hangs inside init() loop
             if (node.peer) {
@@ -62,8 +65,9 @@ describe('Integration: Reputation System (5 Nodes)', () => {
             await node.init();
 
             // Assign ephemeral port manually
-            node.port = (node.httpServer!.address() as any).port;
-            (node.peer as any).publicAddress_ = `127.0.0.1:${node.port}`;
+            node.port = (node.httpServer!.address() as AddressInfo).port;
+            // @ts-ignore - forcibly map internal test structures
+            node.peer!.publicAddress_ = `127.0.0.1:${node.port}`;
 
             nodes.push(node);
         }
@@ -72,7 +76,8 @@ describe('Integration: Reputation System (5 Nodes)', () => {
 
         for (let i = 1; i < 5; i++) {
             const addr = `wss://127.0.0.1:${nodes[0].port}`;
-            await (nodes[i].peer as any)?.attemptConnection({ originalAddress: addr, parsedAddress: url.parse(addr) });
+            // @ts-ignore - internal network testing override
+            await nodes[i].peer?.attemptConnection({ originalAddress: addr, parsedAddress: url.parse(addr) });
         }
 
         // Wait for discovery and WebSocket handshake resolutions
@@ -105,11 +110,13 @@ describe('Integration: Reputation System (5 Nodes)', () => {
         const node1 = nodes[0];
         const node2 = nodes[1];
 
-        const fakeBlock = {
+        const fakeBlock: Block = {
             metadata: { index: 99, timestamp: Date.now() },
+            type: BLOCK_TYPES.STORAGE_CONTRACT,
             hash: 'wrong_hash',
             previousHash: 'fake',
             publicKey: node2.publicKey,
+            // @ts-ignore - intentionally mapping corrupted payload to trigger Reputation penalty
             payload: { fake: true },
             signature: 'fakesig'
         };
@@ -119,7 +126,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
 
 console.log('SENDING FAKE BLOCK!');
 console.log(connToNode1?.send ? 'METHOD EXISTS' : 'UNDEFINED METHOD');
-        connToNode1?.send(new PendingBlockMessage({ block: fakeBlock as any }));
+        connToNode1?.send(new PendingBlockMessage({ block: fakeBlock }));
 
         await new Promise(r => setTimeout(r, 500));
 
@@ -133,21 +140,28 @@ console.log(connToNode1?.send ? 'METHOD EXISTS' : 'UNDEFINED METHOD');
         const node3 = nodes[2];
 
 
-        const block = {
+        const block: Block = {
             metadata: { index: 99, timestamp: Date.now() },
+            type: BLOCK_TYPES.STORAGE_CONTRACT,
             previousHash: 'fake',
             publicKey: node3.publicKey,
-            payload: { fake: true },
+            // @ts-ignore - explicitly mimicking correct schema mapping to test crypto forgery independently
+            payload: { 
+                 encryptedPayloadBase64: 'enc',
+                 encryptedKeyBase64: 'key',
+                 encryptedIvBase64: 'iv'
+            },
             signature: 'invalid_sig'
-        };
-        const str = JSON.stringify(block);
-        (block as any).hash = hashData(str);
+        } as Block;
+        const blockToHash = { ...block };
+        delete blockToHash.hash;
+        block.hash = hashData(JSON.stringify(blockToHash));
 
         const connToNode1 = node3.peer?.peers[0];
 
 
 console.log('SENDING INVALID SIG BLOCK!');
-        connToNode1?.send(new PendingBlockMessage({ block: block as any }));
+        connToNode1?.send(new PendingBlockMessage({ block }));
 
         await new Promise(r => setTimeout(r, 500));
 

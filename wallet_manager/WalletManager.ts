@@ -36,7 +36,7 @@ export default class WalletManager {
                     { 'payload.senderId': peerId },
                     { 'payload.recipientId': peerId }
                 ]
-            }).toArray() as unknown as TransactionBlock[];
+            }).toArray() as TransactionBlock[];
 
             for (const block of transactions) {
                 if (block.payload?.senderId === peerId) {

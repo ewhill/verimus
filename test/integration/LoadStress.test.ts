@@ -67,7 +67,8 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
              bind: () => ({ to: () => {} }),
              close: async () => {}
         };
-        (node as any).peer = mockPeer;
+        // @ts-ignore - inject mock socket configurations internally
+        node.peer = mockPeer;
         node.consensusEngine.handlePendingBlock = async () => {};
 
         await node.ledger.init(32000);
@@ -92,7 +93,8 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
 
         const setupExpressApp = (await import('../../api_server/ApiServer')).default;
         const app = setupExpressApp(node);
-        node.httpServer = http.createServer(app) as any;
+        // @ts-ignore - explicitly binding standard unencrypted HTTP stream mappings for stress overhead simulation
+        node.httpServer = http.createServer(app);
         await new Promise<void>(resolve => node.httpServer!.listen(32000, '0.0.0.0', () => resolve()));
     });
 

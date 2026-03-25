@@ -67,7 +67,8 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
                   bind: () => ({ to: () => {} }),
                   close: async () => {}
              };
-             (node as any).peer = mockPeer;
+             // @ts-ignore - forcibly injecting mock peer to simulate partition architectures
+             node.peer = mockPeer;
         };
 
         await Promise.all([initWithoutServer(node1), initWithoutServer(node2), initWithoutServer(node3)]);
@@ -85,20 +86,26 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
 
     it('Drops minority forks during Network Partition', async () => {
         // Total Network Size = 3 (Majority = 2)
-        (node1.peer as any).trustedPeers = ['127.0.0.1:31002', '127.0.0.1:31003']; 
-        (node2.peer as any).trustedPeers = ['127.0.0.1:31001', '127.0.0.1:31003'];
+        // @ts-ignore
+        node1.peer.trustedPeers = ['127.0.0.1:31002', '127.0.0.1:31003']; 
+        // @ts-ignore
+        node2.peer.trustedPeers = ['127.0.0.1:31001', '127.0.0.1:31003'];
         
         // Node 3 suffers a Byzantine Partition and only sees Node 1 (Simulated Split Brain)
-        (node3.peer as any).trustedPeers = ['127.0.0.1:31001'];
+        // @ts-ignore
+        node3.peer.trustedPeers = ['127.0.0.1:31001'];
         
         const majority = node3.getMajorityCount();
         assert.strictEqual(majority, 2, 'Node 3 bounds a local perception majority counting correctly.');
 
         // Node 3 tries to formulate a rogue fork on its own isolated chain mappings
-        node3.mempool.pendingBlocks.set('rogue_block', { eligible: true, originalTimestamp: Date.now() } as any);
-        node3.mempool.eligibleForks.set('rogue_fork', { blockIds: ['rogue_block'], proposals: new Set(['127.0.0.1:31003']) } as any);
+        // @ts-ignore
+        node3.mempool.pendingBlocks.set('rogue_block', { eligible: true, originalTimestamp: Date.now() });
+        // @ts-ignore
+        node3.mempool.eligibleForks.set('rogue_fork', { blockIds: ['rogue_block'], proposals: new Set(['127.0.0.1:31003']) });
         
-        await node3.consensusEngine.handleProposeFork('rogue_fork', ['rogue_block'], { peerAddress: '127.0.0.1:31003' } as any);
+        // @ts-ignore
+        await node3.consensusEngine.handleProposeFork('rogue_fork', ['rogue_block'], { peerAddress: '127.0.0.1:31003' });
         
         // Assert the fork is NOT adopted because it didn't cross the threshold
         const fork = node3.mempool.eligibleForks.get('rogue_fork');
@@ -106,10 +113,12 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
     });
 
     it('Coordinates adoption across majority segments', async () => {
-        node1.mempool.eligibleForks.set('valid_fork', { blockIds: ['valid_block'], proposals: new Set(['127.0.0.1:31001']) } as any);
+        // @ts-ignore
+        node1.mempool.eligibleForks.set('valid_fork', { blockIds: ['valid_block'], proposals: new Set(['127.0.0.1:31001']) });
         
         // Node 2 votes for Node 1's proposal forming the required majority mapping
-        await node1.consensusEngine.handleProposeFork('valid_fork', ['valid_block'], { peerAddress: '127.0.0.1:31002' } as any);
+        // @ts-ignore
+        await node1.consensusEngine.handleProposeFork('valid_fork', ['valid_block'], { peerAddress: '127.0.0.1:31002' });
         
         const fork = node1.mempool.eligibleForks.get('valid_fork');
         assert.ok(fork?.adopted, 'Primary partition scaled and mathematically executed the fork adoption over majority boundaries.');

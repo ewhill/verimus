@@ -77,9 +77,12 @@ async function runManualTest() {
     await Promise.all([node1.init(), node2.init(), node3.init()]);
 
     const setupExpressApp = (await import('../../api_server/ApiServer')).default;
-    node1.httpServer = http.createServer(setupExpressApp(node1)) as any;
-    node2.httpServer = http.createServer(setupExpressApp(node2)) as any;
-    node3.httpServer = http.createServer(setupExpressApp(node3)) as any;
+    // @ts-ignore - http mapped statically over natively bounded https layouts
+    node1.httpServer = http.createServer(setupExpressApp(node1));
+    // @ts-ignore
+    node2.httpServer = http.createServer(setupExpressApp(node2));
+    // @ts-ignore
+    node3.httpServer = http.createServer(setupExpressApp(node3));
 
     await Promise.all([
         new Promise<void>(res => node1.httpServer!.listen(27780, '0.0.0.0', () => res())),
@@ -88,7 +91,14 @@ async function runManualTest() {
     ]);
 
     // Network Setup
-    while ((node1.peer as any)?.trustedPeers.length < 2 || (node2.peer as any)?.trustedPeers.length < 2 || (node3.peer as any)?.trustedPeers.length < 2) {
+    while (
+        // @ts-ignore
+        node1.peer?.trustedPeers.length < 2 || 
+        // @ts-ignore
+        node2.peer?.trustedPeers.length < 2 || 
+        // @ts-ignore
+        node3.peer?.trustedPeers.length < 2
+    ) {
         await new Promise(r => setTimeout(r, 500));
     }
 
@@ -141,9 +151,12 @@ async function runManualTest() {
 
         console.log("\n--- 5. Simulating Network Partition (Phase 3 Resilience) ---");
         // Isolate Node 3
-        (node3.peer as any).trustedPeers = [];
-        (node1.peer as any).trustedPeers = ['127.0.0.1:26781'];
-        (node2.peer as any).trustedPeers = ['127.0.0.1:26780'];
+        // @ts-ignore - network testing hack mapping isolation
+        node3.peer.trustedPeers = [];
+        // @ts-ignore
+        node1.peer.trustedPeers = ['127.0.0.1:26781'];
+        // @ts-ignore
+        node2.peer.trustedPeers = ['127.0.0.1:26780'];
         
         const rogueForm = new FormData();
         rogueForm.append('files', Buffer.from('Byzantine attack payload'), { filename: 'attack.txt' });

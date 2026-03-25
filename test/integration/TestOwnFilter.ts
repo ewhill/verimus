@@ -45,7 +45,7 @@ async function runTest() {
     // 2. Query node 1 with own=false to inspect structure
     console.log("Querying Node 1 (26780) with own=false to inspect structure...");
     let node1All = await getBlocks(26780, false);
-    let myBlock = (node1All as any).blocks.find((b: any) => b.hash === hash);
+    let myBlock = (node1All as { blocks: any[] }).blocks.find((b: any) => b.hash === hash);
     if (myBlock) {
         console.log("Block found in the response. Has publicKey?", !!myBlock.publicKey);
         console.log("Sample publicKey from block:\n", myBlock.publicKey.substring(0, 100) + "...");
@@ -56,7 +56,7 @@ async function runTest() {
     // 3. Query node 1 with own=true
     console.log("Querying Node 1 (26780) with own=true...");
     let node1Own = await getBlocks(26780, true);
-    let foundInNode1Own = (node1Own as any).blocks.some((b: any) => b.hash === hash);
+    let foundInNode1Own = (node1Own as { blocks: any[] }).blocks.some((b: any) => b.hash === hash);
     if (!foundInNode1Own) {
         console.error("ERROR: Block not found in Node 1 with own=true. Filter might be broken.");
         process.exit(1);
@@ -67,7 +67,7 @@ async function runTest() {
     // 3. Query node 2 with own=true
     console.log("Querying Node 2 (26781) with own=true...");
     let node2Own = await getBlocks(26781, true);
-    let foundInNode2Own = (node2Own as any).blocks.some((b: any) => b.hash === hash);
+    let foundInNode2Own = (node2Own as { blocks: any[] }).blocks.some((b: any) => b.hash === hash);
     if (foundInNode2Own) {
         console.error("ERROR: Block found in Node 2 with own=true, but Node 2 did not upload it. Filter broken.");
         process.exit(1);
@@ -78,7 +78,7 @@ async function runTest() {
     // 4. Query node 2 with own=false (should see the block)
     console.log("Querying Node 2 (26781) with own=false...");
     let node2All = await getBlocks(26781, false);
-    let foundInNode2All = (node2All as any).blocks.some((b: any) => b.hash === hash);
+    let foundInNode2All = (node2All as { blocks: any[] }).blocks.some((b: any) => b.hash === hash);
     if (!foundInNode2All) {
         console.error("ERROR: Block not found in Node 2 with own=false. Consensus might be broken or filter logic is wrong.");
         process.exit(1);
