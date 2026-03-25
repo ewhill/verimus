@@ -92,6 +92,19 @@ async function runManualTest() {
         await new Promise(r => setTimeout(r, 500));
     }
 
+    // Explicit testnet token bypass mimicking SYSTEM Genesis Mint natively
+    await node1.ledger.collection!.insertOne({
+        metadata: { index: -1, timestamp: Date.now() },
+        type: 'TRANSACTION',
+        previousHash: 'mock_genesis_bypass',
+        hash: 'mock_funds_node1',
+        payload: { senderId: 'SYSTEM', recipientId: node1.publicKey, amount: 50000.0, senderSignature: 'SYSTEM_MINT' },
+        publicKey: 'SYSTEM',
+        signature: 'SYSTEM_MINT'
+    });
+    // Let wallet manager refresh queries organically
+    await new Promise(r => setTimeout(r, 100));
+
     try {
         console.log("\n--- 1. Performing Standard File Upload (Phase 1 Crypto & Streams) ---");
         const form = new FormData();
@@ -103,7 +116,7 @@ async function runManualTest() {
             headers: form.getHeaders()
         });
         const uploadData: any = await uploadReq.json();
-        console.log("Upload resolved:", uploadData.success, "- Mempool Hash:", uploadData.hash?.substring(0,8));
+        console.log("Upload resolved:", uploadData.success, "- Msg:", uploadData.message);
 
         await new Promise(r => setTimeout(r, 2000)); // Sync propagation
         

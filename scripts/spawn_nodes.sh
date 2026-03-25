@@ -36,6 +36,7 @@ sleep 3
 echo "2. Validating and generating keys..."
 npm run keygen
 
+
 echo "3. Starting 5 peer nodes..."
 # Start the first one with --mongo to ensure DB is up if needed
 # The first node builds the UI, the remaining nodes skip it to avoid concurrent build conflicts
@@ -52,6 +53,10 @@ for i in {1..4}; do
     echo "Started Node $((i+1)) on port $PORT"
     sleep 3
 done
+
+echo "3.5. Injecting offline genesis funds into database resolving test net limits natively..."
+sleep 5
+node "$(dirname "$0")/seed_funds.mjs"
 
 echo "Waiting for network convergence..."
 MAX_RETRIES=30

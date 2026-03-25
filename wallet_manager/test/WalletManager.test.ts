@@ -34,9 +34,9 @@ describe('WalletManager', () => {
 
         const walletManager = new WalletManager(mockLedger);
         const balance = await walletManager.calculateBalance('peerA');
-        
-        // 100 base + 100 - 20 + 50 = 230
-        assert.strictEqual(balance, 230);
+
+        // 0 base + 100 - 20 + 50 = 130
+        assert.strictEqual(balance, 130);
     });
 
     it('Returns zero if no ledger history maps peer', async () => {
@@ -50,11 +50,11 @@ describe('WalletManager', () => {
 
         const walletManager = new WalletManager(mockLedger);
         const balance = await walletManager.calculateBalance('peerZ');
-        assert.strictEqual(balance, 100);
+        assert.strictEqual(balance, 0);
     });
 
     it('Verifies boundaries checking mathematical state', async () => {
-         mockLedger = {
+        mockLedger = {
             collection: {
                 find: () => ({
                     toArray: async () => [
@@ -68,12 +68,12 @@ describe('WalletManager', () => {
         const hasFunds = await walletManager.verifyFunds('peerA', 25);
         assert.strictEqual(hasFunds, true);
 
-        const hasInsufficient = await walletManager.verifyFunds('peerA', 200);
+        const hasInsufficient = await walletManager.verifyFunds('peerA', 100);
         assert.strictEqual(hasInsufficient, false);
     });
 
     it('Allocates valid transactions blocking invalid mappings', async () => {
-         mockLedger = {
+        mockLedger = {
             collection: {
                 find: () => ({
                     toArray: async () => [
@@ -111,7 +111,7 @@ describe('WalletManager', () => {
 
     it('Calculates fractional block rewards via continuous mathematical scaling formulas', async () => {
         const genesisTimestamp = 1774310400000;
-        
+
         // Exact genesis time mappings reward full node payload bounds
         const genesisReward = WalletManager.calculateSystemReward(genesisTimestamp, genesisTimestamp);
         assert.strictEqual(genesisReward, 50.0);
@@ -125,7 +125,7 @@ describe('WalletManager', () => {
         // 10 Years out verifies long term fractional decay
         const tenYearsLater = genesisTimestamp + (10 * 365.25 * 24 * 60 * 60 * 1000);
         const tenYearReward = WalletManager.calculateSystemReward(tenYearsLater, genesisTimestamp);
-        
+
         // expected: 50 * exp(-ln2 * 10 / 4) = 50 * exp(-1.7328) = 50 * 0.17677 = 8.838
         assert.ok(tenYearReward > 8.8 && tenYearReward < 8.9);
 
@@ -149,26 +149,26 @@ describe('WalletManager', () => {
         const walletManager = new WalletManager(mockLedger);
         // Initially 300
         const initialBalance = await walletManager.calculateBalance('peerX');
-        assert.strictEqual(initialBalance, 400);
+        assert.strictEqual(initialBalance, 300);
 
         // Freeze 200 for contract A
         walletManager.freezeFunds('peerX', 200, 'contract-A');
         const activeBalance = await walletManager.calculateBalance('peerX');
-        assert.strictEqual(activeBalance, 200);
+        assert.strictEqual(activeBalance, 100);
 
-        // Try to allocate 250 which should fail since active is 200
-        const blocked = await walletManager.allocateFunds('peerX', 'peerY', 250, 'sig');
+        // Try to allocate 150 which should fail since active is 100
+        const blocked = await walletManager.allocateFunds('peerX', 'peerY', 150, 'sig');
         assert.strictEqual(blocked, null);
 
         // Release funds
         walletManager.releaseFunds('contract-A');
         const releasedBalance = await walletManager.calculateBalance('peerX');
-        assert.strictEqual(releasedBalance, 400);
+        assert.strictEqual(releasedBalance, 300);
 
         // Commit funds clears the lock
         walletManager.freezeFunds('peerX', 250, 'contract-B');
-        assert.strictEqual(await walletManager.calculateBalance('peerX'), 150);
+        assert.strictEqual(await walletManager.calculateBalance('peerX'), 50);
         walletManager.commitFunds('contract-B');
-        assert.strictEqual(await walletManager.calculateBalance('peerX'), 400);
+        assert.strictEqual(await walletManager.calculateBalance('peerX'), 300);
     });
 });

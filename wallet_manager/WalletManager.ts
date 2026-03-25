@@ -21,8 +21,7 @@ export default class WalletManager {
             return Infinity;
         }
 
-        // Bootstrap local dev networks mapping initial funds to peer identities
-        let balance = 100.0;
+        let balance = 0;
 
         try {
             if (!this.ledger.collection) {
@@ -82,19 +81,19 @@ export default class WalletManager {
      */
     static calculateSystemReward(blockTimestamp: number, genesisTimestamp: number): number {
         const BASE_REWARD = 50.0;
-        
+
         // 4 years in milliseconds to represent the physical half-life
-        const FOUR_YEARS_MS = 4 * 365.25 * 24 * 60 * 60 * 1000; 
-        
+        const FOUR_YEARS_MS = 4 * 365.25 * 24 * 60 * 60 * 1000;
+
         // Calculate the 'decay constant' lambda (λ) for a 4-year half-life
         // lambda = ln(2) / half_life
         const DECAY_RATE = Math.LN2 / FOUR_YEARS_MS;
-        
+
         const timeDeltaMs = Math.max(0, blockTimestamp - genesisTimestamp);
-        
+
         // N(t) = N0 * e^(-λt)
         const reward = BASE_REWARD * Math.exp(-DECAY_RATE * timeDeltaMs);
-        
+
         // Establish a dust limit (minimum mint floor)
         return Math.max(reward, 0.000001);
     }
@@ -109,7 +108,7 @@ export default class WalletManager {
      */
     async allocateFunds(senderId: string, recipientId: string, amount: number, senderSignature: string): Promise<TransactionPayload | null> {
         const hasFunds = await this.verifyFunds(senderId, amount);
-        
+
         if (!hasFunds && senderId !== 'SYSTEM') {
             logger.warn(`Peer ${senderId} attempted allocation of ${amount} without adequate limits.`);
             return null;
@@ -119,7 +118,7 @@ export default class WalletManager {
             senderId,
             recipientId,
             amount,
-            senderSignature 
+            senderSignature
         };
     }
 
@@ -137,7 +136,7 @@ export default class WalletManager {
 
         const p = block.payload as StorageContractPayload;
         const currentRemaining = p.remainingEgressEscrow ?? p.allocatedEgressEscrow ?? 0;
-        
+
         const newRemaining = Math.max(0, currentRemaining - calculatedCost);
 
         await this.ledger.collection.updateOne(
