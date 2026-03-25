@@ -4,7 +4,6 @@ import * as fs from 'node:fs';
 
 
 async function runTest() {
-    const agent = new https.Agent({ rejectUnauthorized: false });
 
     // 1. List Blocks
     console.log("Fetching Blocks...");

@@ -1,6 +1,5 @@
 import fs from 'fs';
 import http from 'http';
-import https from 'https';
 import assert from 'node:assert';
 import { describe, it, before, after } from 'node:test';
 import os from 'os';
@@ -10,6 +9,7 @@ import stream from 'stream';
 
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
+import setupExpressApp from '../../api_server/ApiServer';
 import Bundler from '../../bundler/Bundler';
 import PeerNode from '../../peer_node/PeerNode';
 import BaseProvider, { GetBlockReadStreamResult } from '../../storage_providers/base_provider/BaseProvider';
@@ -18,18 +18,18 @@ class NullStorageProvider extends BaseProvider {
     createBlockStream(): { physicalBlockId: string, writeStream: NodeJS.WritableStream } {
         const physicalBlockId = 'null-fs-' + Date.now();
         const writeStream = new stream.Writable({
-            write(chunk, encoding, callback) {
+            write(_chunk, _encoding, callback) {
                 callback();
             }
         });
         return { physicalBlockId, writeStream };
     }
 
-    async getBlock(locationId: string): Promise<Buffer | null> {
+    async getBlock(_locationId: string): Promise<Buffer | null> {
         return null;
     }
     
-    async getBlockReadStream(locationId: string): Promise<GetBlockReadStreamResult> {
+    async getBlockReadStream(_locationId: string): Promise<GetBlockReadStreamResult> {
         return { status: 'available', stream: Object.create(stream.Readable.prototype) };
     }
     
@@ -91,7 +91,6 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
             } }];
         };
 
-        const setupExpressApp = (await import('../../api_server/ApiServer')).default;
         const app = setupExpressApp(node);
         // @ts-ignore - explicitly binding standard unencrypted HTTP stream mappings for stress overhead simulation
         node.httpServer = http.createServer(app);
@@ -116,7 +115,7 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
         let generatedBytes = 0;
 
         const bigStream = new Readable({
-             read(size) {
+             read(_size) {
                  if (generatedBytes >= TARGET_SIZE) {
                      this.push(null);
                  } else {

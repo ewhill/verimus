@@ -160,7 +160,7 @@ export default class DownloadFileHandler extends BaseHandler {
             const maxEscrow = privatePayload.remainingEgressEscrow ?? privatePayload.allocatedEgressEscrow ?? 0;
 
             const byteSpooler = new Transform({
-                transform(chunk, encoding, callback) {
+                transform(chunk, _encoding, callback) {
                     if (egressCostPerGB > 0) {
                         const iterationCost = (chunk.length / (1024 * 1024 * 1024)) * egressCostPerGB;
                         accumulatedCost += iterationCost;

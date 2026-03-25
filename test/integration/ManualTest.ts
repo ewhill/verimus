@@ -6,6 +6,7 @@ import pathLib from 'path';
 import FormData from 'form-data';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
+import setupExpressApp from '../../api_server/ApiServer';
 import Bundler from '../../bundler/Bundler';
 import RSAKeyPair from '../../p2p/lib/RSAKeyPair';
 import PeerNode from '../../peer_node/PeerNode';
@@ -76,7 +77,6 @@ async function runManualTest() {
 
     await Promise.all([node1.init(), node2.init(), node3.init()]);
 
-    const setupExpressApp = (await import('../../api_server/ApiServer')).default;
     // @ts-ignore - http mapped statically over natively bounded https layouts
     node1.httpServer = http.createServer(setupExpressApp(node1));
     // @ts-ignore

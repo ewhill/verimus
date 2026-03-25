@@ -1,7 +1,5 @@
 import https from 'https';
-import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
-import path from 'path';
 
 import FormData from 'form-data';
 
@@ -13,7 +11,6 @@ import FormData from 'form-data';
 
 async function runTest() {
     console.log("Starting API Test...");
-    const agent = new https.Agent({ rejectUnauthorized: false });
 
     // 1. Upload
     const form = new FormData();

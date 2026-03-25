@@ -1,5 +1,4 @@
 import assert from 'node:assert';
-import fs from 'node:fs';
 import type { AddressInfo } from 'node:net';
 import { describe, it, before, after } from 'node:test';
 
@@ -8,7 +7,6 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import Bundler from '../../bundler/Bundler';
 import { BLOCK_TYPES } from '../../constants';
 import PeerNode from '../../peer_node/PeerNode';
-import LocalFileStorageProvider from '../../storage_providers/local_provider/LocalProvider';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
 
 describe('Integration: UI Critical User Journeys (Frontend/Backend System Contract)', () => {

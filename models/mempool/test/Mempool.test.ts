@@ -1,9 +1,10 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
+import Mempool from '../Mempool';
+
 describe('Backend: Mempool Integrity', () => {
     it('Exports Mempool singleton', async () => {
-        const mod = await import('../Mempool');
-        assert.ok(mod !== undefined, 'Module loaded successfully');
+        assert.ok(Mempool !== undefined, 'Module loaded successfully');
     });
 });

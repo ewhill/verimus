@@ -10,6 +10,7 @@ import type { Peer } from '../../p2p';
 import BaseProvider from '../../storage_providers/base_provider/BaseProvider';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
 import { MockLedger } from '../../test/mocks/MockLedger';
+import PeerNodeClass from '../PeerNode';
 
 const getMockCredentials = (): PeerCredentials => ({
     ringPublicKeyPath: 'ring.pub',
@@ -29,13 +30,10 @@ const getMockNode = async (PeerNodeClass: any) => {
 describe('Backend: PeerNode Logical Verification Check', () => {
 
     it('Initializes standard P2P Express configurations', async () => {
-        const mod = await import('../PeerNode');
-        assert.ok(mod !== undefined, 'PeerNode structure correctly parses TS mapping modules');
-        assert.ok(mod.default !== undefined, 'PeerNode surfaces default instantiator');
+        assert.ok(PeerNodeClass !== undefined, 'PeerNode surfaces default instantiator');
     });
 
     it('Instantiates ReputationManager mapped to the database', async () => {
-        const PeerNodeClass = (await import('../PeerNode')).default;
         
         const mockNode = await getMockNode(PeerNodeClass);
         
@@ -57,7 +55,6 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     });
 
     it('Restores block caching arrays on initialization from MongoDB', async () => {
-        const PeerNodeClass = (await import('../PeerNode')).default;
         
         const mockNode = await getMockNode(PeerNodeClass);
         mockNode.publicKey = 'myPubKey';
@@ -77,7 +74,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     });
 
     it('Adds newly owned blocks directly to MongoDB correctly', async () => {
-        const PeerNode = (await import('../PeerNode')).default;
+        const PeerNode = PeerNodeClass;
         
         const mockNode = new PeerNode(3002, [], undefined as unknown as BaseProvider, undefined as unknown as Bundler, 'mongodb://localhost:27017/test', undefined as unknown as string, {} as unknown as PeerCredentials, 'data');
         mockNode.publicKey = 'myPubKey';
@@ -102,7 +99,6 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     });
 
     it('Bypasses cache population when cache matches ledger', async () => {
-        const PeerNodeClass = (await import('../PeerNode')).default;
         
         const mockNode = await getMockNode(PeerNodeClass);
         mockNode.publicKey = 'myPubKey';
@@ -121,7 +117,6 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     });
 
     it('Auto-invalidates stale cache if database appears purged', async () => {
-        const PeerNodeClass = (await import('../PeerNode')).default;
         const mockNode = await getMockNode(PeerNodeClass);
         mockNode.publicKey = 'myPubKey';
         
@@ -142,7 +137,6 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     });
 
     it('Handles outer wrapper failures during cache recovery', async () => {
-        const PeerNodeClass = (await import('../PeerNode')).default;
         const mockNode = await getMockNode(PeerNodeClass);
         mockNode.ledger = {
             collection: { countDocuments: async () => { throw new Error('DB Crash'); } }
@@ -154,7 +148,6 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     });
 
     it('Synchronizes deletion from unverified blocks', async () => {
-        const PeerNodeClass = (await import('../PeerNode')).default;
         const mockNode = await getMockNode(PeerNodeClass);
         mockNode.publicKey = 'myPubKey';
         
