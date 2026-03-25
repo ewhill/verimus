@@ -1,7 +1,7 @@
 import { MongoClient } from 'mongodb';
 import fs from 'fs';
 
-const client = new MongoClient('mongodb://127.0.0.1:27017');
+const client = new MongoClient('mongodb://127.0.0.1:27018');
 
 async function seed() {
     try {

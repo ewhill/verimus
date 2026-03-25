@@ -27,9 +27,9 @@ done
 # Small delay to ensure ports are released
 sleep 1
 
-echo "Starting MongoDB..."
+echo "Starting Hermetic MongoDB (Port 27018)..."
 mkdir -p "$PWD/mongo_data"
-mongod --dbpath "$PWD/mongo_data" --bind_ip 127.0.0.1 > /dev/null 2>&1 &
+mongod --dbpath "$PWD/mongo_data" --bind_ip 127.0.0.1 --port 27018 > /dev/null 2>&1 &
 sleep 3
 
 
@@ -40,7 +40,7 @@ npm run keygen
 echo "3. Starting 5 peer nodes..."
 # Start the first one with --mongo to ensure DB is up if needed
 # The first node builds the UI, the remaining nodes skip it to avoid concurrent build conflicts
-"$(dirname "$0")/spawn_node.sh" --watch --mongo --port ${PORTS[0]} --public-address 127.0.0.1:${PORTS[0]} --force > /dev/null 2>&1 &
+"$(dirname "$0")/spawn_node.sh" --watch --mongo-port 27018 --port ${PORTS[0]} --public-address 127.0.0.1:${PORTS[0]} --force > /dev/null 2>&1 &
 echo "Started Node 1 on port ${PORTS[0]} (Seed Node)"
 # Wait for node startup and UI build completion
 sleep 8
@@ -49,7 +49,7 @@ sleep 8
 for i in {1..4}; do
     PORT=${PORTS[$i]}
     DISCOVER="127.0.0.1:${PORTS[0]}"
-    "$(dirname "$0")/spawn_node.sh" --watch --skip-ui --port $PORT --discover $DISCOVER --public-address 127.0.0.1:$PORT --force > /dev/null 2>&1 &
+    "$(dirname "$0")/spawn_node.sh" --watch --skip-ui --mongo-port 27018 --port $PORT --discover $DISCOVER --public-address 127.0.0.1:$PORT --force > /dev/null 2>&1 &
     echo "Started Node $((i+1)) on port $PORT"
     sleep 3
 done
