@@ -7,7 +7,7 @@ import MemoryStorageProvider from '../MemoryProvider';
 
 describe('Backend: memoryProvider Integrity (Hermetic in-memory file abstractions)', () => {
 
-    it('Initializes map array resolving ephemeral mappings', async () => {
+    it('Initializes map array for ephemeral storage', async () => {
         const prov = MemoryStorageProvider.parseArgs([]);
         assert.ok(prov);
         assert.ok(prov.storage instanceof Map);
@@ -16,7 +16,7 @@ describe('Backend: memoryProvider Integrity (Hermetic in-memory file abstraction
         assert.strictEqual(loc.type, 'memory');
     });
 
-    it('Stores physical blocks resolving base64 mapped asynchronously', async () => {
+    it('Stores physical blocks resolving base64 data', async () => {
         const prov = new MemoryStorageProvider();
         
         const blockHash = await prov.storeBlock(Buffer.from('volatile chunk streamed'));
@@ -24,7 +24,7 @@ describe('Backend: memoryProvider Integrity (Hermetic in-memory file abstraction
         assert.strictEqual(prov.storage.get(blockHash)!.toString(), 'volatile chunk streamed');
     });
 
-    it('Pipes write streams resolving bound data streams', async () => {
+    it('Pipes write streams correctly', async () => {
         const prov = new MemoryStorageProvider();
         
         const { physicalBlockId, writeStream } = prov.createBlockStream();
@@ -40,14 +40,14 @@ describe('Backend: memoryProvider Integrity (Hermetic in-memory file abstraction
         assert.strictEqual(prov.storage.get(physicalBlockId)!.toString(), 'helloworld');
     });
 
-    it('Returns read stream null capturing missing objects mapping', async () => {
+    it('Returns null read stream for missing objects', async () => {
          const prov = new MemoryStorageProvider();
          
          const pt = await prov.getBlockReadStream('nonexistent');
          assert.deepStrictEqual(pt, { status: 'not_found' });
     });
 
-    it('Provides valid piped read streams emitting read buffers', async () => {
+    it('Provides valid read streams emitting buffers', async () => {
          const prov = new MemoryStorageProvider();
          const hash = await prov.storeBlock('raw read data');
          

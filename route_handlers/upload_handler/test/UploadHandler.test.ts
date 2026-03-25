@@ -24,7 +24,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         assert.strictEqual(bodyPayload, 'No files uploaded.');
     });
 
-    it('Processes valid multipart file bundles successfully orchestrating bundler streams', async () => {
+    it('Processes valid multipart file bundles orchestrating bundler streams', async () => {
         let blockHandled = false;
         const { publicKey, privateKey } = generateRSAKeyPair();
 

@@ -9,9 +9,9 @@ import { NodeRole } from '../../../types/NodeRole';
 import DownloadFileHandler from '../DownloadFileHandler';
 
 
-describe('Backend: downloadFileHandler Unit Tests mathematically successfully', () => {
+describe('Backend: downloadFileHandler Unit Tests', () => {
     
-    it('Returns HTTP 404 mapping requesting missing block hashes independently', async () => {
+    it('Returns HTTP 404 when requesting missing block hashes', async () => {
         const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: 'PRIVKEY',
             ledger: { collection: { find: () => ({ toArray: async () => [] }) } }
@@ -49,7 +49,7 @@ describe('Backend: downloadFileHandler Unit Tests mathematically successfully', 
         assert.strictEqual(statusSet, 404);
     });
 
-    it('Rejects HTTP 403 upon discovering invalid mathematical block signatures', async () => {
+    it('Rejects HTTP 403 upon discovering invalid block signatures', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
         
         const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
@@ -71,7 +71,7 @@ describe('Backend: downloadFileHandler Unit Tests mathematically successfully', 
         assert.strictEqual(bodyPayload, 'Invalid block signature.');
     });
 
-    it('Emits logical unzipped file streams responding via dynamic block decryptions', async () => {
+    it('Emits unzipped file streams responding via block decryptions', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
         
         // 1. Create a real bundle stream
@@ -174,7 +174,7 @@ describe('Backend: downloadFileHandler Unit Tests mathematically successfully', 
         assert.strictEqual(streamDestroyed, true);
     });
 
-    it('Bypasses and emits HTTP 404 if requested file skips unzip filters', async () => {
+    it('Bypasses and emits HTTP 404 if requested file is missing in unzip filters', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
         const bundler = new Bundler('./test_data');
         const pt = new PassThrough();
@@ -219,7 +219,7 @@ describe('Backend: downloadFileHandler Unit Tests mathematically successfully', 
         assert.ok(bodyPayload.includes('File not found'));
     });
 
-    it('Halts emitting HTTP 500 when unzip streams experience corruption', async () => {
+    it('Halts and emits HTTP 500 when unzip streams experience corruption', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
 
         const priv = { 
@@ -279,7 +279,7 @@ describe('Backend: downloadFileHandler Unit Tests mathematically successfully', 
         assert.strictEqual(statusSet, 500);
     });
 
-    it('Throws HTTP 401 stopping stream pipelines detecting mismatched AES decryption mappings', async () => {
+    it('Throws HTTP 401 stopping pipelines on mismatched AES decryption', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
         const handler = new DownloadFileHandler({ roles: [NodeRole.STORAGE], 
             privateKey: 'BAD_KEY',
@@ -318,7 +318,7 @@ describe('Backend: downloadFileHandler Unit Tests mathematically successfully', 
         assert.strictEqual(message, 'Failed to decrypt private payload.');
     });
 
-    it('Flags HTTP 404 observing offline remote storage mapping constraints', async () => {
+    it('Flags HTTP 404 on offline remote storage constraints', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
 
         const encPriv = encryptPrivatePayload(publicKey, { key: crypto.randomBytes(32).toString('hex'), iv: crypto.randomBytes(16).toString('hex'), files: [], physicalId: 'pid', location: { type: 'local' } } as any);
@@ -357,7 +357,7 @@ describe('Backend: downloadFileHandler Unit Tests mathematically successfully', 
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
                     setTimeout(() => {
-                        rs.emit('error', new Error('Disaster'));
+                        rs.emit('Catches generic errors returning 500', new Error('Disaster'));
                         rs.destroy();
                     }, 10);
                     return { status: 'available', stream: rs };

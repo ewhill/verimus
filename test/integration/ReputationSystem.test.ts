@@ -167,7 +167,7 @@ console.log('SENDING INVALID SIG BLOCK!');
         assert.ok(!connToNode1 || !connToNode1.isConnected, 'Socket terminated');
     });
 
-    it('Assesses minor penalty (-1) for P2P loop mapping spam', async () => {
+    it('Assesses minor penalty (-1) for P2P loop spam', async () => {
         const node1 = nodes[0];
         const node4 = nodes[3];
 

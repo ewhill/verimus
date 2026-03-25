@@ -24,7 +24,7 @@ describe('Backend: githubProvider Integrity', () => {
         assert.strictEqual(loc.branch, 'dev');
     });
 
-    it('Returns null parsing partial arguments avoiding invalid states', async () => {
+    it('Returns null on partial arguments to avoid invalid states', async () => {
         const prov = GithubStorageProvider.parseArgs(
             ['--github-owner', 'octocat'], // missing repo & token
             {}
@@ -71,7 +71,7 @@ describe('Backend: githubProvider Integrity', () => {
          assert.deepStrictEqual(pt, { status: 'not_found' });
     });
 
-    it('Throws mapping stream errors', async () => {
+    it('Throws stream errors', async () => {
          const prov = new GithubStorageProvider('owner', 'repo', 'tkn', 'main');
          
          global.fetch = async () => ({ ok: false, status: 500, statusText: 'Internal Server Error' }) as any;
@@ -80,7 +80,7 @@ describe('Backend: githubProvider Integrity', () => {
          assert.deepStrictEqual(pt, { status: 'not_found' });
     });
 
-    it('Processes createBlockStream pipelines piping logic', async () => {
+    it('Processes createBlockStream pipelines', async () => {
         const prov = new GithubStorageProvider('owner', 'repo', 'tkn', 'main');
         
         let fetchedOpts: any = null;

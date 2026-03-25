@@ -9,7 +9,7 @@ describe('Backend: BaseStorageProvider Coverage Tests', () => {
         assert.ok(BaseStorageProvider !== undefined);
     });
 
-    it('Throws interface errors invoking unimplemented virtual stream abstraction methods', async () => {
+    it('Throws interface errors when invoking unimplemented virtual stream methods', async () => {
         class DummyProvider extends BaseStorageProvider {
             getCostPerGB() { return 0; }
             getEgressCostPerGB() { return 0; }

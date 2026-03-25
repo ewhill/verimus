@@ -291,7 +291,7 @@ describe('Backend: SyncEngine Integrity', () => {
         assert.strictEqual(syncEngine.activeStorageMarkets.has('req-1'), false);
     });
 
-    it('Ignores storage requests if role is not strictly STORAGE mapping limits', async () => {
+    it('Ignores storage requests if role is not STORAGE', async () => {
         let sentMessage: any = null;
         const mockConnection = { send: (msg: any) => { sentMessage = msg; } };
         
@@ -314,7 +314,7 @@ describe('Backend: SyncEngine Integrity', () => {
         assert.strictEqual(sentMessage, null); 
     });
 
-    it('Triage timeout drops expired orders returning gathered arrays', async () => {
+    it('Triage timeout drops expired orders returning gathered bids', async () => {
         mockNode.peer.broadcast = async () => {};
         const originalSetTimeout = global.setTimeout;
         

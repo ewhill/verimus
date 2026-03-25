@@ -72,7 +72,7 @@ describe('Backend: peersHandler Integrity', () => {
         assert.strictEqual(data.peers.length, 1); // Only self
     });
 
-    it('Catches', async () => {
+    it('Catches exceptions and returns 500 error', async () => {
         let statusObj = 200; let jsonStr = '';
         const req = {};
         const res = { 

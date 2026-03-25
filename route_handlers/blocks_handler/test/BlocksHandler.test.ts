@@ -64,7 +64,7 @@ describe('Backend: blocksHandler Coverage', () => {
         assert.strictEqual(responseData.blocks[0].hash, 'hash1');
     });
 
-    it('Filters by locally queries', async () => {
+    it('Filters by local queries', async () => {
         const encryptedMatch = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'match-this.txt' }] });
         const encryptedNoMatch = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'other.txt' }] });
         
@@ -102,7 +102,7 @@ describe('Backend: blocksHandler Coverage', () => {
         assert.strictEqual(responseData.blocks[0].metadata.index, -1);
     });
 
-    it(' returns 500 error automat...', async () => {
+    it('Returns 500 error on failure', async () => {
         const handler = new BlocksHandler(null as any);
         await handler.handle(req as any, res as any);
         assert.strictEqual(res.statusObj, 500);

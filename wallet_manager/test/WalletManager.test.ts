@@ -19,7 +19,7 @@ describe('WalletManager', () => {
         if (mongod) await mongod.stop();
     });
 
-    it('Calculates base balance from transaction mapping strictly correctly', async () => {
+    it('Calculates base balance from transaction mapping correctly', async () => {
         mockLedger = {
             collection: {
                 find: () => ({
@@ -93,7 +93,7 @@ describe('WalletManager', () => {
         assert.strictEqual(blocked, null);
     });
 
-    it('Tests SYSTEM boundary checks verifying infinite mint capabilities', async () => {
+    it('Tests SYSTEM boundary checks verifying mint capabilities', async () => {
         const mockLedger = {
             collection: { find: () => ({ toArray: async () => [] }) }
         } as unknown as Ledger;

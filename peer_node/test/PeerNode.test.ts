@@ -135,7 +135,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
         assert.strictEqual(mockNode.ownedBlocksCache.length, 0); // Outer catch handles it
     });
 
-    it('Synchronizes mapping deletion from unverified blocks', async () => {
+    it('Synchronizes deletion from unverified blocks', async () => {
         const PeerNode = (await import('../PeerNode')).default;
         
         const mockNode = new PeerNode(3002, [], undefined as any, undefined as any, undefined as any, undefined as any, {} as any, 'data');

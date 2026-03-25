@@ -179,7 +179,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
         }
     });
 
-    it('Retrieves files tracking pipeline decryptors', async () => {
+    it('Retrieves files via pipeline decryptors', async () => {
         try {
             let blockRes: any = { blocks: [] };
             let targetBlock;

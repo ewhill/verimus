@@ -37,7 +37,7 @@ describe('Backend: filesHandler Coverage', () => {
         };
     });
 
-    it('Returns empty array isolating blank node mapping payloads', async () => {
+    it('Returns empty array on blank node payloads', async () => {
         const handler = new FilesHandler(mockNode as any);
         await handler.handle(req as any, res as any);
         
@@ -72,7 +72,7 @@ describe('Backend: filesHandler Coverage', () => {
         assert.strictEqual(file.versions[0].hash, 'fileHash123');
     });
 
-    it('Filters mapping arrays by target metadata matching requested filters', async () => {
+    it('Filters arrays by target metadata matching requested filters', async () => {
         const encrypted = encryptPrivatePayload(keys.publicKey, { 
             files: [{ path: 'pendingDoc.txt' }] 
         });
@@ -91,7 +91,7 @@ describe('Backend: filesHandler Coverage', () => {
         assert.strictEqual(responseData.files[0].path, 'pendingDoc.txt');
     });
 
-    it('Bypasses cache mappings handling query param overrides returning raw responses', async () => {
+    it('Bypasses cache handling query param overrides returning raw responses', async () => {
         const handler = new FilesHandler(null as any);
         await handler.handle(req as any, res as any);
         assert.strictEqual(res.statusObj, 500);
@@ -99,7 +99,7 @@ describe('Backend: filesHandler Coverage', () => {
         assert.strictEqual(responseData.success, false);
     });
 
-    it('Consolidates logical file version timelines mapping sequential hash indices', async () => {
+    it('Consolidates logical file version timelines mapping sequential hashes', async () => {
         const encrypted = encryptPrivatePayload(keys.publicKey, { 
             location: { type: 'local', storageDir: '/tmp' }, 
             files: [{ path: 'doc1.pdf', size: 1000, hash: 'hash1' }] 
@@ -130,7 +130,7 @@ describe('Backend: filesHandler Coverage', () => {
         assert.strictEqual(file.versions[1].hash, 'hash1');
     });
 
-    it(' traps payload decryption pipeline errors bypassing invalid blocks', async () => {
+    it('Traps payload decryption pipeline errors bypassing invalid blocks', async () => {
         mockNode.ownedBlocksCache = ['badBlock'];
         mockNode.ledger.collection.find = () => ({
             toArray: async () => [

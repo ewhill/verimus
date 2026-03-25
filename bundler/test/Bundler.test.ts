@@ -26,7 +26,7 @@ describe('Bundler: Erasure Coding Geometry Metrics', () => {
         assert.strictEqual(reconstructedPartial.toString('utf8'), payloadStr, 'Linear recovery algorithm bridged physical bounds mathematically mirroring exact original array states.');
     });
 
-    it('Throws errors mapping strict constraints if available data limits drop beneath minimum threshold', async () => {
+    it('Throws errors if available data limits drop beneath minimum threshold', async () => {
         const payloadBuf = Buffer.from('Strict boundary checks asserting cryptographic failure correctly.', 'utf8');
         const N = 4;
         const K = 3;

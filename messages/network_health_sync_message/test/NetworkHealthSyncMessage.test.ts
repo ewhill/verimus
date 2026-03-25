@@ -25,7 +25,7 @@ describe('Messages: NetworkHealthSyncMessage', () => {
         assert.deepEqual(msg.body.score_payloads, payloads);
     });
 
-    it('Returns empty array mapping if null', () => {
+    it('Returns empty array if null', () => {
         const msg = new NetworkHealthSyncMessage();
         assert.deepEqual(msg.score_payloads, []);
     });

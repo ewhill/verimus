@@ -9,9 +9,9 @@ import { NodeRole } from '../../../types/NodeRole';
 import DownloadHandler from '../DownloadHandler';
 
 
-describe('Backend: downloadHandler Unit Tests mathematically successfully', () => {
+describe('Backend: downloadHandler Unit Tests', () => {
 
-    it('Returns HTTP 404 when requesting missing block hashes tracking ledger bounds', async () => {
+    it('Returns HTTP 404 when requesting missing block hashes', async () => {
         const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
             privateKey: 'PRIVKEY',
             ledger: { collection: { find: () => ({ toArray: async () => [] }) } }
@@ -53,7 +53,7 @@ describe('Backend: downloadHandler Unit Tests mathematically successfully', () =
         assert.strictEqual(bodyPayload, 'Invalid block signature.');
     });
 
-    it('Returns continuous valid bundled block stream upon valid parameters', async () => {
+    it('Returns continuous bundled block stream upon valid parameters', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
         
         // 1. Create a real bundle stream
@@ -147,7 +147,7 @@ describe('Backend: downloadHandler Unit Tests mathematically successfully', () =
         assert.strictEqual(streamDestroyed, true);
     });
 
-    it('Returns HTTP 404 isolating remote storage stream mapping failures', async () => {
+    it('Returns HTTP 404 on remote storage stream failures', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
         const priv = { key: 'GARBAGEKEY1234GARBAGEKEY1234GARB', iv: 'GARBAGEIV1234567', files: [], physicalId: 'pid', location: { type: 'local' } };
         const encPriv = encryptPrivatePayload(publicKey, priv);
@@ -217,7 +217,7 @@ describe('Backend: downloadHandler Unit Tests mathematically successfully', () =
         assert.ok(statusSet === 0 || statusSet === 500); 
     });
 
-    it('Returns HTTP 500 resolving general try-catch payload parsing logic failures', async () => {
+    it('Returns HTTP 500 on payload parsing logic failures', async () => {
         const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
             privateKey: 'PRIV',
             ledger: null // Will throw
@@ -276,7 +276,7 @@ describe('Backend: downloadHandler Unit Tests mathematically successfully', () =
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
                     setTimeout(() => {
-                        rs.emit('error', new Error('Disaster'));
+                        rs.emit('Catches generic errors returning 500', new Error('Disaster'));
                         rs.destroy();
                     }, 10);
                     return { status: 'available', stream: rs };

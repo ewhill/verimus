@@ -108,7 +108,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         assert.strictEqual(jsonRes.message, 'Invalid block signature.');
     });
 
-    it('Returns HTTP 401 handling invalid decryption validation', async () => {
+    it('Returns 401 on invalid decryption validation', async () => {
         const { publicKey, privateKey } = cryptoUtils.generateRSAKeyPair();
         
         const priv = { physicalId: 'pid', key: 'key', iv: 'iv', location: { type: 'local'}, files: [] };
