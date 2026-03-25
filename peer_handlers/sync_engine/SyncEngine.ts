@@ -7,6 +7,10 @@ import { ChainStatusResponseMessage } from '../../messages/chain_status_response
 import { NetworkHealthSyncMessage } from '../../messages/network_health_sync_message/NetworkHealthSyncMessage';
 import { StorageBidMessage } from '../../messages/storage_bid_message/StorageBidMessage';
 import { StorageRequestMessage } from '../../messages/storage_request_message/StorageRequestMessage';
+import { StorageShardResponseMessage } from '../../messages/storage_shard_response_message/StorageShardResponseMessage';
+import { StorageShardRetrieveRequestMessage } from '../../messages/storage_shard_retrieve_request_message/StorageShardRetrieveRequestMessage';
+import { StorageShardRetrieveResponseMessage } from '../../messages/storage_shard_retrieve_response_message/StorageShardRetrieveResponseMessage';
+import { StorageShardTransferMessage } from '../../messages/storage_shard_transfer_message/StorageShardTransferMessage';
 import PeerNode from '../../peer_node/PeerNode';
 import type { Block, PeerConnection } from '../../types';
 import { NodeRole } from '../../types/NodeRole';
@@ -64,6 +68,10 @@ class SyncEngine {
         this.node.peer?.bind(NetworkHealthSyncMessage).to(async (m: NetworkHealthSyncMessage, c: PeerConnection) => this.handleNetworkHealthSync(m.score_payloads, c));
         this.node.peer?.bind(StorageRequestMessage).to(async (m: StorageRequestMessage, c: PeerConnection) => this.handleStorageRequest(m, c));
         this.node.peer?.bind(StorageBidMessage).to(async (m: StorageBidMessage, c: PeerConnection) => this.handleStorageBid(m, c));
+        this.node.peer?.bind(StorageShardTransferMessage).to(async (m: StorageShardTransferMessage, c: PeerConnection) => this.handleStorageShardTransfer(m, c));
+        this.node.peer?.bind(StorageShardResponseMessage).to(async (m: StorageShardResponseMessage, c: PeerConnection) => this.handleStorageShardResponse(m, c));
+        this.node.peer?.bind(StorageShardRetrieveRequestMessage).to(async (m: StorageShardRetrieveRequestMessage, c: PeerConnection) => this.handleStorageShardRetrieveRequest(m, c));
+        this.node.peer?.bind(StorageShardRetrieveResponseMessage).to(async (m: StorageShardRetrieveResponseMessage, c: PeerConnection) => this.handleStorageShardRetrieveResponse(m, c));
 
         // Start native background polling
         if (this.node.peer) {
@@ -240,6 +248,78 @@ class SyncEngine {
              market.resolve(market.bids);
              this.activeStorageMarkets.delete(msg.storageRequestId);
         }
+    }
+
+    async handleStorageShardTransfer(msg: StorageShardTransferMessage, connection: PeerConnection) {
+        if (!this.node.roles.includes(NodeRole.STORAGE)) return;
+
+        try {
+            const { physicalBlockId, writeStream } = this.node.storageProvider!.createBlockStream();
+            
+            const buffer = Buffer.from(msg.shardDataBase64, 'base64');
+            writeStream.end(buffer);
+
+            await new Promise((res, rej) => {
+                writeStream.on('finish', res);
+                writeStream.on('error', rej);
+            });
+
+            const responseMsg = new StorageShardResponseMessage({
+                marketId: msg.marketId,
+                shardIndex: msg.shardIndex,
+                physicalId: physicalBlockId,
+                success: true
+            });
+            connection.send(responseMsg);
+
+        } catch (error: any) {
+            logger.error(`[Peer ${this.node.port}] Failed to process shard transfer boundaries natively: ${error.message}`);
+            connection.send(new StorageShardResponseMessage({
+                marketId: msg.marketId,
+                shardIndex: msg.shardIndex,
+                physicalId: '',
+                success: false
+            }));
+        }
+    }
+
+    async handleStorageShardResponse(msg: StorageShardResponseMessage, connection: PeerConnection) {
+        this.node.events.emit(`shard_response:${msg.marketId}:${msg.shardIndex}`, msg);
+    }
+
+    async handleStorageShardRetrieveRequest(msg: StorageShardRetrieveRequestMessage, connection: PeerConnection) {
+        if (!this.node.roles.includes(NodeRole.STORAGE)) return;
+
+        try {
+            const result = await this.node.storageProvider!.getBlockReadStream(msg.physicalId);
+            if (result.status !== 'available' || !result.stream) {
+                return connection.send(new StorageShardRetrieveResponseMessage({
+                     physicalId: msg.physicalId, marketId: msg.marketId, shardDataBase64: '', success: false
+                }));
+            }
+            const chunks: Buffer[] = [];
+            result.stream.on('data', (c: Buffer) => chunks.push(c));
+            result.stream.on('error', () => {
+                connection.send(new StorageShardRetrieveResponseMessage({
+                     physicalId: msg.physicalId, marketId: msg.marketId, shardDataBase64: '', success: false
+                }));
+            });
+            result.stream.on('end', () => {
+                const finalBuffer = Buffer.concat(chunks);
+                connection.send(new StorageShardRetrieveResponseMessage({
+                     physicalId: msg.physicalId, marketId: msg.marketId, shardDataBase64: finalBuffer.toString('base64'), success: true
+                }));
+            });
+        } catch (error: any) {
+            logger.error(`[Peer ${this.node.port}] Failed to retrieve shard physically mapping logic constraints: ${error.message}`);
+            connection.send(new StorageShardRetrieveResponseMessage({
+                 physicalId: msg.physicalId, marketId: msg.marketId, shardDataBase64: '', success: false
+            }));
+        }
+    }
+
+    async handleStorageShardRetrieveResponse(msg: StorageShardRetrieveResponseMessage, connection: PeerConnection) {
+        this.node.events.emit(`shard_retrieve:${msg.marketId}:${msg.physicalId}`, msg);
     }
 
     async performInitialSync() {

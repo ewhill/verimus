@@ -38,7 +38,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                 getLocation: () => ({ type: 'local' })
             },
             bundler: {
-                streamBlockBundle: async () => ({ aesKey: 'KEY', aesIv: 'IV', files: [] })
+                streamErasureBundle: async () => ({ aesKey: 'KEY', aesIv: 'IV', files: [], shards: [Buffer.from('mock')] })
             },
             consensusEngine: {
                 handlePendingBlock: async () => { blockHandled = true; },
@@ -50,7 +50,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                 },
                 node: {
                     syncEngine: {
-                        orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: {} }]
+                        orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { send: () => {} } }]
                     }
                 }
             },
@@ -59,7 +59,11 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             },
             events: {
                 once: (evt: string, cb: Function) => {
-                    setTimeout(() => cb({ hash: 'fakeHash settled' }), 5);
+                    if (evt.startsWith('shard_response')) {
+                        setTimeout(() => cb({ success: true, physicalId: 'mockId' }), 5);
+                    } else {
+                        setTimeout(() => cb({ hash: 'fakeHash settled' }), 5);
+                    }
                 },
                 removeAllListeners: () => {}
             }
@@ -89,6 +93,13 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             roles: [NodeRole.ORIGINATOR],
             storageProvider: {
                 createBlockStream: () => { throw new Error('Simulated Creation Error') }
+            },
+            consensusEngine: {
+                walletManager: {
+                    verifyFunds: async () => true,
+                    freezeFunds: () => {},
+                    releaseFunds: () => {}
+                }
             }
         } as any); // Mock with explicit error throwing
 
@@ -110,7 +121,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         const handler = new UploadHandler({
             publicKey, privateKey, port: 1234, roles: [NodeRole.ORIGINATOR],
             storageProvider: { createBlockStream: () => ({ physicalBlockId: 'id', writeStream: { on: () => {} } }), getLocation: () => 'loc' },
-            bundler: { streamBlockBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv' }) },
+            bundler: { streamErasureBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [Buffer.from('mock')] }) },
             consensusEngine: {
                 handlePendingBlock: async () => {},
                 walletManager: {
@@ -121,11 +132,11 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                 },
                 node: {
                     syncEngine: {
-                        orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: {} }]
+                        orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { send: () => {} } }]
                     }
                 }
             },
-            events: { once: () => {}, removeAllListeners: () => {} },
+            events: { once: (evt: string, cb: Function) => { if (evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } }, removeAllListeners: () => {} },
             peer: { broadcast: async () => {} }
         } as any);
 
@@ -145,7 +156,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         const mockNode = {
              publicKey, privateKey, port: 1234, roles: [NodeRole.ORIGINATOR],
              storageProvider: { createBlockStream: () => ({ physicalBlockId: 'id', writeStream: { on: () => {} } }), getLocation: () => 'loc' },
-             bundler: { streamBlockBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv' }) },
+             bundler: { streamErasureBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [Buffer.from('mock')] }) },
              consensusEngine: {
                  handlePendingBlock: async () => { throw new Error('Converge Error for test'); },
                  walletManager: {
@@ -156,11 +167,11 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                  },
                  node: {
                      syncEngine: {
-                         orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: {} }]
+                         orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { send: () => {} } }]
                      }
                  }
              },
-             events: { once: () => {}, removeAllListeners: () => {} },
+             events: { once: (evt: string, cb: Function) => { if (evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } }, removeAllListeners: () => {} },
              peer: { broadcast: async () => {} }
         };
         const handler = new UploadHandler(mockNode as any);

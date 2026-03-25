@@ -75,8 +75,19 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
 
         // Pass integration escrows mapping stream limits bypassing real topologies
         node.consensusEngine.walletManager.verifyFunds = async () => true;
-        node.consensusEngine.node.syncEngine.orchestrateStorageMarket = async () => {
-            return [{ peerId: 'mock-1', connection: {} }];
+        node.consensusEngine.node.syncEngine.orchestrateStorageMarket = async (marketReqId: string) => {
+            return [{ peerId: node.publicKey, connection: {
+                send: (msg: any) => {
+                    const buf = Buffer.from(msg.body.shardDataBase64, 'base64');
+                    const blockResult = node.storageProvider!.createBlockStream();
+                    blockResult.writeStream.write(buf);
+                    blockResult.writeStream.end();
+
+                    setTimeout(() => {
+                        node.events.emit(`shard_response:${marketReqId}:${msg.body.shardIndex}`, { success: true, physicalId: blockResult.physicalBlockId });
+                    }, 5);
+                }
+            } }];
         };
 
         const setupExpressApp = (await import('../../api_server/ApiServer')).default;

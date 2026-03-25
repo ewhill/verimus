@@ -6,7 +6,8 @@ import { BLOCK_TYPES } from '../../constants';
 import { encryptPrivatePayload, signData } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
 import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
-import type { Block, BlockPrivate, StorageContractPayload, PeerConnection } from '../../types';
+import { StorageShardTransferMessage } from '../../messages/storage_shard_transfer_message/StorageShardTransferMessage';
+import type { Block, BlockPrivate, StorageContractPayload, PeerConnection, NodeShardMapping } from '../../types';
 import { NodeRole } from '../../types/NodeRole';
 import BaseHandler from '../base_handler/BaseHandler';
 
@@ -25,9 +26,8 @@ export default class UploadHandler extends BaseHandler {
         const publicKey = this.node.publicKey;
         const privateKey = this.node.privateKey;
 
-        // 1 & 2 & 6. Stream zip and encrypt to storage provider
-        logger.info(`[Peer ${this.node.port}] Processing file upload via streams...`);
-        const { physicalBlockId, writeStream } = this.node.storageProvider!.createBlockStream();
+        // 1 & 2 & 6. Stream zip and encode mathematically into parity boundary limits
+        logger.info(`[Peer ${this.node.port}] Processing file upload structuring Erasure pipelines...`);
 
         const redundancyStr = req.body.redundancy;
         const maxCostStr = req.body.maxCost;
@@ -74,21 +74,76 @@ export default class UploadHandler extends BaseHandler {
 
         logger.info(`[Peer ${this.node.port}] Decentralized array acquired mapping 100% boundary limits. Hosts: ${bids.map((b: { peerId: string }) => b.peerId.slice(0, 8)).join(', ')}`);
 
-        // Physical Archiving (Mock logical routing onto local boundary, integrating streaming next phase)
-        const bundleResult = await this.node.bundler!.streamBlockBundle(files, writeStream, paths);
+        // Erasure Configuration 
+        const K = Math.max(1, Math.ceil(redundancy / 2));
+        const N = redundancy;
+
+        const bundleResult = await this.node.bundler!.streamErasureBundle(files, K, N, paths);
         if (!bundleResult) {
-            this.node.consensusEngine.walletManager.releaseFunds(marketReqId); // Release if fail zip
-            return res.status(500).send('Internal Node Array Zip mapping collapsed.');
+            this.node.consensusEngine.walletManager.releaseFunds(marketReqId); 
+            return res.status(500).send('Internal Node Array Zip mapping collapsed constructing mathematical matrices.');
+        }
+
+        const fragmentMap: NodeShardMapping[] = [];
+
+        logger.info(`[Peer ${this.node.port}] Dispersing ${bundleResult.shards.length} shards globally matching active logical HTTP boundaries...`);
+
+        // Transmit each shard mapping physically limiting loops Native WebSocket Protocol
+        const shardDispatchPromises = bids.map(async (bid: { peerId: string, connection: any }, i: number) => {
+            const shardBase64 = bundleResult.shards[i].toString('base64');
+            const message = new StorageShardTransferMessage({
+                marketId: marketReqId,
+                shardIndex: i,
+                shardDataBase64: shardBase64
+            });
+
+            return new Promise<void>((res, rej) => {
+                const timeout = setTimeout(() => {
+                    this.node.events.removeAllListeners(`shard_response:${marketReqId}:${i}`);
+                    rej(new Error(`P2P Shard transmission to ${bid.peerId.slice(0, 8)} timed out.`));
+                }, 10000);
+
+                this.node.events.once(`shard_response:${marketReqId}:${i}`, (responseMsg: any) => {
+                    clearTimeout(timeout);
+                    if (!responseMsg.success) return rej(new Error('Host rejected processing logical blocks.'));
+                    
+                    try {
+                        fragmentMap.push({
+                            nodeId: bid.peerId,
+                            shardIndex: i,
+                            shardHash: crypto.createHash('sha256').update(bundleResult.shards[i]).digest('hex'),
+                            physicalId: responseMsg.physicalId
+                        });
+                        res();
+                    } catch (e) {
+                        rej(e);
+                    }
+                });
+
+                // Stream natively into the underlying WebSocket P2P proxy framework matching limit bindings
+                try {
+                    bid.connection.send(message);
+                } catch(err: any) {
+                    clearTimeout(timeout);
+                    rej(err);
+                }
+            });
+        });
+
+        try {
+            await Promise.all(shardDispatchPromises);
+        } catch(err: any) {
+            this.node.consensusEngine.walletManager.releaseFunds(marketReqId); 
+            return res.status(502).send('Decentralized P2P transmission array sequence fatally failed communicating limits.');
         }
 
         // 7. Generate Pending Block and initiate consensus
-        const location = this.node.storageProvider!.getLocation();
         const privatePayload: BlockPrivate = {
             key: bundleResult.aesKey,
             iv: bundleResult.aesIv,
             authTag: bundleResult.authTag,
-            location: location,
-            physicalId: physicalBlockId,
+            location: { type: 'local' }, // Mocking local storage references temporarily parsing structural arrays
+            physicalId: 'DECENTRALIZED_SHARD_MATRIX',
             files: bundleResult.files
         };
 
@@ -99,7 +154,9 @@ export default class UploadHandler extends BaseHandler {
             marketId: marketReqId,
             activeHosts: bids.map((b: { peerId: string }) => b.peerId),
             allocatedEgressEscrow: theoreticalMaxCost,
-            remainingEgressEscrow: theoreticalMaxCost
+            remainingEgressEscrow: theoreticalMaxCost,
+            erasureParams: { k: K, n: N, originalSize: bundleResult.originalSize! },
+            fragmentMap: fragmentMap
         };
 
         const signatureStr = signData(JSON.stringify(payloadResult), privateKey);

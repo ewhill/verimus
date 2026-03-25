@@ -33,14 +33,16 @@ export interface TransactionPayload {
 }
 
 export interface ErasureParameters {
-    N: number; 
-    K: number; 
+    n: number; 
+    k: number;
+    originalSize: number;
 }
 
 export interface NodeShardMapping {
     nodeId: string;
     shardIndex: number;
     shardHash: string; 
+    physicalId?: string;
 }
 
 export interface StorageContractPayload {

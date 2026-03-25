@@ -36,9 +36,12 @@ class Bundler {
         }
 
         const uint8Shards = new Uint8Array(shardsBuf.buffer, shardsBuf.byteOffset, shardsBuf.byteLength);
-        const result = rs.encode(uint8Shards, K, P);
-        if (result !== ReedSolomonErasure.RESULT_OK) {
-            throw new Error(`Erasure encoding failed with code: ${result}`);
+        
+        if (P > 0) {
+            const result = rs.encode(uint8Shards, K, P);
+            if (result !== ReedSolomonErasure.RESULT_OK) {
+                throw new Error(`Erasure encoding failed with code: ${result}`);
+            }
         }
 
         const outputShards: Buffer[] = [];
@@ -76,9 +79,11 @@ class Bundler {
 
         const uint8Shards = new Uint8Array(shardsBuf.buffer, shardsBuf.byteOffset, shardsBuf.byteLength);
 
-        const result = rs.reconstruct(uint8Shards, K, P, shardsAvailable);
-        if (result !== ReedSolomonErasure.RESULT_OK) {
-            throw new Error(`Erasure reconstruction failed with code: ${result}`);
+        if (P > 0) {
+            const result = rs.reconstruct(uint8Shards, K, P, shardsAvailable);
+            if (result !== ReedSolomonErasure.RESULT_OK) {
+                throw new Error(`Erasure reconstruction failed with code: ${result}`);
+            }
         }
 
         const reconstructedData = Buffer.from(uint8Shards.buffer, uint8Shards.byteOffset, K * shardSize);

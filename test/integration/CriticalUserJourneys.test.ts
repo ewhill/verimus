@@ -39,8 +39,20 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
                 (node.peer as any).request = async () => ({});
             }
             node.consensusEngine.walletManager.verifyFunds = async () => true;
-            node.consensusEngine.node.syncEngine.orchestrateStorageMarket = async () => {
-                return [{ peerId: 'mock-host-1', connection: {} }];
+            node.consensusEngine.node.syncEngine.orchestrateStorageMarket = async (marketReqId: string) => {
+                return [{ peerId: node.publicKey, connection: {
+                    send: (msg: any) => {
+                        // Physically store mocking the remote node reception natively mapping bounds
+                        const buf = Buffer.from(msg.body.shardDataBase64, 'base64');
+                        const blockResult = node.storageProvider!.createBlockStream();
+                        blockResult.writeStream.write(buf);
+                        blockResult.writeStream.end();
+                        
+                        setTimeout(() => {
+                            node.events.emit(`shard_response:${marketReqId}:${msg.body.shardIndex}`, { success: true, physicalId: blockResult.physicalBlockId });
+                        }, 5);
+                    }
+                } }];
             };
 
             const server = node.httpServer!;
