@@ -167,6 +167,76 @@ class Bundler {
             archive.finalize();
         });
     }
+
+    /**
+     * Zips, encrypts, and buffers uploaded files, calculating Reed-Solomon Erasure subsets mathematically.
+     */
+    streamErasureBundle(uploadedFiles: Express.Multer.File[], K: number, N: number, sourcePaths: string[] = []) {
+        return new Promise<{ 
+            aesKey: string, 
+            aesIv: string, 
+            authTag: string, 
+            files: { path: string; contentHash: string; }[],
+            shards: Buffer[],
+            originalSize: number
+        } | null>(async (resolve, reject) => {
+            if (!uploadedFiles || uploadedFiles.length === 0) return resolve(null);
+
+            const files: { path: string; contentHash: string; }[] = [];
+            const archive = archiver('zip', { zlib: { level: 9 } });
+            const { cipherStream, key, iv, getAuthTag } = createAESStream();
+
+            const chunks: Buffer[] = [];
+            cipherStream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+            
+            cipherStream.on('end', async () => {
+                const finalBuffer = Buffer.concat(chunks);
+                const originalSize = finalBuffer.length;
+                try {
+                    // Bypass splitting when matrices compute static 1:1 mirroring
+                    const shards = (K === 1 && N === 1) ? [finalBuffer] : await Bundler.encodeErasureShards(finalBuffer, K, N);
+                    
+                    resolve({
+                        aesKey: key,
+                        aesIv: iv,
+                        authTag: getAuthTag().toString('hex'),
+                        files,
+                        shards,
+                        originalSize
+                    });
+                } catch(e) { reject(e); }
+            });
+
+            archive.on('error', reject);
+            cipherStream.on('error', reject);
+
+            archive.pipe(cipherStream);
+
+            for (let i = 0; i < uploadedFiles.length; i++) {
+                const file = uploadedFiles[i];
+                const filePath = sourcePaths[i] || file.originalname;
+                let contentHash = "";
+                
+                if (file.path) {
+                    contentHash = await new Promise<string>((res, rej) => {
+                        const hash = crypto.createHash('sha256');
+                        const st = fs.createReadStream(file.path);
+                        st.on('data', (d: any) => hash.update(d));
+                        st.on('end', () => res(hash.digest('hex')));
+                        st.on('error', rej);
+                    });
+                    files.push({ path: filePath, contentHash });
+                    archive.append(fs.createReadStream(file.path), { name: filePath });
+                } else if (file.buffer) {
+                    contentHash = hashData(file.buffer);
+                    files.push({ path: filePath, contentHash });
+                    archive.append(file.buffer, { name: filePath });
+                }
+            }
+
+            archive.finalize();
+        });
+    }
 }
 
 export default Bundler;

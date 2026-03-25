@@ -43,4 +43,26 @@ describe('Bundler: Erasure Coding Geometry Metrics', () => {
             assert.ok(e.message.includes('code: 10'), 'Erasure boundaries successfully failed resolving limits.');
         }
     });
+
+    it('Creates Erasure encoded zip streams correctly parsing limits', async () => {
+        const bundler = new Bundler('./test_data');
+        const mockFile = {
+            originalname: 'hello.txt',
+            buffer: Buffer.from('Testing Erasure streams generating N boundaries.', 'utf8'),
+            size: 51
+        } as Express.Multer.File;
+
+        const K = 3;
+        const N = 5;
+        const result = await bundler.streamErasureBundle([mockFile], K, N);
+        assert.ok(result);
+        assert.strictEqual(result.shards.length, 5);
+        assert.ok(result.originalSize > 0);
+        assert.ok(result.aesKey.length > 0);
+        
+        // Ensure reconstruction of the original size zip is possible
+        const shardsAvailable = [result.shards[0], null, result.shards[2], null, result.shards[4]];
+        const recoveredZip = await Bundler.reconstructErasureShards(shardsAvailable, K, N, result.originalSize);
+        assert.strictEqual(recoveredZip.length, result.originalSize);
+    });
 });
