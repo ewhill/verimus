@@ -98,7 +98,9 @@ export default class UploadHandler extends BaseHandler {
         const payloadResult: StorageContractPayload = {
             ...encryptedPrivate,
             marketId: marketReqId,
-            activeHosts: bids.map((b: any) => b.peerId)
+            activeHosts: bids.map((b: any) => b.peerId),
+            allocatedEgressEscrow: theoreticalMaxCost,
+            remainingEgressEscrow: theoreticalMaxCost
         };
 
         const signatureStr = signData(JSON.stringify(payloadResult), privateKey);

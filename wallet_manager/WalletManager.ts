@@ -45,6 +45,19 @@ export default class WalletManager {
                 }
             }
 
+            // Deduct dynamic public escrow costs reserved exclusively mapping physical chunks limiting runaway downloads
+            const activeContracts = await this.ledger.collection.find({
+                type: BLOCK_TYPES.STORAGE_CONTRACT,
+                publicKey: peerId,
+                'payload.remainingEgressEscrow': { $gt: 0 }
+            }).toArray() as unknown as StorageContractBlock[];
+
+            for (const contract of activeContracts) {
+                if (contract.payload?.remainingEgressEscrow) {
+                     balance -= contract.payload.remainingEgressEscrow;
+                }
+            }
+
         } catch (error) {
             logger.error(`Error calculating balance for peer ${peerId}: ${(error as Error).message}`);
         }
