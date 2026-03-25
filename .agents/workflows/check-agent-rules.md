@@ -20,11 +20,18 @@ Ensure the newly authored scope does not break the test harness, and tests compr
 npm test
 ```
 
-## 3. Explicit Fluff Verification
+## 3. ESLint Syntax Correction
+After tests and compiler checks verify logic soundness, strictly run ESLint to correct all internal file import orders and TS module definitions across your modified code boundaries.
+// turbo
+```bash
+npx eslint --fix "<path_to_modified_files>/**/*.ts"
+```
+
+## 4. Explicit Fluff Verification
 Before staging, verify you did not add non-value adjectives ending in `-ly` to documentation, commit messages, or comments. The local `scripts/enforce-agent-rules.js` will force a git hook break if you do format these poorly.
 
-## 4. Import Conventions
+## 5. Import Conventions
 Verify that any newly created class or module utilizes standard `import { } from 'x'` instead of `const x = require('x')`. Ensure that all node/npm modules are placed at the top, followed by a double newline separating local project imports.
 
-## 5. Information Leakage
+## 6. Information Leakage
 Double check you have not printed any `/Users/`, `/home/`, or absolute root constraints inside testing or logging variables, preventing local leaks onto GitHub. Scrub logs before pushing documentation.

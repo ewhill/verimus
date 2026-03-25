@@ -36,6 +36,7 @@ try {
     for (const file of stagedFiles) {
         if (!fs.existsSync(file)) continue;
         if (file.includes('enforce-agent-rules.js')) continue;
+        if (file.includes('AGENTS.md')) continue;
 
         const content = fs.readFileSync(file, 'utf-8');
         const lines = content.split('\n');
