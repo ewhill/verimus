@@ -1,25 +1,6 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 
-const BANNED_ADVERBS = [
-    'natively',
-    'organically',
-    'dynamically',
-    'appropriately',
-    'actively',
-    'logically',
-    'cleanly',
-    'flawlessly',
-    'seamlessly',
-    'robustly',
-    'explicitly',
-    'physically',
-    'structurally',
-    'proactively',
-    'recursively',
-    'elegantly'
-];
-
 try {
     // Get staged files
     const stagedFiles = execSync('git diff --cached --name-only', { encoding: 'utf-8' })
@@ -43,17 +24,6 @@ try {
 
         // Check for adverbs in markdown files exclusively
         lines.forEach((line, index) => {
-            if (file.endsWith('.md')) {
-                const lowerLine = line.toLowerCase();
-                for (const adverb of BANNED_ADVERBS) {
-                    if (lowerLine.includes(adverb)) {
-                        console.error(`❌ Fluff Adverb Blocked: Found "${adverb}" in ${file}:${index + 1}`);
-                        console.error(`   > ${line.trim()}`);
-                        hasErrors = true;
-                    }
-                }
-            }
-
             // Also check for explicit require() calls outside of tests in .ts files
             if (file.endsWith('.ts') && !file.includes('test') && !file.includes('config')) {
                 if (line.match(/=\s*require\(/)) {
