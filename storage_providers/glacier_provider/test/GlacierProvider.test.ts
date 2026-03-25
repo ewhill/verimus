@@ -12,31 +12,37 @@ describe('Backend: glacierProvider Integrity', () => {
         assert.strictEqual(loc.vaultName, 'v');
 
         // Mock AWS Glacier behavior
-        (prov as any).client.send = async () => ({ archiveId: 'ARCH123', jobId: 'JOB123' });
+        // @ts-ignore
+        prov.client.send = async () => ({ archiveId: 'ARCH123', jobId: 'JOB123' });
         
         const { physicalBlockId, writeStream } = prov.createBlockStream();
         assert.ok(physicalBlockId);
         assert.ok(writeStream);
         
         let sendInvoked = false;
-        (prov as any).client.send = async () => { sendInvoked = true; return { archiveId: 'ARCH123', jobId: 'JOB123' }; };
+        // @ts-ignore
+        prov.client.send = async () => { sendInvoked = true; return { archiveId: 'ARCH123', jobId: 'JOB123' }; };
         
         writeStream.end();
         await new Promise(r => setTimeout(r, 10)); // Yield for async event handler
         assert.ok(sendInvoked);
 
         const { writeStream: wsErr } = prov.createBlockStream();
-        (prov as any).client.send = async () => { throw new Error('Glacier send failure'); };
+        // @ts-ignore
+        prov.client.send = async () => { throw new Error('Glacier send failure'); };
         wsErr.end();
         await new Promise(r => setTimeout(r, 10));
         
-        (prov as any).client.send = async () => { return { jobId: 'JOB123' }; };
+        // @ts-ignore
+        prov.client.send = async () => { return { jobId: 'JOB123' }; };
         const readResult = await prov.getBlockReadStream(physicalBlockId);
         assert.strictEqual(readResult.status, 'pending');
         
         // Error read
-        (prov as any).activeJobs.delete(physicalBlockId);
-        (prov as any).client.send = async () => { throw new Error('AWS error') };
+        // @ts-ignore
+        prov.activeJobs.delete(physicalBlockId);
+        // @ts-ignore
+        prov.client.send = async () => { throw new Error('AWS error') };
         const readStreamFail = await prov.getBlockReadStream(physicalBlockId);
         assert.strictEqual(readStreamFail.status, 'not_found');
     });
@@ -45,7 +51,8 @@ describe('Backend: glacierProvider Integrity', () => {
         const prov = GlacierStorageProvider.parseArgs(['--glacier-vault', 'v', '--glacier-region', 'us-east-1'], { vaultName: 'v' });
         
         let invokeCount = 0;
-        (prov as any).client.send = async (cmd: any) => {
+        // @ts-ignore
+        prov.client.send = async (cmd: any) => {
             invokeCount++;
             if (cmd.constructor.name === 'InitiateJobCommand') {
                 return { jobId: 'JOB_ID_123' };
@@ -67,7 +74,8 @@ describe('Backend: glacierProvider Integrity', () => {
         
         const res3 = await prov.getBlockReadStream('ARCHIVE_XYZ');
         assert.strictEqual(res3.status, 'available');
-        assert.ok((res3 as any).stream);
+        // @ts-ignore
+        assert.ok(res3.stream);
     });
 });
 

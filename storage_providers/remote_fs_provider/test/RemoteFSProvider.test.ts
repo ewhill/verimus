@@ -17,7 +17,8 @@ describe('Backend: remoteFSProvider Integrity', () => {
             end: async () => {},
             get: async () => {} 
         };
-        prov._getSftp = async () => (mockSftp as any);
+        // @ts-ignore
+        prov._getSftp = async () => mockSftp;
         
         const { physicalBlockId, writeStream } = prov.createBlockStream();
         assert.ok(physicalBlockId);

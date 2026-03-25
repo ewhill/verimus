@@ -49,8 +49,10 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const pt = new PassThrough();
         const bufs: Buffer[] = [];
         pt.on('data', (c: Buffer) => bufs.push(c));
-        const bundleP = bundler.streamBlockBundle([{ originalname: 'file.txt', buffer: Buffer.from('hello world here') }] as any, pt);
-        const { aesKey, aesIv, files } = await bundleP as any;
+        // @ts-ignore
+        const bundleP = bundler.streamBlockBundle([{ originalname: 'file.txt', buffer: Buffer.from('hello world here') }], pt);
+        // @ts-ignore
+        const { aesKey, aesIv, files } = await bundleP;
         const fullZip = Buffer.concat(bufs);
 
         // 2. Setup block private and encrypt
@@ -88,7 +90,8 @@ describe('Backend: downloadHandler Unit Tests', () => {
 
         // const _pt = new PassThrough();
         const priv = { key: 'a'.repeat(64), iv: 'b'.repeat(32), files: [], physicalId: 'pid', location: { type: 'local' } };
-        const encPriv = encryptPrivatePayload(publicKey, priv as any);
+        // @ts-ignore
+        const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
         let streamDestroyed = false;
@@ -185,7 +188,8 @@ describe('Backend: downloadHandler Unit Tests', () => {
 
     it('Returns HTTP 401 catching invalid RSA signature parameter decryption keys', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
-        const encPriv = encryptPrivatePayload(publicKey, { bad: 'data' } as any); // Wrong structure
+        // @ts-ignore
+        const encPriv = encryptPrivatePayload(publicKey, { bad: 'data' }); // Wrong structure
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
         const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: generateRSAKeyPair().privateKey });

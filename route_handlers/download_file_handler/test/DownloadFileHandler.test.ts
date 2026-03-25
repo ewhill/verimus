@@ -12,11 +12,13 @@ import DownloadFileHandler from '../DownloadFileHandler';
 describe('Backend: downloadFileHandler Unit Tests', () => {
 
     it('Returns HTTP 404 when requesting missing block hashes', async () => {
-        const handler = new DownloadFileHandler({
+        const handlerOpts = {
             roles: [NodeRole.STORAGE],
             privateKey: 'PRIVKEY',
             ledger: { collection: { find: () => ({ toArray: async () => [] }) } }
-        } as any);
+        };
+        // @ts-ignore
+        const handler = new DownloadFileHandler(handlerOpts);
 
         const req: any = { params: { hash: 'nonexistent', filename: 'file.txt' } };
         let statusSet = 0;
@@ -33,11 +35,13 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
     });
 
     it('Flattens array parameters extracting requested filename', async () => {
-        const handler = new DownloadFileHandler({
+        const handlerOpts = {
             roles: [NodeRole.STORAGE],
             privateKey: 'PRIVKEY',
             ledger: { collection: { find: () => ({ toArray: async () => [] }) } }
-        } as any);
+        };
+        // @ts-ignore
+        const handler = new DownloadFileHandler(handlerOpts);
 
         const req: any = { params: { hash: 'nonexistent', filename: ['file.txt', 'other.txt'] } };
         let statusSet = 0;
@@ -54,11 +58,13 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
     it('Rejects HTTP 403 upon discovering invalid block signatures', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
 
-        const handler = new DownloadFileHandler({
+        const handlerOpts = {
             roles: [NodeRole.STORAGE],
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: {}, publicKey: publicKey, signature: 'bad_sig' }] }) } }
-        } as any);
+        };
+        // @ts-ignore
+        const handler = new DownloadFileHandler(handlerOpts);
 
         const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
         let statusSet = 0;
@@ -82,8 +88,10 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         const pt = new PassThrough();
         const bufs: Buffer[] = [];
         pt.on('data', (c: Buffer) => bufs.push(c));
-        const bundleP = bundler.streamBlockBundle([{ originalname: 'file.txt', buffer: Buffer.from('hello world') }] as any, pt);
-        const { aesKey, aesIv, files } = await bundleP as any;
+        // @ts-ignore
+        const bundleP = bundler.streamBlockBundle([{ originalname: 'file.txt', buffer: Buffer.from('hello world') }], pt);
+        // @ts-ignore
+        const { aesKey, aesIv, files } = await bundleP;
         const fullZip = Buffer.concat(bufs);
 
         // 2. Setup block private and encrypt
@@ -91,7 +99,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadFileHandler({
+        const handlerOpts = {
             roles: [NodeRole.STORAGE],
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
@@ -103,7 +111,9 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
                     return { status: 'available', stream: rs };
                 }
             }
-        } as any);
+        };
+        // @ts-ignore
+        const handler = new DownloadFileHandler(handlerOpts);
 
         const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
         // let _statusSet = 0;
@@ -146,11 +156,12 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
 
         // const _pt = new PassThrough();
         const priv = { key: 'a'.repeat(64), iv: 'b'.repeat(32), files: [], physicalId: 'pid', location: { type: 'local' } };
-        const encPriv = encryptPrivatePayload(publicKey, priv as any);
+        // @ts-ignore
+        const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
         let streamDestroyed = false;
-        const handler = new DownloadFileHandler({
+        const handlerOpts = {
             roles: [NodeRole.STORAGE],
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
@@ -163,7 +174,9 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
                     return { status: 'available', stream: rs };
                 }
             }
-        } as any);
+        };
+        // @ts-ignore
+        const handler = new DownloadFileHandler(handlerOpts);
 
         const req: any = { params: { hash: 'validh', filename: 'file.txt' }, query: { statusOnly: 'true' } };
         let statusSet = 0;
@@ -187,15 +200,17 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         const pt = new PassThrough();
         const bufs: Buffer[] = [];
         pt.on('data', (c: Buffer) => bufs.push(c));
-        const bundleP = bundler.streamBlockBundle([{ originalname: 'file.txt', buffer: Buffer.from('hello world') }] as any, pt);
-        const { aesKey, aesIv, files } = await bundleP as any;
+        // @ts-ignore
+        const bundleP = bundler.streamBlockBundle([{ originalname: 'file.txt', buffer: Buffer.from('hello world') }], pt);
+        // @ts-ignore
+        const { aesKey, aesIv, files } = await bundleP;
         const fullZip = Buffer.concat(bufs);
 
         const priv = { key: aesKey, iv: aesIv, files, physicalId: 'pid', location: { type: 'local' } };
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadFileHandler({
+        const handlerOpts = {
             roles: [NodeRole.STORAGE],
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
@@ -207,7 +222,9 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
                     return { status: 'available', stream: rs };
                 }
             }
-        } as any);
+        };
+        // @ts-ignore
+        const handler = new DownloadFileHandler(handlerOpts);
 
         const req: any = { params: { hash: 'validh', filename: 'MISSING_FILE.txt' } };
         let statusSet = 0;
@@ -239,7 +256,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadFileHandler({
+        const handlerOpts = {
             roles: [NodeRole.STORAGE],
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
@@ -251,7 +268,9 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
                     return { status: 'available', stream: rs };
                 }
             }
-        } as any);
+        };
+        // @ts-ignore
+        const handler = new DownloadFileHandler(handlerOpts);
 
         const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
         let statusSet = 0;
@@ -273,11 +292,13 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
     });
 
     it('Captures parsing exceptions executing 500 fallback blocks', async () => {
-        const handler = new DownloadFileHandler({
+        const handlerOpts = {
             roles: [NodeRole.STORAGE],
             privateKey: 'PRIV',
             ledger: null // Will throw during find
-        } as any);
+        };
+        // @ts-ignore
+        const handler = new DownloadFileHandler(handlerOpts);
 
         const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
         let statusSet = 0;
@@ -293,11 +314,13 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
 
     it('Throws HTTP 401 stopping pipelines on mismatched AES decryption', async () => {
         const { publicKey } = generateRSAKeyPair();
-        const handler = new DownloadFileHandler({
+        const handlerOpts = {
             roles: [NodeRole.STORAGE],
             privateKey: 'BAD_KEY',
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: 'CORRUPT', publicKey: publicKey, signature: 'sig' }] }) } }
-        } as any);
+        };
+        // @ts-ignore
+        const handler = new DownloadFileHandler(handlerOpts);
 
         const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
         // let _statusSet = 0;
@@ -311,14 +334,17 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
 
     it('Blocks HTTP 401 validating malformed initial JSON payloads', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
-        const encPriv = encryptPrivatePayload(publicKey, { bad: 'data' } as any); // Correctly encrypted but wrong struct
+        // @ts-ignore
+        const encPriv = encryptPrivatePayload(publicKey, { bad: 'data' }); // Correctly encrypted but wrong struct
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadFileHandler({
+        const handlerOpts = {
             roles: [NodeRole.STORAGE],
             privateKey: generateRSAKeyPair().privateKey, // Wrong priv key to make it throw
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } }
-        } as any);
+        };
+        // @ts-ignore
+        const handler = new DownloadFileHandler(handlerOpts);
 
         const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
         let statusSet = 0; let message = '';
@@ -335,10 +361,11 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
     it('Flags HTTP 404 on offline remote storage constraints', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
 
-        const encPriv = encryptPrivatePayload(publicKey, { key: crypto.randomBytes(32).toString('hex'), iv: crypto.randomBytes(16).toString('hex'), files: [], physicalId: 'pid', location: { type: 'local' } } as any);
+        // @ts-ignore
+        const encPriv = encryptPrivatePayload(publicKey, { key: crypto.randomBytes(32).toString('hex'), iv: crypto.randomBytes(16).toString('hex'), files: [], physicalId: 'pid', location: { type: 'local' } });
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadFileHandler({
+        const handlerOpts = {
             roles: [NodeRole.STORAGE],
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
@@ -346,7 +373,9 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
                 getEgressCostPerGB: () => 0.0,
                 getBlockReadStream: async (_unusedId: string) => ({ status: 'not_found' }) // simulate not found
             }
-        } as any);
+        };
+        // @ts-ignore
+        const handler = new DownloadFileHandler(handlerOpts);
 
         const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
         let statusSet = 0; let message = '';
@@ -363,10 +392,11 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
     it('Intercepts node ReadStream errors converting pipeline exceptions', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
 
-        const encPriv = encryptPrivatePayload(publicKey, { key: crypto.randomBytes(32).toString('hex'), iv: crypto.randomBytes(16).toString('hex'), files: [], physicalId: 'pid', location: { type: 'local' } } as any);
+        // @ts-ignore
+        const encPriv = encryptPrivatePayload(publicKey, { key: crypto.randomBytes(32).toString('hex'), iv: crypto.randomBytes(16).toString('hex'), files: [], physicalId: 'pid', location: { type: 'local' } });
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadFileHandler({
+        const handlerOpts = {
             roles: [NodeRole.STORAGE],
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
@@ -381,7 +411,9 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
                     return { status: 'available', stream: rs };
                 }
             }
-        } as any);
+        };
+        // @ts-ignore
+        const handler = new DownloadFileHandler(handlerOpts);
 
         const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
         let statusSet = 0; let message = '';
@@ -406,15 +438,17 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         const pt = new PassThrough();
         const bufs: Buffer[] = [];
         pt.on('data', (c: Buffer) => bufs.push(c));
-        const bundleP = bundler.streamBlockBundle([{ originalname: 'file.txt', buffer: Buffer.from('hello world') }] as any, pt);
-        const { aesKey, aesIv, files } = await bundleP as any;
+        // @ts-ignore
+        const bundleP = bundler.streamBlockBundle([{ originalname: 'file.txt', buffer: Buffer.from('hello world') }], pt);
+        // @ts-ignore
+        const { aesKey, aesIv, files } = await bundleP;
         const fullZip = Buffer.concat(bufs);
 
         const priv = { key: aesKey, iv: aesIv, files, physicalId: 'pid', location: { type: 'local' } };
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadFileHandler({
+        const handlerOpts = {
             roles: [NodeRole.STORAGE],
             privateKey: privateKey,
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
@@ -426,7 +460,9 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
                     return { status: 'available', stream: rs };
                 }
             }
-        } as any);
+        };
+        // @ts-ignore
+        const handler = new DownloadFileHandler(handlerOpts);
 
         const req: any = { params: { hash: 'validh', filename: 'MISSING_FILE.txt' } };
         let bodyPayload: string = '';

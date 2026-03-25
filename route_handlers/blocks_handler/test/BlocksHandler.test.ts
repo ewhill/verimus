@@ -96,7 +96,8 @@ describe('Backend: blocksHandler Coverage', () => {
     });
 
     it('Returns 500 error on failure', async () => {
-        const handler = new BlocksHandler(null as any); // Cannot avoid testing actual null boundary here easily without bypassing TS
+        // @ts-ignore
+        const handler = new BlocksHandler(null); // Cannot avoid testing actual null boundary here easily without bypassing TS
         await handler.handle(req.asRequest(), res.asResponse());
         assert.strictEqual(res.statusCode, 500);
         const responseData = res.body;

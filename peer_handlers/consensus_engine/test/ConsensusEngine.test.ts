@@ -170,7 +170,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
     });
 
     it('Buffers orphaned blocks pending future forks', async () => {
-        const mockConnection = { peerAddress: '127.0.0.1:3001' };
+        const _unusedMockConnection = { peerAddress: '127.0.0.1:3001' };
         await engine.handleVerifyBlock('testBlockId', 'testSig', mockConn);
         assert.strictEqual(engine.mempool.orphanedVerifications.get('testBlockId')?.length, 1);
     });

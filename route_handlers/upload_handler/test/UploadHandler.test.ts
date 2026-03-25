@@ -56,6 +56,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         mockNode.peer = {
             broadcast: async () => { }
         };
+        // @ts-ignore
         mockNode.events = {
             once: (evt: string, cb: Function) => {
                 if (evt.startsWith('shard_response')) {
@@ -65,7 +66,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                 }
             },
             removeAllListeners: () => {}
-        } as any;
+        };
 
         const handler = new UploadHandler(mockNode.asPeerNode());
         const req = new MockRequest({ 
@@ -116,7 +117,8 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             },
             node: { syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { send: () => {} } }] } }
         };
-        mockNode.events = { once: (evt: string, cb: Function) => { if (evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } }, removeAllListeners: () => {} } as any;
+        // @ts-ignore
+        mockNode.events = { once: (evt: string, cb: Function) => { if (evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } }, removeAllListeners: () => {} };
         mockNode.peer = { broadcast: async () => {} };
 
         const handler = new UploadHandler(mockNode.asPeerNode());
@@ -146,7 +148,8 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             },
             node: { syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { send: () => {} } }] } }
         };
-        mockNode.events = { once: (evt: string, cb: Function) => { if (evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } }, removeAllListeners: () => {} } as any;
+        // @ts-ignore
+        mockNode.events = { once: (evt: string, cb: Function) => { if (evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } }, removeAllListeners: () => {} };
         mockNode.peer = { broadcast: async () => {} };
 
         const handler = new UploadHandler(mockNode.asPeerNode());

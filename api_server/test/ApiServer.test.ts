@@ -1,9 +1,8 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import setupExpressApp from '../ApiServer';
-
 import { MockPeerNode } from '../../test/mocks/MockPeerNode';
+import setupExpressApp from '../ApiServer';
 
 describe('Backend: apiServer Integrity Check', () => {
 
