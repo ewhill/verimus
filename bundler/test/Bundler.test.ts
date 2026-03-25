@@ -1,5 +1,6 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
+
 import Bundler from '../../bundler/Bundler';
 
 describe('Bundler: Erasure Coding Geometry Metrics', () => {

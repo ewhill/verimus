@@ -1,7 +1,8 @@
-import archiver from 'archiver';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
+
 import { ReedSolomonErasure } from '@subspace/reed-solomon-erasure.wasm';
+import archiver from 'archiver';
 
 import { hashData, encryptAES, createAESStream } from '../crypto_utils/CryptoUtils';
 
