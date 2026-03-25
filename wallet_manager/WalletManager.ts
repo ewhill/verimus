@@ -2,6 +2,8 @@ import { BLOCK_TYPES } from '../constants';
 import type Ledger from '../ledger/Ledger';
 import logger from '../logger/Logger';
 import type { Block, TransactionBlock, TransactionPayload, StorageContractBlock, StorageContractPayload } from '../types';
+
+
 export default class WalletManager {
     private ledger: Ledger;
     private frozenEscrows: Map<string, { peerId: string; amount: number }> = new Map();
@@ -50,11 +52,11 @@ export default class WalletManager {
                 type: BLOCK_TYPES.STORAGE_CONTRACT,
                 publicKey: peerId,
                 'payload.remainingEgressEscrow': { $gt: 0 }
-            }).toArray() as unknown as StorageContractBlock[];
+            }).toArray() as StorageContractBlock[];
 
             for (const contract of activeContracts) {
                 if (contract.payload?.remainingEgressEscrow) {
-                     balance -= contract.payload.remainingEgressEscrow;
+                    balance -= contract.payload.remainingEgressEscrow;
                 }
             }
 

@@ -70,7 +70,7 @@ async function runManualTest() {
             const ringKeyPair = new RSAKeyPair({ privateKeyPath: 'keys/ring.ring.pem' });
             const signature = ringKeyPair.sign(peerKeyPair.public);
             
-            fsLib.writeFileSync(`${baseKey}.peer.signature`, signature.toString('hex'));
+            fsLib.writeFileSync(`${baseKey}.peer.signature`, signature);
         }
     });
 

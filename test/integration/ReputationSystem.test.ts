@@ -12,7 +12,7 @@ import Bundler from '../../bundler/Bundler';
 import { hashData } from '../../crypto_utils/CryptoUtils';
 import { ChainStatusRequestMessage } from '../../messages/chain_status_request_message/ChainStatusRequestMessage';
 import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
-import RSAKeyPair from '../../p2p/lib/rsakeypair';
+import RSAKeyPair from '../../p2p/lib/RSAKeyPair';
 import PeerNode from '../../peer_node/PeerNode';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
 

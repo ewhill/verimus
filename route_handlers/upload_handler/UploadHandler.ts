@@ -1,5 +1,3 @@
-
-
 import * as crypto from 'crypto';
 
 import { Request, Response } from 'express';
@@ -11,6 +9,7 @@ import { PendingBlockMessage } from '../../messages/pending_block_message/Pendin
 import type { Block, BlockPrivate, StorageContractPayload, PeerConnection } from '../../types';
 import { NodeRole } from '../../types/NodeRole';
 import BaseHandler from '../base_handler/BaseHandler';
+
 
 export default class UploadHandler extends BaseHandler {
     async handle(req: Request, res: Response) {
@@ -73,7 +72,7 @@ export default class UploadHandler extends BaseHandler {
             return res.status(422).send(`Decentralized market triage loop timed out pulling isolated P2P arrays! Acquired hosts: ${bids.length}`);
         }
 
-        logger.info(`[Peer ${this.node.port}] Decentralized array acquired mapping 100% boundary limits. Hosts: ${bids.map((b: any) => b.peerId.slice(0, 8)).join(', ')}`);
+        logger.info(`[Peer ${this.node.port}] Decentralized array acquired mapping 100% boundary limits. Hosts: ${bids.map((b: { peerId: string }) => b.peerId.slice(0, 8)).join(', ')}`);
 
         // Physical Archiving (Mock logical routing onto local boundary, integrating streaming next phase)
         const bundleResult = await this.node.bundler!.streamBlockBundle(files, writeStream, paths);
@@ -98,7 +97,7 @@ export default class UploadHandler extends BaseHandler {
         const payloadResult: StorageContractPayload = {
             ...encryptedPrivate,
             marketId: marketReqId,
-            activeHosts: bids.map((b: any) => b.peerId),
+            activeHosts: bids.map((b: { peerId: string }) => b.peerId),
             allocatedEgressEscrow: theoreticalMaxCost,
             remainingEgressEscrow: theoreticalMaxCost
         };
@@ -124,7 +123,8 @@ export default class UploadHandler extends BaseHandler {
         const p2pMsg = new PendingBlockMessage({ block: pendingBlock });
 
         // Process our own pending block using the EXACT same timestamp that will be broadcasted
-        this.node.consensusEngine.handlePendingBlock(pendingBlock, { peerAddress: `127.0.0.1:${this.node.port}` } as any, Date.now()).catch(err => {
+        const localConnection = { peerAddress: `127.0.0.1:${this.node.port}` } as unknown as PeerConnection;
+        this.node.consensusEngine.handlePendingBlock(pendingBlock, localConnection, Date.now()).catch(err => {
             logger.warn(`[Peer ${this.node.port}] Local pending block convergence exception caught avoiding crash loop: ${err.message}`);
         });
 

@@ -31,7 +31,7 @@ for (const port of PORTS) {
         fs.writeFileSync(`${baseKey}.peer.pub`, peerKeyPair.public);
         
         const signature = ringKeyPair.sign(peerKeyPair.public);
-        fs.writeFileSync(`${baseKey}.peer.signature`, signature.toString('hex'));
+        fs.writeFileSync(`${baseKey}.peer.signature`, signature);
     }
 }
 
