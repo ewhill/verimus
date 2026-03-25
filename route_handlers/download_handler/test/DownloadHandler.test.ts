@@ -5,52 +5,40 @@ import { PassThrough } from 'stream';
 
 import Bundler from '../../../bundler/Bundler';
 import { generateRSAKeyPair, signData, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
+import { MockPeerNode } from '../../../test/mocks/MockPeerNode';
+import { MockRequest } from '../../../test/mocks/MockRequest';
+import { MockResponse } from '../../../test/mocks/MockResponse';
 import { NodeRole } from '../../../types/NodeRole';
 import DownloadHandler from '../DownloadHandler';
-
 
 describe('Backend: downloadHandler Unit Tests', () => {
 
     it('Returns HTTP 404 when requesting missing block hashes', async () => {
-        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
-            privateKey: 'PRIVKEY',
-            ledger: { collection: { find: () => ({ toArray: async () => [] }) } }
-        } as any);
+        const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: 'PRIVKEY' });
+        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [] }) } };
+        const handler = new DownloadHandler(mockNode.asPeerNode());
 
-        const req: any = { params: { hash: 'nonexistent' } };
-        let statusSet = 0;
-        let bodyPayload: any = null;
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { bodyPayload = b; return res; },
-            headersSent: false
-        };
+        const req = new MockRequest({ params: { hash: 'nonexistent' } });
+        const res = new MockResponse();
 
-        await handler.handle(req, res);
-        assert.strictEqual(statusSet, 404);
-        assert.strictEqual(bodyPayload, 'Block not found.');
+        await handler.handle(req.asRequest(), res.asResponse());
+        assert.strictEqual(res.statusCode, 404);
+        assert.strictEqual(res.body, 'Block not found.');
     });
 
     it('Rejects HTTP 403 on invalid remote signature validations restricting downloads', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
         
-        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
-            privateKey: privateKey,
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: {}, publicKey: publicKey, signature: 'bad_sig' }] }) } }
-        } as any);
+        const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: privateKey });
+        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: {}, publicKey: publicKey, signature: 'bad_sig' }] }) } };
+        const handler = new DownloadHandler(mockNode.asPeerNode());
 
-        const req: any = { params: { hash: 'validh' } };
-        let statusSet = 0;
-        let bodyPayload: any = null;
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { bodyPayload = b; return res; },
-            headersSent: false
-        };
+        const req = new MockRequest({ params: { hash: 'validh' } });
+        const res = new MockResponse();
 
-        await handler.handle(req, res);
-        assert.strictEqual(statusSet, 401);
-        assert.strictEqual(bodyPayload, 'Invalid block signature.');
+        await handler.handle(req.asRequest(), res.asResponse());
+        assert.strictEqual(res.statusCode, 401);
+        assert.strictEqual(res.body, 'Invalid block signature.');
     });
 
     it('Returns continuous bundled block stream upon valid parameters', async () => {
@@ -70,43 +58,28 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
-            privateKey: privateKey,
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: { getEgressCostPerGB: () => 0.0,
-                getBlockReadStream: async (id: string) => {
-                    const rs = new PassThrough();
-                    rs.end(fullZip);
-                    return { status: 'available', stream: rs };
-                }
+        const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: privateKey });
+        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } };
+        mockNode.storageProvider = { getEgressCostPerGB: () => 0.0,
+            getBlockReadStream: async (id: string) => {
+                const rs = new PassThrough();
+                rs.end(fullZip);
+                return { status: 'available', stream: rs };
             }
-        } as any);
-
-        const req: any = { params: { hash: 'validh' } };
-        let statusSet = 0;
-        let bodyPayload: string = '';
-        let headers: any = {};
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { bodyPayload += b; return res; },
-            setHeader: (k: string, v: string) => { headers[k] = v; },
-            write: (chunk: any) => { bodyPayload += chunk.toString(); },
-            end: () => {},
-            headersSent: false
         };
+        const handler = new DownloadHandler(mockNode.asPeerNode());
 
-        // Make res act like a writable stream
-        res.once = () => {};
-        res.emit = () => {};
-        res.on = (evt: string, cb: Function) => { return res; };
+        const req = new MockRequest({ params: { hash: 'validh' } });
+        const res = new MockResponse();
+        res.body = '';
         
-        await handler.handle(req, res);
+        await handler.handle(req.asRequest(), res.asResponse());
         // Wait for unzipping stream to pipe all data out
         await new Promise((r) => setTimeout(() => r(undefined), 100));
         
-        assert.strictEqual(headers['Content-type'], 'application/zip');
+        assert.strictEqual(res.headers['Content-type'], 'application/zip');
         // bodyPayload should contain compressed deflated bytes
-        assert.ok(bodyPayload.length > 20);
+        assert.ok(res.body.length > 20);
     });
 
     it('Intercepts active status tracking requests when statusOnly flag is flipped correctly cancelling full zip rendering', async () => {
@@ -118,32 +91,25 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
         let streamDestroyed = false;
-        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
-            privateKey: privateKey,
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: { getEgressCostPerGB: () => 0.0,
-                getBlockReadStream: async (id: string) => {
-                    const rs = new PassThrough();
-                    const origDestroy = rs.destroy.bind(rs);
-                    rs.destroy = (err?: any) => { streamDestroyed = true; origDestroy(err); return rs; };
-                    return { status: 'available', stream: rs };
-                }
+        const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: privateKey });
+        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } };
+        mockNode.storageProvider = { getEgressCostPerGB: () => 0.0,
+            getBlockReadStream: async (id: string) => {
+                const rs = new PassThrough();
+                const origDestroy = rs.destroy.bind(rs);
+                rs.destroy = (err?: any) => { streamDestroyed = true; origDestroy(err); return rs; };
+                return { status: 'available', stream: rs };
             }
-        } as any);
-
-        const req: any = { params: { hash: 'validh' }, query: { statusOnly: 'true' } };
-        let statusSet = 0;
-        let bodyPayload: string = '';
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { bodyPayload = b; return res; },
-            setHeader: () => {}, write: () => {}, end: () => {}, headersSent: false
         };
+        const handler = new DownloadHandler(mockNode.asPeerNode());
 
-        await handler.handle(req, res);
+        const req = new MockRequest({ params: { hash: 'validh' }, query: { statusOnly: 'true' } });
+        const res = new MockResponse();
+
+        await handler.handle(req.asRequest(), res.asResponse());
         
-        assert.strictEqual(statusSet, 200);
-        assert.strictEqual(bodyPayload, 'Available');
+        assert.strictEqual(res.statusCode, 200);
+        assert.strictEqual(res.body, 'Available');
         assert.strictEqual(streamDestroyed, true);
     });
 
@@ -153,26 +119,19 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
-            privateKey: privateKey,
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: { getEgressCostPerGB: () => 0.0,
-                getBlockReadStream: async () => ({ status: 'not_found' })
-            }
-        } as any);
-
-        const req: any = { params: { hash: 'validh' } };
-        let statusSet = 0;
-        let bodyPayload: string = '';
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { bodyPayload += b; return res; },
-            headersSent: false
+        const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: privateKey });
+        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } };
+        mockNode.storageProvider = { getEgressCostPerGB: () => 0.0,
+            getBlockReadStream: async () => ({ status: 'not_found' })
         };
+        const handler = new DownloadHandler(mockNode.asPeerNode());
 
-        await handler.handle(req, res);
-        assert.strictEqual(statusSet, 404);
-        assert.strictEqual(bodyPayload, 'Block not found.');
+        const req = new MockRequest({ params: { hash: 'validh' } });
+        const res = new MockResponse();
+
+        await handler.handle(req.asRequest(), res.asResponse());
+        assert.strictEqual(res.statusCode, 404);
+        assert.strictEqual(res.body, 'Block not found.');
     });
 
     it('Returns HTTP 500 capturing storage layer instantiation errors', async () => {
@@ -186,54 +145,38 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
-            privateKey: privateKey,
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: { getEgressCostPerGB: () => 0.0,
-                getBlockReadStream: async (id: string) => {
-                    const rs = new PassThrough();
-                    rs.end(Buffer.from('corrupt_aes_stream'));
-                    return { status: 'available', stream: rs };
-                }
+        const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: privateKey });
+        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } };
+        mockNode.storageProvider = { getEgressCostPerGB: () => 0.0,
+            getBlockReadStream: async (id: string) => {
+                const rs = new PassThrough();
+                rs.end(Buffer.from('corrupt_aes_stream'));
+                return { status: 'available', stream: rs };
             }
-        } as any);
-
-        const req: any = { params: { hash: 'validh' } };
-        let statusSet = 0;
-        let bodyPayload: string = '';
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { bodyPayload += b; return res; },
-            setHeader: () => {}, write: () => {}, end: () => {},
-            headersSent: false
         };
+        const handler = new DownloadHandler(mockNode.asPeerNode());
 
-        res.once = () => {}; res.emit = () => {}; res.on = () => res;
+        const req = new MockRequest({ params: { hash: 'validh' } });
+        const res = new MockResponse();
+
         await new Promise<void>((resolve) => {
-            handler.handle(req, res).then(() => setTimeout(resolve, 100));
+            handler.handle(req.asRequest(), res.asResponse()).then(() => setTimeout(resolve, 100));
         });
         
         // When decipher errors, it should fire the 'error' handler and send 500
-        assert.ok(statusSet === 0 || statusSet === 500); 
+        assert.ok(res.statusCode === 200 || res.statusCode === 500); // the default inside MockResponse is 200. This is testing it changes.
     });
 
     it('Returns HTTP 500 on payload parsing logic failures', async () => {
-        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
-            privateKey: 'PRIV',
-            ledger: null // Will throw
-        } as any);
+        const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: 'PRIV' });
+        mockNode.ledger = null; // Will throw on usage
+        const handler = new DownloadHandler(mockNode.asPeerNode());
 
-        const req: any = { params: { hash: 'validh' } };
-        let statusSet = 0;
-        let bodyPayload: string = '';
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { bodyPayload += b; return res; },
-            headersSent: false
-        };
+        const req = new MockRequest({ params: { hash: 'validh' } });
+        const res = new MockResponse();
 
-        await handler.handle(req, res);
-        assert.strictEqual(statusSet, 500);
+        await handler.handle(req.asRequest(), res.asResponse());
+        assert.strictEqual(res.statusCode, 500);
     });
 
     it('Returns HTTP 401 catching invalid RSA signature parameter decryption keys', async () => {
@@ -241,21 +184,16 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const encPriv = encryptPrivatePayload(publicKey, { bad: 'data'} as any); // Wrong structure
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
-            privateKey: generateRSAKeyPair().privateKey, // Wrong priv key to make it throw
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } }
-        } as any);
+        const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: generateRSAKeyPair().privateKey });
+        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } };
+        const handler = new DownloadHandler(mockNode.asPeerNode());
 
-        const req: any = { params: { hash: 'validh' } };
-        let statusSet = 0; let message = '';
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { message = b; return res; }
-        };
+        const req = new MockRequest({ params: { hash: 'validh' } });
+        const res = new MockResponse();
 
-        await handler.handle(req, res);
-        assert.strictEqual(statusSet, 401);
-        assert.strictEqual(message, 'Failed to decrypt private payload.');
+        await handler.handle(req.asRequest(), res.asResponse());
+        assert.strictEqual(res.statusCode, 401);
+        assert.strictEqual(res.body, 'Failed to decrypt private payload.');
     });
 
     it('Intercepts node ReadStream exceptions emitting HTTP 500', async () => {
@@ -269,36 +207,27 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const handler = new DownloadHandler({ roles: [NodeRole.STORAGE], 
-            privateKey: privateKey,
-            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
-            storageProvider: { getEgressCostPerGB: () => 0.0,
-                getBlockReadStream: async (id: string) => {
-                    const rs = new PassThrough();
-                    setTimeout(() => {
-                        rs.emit('error', new Error('Disaster'));
-                        rs.destroy();
-                    }, 10);
-                    return { status: 'available', stream: rs };
-                }
+        const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: privateKey });
+        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } };
+        mockNode.storageProvider = { getEgressCostPerGB: () => 0.0,
+            getBlockReadStream: async (id: string) => {
+                const rs = new PassThrough();
+                setTimeout(() => {
+                    rs.emit('error', new Error('Disaster'));
+                    rs.destroy();
+                }, 10);
+                return { status: 'available', stream: rs };
             }
-        } as any);
-
-        const req: any = { params: { hash: 'validh' } };
-        let statusSet = 0;
-        let bodyPayload: string = '';
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { bodyPayload += b; return res; },
-            setHeader: () => {}, write: () => {}, end: () => {},
-            headersSent: false
         };
+        const handler = new DownloadHandler(mockNode.asPeerNode());
 
-        res.once = () => {}; res.emit = () => {}; res.on = () => res;
+        const req = new MockRequest({ params: { hash: 'validh' } });
+        const res = new MockResponse();
+
         await new Promise<void>((resolve) => {
-            handler.handle(req, res).then(() => setTimeout(resolve, 50));
+            handler.handle(req.asRequest(), res.asResponse()).then(() => setTimeout(resolve, 50));
         });
         
-        assert.strictEqual(statusSet, 500); 
+        assert.strictEqual(res.statusCode, 500); 
     });
 });

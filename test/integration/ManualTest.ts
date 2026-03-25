@@ -6,10 +6,10 @@ import pathLib from 'path';
 import FormData from 'form-data';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
-import Bundler from '../bundler/Bundler';
-import RSAKeyPair from '../p2p/lib/RSAKeyPair';
-import PeerNode from '../peer_node/PeerNode';
-import MemoryStorageProvider from '../storage_providers/memory_provider/MemoryProvider';
+import Bundler from '../../bundler/Bundler';
+import RSAKeyPair from '../../p2p/lib/RSAKeyPair';
+import PeerNode from '../../peer_node/PeerNode';
+import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
 
 
 
@@ -76,7 +76,7 @@ async function runManualTest() {
 
     await Promise.all([node1.init(), node2.init(), node3.init()]);
 
-    const setupExpressApp = (await import('../api_server/ApiServer')).default;
+    const setupExpressApp = (await import('../../api_server/ApiServer')).default;
     node1.httpServer = http.createServer(setupExpressApp(node1)) as any;
     node2.httpServer = http.createServer(setupExpressApp(node2)) as any;
     node3.httpServer = http.createServer(setupExpressApp(node3)) as any;

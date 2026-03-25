@@ -2,47 +2,40 @@ import assert from 'node:assert';
 import { describe, it, beforeEach } from 'node:test';
 
 import { generateRSAKeyPair, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
+import { MockPeerNode } from '../../../test/mocks/MockPeerNode';
+import { MockRequest } from '../../../test/mocks/MockRequest';
+import { MockResponse } from '../../../test/mocks/MockResponse';
 import BlocksHandler from '../BlocksHandler';
 
 describe('Backend: blocksHandler Coverage', () => {
-    let mockNode: any;
-    let req: any;
-    let res: any;
+    let mockNode: MockPeerNode;
+    let req: MockRequest;
+    let res: MockResponse;
     let keys: any;
 
     beforeEach(() => {
         keys = generateRSAKeyPair();
-        mockNode = {
+        mockNode = new MockPeerNode({
             publicKey: 'testPubKey',
             privateKey: keys.privateKey,
-            ledger: {
-                collection: {
-                    find: () => ({
-                        sort: () => ({
-                            toArray: async () => []
-                        })
-                    })
-                }
-            },
-            mempool: {
-                pendingBlocks: new Map()
-            }
-        };
+        });
 
-        req = { query: {} };
-        res = {
-            jsonStr: '',
-            statusObj: 200,
-            json(data: any) { this.jsonStr = JSON.stringify(data); return this; },
-            status(code: number) { this.statusObj = code; return this; }
-        };
+        // Add explicit overrides for this specific test suite
+        mockNode.ledger.collection.find = () => ({
+            sort: () => ({
+                toArray: async () => []
+            })
+        });
+
+        req = new MockRequest({ query: {} });
+        res = new MockResponse();
     });
 
     it('Returns empty blocks list', async () => {
-        const handler = new BlocksHandler(mockNode as any);
-        await handler.handle(req as any, res as any);
+        const handler = new BlocksHandler(mockNode.asPeerNode());
+        await handler.handle(req.asRequest(), res.asResponse());
         
-        const responseData = JSON.parse(res.jsonStr);
+        const responseData = res.body;
         assert.strictEqual(responseData.success, true);
         assert.strictEqual(responseData.blocks.length, 0);
     });
@@ -56,10 +49,10 @@ describe('Backend: blocksHandler Coverage', () => {
             })
         });
 
-        const handler = new BlocksHandler(mockNode as any);
-        await handler.handle(req as any, res as any);
+        const handler = new BlocksHandler(mockNode.asPeerNode());
+        await handler.handle(req.asRequest(), res.asResponse());
         
-        const responseData = JSON.parse(res.jsonStr);
+        const responseData = res.body;
         assert.strictEqual(responseData.blocks.length, 1);
         assert.strictEqual(responseData.blocks[0].hash, 'hash1');
     });
@@ -79,10 +72,10 @@ describe('Backend: blocksHandler Coverage', () => {
 
         req.query.q = 'match';
         
-        const handler = new BlocksHandler(mockNode as any);
-        await handler.handle(req as any, res as any);
+        const handler = new BlocksHandler(mockNode.asPeerNode());
+        await handler.handle(req.asRequest(), res.asResponse());
         
-        const responseData = JSON.parse(res.jsonStr);
+        const responseData = res.body;
         assert.strictEqual(responseData.blocks.length, 1);
         assert.strictEqual(responseData.blocks[0].hash, 'hash1');
     });
@@ -94,19 +87,19 @@ describe('Backend: blocksHandler Coverage', () => {
             block: { signature: 'some-sig', publicKey: 'testPubKey', payload: encrypted, metadata: { timestamp: 12345 } }
         });
 
-        const handler = new BlocksHandler(mockNode as any);
-        await handler.handle(req as any, res as any);
+        const handler = new BlocksHandler(mockNode.asPeerNode());
+        await handler.handle(req.asRequest(), res.asResponse());
 
-        const responseData = JSON.parse(res.jsonStr);
+        const responseData = res.body;
         assert.strictEqual(responseData.blocks.length, 1);
         assert.strictEqual(responseData.blocks[0].metadata.index, -1);
     });
 
     it('Returns 500 error on failure', async () => {
-        const handler = new BlocksHandler(null as any);
-        await handler.handle(req as any, res as any);
-        assert.strictEqual(res.statusObj, 500);
-        const responseData = JSON.parse(res.jsonStr);
+        const handler = new BlocksHandler(null as any); // Cannot avoid testing actual null boundary here easily without bypassing TS
+        await handler.handle(req.asRequest(), res.asResponse());
+        assert.strictEqual(res.statusCode, 500);
+        const responseData = res.body;
         assert.strictEqual(responseData.success, false);
     });
 
@@ -124,10 +117,10 @@ describe('Backend: blocksHandler Coverage', () => {
 
         req.query.own = 'true';
 
-        const handler = new BlocksHandler(mockNode as any);
-        await handler.handle(req as any, res as any);
+        const handler = new BlocksHandler(mockNode.asPeerNode());
+        await handler.handle(req.asRequest(), res.asResponse());
         
-        const responseData = JSON.parse(res.jsonStr);
+        const responseData = res.body;
         // Only the pending block with testPubKey should be returned
         assert.strictEqual(responseData.blocks.length, 1);
         assert.strictEqual(responseData.blocks[0].publicKey, 'testPubKey');
@@ -149,18 +142,18 @@ describe('Backend: blocksHandler Coverage', () => {
 
         // Test ASC
         req.query.sort = 'asc';
-        let handler = new BlocksHandler(mockNode as any);
-        await handler.handle(req as any, res as any);
-        let resp = JSON.parse(res.jsonStr);
+        let handler = new BlocksHandler(mockNode.asPeerNode());
+        await handler.handle(req.asRequest(), res.asResponse());
+        let resp = res.body;
         assert.strictEqual(resp.blocks[0].signature, 'b1');
         assert.strictEqual(resp.blocks[1].signature, 'b2');
 
         // Test DESC
-        res.jsonStr = '';
+        res = new MockResponse();
         req.query.sort = 'desc';
-        handler = new BlocksHandler(mockNode as any);
-        await handler.handle(req as any, res as any);
-        resp = JSON.parse(res.jsonStr);
+        handler = new BlocksHandler(mockNode.asPeerNode());
+        await handler.handle(req.asRequest(), res.asResponse());
+        resp = res.body;
         assert.strictEqual(resp.blocks[0].signature, 'b2');
         assert.strictEqual(resp.blocks[1].signature, 'b1');
     });
@@ -178,10 +171,10 @@ describe('Backend: blocksHandler Coverage', () => {
         });
 
         req.query.q = 'match';
-        const handler = new BlocksHandler(mockNode as any);
-        await handler.handle(req as any, res as any);
+        const handler = new BlocksHandler(mockNode.asPeerNode());
+        await handler.handle(req.asRequest(), res.asResponse());
         
-        const responseData = JSON.parse(res.jsonStr);
+        const responseData = res.body;
         assert.strictEqual(responseData.blocks.length, 1);
         assert.strictEqual(responseData.blocks[0].hash, 'hash2');
     });

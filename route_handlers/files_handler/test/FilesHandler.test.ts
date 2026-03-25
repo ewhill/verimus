@@ -2,46 +2,34 @@ import assert from 'node:assert';
 import { describe, it, beforeEach } from 'node:test';
 
 import { generateRSAKeyPair, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
+import PeerNode from '../../../peer_node/PeerNode';
+import { MockPeerNode } from '../../../test/mocks/MockPeerNode';
+import { MockRequest } from '../../../test/mocks/MockRequest';
+import { MockResponse } from '../../../test/mocks/MockResponse';
 import FilesHandler from '../FilesHandler';
 
 describe('Backend: filesHandler Coverage', () => {
-    let mockNode: any;
-    let req: any;
-    let res: any;
+    let mockNode: MockPeerNode;
+    let req: MockRequest;
+    let res: MockResponse;
     let keys: any;
 
     beforeEach(() => {
         keys = generateRSAKeyPair();
-        mockNode = {
-            publicKey: 'testPubKey',
-            privateKey: keys.privateKey,
-            ownedBlocksCache: [],
-            ledger: {
-                collection: {
-                    find: () => ({
-                        toArray: async () => []
-                    })
-                }
-            },
-            mempool: {
-                pendingBlocks: new Map()
-            }
-        };
+        mockNode = new MockPeerNode({ publicKey: 'testPubKey', privateKey: keys.privateKey });
+        mockNode.ownedBlocksCache = [];
+        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [] }) } };
+        mockNode.mempool = { pendingBlocks: new Map() };
 
-        req = {};
-        res = {
-            jsonStr: '',
-            statusObj: 200,
-            json(data: any) { this.jsonStr = JSON.stringify(data); return this; },
-            status(code: number) { this.statusObj = code; return this; }
-        };
+        req = new MockRequest();
+        res = new MockResponse();
     });
 
     it('Returns empty array on blank node payloads', async () => {
-        const handler = new FilesHandler(mockNode as any);
-        await handler.handle(req as any, res as any);
+        const handler = new FilesHandler(mockNode.asPeerNode());
+        await handler.handle(req.asRequest(), res.asResponse());
         
-        const responseData = JSON.parse(res.jsonStr);
+        const responseData = res.body;
         assert.strictEqual(responseData.success, true);
         assert.strictEqual(responseData.files.length, 0);
     });
@@ -57,10 +45,10 @@ describe('Backend: filesHandler Coverage', () => {
             toArray: async () => [{ metadata: { index: 5, timestamp: 9999 }, hash: 'hashABC', publicKey: 'testPubKey', payload: encrypted }]
         });
         
-        const handler = new FilesHandler(mockNode as any);
-        await handler.handle(req as any, res as any);
+        const handler = new FilesHandler(mockNode.asPeerNode());
+        await handler.handle(req.asRequest(), res.asResponse());
         
-        const responseData = JSON.parse(res.jsonStr);
+        const responseData = res.body;
         assert.strictEqual(responseData.success, true);
         assert.strictEqual(responseData.files.length, 1);
         
@@ -82,20 +70,20 @@ describe('Backend: filesHandler Coverage', () => {
             block: { publicKey: 'testPubKey', payload: encrypted, hash: 'pendingHash' }
         });
         
-        const handler = new FilesHandler(mockNode as any);
-        await handler.handle(req as any, res as any);
+        const handler = new FilesHandler(mockNode.asPeerNode());
+        await handler.handle(req.asRequest(), res.asResponse());
         
-        const responseData = JSON.parse(res.jsonStr);
+        const responseData = res.body;
         assert.strictEqual(responseData.success, true);
         assert.strictEqual(responseData.files.length, 1);
         assert.strictEqual(responseData.files[0].path, 'pendingDoc.txt');
     });
 
     it('Bypasses cache handling query param overrides returning raw responses', async () => {
-        const handler = new FilesHandler(null as any);
-        await handler.handle(req as any, res as any);
-        assert.strictEqual(res.statusObj, 500);
-        const responseData = JSON.parse(res.jsonStr);
+        const handler = new FilesHandler(null as unknown as PeerNode);
+        await handler.handle(req.asRequest(), res.asResponse());
+        assert.strictEqual(res.statusCode, 500);
+        const responseData = res.body;
         assert.strictEqual(responseData.success, false);
     });
 
@@ -117,10 +105,10 @@ describe('Backend: filesHandler Coverage', () => {
             ]
         });
         
-        const handler = new FilesHandler(mockNode as any);
-        await handler.handle(req as any, res as any);
+        const handler = new FilesHandler(mockNode.asPeerNode());
+        await handler.handle(req.asRequest(), res.asResponse());
         
-        const responseData = JSON.parse(res.jsonStr);
+        const responseData = res.body;
         assert.strictEqual(responseData.success, true);
         assert.strictEqual(responseData.files.length, 1);
         
@@ -138,10 +126,10 @@ describe('Backend: filesHandler Coverage', () => {
             ]
         });
         
-        const handler = new FilesHandler(mockNode as any);
-        await handler.handle(req as any, res as any);
+        const handler = new FilesHandler(mockNode.asPeerNode());
+        await handler.handle(req.asRequest(), res.asResponse());
         
-        const responseData = JSON.parse(res.jsonStr);
+        const responseData = res.body;
         assert.strictEqual(responseData.success, true);
         assert.strictEqual(responseData.files.length, 0);
     });
@@ -163,7 +151,7 @@ describe('Backend: filesHandler Coverage', () => {
             files: [{ path: 'glacier.txt' }] 
         });
         
-        mockNode.ownedBlocksCache = undefined; // Cover default ownedBlocksCache init
+        mockNode.ownedBlocksCache = []; // Cover default ownedBlocksCache init
         
         // Add pending block directly to mempool since we cleared owned blocks
         mockNode.mempool.pendingBlocks.set('pending1', {
@@ -183,10 +171,10 @@ describe('Backend: filesHandler Coverage', () => {
             block: { publicKey: 'testPubKey', payload: encrypted4, hash: 'loc4', metadata: { index: 4, timestamp: 4 } }
         });
         
-        const handler = new FilesHandler(mockNode as any);
-        await handler.handle(req as any, res as any);
+        const handler = new FilesHandler(mockNode.asPeerNode());
+        await handler.handle(req.asRequest(), res.asResponse());
         
-        const responseData = JSON.parse(res.jsonStr);
+        const responseData = res.body;
         assert.strictEqual(responseData.files.length, 4);
     });
 });
