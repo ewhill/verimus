@@ -276,7 +276,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
                 getBlockReadStream: async (id: string) => {
                     const rs = new PassThrough();
                     setTimeout(() => {
-                        rs.emit('Catches generic errors returning 500', new Error('Disaster'));
+                        rs.emit('error', new Error('Disaster'));
                         rs.destroy();
                     }, 10);
                     return { status: 'available', stream: rs };
