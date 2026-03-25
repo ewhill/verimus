@@ -1,8 +1,9 @@
-export { };
-const fs = require('fs');
-const path = require('path');
-const archiver = require('archiver');
-const { hashData, encryptAES, createAESStream } = require('../crypto_utils/CryptoUtils');
+import archiver from 'archiver';
+import * as crypto from 'crypto';
+import * as fs from 'fs';
+import { ReedSolomonErasure } from '@subspace/reed-solomon-erasure.wasm';
+
+import { hashData, encryptAES, createAESStream } from '../crypto_utils/CryptoUtils';
 
 class Bundler {
     dataDir: string;
@@ -12,15 +13,14 @@ class Bundler {
     }
 
     /**
-     * Translates a linear payload buffer into an Erasure Coding N/K matrix seamlessly natively.
+     * Translates a linear payload buffer into an Erasure Coding N/K matrix.
      */
     static async encodeErasureShards(buffer: Buffer, K: number, N: number): Promise<Buffer[]> {
-        const { ReedSolomonErasure } = require('@subspace/reed-solomon-erasure.wasm');
         const wasmPath = require.resolve('@subspace/reed-solomon-erasure.wasm/dist/reed_solomon_erasure_bg.wasm');
-        const rs = ReedSolomonErasure.fromBytes(require('fs').readFileSync(wasmPath));
+        const rs = ReedSolomonErasure.fromBytes(fs.readFileSync(wasmPath));
 
         const P = N - K;
-        if (P < 0) throw new Error("Parity shards cannot be negative natively mapping.");
+        if (P < 0) throw new Error("Parity shards cannot be negative.");
 
         // Pad buffer so it divides evenly by K
         const shardSize = Math.ceil(buffer.length / K);
@@ -37,7 +37,7 @@ class Bundler {
         const uint8Shards = new Uint8Array(shardsBuf.buffer, shardsBuf.byteOffset, shardsBuf.byteLength);
         const result = rs.encode(uint8Shards, K, P);
         if (result !== ReedSolomonErasure.RESULT_OK) {
-            throw new Error(`Erasure encoding failed mapping bounds with code: ${result}`);
+            throw new Error(`Erasure encoding failed with code: ${result}`);
         }
 
         const outputShards: Buffer[] = [];
@@ -48,14 +48,13 @@ class Bundler {
     }
 
     /**
-     * Reconstructs an original buffer given an array of physical fragments cleanly recursively natively.
+     * Reconstructs an original buffer given an array of fragments.
      */
     static async reconstructErasureShards(shards: (Buffer | null)[], K: number, N: number, originalLength: number): Promise<Buffer> {
-        if (shards.length !== N) throw new Error("Shards array physically strictly must match N bounds!");
+        if (shards.length !== N) throw new Error("Shards array must match N bounds!");
 
-        const { ReedSolomonErasure } = require('@subspace/reed-solomon-erasure.wasm');
         const wasmPath = require.resolve('@subspace/reed-solomon-erasure.wasm/dist/reed_solomon_erasure_bg.wasm');
-        const rs = ReedSolomonErasure.fromBytes(require('fs').readFileSync(wasmPath));
+        const rs = ReedSolomonErasure.fromBytes(fs.readFileSync(wasmPath));
 
         const P = N - K;
         
@@ -63,7 +62,7 @@ class Bundler {
         for (const s of shards) {
              if (s) { shardSize = s.length; break; }
         }
-        if (shardSize === 0) throw new Error("No physical shard fragments available matching reconstruction recursively.");
+        if (shardSize === 0) throw new Error("No shard fragments available for reconstruction.");
 
         const shardsAvailable = shards.map(s => s !== null);
         const shardsBuf = Buffer.alloc(shardSize * N);
@@ -78,7 +77,7 @@ class Bundler {
 
         const result = rs.reconstruct(uint8Shards, K, P, shardsAvailable);
         if (result !== ReedSolomonErasure.RESULT_OK) {
-            throw new Error(`Erasure reconstruction failed structurally with code: ${result}`);
+            throw new Error(`Erasure reconstruction failed with code: ${result}`);
         }
 
         const reconstructedData = Buffer.from(uint8Shards.buffer, uint8Shards.byteOffset, K * shardSize);
@@ -149,14 +148,14 @@ class Bundler {
                 
                 if (file.path) {
                     contentHash = await new Promise<string>((res, rej) => {
-                        const hash = require('crypto').createHash('sha256');
-                        const st = require('fs').createReadStream(file.path);
+                        const hash = crypto.createHash('sha256');
+                        const st = fs.createReadStream(file.path);
                         st.on('data', (d: any) => hash.update(d));
                         st.on('end', () => res(hash.digest('hex')));
                         st.on('error', rej);
                     });
                     files.push({ path: filePath, contentHash });
-                    archive.append(require('fs').createReadStream(file.path), { name: filePath });
+                    archive.append(fs.createReadStream(file.path), { name: filePath });
                 } else if (file.buffer) {
                     contentHash = hashData(file.buffer);
                     files.push({ path: filePath, contentHash });
