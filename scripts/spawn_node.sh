@@ -25,17 +25,17 @@ echo "==========================================="
 
 if [ "$WATCH_MODE" = true ]; then
     echo "Starting in WATCH mode (auto-refresh enabled)..."
-    if [ "$HEADLESS" != true ]; then
+    if [ "$HEADLESS" != true ] && [ "$SKIP_UI" != true ]; then
         echo "[1/2] Starting UI watcher in background..."
         npm run watch:ui &
         UI_PID=$!
     else
-        echo "[1/2] Skipping UI watcher natively (--headless active)"
+        echo "[1/2] Skipping UI watcher (--headless or --skip-ui active)"
         UI_PID=""
     fi
 
     echo "[2/2] Starting Peer Node watcher..."
-    # Launch nodemon passing port and configs natively over npm "--" bindings
+    # Launch nodemon passing port and configs over npm "--" bindings
     
     # Extract port for local logging bounds
     PORT_VAL="unknown"
@@ -48,10 +48,10 @@ if [ "$WATCH_MODE" = true ]; then
     npm run watch:node -- "${EXTRA_ARGS[@]}" > "/tmp/watch_node_${PORT_VAL}.log" 2>&1 &
     NODE_PID=$!
     
-    # Trap Ctrl-C to cleanly kill background watchers exclusively avoiding zombie processes
+    # Trap Ctrl-C to cleanly kill background watchers without zombie processes
     trap "echo -e '\nStopping Watchers...'; kill $UI_PID $NODE_PID 2>/dev/null; exit 0" SIGINT SIGTERM
     
-    # Wait recursively holding active shell focus 
+    # Wait holding active shell focus 
     if [ ! -z "$UI_PID" ]; then
         wait $UI_PID $NODE_PID
     else
