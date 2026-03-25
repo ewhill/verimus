@@ -1,10 +1,14 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
+
+import { Collection } from 'mongodb';
+
+import type { PeerReputation } from '../../../types';
 import { ReputationManager } from '../ReputationManager';
 
 class MockCollection {
-    data: any = {};
+    data: Record<string, any> = {};
     async findOne({ publicKey }: { publicKey: string }) {
         return this.data[publicKey] || null;
     }
@@ -14,13 +18,17 @@ class MockCollection {
     async updateOne({ publicKey }: { publicKey: string }, { $set }: any) {
         this.data[publicKey] = { ...this.data[publicKey], ...$set };
     }
+    
+    asCollection(): Collection<PeerReputation> {
+        return this as unknown as Collection<PeerReputation>;
+    }
 }
 
 describe('Backend: ReputationManager Analytics and Threshold Parsing', () => {
 
     it('Enforces 100 maximum score bounds', async () => {
-        const mockCollection = new MockCollection() as any;
-        const manager = new ReputationManager(mockCollection);
+        const mockCollection = new MockCollection();
+        const manager = new ReputationManager(mockCollection.asCollection());
         
         await manager.rewardValidSync('test_honest'); // Starts at 100 
         const updatedScore = await manager.getScore('test_honest');
@@ -30,8 +38,8 @@ describe('Backend: ReputationManager Analytics and Threshold Parsing', () => {
     });
 
     it('Penalizes without dropping below 0', async () => {
-        const mockCollection = new MockCollection() as any;
-        const manager = new ReputationManager(mockCollection);
+        const mockCollection = new MockCollection();
+        const manager = new ReputationManager(mockCollection.asCollection());
         
         await manager.penalizeCritical('test_malicious', 'Signature forgery');
         await manager.penalizeMinor('test_malicious', 'Spam looping'); // Drops below 0 internally
@@ -45,8 +53,8 @@ describe('Backend: ReputationManager Analytics and Threshold Parsing', () => {
     });
 
     it('Computes strikes based on infractions', async () => {
-        const mockCollection = new MockCollection() as any;
-        const manager = new ReputationManager(mockCollection);
+        const mockCollection = new MockCollection();
+        const manager = new ReputationManager(mockCollection.asCollection());
         
         await manager.penalizeMinor('test_faulty', 'Spam');
         await manager.penalizeMajor('test_faulty', 'Bad schema');
@@ -59,8 +67,8 @@ describe('Backend: ReputationManager Analytics and Threshold Parsing', () => {
     });
 
     it('Ignores invalid reputation penalties', async () => {
-        const mockCollection = new MockCollection() as any;
-        const manager = new ReputationManager(mockCollection);
+        const mockCollection = new MockCollection();
+        const manager = new ReputationManager(mockCollection.asCollection());
         
         // Seed peer implicitly
         mockCollection.data['test_node'] = {

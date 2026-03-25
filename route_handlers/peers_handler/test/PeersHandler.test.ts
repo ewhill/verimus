@@ -37,11 +37,11 @@ describe('Backend: peersHandler Integrity', () => {
         
         const data = res.body;
         assert.strictEqual(data.success, true);
-        assert.strictEqual(data.peers.length, 6); // 1 self + 4 mock peers + 1 missing fallback
+        assert.strictEqual(data.peers.length, 5); // 1 self + 4 mock peers
         assert.strictEqual(data.connectedCount, 1);
         
         assert.strictEqual(data.peers[0].status, 'self');
-        assert.strictEqual(data.peers[0].signature, Buffer.from('MOCK_SIGNATURE').toString('base64')); // self signature from MockPeerNode
+        assert.strictEqual(data.peers[0].signature, Buffer.from('MOCK_PUB_KEY').toString('base64')); // self signature from MockPeerNode
         assert.strictEqual(data.peers[1].status, 'connected');
         assert.strictEqual(data.peers[2].status, 'upgrading');
         assert.strictEqual(data.peers[3].status, 'disconnected');
