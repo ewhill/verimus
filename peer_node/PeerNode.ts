@@ -1,7 +1,7 @@
 import EventEmitter from 'events';
 import * as fs from 'fs';
 import { IncomingMessage } from 'http';
-import { Http2ServerRequest } from 'http2';
+// import { Http2ServerRequest } from 'http2';
 import * as https from 'https';
 import { Socket } from 'net';
 

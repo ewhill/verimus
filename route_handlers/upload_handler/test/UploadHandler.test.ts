@@ -5,7 +5,7 @@ import { generateRSAKeyPair } from '../../../crypto_utils/CryptoUtils';
 import { MockPeerNode } from '../../../test/mocks/MockPeerNode';
 import { MockRequest } from '../../../test/mocks/MockRequest';
 import { MockResponse } from '../../../test/mocks/MockResponse';
-import { NodeRole } from '../../../types/NodeRole';
+// import { NodeRole } from '../../../types/NodeRole';
 import UploadHandler from '../UploadHandler';
 
 describe('Backend: uploadHandler Coverage Unit Tests', () => {

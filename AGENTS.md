@@ -21,6 +21,7 @@ Do **not** use `as any` casting unless actively monkey-patching poorly defined e
 - Define interface mappings within `types/index.d.ts`. 
 - Avoid loose `JSON.parse` returns. Strictly type properties appropriately.
 - If overriding external implicit implementations, leverage `// @ts-ignore` as opposed to `(item as any)` casting where possible. Do not burn excessive compute cycles fighting complex nested TypeScript generics from loosely-typed external libraries; securely leverage isolated pragmas rather than infinitely struggling with TS inference constraints.
+- **Unused Variables**: To satisfy strict TypeScript compiler configurations (`noUnusedLocals`, `noUnusedParameters`) alongside ESLint rules, any intentionally unused variable or parameter must strictly be prefixed with `_unused` (e.g., `_unusedReq`, `_unusedCb`). Do not use a simple underscore (`_`).
 
 ## 4. Frontend Exclusivity 
 The `ui/` directory holds the React/Vite front-end app executing decoupled states. Do **not** mix backend dependencies into the `ui/` layer.

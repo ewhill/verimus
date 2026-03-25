@@ -66,7 +66,7 @@ export default function setupExpressApp(peerNode: PeerNode) {
     if (!peerNode.isHeadless) {
         app.use(new DefaultHandler(peerNode).handle);
     } else {
-        app.use((req, res) => {
+        app.use((_unusedReq, res) => {
             res.status(404).json({ success: false, message: 'Node running in Headless Mode.' });
         });
     }

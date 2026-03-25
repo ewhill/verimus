@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import * as crypto from 'node:crypto';
 import { describe, it, beforeEach } from 'node:test';
 
-import { generateRSAKeyPair, signData } from '../../../crypto_utils/CryptoUtils';
+import { generateRSAKeyPair } from '../../../crypto_utils/CryptoUtils';
 import * as proxyCrypto from '../../../crypto_utils/CryptoUtils';
 import Mempool from '../../../models/mempool/Mempool';
 import ConsensusEngine from '../ConsensusEngine';
@@ -190,7 +190,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
         mockNode.ledger.getLatestBlock = async () => ({ hash: 'lastHash123', metadata: { index: 0 } });
         
         let blockAdded = false;
-        mockNode.ledger.addBlockToChain = async (block: any) => { blockAdded = true; };
+        mockNode.ledger.addBlockToChain = async (_unusedBlock: any) => { blockAdded = true; };
         
         await engine._commitFork('forkCommit');
         assert.ok(blockAdded);
@@ -244,7 +244,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
         engine.committing = true;
         const origSetTimeout = global.setTimeout;
         let timeoutTriggered = false;
-        (global as any).setTimeout = (cb: any, t: number) => { timeoutTriggered = true; return {}; };
+        (global as any).setTimeout = (_unusedCb: any, _unusedT: number) => { timeoutTriggered = true; return {}; };
         await engine._commitFork('forkAdopt');
         assert.ok(timeoutTriggered);
         global.setTimeout = origSetTimeout;
@@ -276,7 +276,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
         // Force a verification check
         mockNode.getMajorityCount = () => 1;
         const origSetTimeout = global.setTimeout;
-        (global as any).setTimeout = (cb: any, t: number) => { cb(); return {}; };
+        (global as any).setTimeout = (cb: any, _unusedT: number) => { cb(); return {}; };
         await engine.handleVerifyBlock('blockZ', 'sigZ', { peerAddress: 'peer3' } as any);
         global.setTimeout = origSetTimeout;
         

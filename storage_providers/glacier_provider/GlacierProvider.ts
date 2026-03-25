@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { PassThrough } from 'stream';
+import { PassThrough, Readable } from 'stream';
 
 import { GlacierClient, UploadArchiveCommand, InitiateJobCommand, GetJobOutputCommand, DescribeJobCommand } from "@aws-sdk/client-glacier";
 
@@ -120,7 +120,7 @@ class GlacierStorageProvider extends BaseStorageProvider {
                     });
                     const outputResponse = await this.client.send(outputCommand);
                     if (outputResponse.body) {
-                        return { status: 'available', stream: outputResponse.body as NodeJS.ReadableStream };
+                        return { status: 'available', stream: outputResponse.body as unknown as Readable };
                     }
                 } else {
                     return {

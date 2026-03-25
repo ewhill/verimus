@@ -22,7 +22,7 @@ class MemoryStorageProvider extends BaseStorageProvider {
         };
     }
 
-    static parseArgs(args: string[], credentials: Record<string, unknown> = {}) {
+    static parseArgs(_unusedArgs: string[], _unusedCredentials: Record<string, unknown> = {}) {
         logger.info(`[MemoryStorageProvider] Initialized`);
         return new MemoryStorageProvider();
     }

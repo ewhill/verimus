@@ -25,7 +25,7 @@ describe('Backend: glacierProvider Integrity', () => {
         await new Promise(r => setTimeout(r, 10)); // Yield for async event handler
         assert.ok(sendInvoked);
 
-        const { physicalBlockId: physErr, writeStream: wsErr } = prov.createBlockStream();
+        const { writeStream: wsErr } = prov.createBlockStream();
         (prov as any).client.send = async () => { throw new Error('Glacier send failure'); };
         wsErr.end();
         await new Promise(r => setTimeout(r, 10));

@@ -42,15 +42,15 @@ export class MockResponse {
         return true;
     }
 
-    once(event: string, cb: Function): this {
+    once(_unusedEvent: string, _unusedCb: Function): this {
         return this;
     }
 
-    emit(event: string, ...args: any[]): boolean {
+    emit(_unusedEvent: string, ..._unusedArgs: any[]): boolean {
         return true;
     }
 
-    on(event: string, cb: Function): this {
+    on(_unusedEvent: string, _unusedCb: Function): this {
         return this;
     }
 

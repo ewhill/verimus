@@ -4,6 +4,8 @@ const test = require('tape');
 
 const { Peer, Message } = require('../index.js');
 const { createPeerProxy } = require('../lib/PeerProxy.js');
+const fs = require('fs');
+const RSAKeyPair = require('../lib/RSAKeyPair.js');
 
 // ----------------------------------------------------------------------------------
 // ----------------------------------------------------------------------------------
@@ -79,8 +81,7 @@ const setup = async () => {
       "-signkey /tmp/https.key.pem -out /tmp/https.cert.pem",
     ]
   });
-  const fs = require('fs');
-  const RSAKeyPair = require('../lib/RSAKeyPair.js');
+
   const writeKey = (pathPre) => {
     const k = RSAKeyPair.generate();
     const e = k.export({mode: 'both', returnBuffer: false});

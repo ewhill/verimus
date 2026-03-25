@@ -30,7 +30,7 @@ export default class BlocksHandler extends BaseHandler {
             // Prepend pending blocks 
             let pendingBlocks: Block[] = [];
             if (this.node.mempool && this.node.mempool.pendingBlocks) {
-                for (const [bId, entry] of this.node.mempool.pendingBlocks.entries()) {
+                for (const [_unusedBId, entry] of this.node.mempool.pendingBlocks.entries()) {
                     if (!entry.committed) {
                         if (req.query.own === 'true' && entry.block.publicKey !== this.node.publicKey) continue;
 

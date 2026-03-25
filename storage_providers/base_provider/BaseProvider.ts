@@ -2,8 +2,10 @@ export interface StorageLocation {
     type: string,
 }
 
+import { Readable } from 'stream';
+
 export type GetBlockReadStreamResult = 
-    | { status: 'available', stream: NodeJS.ReadableStream }
+    | { status: 'available', stream: Readable }
     | { status: 'pending', message: string, jobId?: string }
     | { status: 'not_found' };
 
@@ -25,7 +27,7 @@ abstract class BaseStorageProvider {
      * @param {string[]} args - CLI arguments (process.argv).
      * @returns {BaseStorageProvider|null}
      */
-    static parseArgs(args: string[]): BaseStorageProvider | null {
+    static parseArgs(_unusedArgs: string[]): BaseStorageProvider | null {
         throw new Error("parseArgs() must be implemented by subclasses");
     }
 
@@ -34,7 +36,7 @@ abstract class BaseStorageProvider {
      * @param {Buffer|string} encryptedData 
      * @returns {string} physicalBlockId
      */
-    async storeBlock(encryptedData: Buffer | string): Promise<string> {
+    async storeBlock(_unusedEncryptedData: Buffer | string): Promise<string> {
         throw new Error("storeBlock() must be implemented by subclasses");
     }
 
@@ -51,7 +53,7 @@ abstract class BaseStorageProvider {
      * @param {string} physicalBlockId 
      * @returns {Promise<GetBlockReadStreamResult>}
      */
-    async getBlockReadStream(physicalBlockId: string): Promise<GetBlockReadStreamResult> {
+    async getBlockReadStream(_unusedPhysicalBlockId: string): Promise<GetBlockReadStreamResult> {
         throw new Error('getBlockReadStream not implemented');
     }
 
@@ -60,7 +62,7 @@ abstract class BaseStorageProvider {
      * @param {string} physicalBlockId 
      * @returns {Promise<NodeJS.ReadableStream|object|null>}
      */
-    generatePhysicalBlockId(physicalBlockId: string): string {
+    generatePhysicalBlockId(_unusedPhysicalBlockId: string): string {
         throw new Error("generatePhysicalBlockId() must be implemented by subclasses");
     }
 

@@ -84,7 +84,7 @@ describe('Backend: githubProvider Integrity', () => {
         const prov = new GithubStorageProvider('owner', 'repo', 'tkn', 'main');
         
         let fetchedOpts: any = null;
-        global.fetch = async (url: any, opts: any) => {
+        global.fetch = async (_unusedUrl: any, opts: any) => {
             fetchedOpts = opts;
             return { ok: true, status: 200 } as any;
         };

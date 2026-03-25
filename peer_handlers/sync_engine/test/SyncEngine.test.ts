@@ -88,14 +88,14 @@ describe('Backend: SyncEngine Integrity', () => {
         mockNode.peer.broadcast = async () => { };
         mockNode.ledger.isChainValid = async () => true;
 
-        let sentReq = false;
+        // let _sentReq = false;
         const mockConn1 = {
             peerAddress: 'addr1',
-            send: (m: any) => { sentReq = true; }
+            send: (_unusedM: any) => {}
         };
 
         const originalSetTimeout = global.setTimeout;
-        (global as any).setTimeout = (cb: any, ms: any) => { cb(); return {} as any; };
+        (global as any).setTimeout = (cb: any, _unusedMs: any) => { cb(); return {} as any; };
 
         // Feed mock responses
         syncEngine._chainStatusResponses = [
@@ -111,8 +111,8 @@ describe('Backend: SyncEngine Integrity', () => {
         (cryptoUtils as any).hashData = () => 'h10';
 
         syncEngine._blockSyncResponses.set('10_addr1', mockNewBlock as any);
-        let blockAdded = false;
-        mockNode.ledger.addBlockToChain = async (_b: any) => { blockAdded = true; };
+        // let blockAdded = false;
+        mockNode.ledger.addBlockToChain = async (_unusedB: any) => {};
 
         await syncEngine.performInitialSync();
 
@@ -133,7 +133,7 @@ describe('Backend: SyncEngine Integrity', () => {
 
         const mockConn1 = {
             peerAddress: 'addr1',
-            send: (_m: any) => { }
+            send: (_unusedM: any) => { }
         };
 
         syncEngine._chainStatusResponses = [
@@ -148,7 +148,7 @@ describe('Backend: SyncEngine Integrity', () => {
         };
 
         const originalSetTimeout = global.setTimeout;
-        (global as any).setTimeout = (cb: any, _ms: any) => {
+        (global as any).setTimeout = (cb: any, _unusedMs: any) => {
             syncEngine._chainStatusResponses = [
                 { latestIndex: 10, latestHash: 'h10', connection: mockConn1 as any }
             ];
@@ -161,11 +161,11 @@ describe('Backend: SyncEngine Integrity', () => {
         };
 
         // Buffer queue handling
-        let pbHandled = false;
-        let afHandled = false;
+        // let _pbHandled = false;
+        // let _afHandled = false;
         mockNode.consensusEngine = {
-            handlePendingBlock: async () => { pbHandled = true; },
-            handleAdoptFork: async () => { afHandled = true; }
+            handlePendingBlock: async () => {},
+            handleAdoptFork: async () => {}
         };
 
         await syncEngine.performInitialSync();
@@ -180,7 +180,7 @@ describe('Backend: SyncEngine Integrity', () => {
         mockNode.peer.broadcast = async () => { };
         mockNode.ledger.isChainValid = async () => true;
 
-        const mockConn1 = { peerAddress: 'addr1', send: (_m: any) => { } };
+        const mockConn1 = { peerAddress: 'addr1', send: (_unusedM: any) => { } };
         syncEngine._chainStatusResponses = [{ latestIndex: 10, latestHash: 'h10', connection: mockConn1 as any }];
         mockNode.ledger.getLatestBlock = async () => ({ metadata: { index: 10 }, hash: 'h10' });
 
@@ -192,7 +192,7 @@ describe('Backend: SyncEngine Integrity', () => {
         };
 
         const originalSetTimeout = global.setTimeout;
-        (global as any).setTimeout = (cb: any, _ms: any) => {
+        (global as any).setTimeout = (cb: any, _unusedMs: any) => {
             syncEngine._chainStatusResponses = [{ latestIndex: 10, latestHash: 'h10', connection: mockConn1 as any }];
             syncEngine.syncBuffer = [
                 { type: 'PendingBlock', block: {} as any, connection: mockConn1 as any, timestamp: 123 },
@@ -218,7 +218,7 @@ describe('Backend: SyncEngine Integrity', () => {
         const mockConn2 = { peerAddress: 'addr2', send: () => { } };
 
         const originalSetTimeout = global.setTimeout;
-        (global as any).setTimeout = (cb: any, _ms: any) => {
+        (global as any).setTimeout = (cb: any, _unusedMs: any) => {
             // set responses inside mock
             syncEngine._chainStatusResponses = [
                 { latestIndex: 1, latestHash: 'h1', connection: mockConn1 as any },
@@ -253,7 +253,7 @@ describe('Backend: SyncEngine Integrity', () => {
         const computedHash1 = origHash(JSON.stringify({ metadata: { index: 1 }, previousHash: 'h0' }));
 
         const originalSetTimeout = global.setTimeout;
-        (global as any).setTimeout = (cb: any, _ms: any) => {
+        (global as any).setTimeout = (cb: any, _unusedMs: any) => {
             syncEngine._chainStatusResponses = [
                 { latestIndex: 2, latestHash: 'h2', connection: mockConn1 as any }
             ];
@@ -273,8 +273,8 @@ describe('Backend: SyncEngine Integrity', () => {
     });
 
     it('Broadcasts limit orders and successfully maps required bids', async () => {
-        let sentMessage: any = null;
-        mockNode.peer.broadcast = async (msg: any) => { sentMessage = msg; };
+        // let _sentMessage: any = null;
+        mockNode.peer.broadcast = async (_unusedMsg: any) => { };
 
         // Let orchestrate storage market run, but we will fulfill the market manually simulating the network
         const promise = syncEngine.orchestrateStorageMarket('req-1', 1000, 250, 2, 0.10);
@@ -319,7 +319,7 @@ describe('Backend: SyncEngine Integrity', () => {
         const originalSetTimeout = global.setTimeout;
 
         // Mock setTimeout to immediately execute preventing async drift
-        (global as any).setTimeout = (cb: any, _ms: any) => { cb(); return {} as any; };
+        (global as any).setTimeout = (cb: any, _unusedMs: any) => { cb(); return {} as any; };
 
         const promise = syncEngine.orchestrateStorageMarket('req-timeout', 1000, 250, 5, 0.10);
 

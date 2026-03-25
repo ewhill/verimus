@@ -45,8 +45,8 @@ describe('Backend: PeerNode Logical Verification Check', () => {
         (fs as unknown as { readFileSync: Function }).readFileSync = () => Buffer.from('MOCK_KEY');
 
         try {
-           await mockNode.init().catch(e => {}); // Only care about internal instantiation sequence
-        } catch(e) {}
+           await mockNode.init().catch(_unusedE => {}); // Only care about internal instantiation sequence
+        } catch(_unusedE) {}
 
         assert.ok(mockNode.reputationManager !== undefined, 'ReputationManager MUST exist post-initialization');
         assert.ok((mockNode.reputationManager as unknown as Record<string, any>).peersCollection.testMarker, 'ReputationManager bridged native persistent Mongo DB Collections');

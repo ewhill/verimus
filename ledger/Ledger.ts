@@ -107,7 +107,8 @@ class Ledger {
                 index: previousBlock.metadata.index + 1,
                 timestamp: Date.now()
             },
-            type: type as any,
+            // @ts-ignore
+            type: type,
             previousHash: previousBlock.hash,
             publicKey: publicKey,
             payload: privatePayload,
@@ -128,7 +129,8 @@ class Ledger {
                 // Remove the hash before recalculating
                 const blockToHash = { ...currentBlock };
                 delete blockToHash.hash;
-                delete (blockToHash as any)._id; // Ensure MongoDB internal ID isn't hashed
+                // @ts-ignore
+                delete blockToHash._id; // Ensure MongoDB internal ID isn't hashed
 
                 const recalculatedHash = hashData(JSON.stringify(blockToHash));
 

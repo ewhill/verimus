@@ -53,7 +53,7 @@ async function runManualTest() {
     }, tmp3);
 
     // Generate keys to prevent errors
-    [node1, node2, node3].forEach((node, index) => {
+    [node1, node2, node3].forEach((_unusedNode, index) => {
 
 
         const baseKey = `keys/peer_2678${index}`;

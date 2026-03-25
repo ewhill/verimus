@@ -46,7 +46,7 @@ export default class DownloadFileHandler extends BaseHandler {
             let privatePayload;
             try {
                 privatePayload = decryptPrivatePayload(privateKey, block.payload as StorageContractPayload);
-            } catch (e) {
+            } catch (_unusedE) {
                 return res.status(401).send('Failed to decrypt private payload.');
             }
 
@@ -63,9 +63,7 @@ export default class DownloadFileHandler extends BaseHandler {
                 }
 
                 if (req.query?.statusOnly === 'true') {
-                    if (typeof (readStreamResult.stream as any)?.destroy === 'function') {
-                        (readStreamResult.stream as any).destroy();
-                    }
+                    readStreamResult.stream.destroy();
                     return res.status(200).send('Available');
                 }
                 readStream = readStreamResult.stream;
@@ -118,7 +116,7 @@ export default class DownloadFileHandler extends BaseHandler {
                                     }
                                 }
                             }
-                        } catch (e) {
+                        } catch (_unusedE) {
                             clearTimeout(timeout);
                             resReq({ shardIndex: mapping.shardIndex, buffer: null });
                         }
@@ -160,7 +158,7 @@ export default class DownloadFileHandler extends BaseHandler {
             const maxEscrow = privatePayload.remainingEgressEscrow ?? privatePayload.allocatedEgressEscrow ?? 0;
 
             const byteSpooler = new Transform({
-                transform(chunk, encoding, callback) {
+                transform(chunk, _unusedEncoding, callback) {
                     if (egressCostPerGB > 0) {
                         const iterationCost = (chunk.length / (1024 * 1024 * 1024)) * egressCostPerGB;
                         accumulatedCost += iterationCost;
@@ -188,9 +186,7 @@ export default class DownloadFileHandler extends BaseHandler {
                 if (!res.headersSent) res.status(402).send(err.message);
                 else res.end();
 
-                if (typeof (readStream as any).destroy === 'function') {
-                    (readStream as any).destroy();
-                }
+                readStream.destroy();
             });
 
             res.on('close', async () => {

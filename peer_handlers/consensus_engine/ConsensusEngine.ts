@@ -34,7 +34,10 @@ class ConsensusEngine {
     }
 
     bindHandlers() {
-        this.node.peer?.bind(PendingBlockMessage).to(async (m: PendingBlockMessage, c: PeerConnection) => this.handlePendingBlock(m.block, c, (m as any).header?.timestamp.getTime()));
+        this.node.peer?.bind(PendingBlockMessage).to(async (m: PendingBlockMessage, c: PeerConnection) => {
+            // @ts-ignore
+            this.handlePendingBlock(m.block, c, m.header?.timestamp.getTime());
+        });
         this.node.peer?.bind(VerifyBlockMessage).to(async (m: VerifyBlockMessage, c: PeerConnection) => this.handleVerifyBlock(m.blockId, m.signature, c));
         this.node.peer?.bind(ProposeForkMessage).to(async (m: ProposeForkMessage, c: PeerConnection) => this.handleProposeFork(m.forkId, m.blockIds, c));
         this.node.peer?.bind(AdoptForkMessage).to(async (m: AdoptForkMessage, c: PeerConnection) => this.handleAdoptFork(m.forkId, m.finalTipHash, c));
@@ -63,7 +66,8 @@ class ConsensusEngine {
 
         const blockToHash = { ...block };
         delete blockToHash.hash;
-        delete (blockToHash as any)._id;
+        // @ts-ignore
+        delete blockToHash._id;
         const recalculatedHash = hashData(JSON.stringify(blockToHash));
 
         if (block.hash && block.hash !== recalculatedHash) {

@@ -97,7 +97,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
                 getEgressCostPerGB: () => 0.0,
-                getBlockReadStream: async (_id: string) => {
+                getBlockReadStream: async (_unusedId: string) => {
                     const rs = new PassThrough();
                     rs.end(fullZip);
                     return { status: 'available', stream: rs };
@@ -106,10 +106,10 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         } as any);
 
         const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
-        let statusSet = 0;
+        // let _statusSet = 0;
         let bodyPayload: string = '';
         const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
+            status: (_unusedS: number) => { return res; },
             send: (b: any) => { bodyPayload += b; return res; },
             setHeader: () => { },
             write: (chunk: any) => { bodyPayload += chunk.toString(); },
@@ -125,7 +125,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
             // Pipe hook
             res.once = () => { };
             res.emit = () => { };
-            res.on = (evt: string, _cb: Function) => {
+            res.on = (evt: string, _unusedCb: Function) => {
                 if (evt === 'finish' || evt === 'close') {
                     setTimeout(() => { resolve(undefined); }, 50);
                 }
@@ -144,7 +144,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
     it('Intercepts active status tracking requests when statusOnly flag is flipped correctly cancelling full zip rendering', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
 
-        const pt = new PassThrough();
+        // const _pt = new PassThrough();
         const priv = { key: 'a'.repeat(64), iv: 'b'.repeat(32), files: [], physicalId: 'pid', location: { type: 'local' } };
         const encPriv = encryptPrivatePayload(publicKey, priv as any);
         const sig = signData(JSON.stringify(encPriv), privateKey);
@@ -156,7 +156,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
                 getEgressCostPerGB: () => 0.0,
-                getBlockReadStream: async (_id: string) => {
+                getBlockReadStream: async (_unusedId: string) => {
                     const rs = new PassThrough();
                     const origDestroy = rs.destroy.bind(rs);
                     rs.destroy = (err?: any) => { streamDestroyed = true; origDestroy(err); return rs; };
@@ -201,7 +201,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
                 getEgressCostPerGB: () => 0.0,
-                getBlockReadStream: async (_id: string) => {
+                getBlockReadStream: async (_unusedId: string) => {
                     const rs = new PassThrough();
                     rs.end(fullZip);
                     return { status: 'available', stream: rs };
@@ -245,7 +245,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
                 getEgressCostPerGB: () => 0.0,
-                getBlockReadStream: async (_id: string) => {
+                getBlockReadStream: async (_unusedId: string) => {
                     const rs = new PassThrough();
                     rs.end(Buffer.from('corrupt_zip_data!')); // Corrupt zip
                     return { status: 'available', stream: rs };
@@ -283,7 +283,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         let statusSet = 0;
         const res: any = {
             status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { return res; }, on: () => res,
+            send: (_unusedB: any) => { return res; }, on: () => res,
             headersSent: false
         };
 
@@ -292,7 +292,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
     });
 
     it('Throws HTTP 401 stopping pipelines on mismatched AES decryption', async () => {
-        const { publicKey, privateKey } = generateRSAKeyPair();
+        const { publicKey } = generateRSAKeyPair();
         const handler = new DownloadFileHandler({
             roles: [NodeRole.STORAGE],
             privateKey: 'BAD_KEY',
@@ -300,9 +300,9 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         } as any);
 
         const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
-        let statusSet = 0;
+        // let _statusSet = 0;
         const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
+            status: (_unusedS: number) => { return res; },
             send: () => { return res; }, on: () => res,
         };
 
@@ -344,7 +344,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
                 getEgressCostPerGB: () => 0.0,
-                getBlockReadStream: async (_id: string) => ({ status: 'not_found' }) // simulate not found
+                getBlockReadStream: async (_unusedId: string) => ({ status: 'not_found' }) // simulate not found
             }
         } as any);
 
@@ -372,7 +372,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
                 getEgressCostPerGB: () => 0.0,
-                getBlockReadStream: async (_id: string) => {
+                getBlockReadStream: async (_unusedId: string) => {
                     const rs = new PassThrough();
                     setTimeout(() => {
                         rs.emit('error', new Error('Disaster'));
@@ -420,7 +420,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
             ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } },
             storageProvider: {
                 getEgressCostPerGB: () => 0.0,
-                getBlockReadStream: async (_id: string) => {
+                getBlockReadStream: async (_unusedId: string) => {
                     const rs = new PassThrough();
                     rs.end(fullZip);
                     return { status: 'available', stream: rs };
@@ -431,8 +431,8 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         const req: any = { params: { hash: 'validh', filename: 'MISSING_FILE.txt' } };
         let bodyPayload: string = '';
         const res: any = {
-            status: (s: number) => { return res; },
-            send: (b: any) => { return res; },
+            status: (_unusedS: number) => { return res; },
+            send: (_unusedB: any) => { return res; },
             setHeader: () => { }, write: () => { }, end: () => { bodyPayload += 'ended'; },
             headersSent: true // Emulate headers already sent!
         };

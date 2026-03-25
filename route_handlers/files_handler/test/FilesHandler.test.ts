@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import { describe, it, beforeEach } from 'node:test';
 
 import { generateRSAKeyPair, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
-import PeerNode from '../../../peer_node/PeerNode';
+// import PeerNode from '../../../peer_node/PeerNode';
 import { MockPeerNode } from '../../../test/mocks/MockPeerNode';
 import { MockRequest } from '../../../test/mocks/MockRequest';
 import { MockResponse } from '../../../test/mocks/MockResponse';

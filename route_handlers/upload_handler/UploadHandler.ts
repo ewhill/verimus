@@ -132,7 +132,7 @@ export default class UploadHandler extends BaseHandler {
 
         try {
             await Promise.all(shardDispatchPromises);
-        } catch(err: any) {
+        } catch(_unusedErr: any) {
             this.node.consensusEngine.walletManager.releaseFunds(marketReqId); 
             return res.status(502).send('Decentralized P2P transmission array sequence fatally failed communicating limits.');
         }

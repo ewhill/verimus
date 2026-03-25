@@ -49,7 +49,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
     });
 
     it('Gets block from mempool when missing in ledger', async () => {
-        const { publicKey, privateKey } = cryptoUtils.generateRSAKeyPair();
+        const { publicKey } = cryptoUtils.generateRSAKeyPair();
         const mockBlock = { hash: 'memhash', publicKey: publicKey, payload: {}, signature: 'bad_sig' };
         const mockNode = new MockPeerNode({ publicKey });
         mockNode.ledger = { collection: { find: () => ({ toArray: async () => [] }) } };

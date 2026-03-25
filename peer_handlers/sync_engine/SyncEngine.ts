@@ -61,7 +61,7 @@ class SyncEngine {
     }
 
     bindHandlers() {
-        this.node.peer?.bind(ChainStatusRequestMessage).to(async (m: ChainStatusRequestMessage, c: PeerConnection) => this.handleChainStatusRequest(c));
+        this.node.peer?.bind(ChainStatusRequestMessage).to(async (_unusedM: ChainStatusRequestMessage, c: PeerConnection) => this.handleChainStatusRequest(c));
         this.node.peer?.bind(ChainStatusResponseMessage).to(async (m: ChainStatusResponseMessage, c: PeerConnection) => this.handleChainStatusResponse(m.latestIndex, m.latestHash, c));
         this.node.peer?.bind(BlockSyncRequestMessage).to(async (m: BlockSyncRequestMessage, c: PeerConnection) => this.handleBlockSyncRequest(m.index, c));
         this.node.peer?.bind(BlockSyncResponseMessage).to(async (m: BlockSyncResponseMessage, c: PeerConnection) => this.handleBlockSyncResponse(m.block, c));
@@ -89,7 +89,7 @@ class SyncEngine {
         }
     }
 
-    async handleNetworkHealthSync(score_payloads: { publicKey: string, score: number, roles?: NodeRole[] }[], connection: PeerConnection) {
+    async handleNetworkHealthSync(score_payloads: { publicKey: string, score: number, roles?: NodeRole[] }[], _unusedConnection: PeerConnection) {
         if (!this.node.ledger.peersCollection) return;
         
         for (const remoteScore of score_payloads) {
@@ -283,7 +283,7 @@ class SyncEngine {
         }
     }
 
-    async handleStorageShardResponse(msg: StorageShardResponseMessage, connection: PeerConnection) {
+    async handleStorageShardResponse(msg: StorageShardResponseMessage, _unusedConnection: PeerConnection) {
         this.node.events.emit(`shard_response:${msg.marketId}:${msg.shardIndex}`, msg);
     }
 
@@ -318,7 +318,7 @@ class SyncEngine {
         }
     }
 
-    async handleStorageShardRetrieveResponse(msg: StorageShardRetrieveResponseMessage, connection: PeerConnection) {
+    async handleStorageShardRetrieveResponse(msg: StorageShardRetrieveResponseMessage, _unusedConnection: PeerConnection) {
         this.node.events.emit(`shard_retrieve:${msg.marketId}:${msg.physicalId}`, msg);
     }
 
@@ -341,7 +341,7 @@ class SyncEngine {
 
         const indexCounts: Record<number, { count: number, peers: PeerConnection[], hash: string }> = {};
         let highestConsensusIndex = -1;
-        let highestConsensusHash: string | null = null;
+        // let _highestConsensusHash: string | null = null;
         let highestConsensusPeers: PeerConnection[] = [];
 
         for (const res of this._chainStatusResponses) {
@@ -359,7 +359,7 @@ class SyncEngine {
                 if (data.count >= Math.ceil(responderCount / 2)) {
                     if (index > highestConsensusIndex) {
                         highestConsensusIndex = index;
-                        highestConsensusHash = data.hash;
+                        // highestConsensusHash = data.hash;
                         highestConsensusPeers = data.peers;
                     }
                 }

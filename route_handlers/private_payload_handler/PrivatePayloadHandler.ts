@@ -49,7 +49,7 @@ export default class PrivatePayloadHandler extends BaseHandler {
         let privatePayload;
         try {
             privatePayload = decryptPrivatePayload(privateKey, targetBlock.payload as StorageContractPayload);
-        } catch (e) {
+        } catch (_unusedE) {
             return res.status(401).json({ success: false, message: 'Failed to decrypt private payload.' });
         }
 

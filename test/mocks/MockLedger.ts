@@ -24,7 +24,7 @@ export class MockCollection<T extends { [key: string]: any }> {
         };
     }
 
-    async findOne(query: any): Promise<T | null> {
+    async findOne(_unusedQuery: any): Promise<T | null> {
         return this.data.length > 0 ? this.data[0] : null;
     }
 

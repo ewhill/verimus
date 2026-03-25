@@ -1,7 +1,7 @@
 import crypto from 'crypto';
-import { PassThrough } from 'stream';
+import { PassThrough, Readable } from 'stream';
 
-import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 
 import logger from '../../logger/Logger';
@@ -89,7 +89,7 @@ class S3StorageProvider extends BaseStorageProvider {
                 Key: `${physicalBlockId}.pkg`
             });
             const response = await this.client.send(command);
-            return { status: 'available', stream: response.Body as unknown as NodeJS.ReadableStream }; // This is a readable stream in Node.js SDK v3
+            return { status: 'available', stream: response.Body as unknown as Readable }; // This is a readable stream in Node.js SDK v3
         } catch (err: any) {
             logger.error(`[S3StorageProvider] Failed to get read stream for ${physicalBlockId}:`, err);
             return { status: 'not_found' };

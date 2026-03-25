@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+// import crypto from 'crypto';
 import fs from 'fs';
 import type { AddressInfo } from 'net';
 import assert from 'node:assert';
@@ -171,7 +171,7 @@ console.log('SENDING INVALID SIG BLOCK!');
     });
 
     it('Drops subsequent connections from banned node', async () => {
-        const node1 = nodes[0];
+        // const node1 = nodes[0];
         const node3 = nodes[2];
 
         // The banned hook in peerNode closes physical sockets

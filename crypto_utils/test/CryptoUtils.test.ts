@@ -19,7 +19,7 @@ describe('Backend: Crypto Utils Unit Tests', () => {
         
         // Mock Readable
         const sourceStream = new Transform({
-            transform(chunk, _, callback) {
+            transform(chunk, _unusedEncoding, callback) {
                 callback(null, chunk);
             }
         });
@@ -27,7 +27,7 @@ describe('Backend: Crypto Utils Unit Tests', () => {
         const { cipherStream, key, iv, getAuthTag } = createAESStream();
         let encryptedChunks: Buffer[] = [];
         const captureEncrypted = new Transform({
-            transform(chunk, _, callback) {
+            transform(chunk, _unusedEncoding, callback) {
                 encryptedChunks.push(chunk);
                 callback(null, chunk);
             }
@@ -48,7 +48,7 @@ describe('Backend: Crypto Utils Unit Tests', () => {
         
         let decryptedOutput = '';
         const outputStream = new Transform({
-            transform(chunk, _, callback) {
+            transform(chunk, _unusedEncoding, callback) {
                 decryptedOutput += chunk.toString('utf-8');
                 callback(null, chunk);
             }

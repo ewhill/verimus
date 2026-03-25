@@ -5,7 +5,7 @@ import { Request, Response } from 'express';
 import BaseHandler from '../base_handler/BaseHandler';
 
 export default class PeersHandler extends BaseHandler {
-    async handle(req: Request, res: Response) {
+    async handle(_unusedReq: Request, res: Response) {
     try {
         if (!this.node.peer) {
             return res.json({ success: true, peers: [], connectedCount: 0 });

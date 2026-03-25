@@ -1,7 +1,7 @@
 import { BLOCK_TYPES } from '../constants';
 import type Ledger from '../ledger/Ledger';
 import logger from '../logger/Logger';
-import type { Block, TransactionBlock, TransactionPayload, StorageContractBlock, StorageContractPayload } from '../types';
+import type { TransactionBlock, TransactionPayload, StorageContractBlock, StorageContractPayload } from '../types';
 
 
 export default class WalletManager {

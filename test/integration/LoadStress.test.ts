@@ -18,18 +18,18 @@ class NullStorageProvider extends BaseProvider {
     createBlockStream(): { physicalBlockId: string, writeStream: NodeJS.WritableStream } {
         const physicalBlockId = 'null-fs-' + Date.now();
         const writeStream = new stream.Writable({
-            write(chunk, encoding, callback) {
+            write(_unusedChunk, _unusedEncoding, callback) {
                 callback();
             }
         });
         return { physicalBlockId, writeStream };
     }
 
-    async getBlock(locationId: string): Promise<Buffer | null> {
+    async getBlock(_unusedLocationId: string): Promise<Buffer | null> {
         return null;
     }
 
-    async getBlockReadStream(locationId: string): Promise<GetBlockReadStreamResult> {
+    async getBlockReadStream(_unusedLocationId: string): Promise<GetBlockReadStreamResult> {
         return { status: 'available', stream: Object.create(stream.Readable.prototype) };
     }
 
@@ -117,7 +117,7 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
         let generatedBytes = 0;
 
         const bigStream = new Readable({
-            read(size) {
+            read(_unusedSize) {
                 if (generatedBytes >= TARGET_SIZE) {
                     this.push(null);
                 } else {

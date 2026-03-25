@@ -6,13 +6,13 @@ import type { StorageContractPayload, Block } from '../../types';
 import BaseHandler from '../base_handler/BaseHandler';
 
 export default class FilesHandler extends BaseHandler {
-    async handle(req: Request, res: Response) {
+    async handle(_unusedReq: Request, res: Response) {
         try {
             const ownedHashes = this.node.ownedBlocksCache || [];
 
             let pendingBlocks: Block[] = [];
             if (this.node.mempool && this.node.mempool.pendingBlocks) {
-                for (const [bId, entry] of this.node.mempool.pendingBlocks.entries()) {
+                for (const [_unusedBId, entry] of this.node.mempool.pendingBlocks.entries()) {
                     if (!entry.committed && entry.block.publicKey === this.node.publicKey) {
                         pendingBlocks.push(entry.block);
                     }
