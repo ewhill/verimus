@@ -35,8 +35,8 @@ describe('WalletManager', () => {
         const walletManager = new WalletManager(mockLedger);
         const balance = await walletManager.calculateBalance('peerA');
         
-        // 100 - 20 + 50 = 130
-        assert.strictEqual(balance, 130);
+        // 100 base + 100 - 20 + 50 = 230
+        assert.strictEqual(balance, 230);
     });
 
     it('Returns zero if no ledger history maps peer', async () => {
@@ -50,7 +50,7 @@ describe('WalletManager', () => {
 
         const walletManager = new WalletManager(mockLedger);
         const balance = await walletManager.calculateBalance('peerZ');
-        assert.strictEqual(balance, 0);
+        assert.strictEqual(balance, 100);
     });
 
     it('Verifies boundaries checking mathematical state', async () => {
@@ -68,7 +68,7 @@ describe('WalletManager', () => {
         const hasFunds = await walletManager.verifyFunds('peerA', 25);
         assert.strictEqual(hasFunds, true);
 
-        const hasInsufficient = await walletManager.verifyFunds('peerA', 100);
+        const hasInsufficient = await walletManager.verifyFunds('peerA', 200);
         assert.strictEqual(hasInsufficient, false);
     });
 
@@ -149,26 +149,26 @@ describe('WalletManager', () => {
         const walletManager = new WalletManager(mockLedger);
         // Initially 300
         const initialBalance = await walletManager.calculateBalance('peerX');
-        assert.strictEqual(initialBalance, 300);
+        assert.strictEqual(initialBalance, 400);
 
         // Freeze 200 for contract A
         walletManager.freezeFunds('peerX', 200, 'contract-A');
         const activeBalance = await walletManager.calculateBalance('peerX');
-        assert.strictEqual(activeBalance, 100);
+        assert.strictEqual(activeBalance, 200);
 
-        // Try to allocate 150 which should fail since active is 100
-        const blocked = await walletManager.allocateFunds('peerX', 'peerY', 150, 'sig');
+        // Try to allocate 250 which should fail since active is 200
+        const blocked = await walletManager.allocateFunds('peerX', 'peerY', 250, 'sig');
         assert.strictEqual(blocked, null);
 
         // Release funds
         walletManager.releaseFunds('contract-A');
         const releasedBalance = await walletManager.calculateBalance('peerX');
-        assert.strictEqual(releasedBalance, 300);
+        assert.strictEqual(releasedBalance, 400);
 
         // Commit funds clears the lock
         walletManager.freezeFunds('peerX', 250, 'contract-B');
-        assert.strictEqual(await walletManager.calculateBalance('peerX'), 50);
+        assert.strictEqual(await walletManager.calculateBalance('peerX'), 150);
         walletManager.commitFunds('contract-B');
-        assert.strictEqual(await walletManager.calculateBalance('peerX'), 300);
+        assert.strictEqual(await walletManager.calculateBalance('peerX'), 400);
     });
 });

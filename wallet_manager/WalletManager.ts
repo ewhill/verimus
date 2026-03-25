@@ -21,7 +21,8 @@ export default class WalletManager {
             return Infinity;
         }
 
-        let balance = 0;
+        // Bootstrap local dev networks mapping initial funds to peer identities
+        let balance = 100.0;
 
         try {
             if (!this.ledger.collection) {

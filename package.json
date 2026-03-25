@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "tsx index.ts",
-    "keygen": "tsx generateKeys.ts",
+    "keygen": "tsx generate_keys/GenerateKeys.ts",
     "build:ui": "npm --prefix ui run build",
     "watch:ui": "npm --prefix ui run watch",
     "start:node": "tsx index.ts",
