@@ -31,19 +31,57 @@ export default class UploadHandler extends BaseHandler {
         logger.info(`[Peer ${this.node.port}] Processing file upload via streams...`);
         const { physicalBlockId, writeStream } = this.node.storageProvider!.createBlockStream();
 
+        const redundancyStr = req.body.redundancy;
+        const maxCostStr = req.body.maxCost;
+        let redundancy = redundancyStr ? parseInt(redundancyStr, 10) : 1;
+        let maxCost = maxCostStr ? parseFloat(maxCostStr) : 50.0;
+
+        if (isNaN(redundancy) || redundancy < 1) return res.status(400).send('Invalid redundancy parameter.');
+        if (isNaN(maxCost) || maxCost <= 0) return res.status(400).send('Invalid maxCost boundary.');
+
+        // Cap minimum redundancy safely natively bounds
+        if (redundancy > 5) redundancy = 5; 
+
         let paths: string[] = [];
-        if (req.body.paths) {
-            try {
-                paths = JSON.parse(req.body.paths);
-            } catch (e) {
-                paths = Array.isArray(req.body.paths) ? req.body.paths : [req.body.paths];
-            }
-        } else {
-            paths = (files as Express.Multer.File[]).map((f: Express.Multer.File) => f.originalname);
+        try {
+            paths = JSON.parse(req.body.paths || '[]');
+        } catch {
+            paths = Array.isArray(req.body.paths) ? req.body.paths : [req.body.paths].filter(Boolean);
+        }
+        if (paths.length === 0) paths = files.map(f => f.originalname);
+
+        const totalSize = files.reduce((acc, f) => acc + f.size, 0);
+        const chunkSizeBytes = 65536; // 64KB Phase 3 explicit constant
+        const theoreticalMaxCost = maxCost * redundancy * Math.max((totalSize / (1024 * 1024 * 1024)), 0.000001);
+        const marketReqId = crypto.randomUUID();
+
+        // Escrow phase explicitly tracking theoretical spend limits securely natively mapping against double-spends
+        const hasFunds = await this.node.consensusEngine.walletManager.verifyFunds(publicKey, theoreticalMaxCost);
+        if (!hasFunds && publicKey !== 'SYSTEM') {
+            return res.status(402).send('Insufficient Wallet Funds allocating explicitly constrained P2P limit orders dynamically.');
         }
 
+        this.node.consensusEngine.walletManager.freezeFunds(publicKey, theoreticalMaxCost, marketReqId);
+        logger.info(`[Peer ${this.node.port}] Initiating async storage limit order ${marketReqId} searching mapping ${redundancy} hosts safely natively...`);
+
+        // Triage Bid Harvesting explicitly parsing bounds dynamically against TCP buffers natively!
+        const bids = await this.node.consensusEngine.node.syncEngine.orchestrateStorageMarket(
+            marketReqId, totalSize, chunkSizeBytes, redundancy, maxCost
+        );
+
+        if (bids.length < redundancy) {
+            this.node.consensusEngine.walletManager.releaseFunds(marketReqId);
+            return res.status(422).send(`Decentralized market triage loop timed out actively pulling isolated P2P arrays natively smoothly! Acquired hosts: ${bids.length}`);
+        }
+
+        logger.info(`[Peer ${this.node.port}] Decentralized array acquired mapping 100% boundary limits smoothly. Hosts: ${bids.map((b: any) => b.peerId.slice(0, 8)).join(', ')}`);
+
+        // Physical Archiving (Mock logical routing onto local boundary, integrating streaming next phase)
         const bundleResult = await this.node.bundler!.streamBlockBundle(files, writeStream, paths);
-        if (!bundleResult) return res.status(400).send('Bundle failed.');
+        if (!bundleResult) {
+            this.node.consensusEngine.walletManager.releaseFunds(marketReqId); // Release if fail zip natively
+            return res.status(500).send('Internal Node Array Zip mapping collapsed explicitly.');
+        }
 
         // 7. Generate Pending Block and initiate consensus
         const location = this.node.storageProvider!.getLocation();
@@ -57,7 +95,14 @@ export default class UploadHandler extends BaseHandler {
         };
 
         const encryptedPrivate = encryptPrivatePayload(publicKey, privatePayload);
-        const signatureStr = signData(JSON.stringify(encryptedPrivate), privateKey);
+
+        const payloadResult: StorageContractPayload = {
+            ...encryptedPrivate,
+            marketId: marketReqId,
+            activeHosts: bids.map((b: any) => b.peerId)
+        };
+
+        const signatureStr = signData(JSON.stringify(payloadResult), privateKey);
 
         const pendingBlock: Block = {
             metadata: {
@@ -65,7 +110,7 @@ export default class UploadHandler extends BaseHandler {
                 timestamp: Date.now(),
             },
             type: BLOCK_TYPES.STORAGE_CONTRACT,
-            payload: encryptedPrivate as StorageContractPayload,
+            payload: payloadResult,
             publicKey: publicKey,
             signature: signatureStr
         };
@@ -100,7 +145,8 @@ export default class UploadHandler extends BaseHandler {
 
         this.node.events.once(`settled:${blockId}`, (settledBlock) => {
             clearTimeout(timeout);
-            logger.info(`[Peer ${this.node.port}] Block ${settledBlock.hash.slice(0, 8)} consensus achieved and committed to local ledger.`);
+            this.node.consensusEngine.walletManager.commitFunds(marketReqId); // Flushes local mapped lock smoothly safely
+            logger.info(`[Peer ${this.node.port}] Block ${settledBlock.hash.slice(0, 8)} consensus achieved resolving limit orders securely directly!`);
         });
 
         // Respond immediately to UI

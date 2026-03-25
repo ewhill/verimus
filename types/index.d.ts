@@ -41,6 +41,8 @@ export interface StorageContractPayload {
     allocatedRestToll?: number;
     allocatedEgressEscrow?: number;
     remainingEgressEscrow?: number;
+    marketId?: string;
+    activeHosts?: string[];
 }
 
 export interface BlockPrivateFile {

@@ -40,7 +40,18 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                 streamBlockBundle: async () => ({ aesKey: 'KEY', aesIv: 'IV', files: [] })
             },
             consensusEngine: {
-                handlePendingBlock: async () => { blockHandled = true; }
+                handlePendingBlock: async () => { blockHandled = true; },
+                walletManager: {
+                    verifyFunds: async () => true,
+                    freezeFunds: () => {},
+                    releaseFunds: () => {},
+                    commitFunds: () => {}
+                },
+                node: {
+                    syncEngine: {
+                        orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: {} }]
+                    }
+                }
             },
             peer: {
                 broadcast: async () => { }
@@ -99,7 +110,20 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             publicKey, privateKey, port: 1234, roles: [NodeRole.ORIGINATOR],
             storageProvider: { createBlockStream: () => ({ physicalBlockId: 'id', writeStream: { on: () => {} } }), getLocation: () => 'loc' },
             bundler: { streamBlockBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv' }) },
-            consensusEngine: { handlePendingBlock: async () => {} },
+            consensusEngine: {
+                handlePendingBlock: async () => {},
+                walletManager: {
+                    verifyFunds: async () => true,
+                    freezeFunds: () => {},
+                    releaseFunds: () => {},
+                    commitFunds: () => {}
+                },
+                node: {
+                    syncEngine: {
+                        orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: {} }]
+                    }
+                }
+            },
             events: { once: () => {}, removeAllListeners: () => {} },
             peer: { broadcast: async () => {} }
         } as any);
@@ -121,7 +145,20 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
              publicKey, privateKey, port: 1234, roles: [NodeRole.ORIGINATOR],
              storageProvider: { createBlockStream: () => ({ physicalBlockId: 'id', writeStream: { on: () => {} } }), getLocation: () => 'loc' },
              bundler: { streamBlockBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv' }) },
-             consensusEngine: { handlePendingBlock: async () => { throw new Error('Converge Error for test'); } }, // Test handlePending catch log
+             consensusEngine: {
+                 handlePendingBlock: async () => { throw new Error('Converge Error for test'); },
+                 walletManager: {
+                     verifyFunds: async () => true,
+                     freezeFunds: () => {},
+                     releaseFunds: () => {},
+                     commitFunds: () => {}
+                 },
+                 node: {
+                     syncEngine: {
+                         orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: {} }]
+                     }
+                 }
+             },
              events: { once: () => {}, removeAllListeners: () => {} },
              peer: { broadcast: async () => {} }
         };

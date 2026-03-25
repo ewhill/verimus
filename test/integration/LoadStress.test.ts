@@ -72,6 +72,12 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
         await node.ledger.init(32000);
         await node.loadOwnedBlocksCache();
 
+        // Pass integration escrows organically mapping stream limits bypassing real topologies
+        node.consensusEngine.walletManager.verifyFunds = async () => true;
+        node.consensusEngine.node.syncEngine.orchestrateStorageMarket = async () => {
+            return [{ peerId: 'mock-1', connection: {} }];
+        };
+
         const setupExpressApp = (await import('../../api_server/ApiServer')).default;
         const app = setupExpressApp(node);
         node.httpServer = http.createServer(app) as any;

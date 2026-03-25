@@ -6,6 +6,8 @@ const UploadView = () => {
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
     const [isDragOver, setIsDragOver] = useState(false);
+    const [redundancy, setRedundancy] = useState(1);
+    const [maxCost, setMaxCost] = useState(0.05);
 
     const handleFileChange = (e) => {
         if (e.target.files) {
@@ -42,11 +44,21 @@ const UploadView = () => {
             formData.append('paths', f.webkitRelativePath || f.name);
         });
 
+        // Triage Mapping Constraints natively bound organically
+        formData.append('redundancy', String(redundancy));
+        formData.append('maxCost', String(maxCost));
+
         try {
             const res = await fetch('/api/upload', {
                 method: 'POST',
                 body: formData
             });
+
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text || 'Network boundary timeout mapping P2P limits organically.');
+            }
+
             const data = await res.json();
             
             if (data.success) {
@@ -55,7 +67,8 @@ const UploadView = () => {
                 dispatch({ type: 'SET_ROUTE', payload: 'ledger' });
             }
         } catch (err) {
-            console.error(err);
+            console.error('Marketplace Bounds Exception:', err.message);
+            alert(`Market Order Issue: ${err.message}`);
         } finally {
             setIsUploading(false);
             setSelectedFiles([]);
@@ -94,6 +107,54 @@ const UploadView = () => {
                         onChange={handleFileChange}
                         style={{ display: 'none' }}
                     />
+                </div>
+
+                <div 
+                    style={{
+                        display: 'flex', 
+                        gap: '1rem', 
+                        marginBottom: '1.5rem', 
+                        background: 'rgba(255,255,255,0.03)',
+                        padding: '1rem',
+                        borderRadius: '0.5rem',
+                        border: '1px solid rgba(255,255,255,0.1)'
+                    }} 
+                    className="stagger-3"
+                >
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>Replication Hosts (N)</label>
+                        <input 
+                            type="number" 
+                            min="1" 
+                            max="5" 
+                            value={redundancy} 
+                            onChange={(e) => setRedundancy(e.target.value)} 
+                            style={{ 
+                                background: 'transparent', 
+                                border: '1px solid rgba(255,255,255,0.2)', 
+                                color: 'white', 
+                                padding: '0.5rem', 
+                                borderRadius: '4px' 
+                            }} 
+                        />
+                    </div>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>Max Cost (Per GB)</label>
+                        <input 
+                            type="number" 
+                            step="0.01" 
+                            min="0.01" 
+                            value={maxCost} 
+                            onChange={(e) => setMaxCost(e.target.value)} 
+                            style={{ 
+                                background: 'transparent', 
+                                border: '1px solid rgba(255,255,255,0.2)', 
+                                color: 'white', 
+                                padding: '0.5rem', 
+                                borderRadius: '4px' 
+                            }} 
+                        />
+                    </div>
                 </div>
                 
                 <button type="submit" className="primary-btn" disabled={isUploading || selectedFiles.length === 0}>

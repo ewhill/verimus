@@ -36,6 +36,10 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
                 node.peer.broadcast = async () => [];
                 (node.peer as any).request = async () => ({});
             }
+            node.consensusEngine.walletManager.verifyFunds = async () => true;
+            node.consensusEngine.node.syncEngine.orchestrateStorageMarket = async () => {
+                return [{ peerId: 'mock-host-1', connection: {} }];
+            };
 
             const server = node.httpServer!;
             const address = server.address() as AddressInfo;
