@@ -13,7 +13,8 @@ export class MockCollection<T extends { [key: string]: any }> {
 
     async insertOne(doc: T): Promise<InsertOneResult<T>> {
         this.data.push(doc);
-        return { acknowledged: true, insertedId: null as any };
+        // @ts-ignore - mock mongodb generics
+        return { acknowledged: true, insertedId: null };
     }
 
     find() {
@@ -56,8 +57,11 @@ export class MockLedger extends Ledger {
 
     async init() {
         // Circumvent physical connection logic connecting exactly to local MockCollections 
-        this.collection = new MockCollection<Block>() as any;
-        this.peersCollection = new MockCollection<PeerReputation>() as any;
-        this.ownedBlocksCollection = new MockCollection<any>() as any;
+        // @ts-ignore - mock mongodb generics
+        this.collection = new MockCollection<Block>();
+        // @ts-ignore
+        this.peersCollection = new MockCollection<PeerReputation>();
+        // @ts-ignore
+        this.ownedBlocksCollection = new MockCollection<any>();
     }
 }

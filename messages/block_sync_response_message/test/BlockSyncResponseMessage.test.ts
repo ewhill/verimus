@@ -10,10 +10,10 @@ describe('Messages: BlockSyncResponseMessage', () => {
         type: 'TRANSACTION',
         metadata: { index: 1, timestamp: 123 },
         publicKey: 'PK',
-        payload: { test: true },
+        payload: { senderSignature: 'sig', senderId: 's1', recipientId: 'r1', amount: 100 },
         signature: 'SIG',
         previousHash: 'PREV'
-    } as any;
+    };
 
     it('Initializes with direct options properties correctly', () => {
         const msg = new BlockSyncResponseMessage({ block: mockBlock });

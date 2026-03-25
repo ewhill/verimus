@@ -91,7 +91,15 @@ describe('Backend: PeerNode Logical Verification Check', () => {
             }
         } as unknown as Ledger;
 
-        await mockNode.addOwnedBlockToCache({ hash: 'hash2', publicKey: 'myPubKey' } as unknown as any);
+        const dummyBlock2: import('../../types').Block = {
+            type: 'TRANSACTION',
+            metadata: { index: 1, timestamp: 1 },
+            publicKey: 'myPubKey',
+            signature: 'sig',
+            hash: 'hash2',
+            payload: { senderSignature: '', senderId: '', recipientId: '', amount: 0 }
+        };
+        await mockNode.addOwnedBlockToCache(dummyBlock2);
         
         assert.strictEqual(mockNode.ownedBlocksCache.length, 1);
         assert.ok(mockNode.ownedBlocksCache.includes('hash2'));
@@ -154,7 +162,16 @@ describe('Backend: PeerNode Logical Verification Check', () => {
         mockNode.mempool = {
              pendingBlocks: new Map()
         } as unknown as Mempool;
-        mockNode.mempool.pendingBlocks.set('hash3', { block: { hash: 'hash3' } } as unknown as any);
+        const dummyBlock3: import('../../types').Block = {
+            type: 'TRANSACTION',
+            metadata: { index: 1, timestamp: 1 },
+            publicKey: 'myPubKey',
+            signature: 'sig',
+            hash: 'hash3',
+            payload: { senderSignature: '', senderId: '', recipientId: '', amount: 0 }
+        };
+        const mockConn = { peerAddress: '127.0.0.1:1234', send: () => {} };
+        mockNode.mempool.pendingBlocks.set('hash3', { block: dummyBlock3, connection: mockConn, timestamp: 12345 });
 
         mockNode.ledger = {
             ownedBlocksCollection: {
@@ -162,7 +179,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
             }
         } as unknown as Ledger;
 
-        await mockNode.addOwnedBlockToCache({ hash: 'hash3', publicKey: 'myPubKey' } as unknown as any);
+        await mockNode.addOwnedBlockToCache(dummyBlock3);
         
         assert.ok(!mockNode.mempool.pendingBlocks.has('hash3'));
         assert.ok(mockNode.ownedBlocksCache.includes('hash3'));
