@@ -20,7 +20,6 @@ This project implements a secure, decentralized, blockchain-backed distributed s
 
 ### Prerequisites
 - Node.js (v18+)
-- Docker Compose (Required *only* for running the 5-node isolated local development cluster)
 - Native compiler dependencies (for `ssh2` or generic node-gyp bindings occasionally required on deployment devices)
 
 ### Installation & Build Step
@@ -45,10 +44,10 @@ Verimus strictly separates its environments to guarantee absolute data integrity
 Fully hermetic automated execution mapping 100% in-memory data structures. It dynamically spawns `MongoMemoryServer` (Node.js RAM) for all its local database interactions.
 *   **Requires:** Nothing but Node.js. Zero Docker or local `mongod` daemons necessary. Fast CI/CD pipelines.
 
-### 2. Local Development Environment (`docker-compose.dev.yml`)
-When you want to manually run the cluster and visually interact with the 5 simulated test nodes in your browser, utilize the testnet bootloader. It launches a Dockerized MongoDB container mapped purely to system RAM (`/dev/shm`), injects early fund distribution (`seed_funds.mjs`), and gracefully obliterates itself upon exit.
+### 2. Local Development Environment 
+When you want to manually run the cluster and visually interact with the 5 simulated test nodes in your browser, utilize the testnet bootloader. It launches a standalone Node.js RAM daemon utilizing `mongodb-memory-server` bounded strictly to port `27018`, injects early fund distribution (`seed_funds.mjs`), and gracefully obliterates itself upon exit.
 ```bash
-# Instantiate a 5-peer development cluster utilizing a Dockerized tmpfs MongoDB
+# Instantiate a 5-peer development cluster natively relying completely on in-memory processes
 ./scripts/spawn_nodes.sh --mongo
 ```
 

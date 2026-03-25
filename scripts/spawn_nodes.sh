@@ -8,9 +8,8 @@ cleanup() {
     for port in "${PORTS[@]}"; do
         "$(dirname "$0")/stop.sh" --port $port > /dev/null 2>&1 || true
     done
-    pkill -f "mongod --dbpath" > /dev/null 2>&1 || true
-    echo -e "\033[1;31mTearing down Hermetic Docker MongoDB...\033[0m"
-    docker-compose -f "$(dirname "$0")/../docker-compose.dev.yml" down -v > /dev/null 2>&1 || true
+    kill -9 $(lsof -ti :27018) > /dev/null 2>&1 || true
+    echo -e "\033[1;31mTearing down Native Node Memory MongoDB...\033[0m"
     echo "Cleanup complete. Exiting."
     exit 0
 }
@@ -29,8 +28,8 @@ done
 # Small delay to ensure ports are released
 sleep 1
 
-echo "Starting Hermetic MongoDB in Docker (Port 27018 tmpfs)..."
-docker-compose -f "$(dirname "$0")/../docker-compose.dev.yml" up -d
+echo "Starting Native Hermetic Memory MongoDB (Port 27018 RAM)..."
+node "$(dirname "$0")/memory_mongo_daemon.mjs" > /dev/null 2>&1 &
 sleep 5
 
 
