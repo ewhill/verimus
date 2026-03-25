@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.1
+    ports:
+      - "27018:27017"
+    tmpfs:
+      - /data/db
+    command: --bind_ip_all

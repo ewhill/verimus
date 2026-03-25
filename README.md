@@ -20,7 +20,7 @@ This project implements a secure, decentralized, blockchain-backed distributed s
 
 ### Prerequisites
 - Node.js (v18+)
-- MongoDB (running locally on port 27017, or custom configured)
+- Docker Compose (Required *only* for running the 5-node isolated local development cluster)
 - Native compiler dependencies (for `ssh2` or generic node-gyp bindings occasionally required on deployment devices)
 
 ### Installation & Build Step
@@ -37,22 +37,31 @@ This project implements a secure, decentralized, blockchain-backed distributed s
    npm run build:ui
    ```
 
-### Running the Application
+## Hermetic Deployment Environments
 
-For local testing simulating multi-node environments, harness the startup scripts.
+Verimus strictly separates its environments to guarantee absolute data integrity, preventing test loops from bleeding into physical production nodes.
 
+### 1. Test Environment (`npm test`)
+Fully hermetic automated execution mapping 100% in-memory data structures. It dynamically spawns `MongoMemoryServer` (Node.js RAM) for all its local database interactions.
+*   **Requires:** Nothing but Node.js. Zero Docker or local `mongod` daemons necessary. Fast CI/CD pipelines.
+
+### 2. Local Development Environment (`docker-compose.dev.yml`)
+When you want to manually run the cluster and visually interact with the 5 simulated test nodes in your browser, utilize the testnet bootloader. It launches a Dockerized MongoDB container mapped purely to system RAM (`/dev/shm`), injects early fund distribution (`seed_funds.mjs`), and gracefully obliterates itself upon exit.
 ```bash
-# Instantiate Master/Genesis Node binding 26780 over standard local database boundaries
-./scripts/start.sh --mongo --port 26780
-
-# Instantiate Follower Node targeting alternative sequential ports
-./scripts/start.sh --port 26781 --discover 127.0.0.1:26780
-
-# Kill isolated deployments
-./scripts/stop.sh --port 26780
+# Instantiate a 5-peer development cluster utilizing a Dockerized tmpfs MongoDB
+./scripts/spawn_nodes.sh --mongo
 ```
 
-*Alternatively, execute manual bootstrap overrides via tsx:*
+### 3. Production Deployment (`npm start`)
+For actual public or staging deployments, the environment natively connects to your defined enterprise-grade `MONGO_URI`. It avoids mock environments entirely.
+```bash
+# Instantiate a genesis seed node natively binding standard ports over an SSD-level MongoDB
+./scripts/start.sh --mongo --port 26780
+
+# Instantiate a satellite node resolving an external master node IP
+./scripts/start.sh --port 26781 --discover <remote_seed_ip>:26780
+```
+*Alternatively, execute bootstrap overrides manually:*
 ```bash
 npx tsx index.ts --port 26780 --storage-type local --data-dir ./data
 ```

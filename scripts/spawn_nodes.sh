@@ -8,7 +8,9 @@ cleanup() {
     for port in "${PORTS[@]}"; do
         "$(dirname "$0")/stop.sh" --port $port > /dev/null 2>&1 || true
     done
-    pkill -f "mongod --dbpath" || true
+    pkill -f "mongod --dbpath" > /dev/null 2>&1 || true
+    echo -e "\033[1;31mTearing down Hermetic Docker MongoDB...\033[0m"
+    docker-compose -f "$(dirname "$0")/../docker-compose.dev.yml" down -v > /dev/null 2>&1 || true
     echo "Cleanup complete. Exiting."
     exit 0
 }
@@ -27,10 +29,9 @@ done
 # Small delay to ensure ports are released
 sleep 1
 
-echo "Starting Hermetic MongoDB (Port 27018)..."
-mkdir -p "$PWD/mongo_data"
-mongod --dbpath "$PWD/mongo_data" --bind_ip 127.0.0.1 --port 27018 > /dev/null 2>&1 &
-sleep 3
+echo "Starting Hermetic MongoDB in Docker (Port 27018 tmpfs)..."
+docker-compose -f "$(dirname "$0")/../docker-compose.dev.yml" up -d
+sleep 5
 
 
 echo "2. Validating and generating keys..."
