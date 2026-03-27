@@ -5,7 +5,8 @@ export interface VerifyHandoffResponseOptions {
     marketId: string;
     physicalId: string;
     targetChunkIndex: number;
-    chunkHashBase64: string; 
+    chunkDataBase64: string; 
+    merkleSiblings: string[];
     success: boolean;
 }
 
@@ -22,8 +23,11 @@ export class VerifyHandoffResponseMessage extends Message {
         if (options.targetChunkIndex !== undefined) this.targetChunkIndex = options.targetChunkIndex;
         else if (options.body?.targetChunkIndex !== undefined) this.targetChunkIndex = options.body.targetChunkIndex;
 
-        if (options.chunkHashBase64 !== undefined) this.chunkHashBase64 = options.chunkHashBase64;
-        else if (options.body?.chunkHashBase64 !== undefined) this.chunkHashBase64 = options.body.chunkHashBase64;
+        if (options.chunkDataBase64 !== undefined) this.chunkDataBase64 = options.chunkDataBase64;
+        else if (options.body?.chunkDataBase64 !== undefined) this.chunkDataBase64 = options.body.chunkDataBase64;
+
+        if (options.merkleSiblings !== undefined) this.merkleSiblings = options.merkleSiblings;
+        else if (options.body?.merkleSiblings !== undefined) this.merkleSiblings = options.body.merkleSiblings;
 
         if (options.success !== undefined) this.success = options.success;
         else if (options.body?.success !== undefined) this.success = options.body.success;
@@ -38,8 +42,11 @@ export class VerifyHandoffResponseMessage extends Message {
     get targetChunkIndex(): number { return this.body.targetChunkIndex; }
     set targetChunkIndex(value: number) { this.body = { ...this.body, targetChunkIndex: value }; }
 
-    get chunkHashBase64(): string { return this.body.chunkHashBase64; }
-    set chunkHashBase64(value: string) { this.body = { ...this.body, chunkHashBase64: value }; }
+    get chunkDataBase64(): string { return this.body.chunkDataBase64; }
+    set chunkDataBase64(value: string) { this.body = { ...this.body, chunkDataBase64: value }; }
+
+    get merkleSiblings(): string[] { return this.body.merkleSiblings || []; }
+    set merkleSiblings(value: string[]) { this.body = { ...this.body, merkleSiblings: value }; }
 
     get success(): boolean { return this.body.success; }
     set success(value: boolean) { this.body = { ...this.body, success: value }; }

@@ -59,8 +59,8 @@ describe('Bundler: Erasure Coding Geometry Metrics', () => {
         assert.strictEqual(result.shards.length, 5);
         assert.ok(result.originalSize > 0);
         assert.ok(result.aesKey.length > 0);
-        assert.strictEqual(result.chunkMap.length, 5); // N=5 shards
-        assert.strictEqual(result.chunkMap[0].length, 1); // < 1MB shard size returns exactly 1 bound
+        assert.strictEqual(result.merkleRoots.length, 5); // N=5 shards
+        assert.ok(result.merkleRoots[0], 'First shard correctly mapped deterministic size root');
         
         // Ensure reconstruction of the original size zip is possible
         const shardsAvailable = [result.shards[0], null, result.shards[2], null, result.shards[4]];

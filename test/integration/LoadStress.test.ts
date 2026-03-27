@@ -2,7 +2,7 @@ import fs from 'fs';
 import http from 'http';
 import assert from 'node:assert';
 import type { AddressInfo } from 'node:net';
-import { describe, it, before, after } from 'node:test';
+import { describe, it, before, after, mock } from 'node:test';
 import os from 'os';
 import path from 'path';
 import { Readable } from 'stream';
@@ -14,6 +14,7 @@ import setupExpressApp from '../../api_server/ApiServer';
 import Bundler from '../../bundler/Bundler';
 import PeerNode from '../../peer_node/PeerNode';
 import BaseProvider, { GetBlockReadStreamResult } from '../../storage_providers/base_provider/BaseProvider';
+import * as cryptoUtils from '../../crypto_utils/CryptoUtils';
 
 class NullStorageProvider extends BaseProvider {
     createBlockStream(): { physicalBlockId: string, writeStream: NodeJS.WritableStream } {
@@ -66,11 +67,24 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
 
         const mockPeer = {
             trustedPeers: [],
-            broadcast: async () => { },
+            broadcast: async (msg: any) => {
+                if (msg.name === 'VerifyHandoffRequestMessage') {
+                    setTimeout(() => {
+                        node.events.emit(`handoff_response:${msg.body.marketId}:${msg.body.physicalId}`, {
+                            success: true,
+                            merkleSiblings: ['dummy_boundary'],
+                            chunkDataBase64: Buffer.from('IntegrationBounds').toString('base64')
+                        });
+                    }, 5);
+                }
+            },
             bind: () => ({ to: () => { } }),
             close: async () => { }
         };
         Object.assign(node, { peer: mockPeer });
+        
+        mock.method(cryptoUtils, 'verifyMerkleProof', () => true);
+
         node.consensusEngine.handlePendingBlock = async () => { };
 
         await node.ledger.init(0);

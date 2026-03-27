@@ -1,15 +1,16 @@
 import * as crypto from 'crypto';
 
 import { GENESIS_TIMESTAMP, BLOCK_TYPES } from '../../constants';
-import { hashData, signData, verifySignature } from '../../crypto_utils/CryptoUtils';
+import { hashData, signData, verifySignature, verifyMerkleProof } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
 import { AdoptForkMessage } from '../../messages/adopt_fork_message/AdoptForkMessage';
+import { MerkleProofChallengeRequestMessage } from '../../messages/merkle_proof_challenge_request_message/MerkleProofChallengeRequestMessage';
 import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
 import { ProposeForkMessage } from '../../messages/propose_fork_message/ProposeForkMessage';
 import { VerifyBlockMessage } from '../../messages/verify_block_message/VerifyBlockMessage';
 import Mempool from '../../models/mempool/Mempool';
 import PeerNode from '../../peer_node/PeerNode';
-import type { Block, PeerConnection, TransactionPayload } from '../../types';
+import type { Block, PeerConnection, TransactionPayload, StorageContractPayload } from '../../types';
 import WalletManager from '../../wallet_manager/WalletManager';
 
 
@@ -367,10 +368,80 @@ class ConsensusEngine {
             }
 
             await this._checkAndProposeFork();
+            
+            this.runGlobalAudit().catch(err => logger.warn(`[Peer ${this.node.port}] Global audit loop trace failed natively: ${err.message}`));
         } catch (error) {
             logger.error(`[Peer ${this.node.port}] Error committing fork ${forkId.slice(0, 8)}:`, error);
         } finally {
             this.committing = false;
+        }
+    }
+    async runGlobalAudit() {
+        if (this.node.syncEngine && this.node.syncEngine.isSyncing) return;
+        
+        const AUDIT_PROBABILITY = 0.2;
+        if (Math.random() > AUDIT_PROBABILITY) return;
+        
+        logger.info(`[Peer ${this.node.port}] Node elected as Auditor. Initiating global Proof of Spacetime audits...`);
+
+        const contracts = await this.node.ledger.collection!.find({ type: BLOCK_TYPES.STORAGE_CONTRACT }).sort({ 'metadata.timestamp': -1 }).limit(10).toArray();
+        if (!contracts.length) return;
+
+        for (const contract of contracts) {
+            const contractPayload = contract.payload as StorageContractPayload;
+            if (!contractPayload.fragmentMap || !contractPayload.merkleRoots) continue;
+
+            for (const fragment of contractPayload.fragmentMap) {
+                if (fragment.nodeId === this.node.publicKey) continue; // Skip auditing self logically
+                
+                const merkleRoot = contractPayload.merkleRoots[fragment.shardIndex];
+                
+                const CHUNK_SIZE = 64 * 1024;
+                const K = contractPayload.erasureParams!.k;
+                const paddedSize = Math.ceil(contractPayload.erasureParams!.originalSize / K) * K;
+                const shardSize = paddedSize / K;
+                const totalChunks = Math.ceil(shardSize / CHUNK_SIZE);
+                const targetIndex = totalChunks > 0 ? Math.floor(Math.random() * totalChunks) : 0;
+
+                const challengeMsg = new MerkleProofChallengeRequestMessage({
+                    contractId: contract._id!.toString(), 
+                    auditorPublicKey: this.node.publicKey,
+                    chunkIndex: targetIndex
+                });
+                
+                const auditId = contract._id!.toString();
+                const timeout = setTimeout(() => {
+                    this.node.events.removeAllListeners(`merkle_audit_response:${auditId}`);
+                    this.node.reputationManager.penalizeMajor(fragment.nodeId, "Audit Timeout Offense");
+                    logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof resolving logical blocks! Penalty mapped.`);
+                }, 5000);
+
+                this.node.events.once(`merkle_audit_response:${auditId}`, async (resMsg: any) => {
+                    clearTimeout(timeout);
+                    
+                    let isValid = false;
+                    if (resMsg.computedRootMatch && resMsg.chunkDataBase64 && resMsg.merkleSiblings) {
+                        try {
+                            const buffer = Buffer.from(resMsg.chunkDataBase64, 'base64');
+                            isValid = verifyMerkleProof(buffer, resMsg.merkleSiblings, merkleRoot, targetIndex);
+                        } catch (_unusedE) { isValid = false; }
+                    }
+                    
+                    if (!isValid) {
+                        await this.node.reputationManager.penalizeCritical(fragment.nodeId, "Proof of Spacetime Forgery");
+                        logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} explicitly failed mathematical audit! Banned!`);
+                    } else {
+                        await this.node.reputationManager.rewardHonestProposal(fragment.nodeId);
+                        logger.info(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} perfectly mapped rigorous spacetime boundaries!`);
+                    }
+                });
+
+                if (this.node.peer) {
+                    await this.node.peer.broadcast(challengeMsg).catch(e => {
+                        logger.warn(`[Peer ${this.node.port}] Audit broadcast routing latency drop: ${e.message}`);
+                    });
+                }
+            }
         }
     }
 }

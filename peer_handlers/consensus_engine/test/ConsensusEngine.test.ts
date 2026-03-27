@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import * as crypto from 'node:crypto';
 import { describe, it, beforeEach, afterEach } from 'node:test';
+import { EventEmitter } from 'node:events';
 
 import { ObjectId } from 'mongodb';
 
@@ -37,7 +38,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
             getMajorityCount: () => 2,
             ledger: { collection: { findOne: async () => null }, getLatestBlock: async () => ({ ...createMockBlock('sig', 'pk', '0000abc'), metadata: { index: 5, timestamp: 123 }, _id: new ObjectId() }), addBlockToChain: async (block: Block) => block },
             peer: { trustedPeers: [{ peerAddress: '127.0.0.1:3001', send: () => {} }], broadcast: async () => {} },
-            events: { emit: () => false },
+            events: new EventEmitter(),
             reputationManager: { penalizeMajor: async () => null, penalizeCritical: async () => null, penalizeMinor: async () => null, rewardValidSync: async () => null, rewardHonestProposal: async () => null }
         } as unknown as PeerNode;
         engine = new ConsensusEngine(mockNode);
@@ -332,5 +333,55 @@ describe('Backend: ConsensusEngine Integrity', () => {
         await engine.handleAdoptFork(realForkId, settledEntry.finalTipHash, { peerAddress: 'peer4', send: () => {} });
         
         assert.ok(settledEntry.committed || settledEntry.pendingCommit, 'SettledFork entry must reflect committed bounding state or pendingCommit after handleAdoptFork');
+    });
+
+    it('Auditor securely rejects incorrectly forged 64KB physical buffers validating Merkle bounds', async () => {
+        let penaltyHit = false;
+        mockNode.reputationManager.penalizeCritical = async (peerId: string, reason: string) => {
+            if (peerId === 'malicious_host' && reason === 'Proof of Spacetime Forgery') {
+                penaltyHit = true;
+            }
+            return null;
+        };
+
+        const mockPayload = {
+            merkleRoots: ['real_hash_root_123'],
+            fragmentMap: [{ nodeId: 'malicious_host', shardIndex: 0, physicalId: 'phys' }],
+            erasureParams: { k: 1, n: 1, originalSize: 1024 }
+        };
+
+        const mockBlock = {
+            _id: new ObjectId('507f1f77bcf86cd799439011'),
+            type: 'STORAGE_CONTRACT',
+            payload: mockPayload
+        };
+
+        // Inject probabilistic pass
+        const randomStub = Math.random;
+        Math.random = () => 0.1; // Bypass 0.2 threshold
+        mockNode.syncEngine.isSyncing = false;
+
+        Object.defineProperty(mockNode.ledger, 'collection', { 
+            value: { 
+                find: () => ({ sort: () => ({ limit: () => ({ toArray: async () => [mockBlock] }) }) })
+            }, 
+            writable: true 
+        });
+
+        await engine.runGlobalAudit();
+
+        // Simulate returning bad forgery bytes breaking mathematical proofs dynamically
+        mockNode.events.emit(`merkle_audit_response:507f1f77bcf86cd799439011`, {
+            computedRootMatch: true,
+            chunkDataBase64: Buffer.from('FAKE BAD BYTES TRASH BOUNDARY').toString('base64'),
+            merkleSiblings: ['another_hash']
+        });
+
+        // Wait natively
+        await new Promise(r => setTimeout(r, 50));
+
+        Math.random = randomStub;
+
+        assert.strictEqual(penaltyHit, true, 'Auditor successfully rejected forged 64KB physical bounded tree hash completely');
     });
 });

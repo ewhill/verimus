@@ -57,7 +57,7 @@ export interface StorageContractPayload {
     activeHosts?: string[];
     erasureParams?: ErasureParameters;
     fragmentMap?: NodeShardMapping[];
-    chunkMap?: string[][];
+    merkleRoots?: string[]; // Phase 4b - Constant size 64-character hash resolving entire physical matrix dynamically
 }
 
 export interface BlockPrivateFile {

@@ -3,7 +3,7 @@ import { Writable } from 'node:stream';
 import { describe, it } from 'node:test';
 
 
-import { generateRSAKeyPair } from '../../../crypto_utils/CryptoUtils';
+import { generateRSAKeyPair, buildMerkleTree, getMerkleProof } from '../../../crypto_utils/CryptoUtils';
 import { NodeRole } from '../../../types/NodeRole';
 import UploadHandler from '../UploadHandler';
 
@@ -33,22 +33,27 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         let blockHandled = false;
         const { publicKey, privateKey } = generateRSAKeyPair();
 
+        const buffer = Buffer.from('mock');
+        const { tree, root } = buildMerkleTree([buffer]);
+        const merkleSiblings = getMerkleProof(tree, 0);
+
         const mockNode: any = {
             roles: [NodeRole.ORIGINATOR],
             port: 3000,
             publicKey: publicKey,
             privateKey: privateKey,
             storageProvider: { createBlockStream: () => ({ physicalBlockId: 'mockId', writeStream: new Writable({ write(_c, _e, cb) { cb(); } }) }) },
-            bundler: { streamErasureBundle: async () => ({ aesKey: 'KEY', aesIv: 'IV', files: [], shards: [Buffer.from('mock')], authTag: '', originalSize: 0, chunkMap: [['fakeHash', 'fakeHash']] }) },
+            bundler: { streamErasureBundle: async () => ({ aesKey: 'KEY', aesIv: 'IV', files: [], shards: [buffer], authTag: '', originalSize: 0, merkleRoots: [root] }) },
             consensusEngine: { handlePendingBlock: async () => { blockHandled = true; }, walletManager: { verifyFunds: async () => true, freezeFunds: () => {}, releaseFunds: () => {}, commitFunds: () => {} }, node: { syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }] } } },
             syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }] },
             peer: { broadcast: async () => { } },
+            reputationManager: { penalizeMajor: () => {} },
             events: {
                 once: (evt: string | symbol, cb: (...args: any[]) => void) => {
                     if (typeof evt === 'string' && evt.startsWith('shard_response')) {
                         setTimeout(() => cb({ success: true, physicalId: 'mockId' }), 5);
                     } else if (typeof evt === 'string' && evt.startsWith('handoff_response')) {
-                        setTimeout(() => cb({ success: true, chunkHashBase64: 'fakeHash' }), 5);
+                        setTimeout(() => cb({ success: true, chunkDataBase64: buffer.toString('base64'), merkleSiblings: merkleSiblings }), 5);
                     } else {
                         setTimeout(() => cb({ hash: 'fakeHash settled' }), 5);
                     }
@@ -88,17 +93,22 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
 
     it('Maps custom string destination locations validating config fallback', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
+        const buffer = Buffer.from('mock');
+        const { tree, root } = buildMerkleTree([buffer]);
+        const merkleSiblings = getMerkleProof(tree, 0);
+
         const mockNode: any = {
             roles: [NodeRole.ORIGINATOR], publicKey, privateKey, port: 1234,
             storageProvider: { createBlockStream: () => ({ physicalBlockId: 'id', writeStream: new Writable({ write(_c, _e, cb) { cb(); } }) }) },
-            bundler: { streamErasureBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [Buffer.from('mock')], authTag: '', originalSize: 0, chunkMap: [['fakeHash', 'fakeHash']] }) },
+            bundler: { streamErasureBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [buffer], authTag: '', originalSize: 0, merkleRoots: [root] }) },
             consensusEngine: { handlePendingBlock: async () => {}, walletManager: { verifyFunds: async () => true, freezeFunds: () => {}, releaseFunds: () => {}, commitFunds: () => {} }, node: { syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }] } } },
             syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }] },
             peer: { broadcast: async () => {} },
+            reputationManager: { penalizeMajor: () => {} },
             events: {
                 once: (evt: string | symbol, cb: (...args: any[]) => void) => { 
                     if (typeof evt === 'string' && evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } 
-                    else if (typeof evt === 'string' && evt.startsWith('handoff_response')) { cb({ success: true, chunkHashBase64: 'fakeHash' }); }
+                    else if (typeof evt === 'string' && evt.startsWith('handoff_response')) { cb({ success: true, chunkDataBase64: buffer.toString('base64'), merkleSiblings: merkleSiblings }); }
                     return mockNode.events; 
                 },
                 removeAllListeners: () => mockNode.events
@@ -119,17 +129,22 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         }
 
         const { publicKey, privateKey } = generateRSAKeyPair();
+        const buffer = Buffer.from('mock');
+        const { tree, root } = buildMerkleTree([buffer]);
+        const merkleSiblings = getMerkleProof(tree, 0);
+
         const mockNode: any = {
             roles: [NodeRole.ORIGINATOR], publicKey, privateKey, port: 1234,
             storageProvider: { createBlockStream: () => ({ physicalBlockId: 'id', writeStream: new Writable({ write(_c, _e, cb) { cb(); } }) }) },
-            bundler: { streamErasureBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [Buffer.from('mock')], authTag: '', originalSize: 0, chunkMap: [['fakeHash', 'fakeHash']] }) },
+            bundler: { streamErasureBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [buffer], authTag: '', originalSize: 0, merkleRoots: [root] }) },
             consensusEngine: { handlePendingBlock: async () => { throw new Error('Converge Error for test'); }, walletManager: { verifyFunds: async () => true, freezeFunds: () => {}, releaseFunds: () => {}, commitFunds: () => {} }, node: { syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }] } } },
             syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }] },
             peer: { broadcast: async () => {} },
+            reputationManager: { penalizeMajor: () => {} },
             events: {
                 once: (evt: string | symbol, cb: (...args: any[]) => void) => { 
                     if (typeof evt === 'string' && evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } 
-                    else if (typeof evt === 'string' && evt.startsWith('handoff_response')) { cb({ success: true, chunkHashBase64: 'fakeHash' }); }
+                    else if (typeof evt === 'string' && evt.startsWith('handoff_response')) { cb({ success: true, chunkDataBase64: buffer.toString('base64'), merkleSiblings: merkleSiblings }); }
                     return mockNode.events; 
                 },
                 removeAllListeners: () => mockNode.events
@@ -153,7 +168,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         const mockNode: any = {
             roles: [NodeRole.ORIGINATOR], publicKey, privateKey, port: 1234,
             storageProvider: { createBlockStream: () => ({ physicalBlockId: 'id', writeStream: new Writable({ write(_c, _e, cb) { cb(); } }) }) },
-            bundler: { streamErasureBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [Buffer.from('mock')], authTag: '', originalSize: 0, chunkMap: [['expectedHash']] }) },
+            bundler: { streamErasureBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [Buffer.from('mock')], authTag: '', originalSize: 0, merkleRoots: ['realRoot123'] }) },
             consensusEngine: { handlePendingBlock: async () => {}, walletManager: { verifyFunds: async () => true, freezeFunds: () => {}, releaseFunds: () => {}, commitFunds: () => {} }, node: { syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }] } } },
             syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }] },
             reputationManager: { penalizeMajor: (peerId: string) => { penalizedNode = peerId; } },
@@ -161,7 +176,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             events: {
                 once: (evt: string | symbol, cb: (...args: any[]) => void) => { 
                     if (typeof evt === 'string' && evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } 
-                    else if (typeof evt === 'string' && evt.startsWith('handoff_response')) { cb({ success: true, chunkHashBase64: 'maliciousGarbageHash' }); }
+                    else if (typeof evt === 'string' && evt.startsWith('handoff_response')) { cb({ success: true, chunkDataBase64: Buffer.from('Garbage').toString('base64'), merkleSiblings: ['maliciousGarbageHash'] }); }
                     return mockNode.events; 
                 },
                 removeAllListeners: () => mockNode.events

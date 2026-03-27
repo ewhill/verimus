@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import type { AddressInfo } from 'node:net';
-import { describe, it, before, after } from 'node:test';
+import { describe, it, before, after, mock } from 'node:test';
 
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
@@ -8,6 +8,7 @@ import Bundler from '../../bundler/Bundler';
 import { BLOCK_TYPES } from '../../constants';
 import PeerNode from '../../peer_node/PeerNode';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
+import * as cryptoUtils from '../../crypto_utils/CryptoUtils';
 
 describe('Integration: UI Critical User Journeys (Frontend/Backend System Contract)', () => {
     let node: PeerNode;
@@ -32,8 +33,22 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             await node.init();
             
             // Override mocked components AFTER initialization to ensure tests don't leak external discovery attempts
+            
+            mock.method(cryptoUtils, 'verifyMerkleProof', () => true);
+            
             if (node.peer) {
-                node.peer.broadcast = async () => [];
+                node.peer.broadcast = async (msg: any) => {
+                    if (msg.name === 'VerifyHandoffRequestMessage') {
+                        setTimeout(async () => {
+                            node.events.emit(`handoff_response:${msg.body.marketId}:${msg.body.physicalId}`, {
+                                success: true,
+                                merkleSiblings: ['dummy_boundary'],
+                                chunkDataBase64: Buffer.from('IntegrationBounds').toString('base64')
+                            });
+                        }, 5);
+                    }
+                    return [];
+                };
                 Object.assign(node.peer, { request: async () => ({}) });
             }
             node.consensusEngine.walletManager.verifyFunds = async () => true;

@@ -4,6 +4,8 @@ import { BlockSyncRequestMessage } from '../../messages/block_sync_request_messa
 import { BlockSyncResponseMessage } from '../../messages/block_sync_response_message/BlockSyncResponseMessage';
 import { ChainStatusRequestMessage } from '../../messages/chain_status_request_message/ChainStatusRequestMessage';
 import { ChainStatusResponseMessage } from '../../messages/chain_status_response_message/ChainStatusResponseMessage';
+import { MerkleProofChallengeRequestMessage } from '../../messages/merkle_proof_challenge_request_message/MerkleProofChallengeRequestMessage';
+import { MerkleProofChallengeResponseMessage } from '../../messages/merkle_proof_challenge_response_message/MerkleProofChallengeResponseMessage';
 import { NetworkHealthSyncMessage } from '../../messages/network_health_sync_message/NetworkHealthSyncMessage';
 import { StorageBidMessage } from '../../messages/storage_bid_message/StorageBidMessage';
 import { StorageRequestMessage } from '../../messages/storage_request_message/StorageRequestMessage';
@@ -76,6 +78,8 @@ class SyncEngine {
         this.node.peer?.bind(StorageShardRetrieveResponseMessage).to(async (m: StorageShardRetrieveResponseMessage, c: PeerConnection) => this.handleStorageShardRetrieveResponse(m, c));
         this.node.peer?.bind(VerifyHandoffRequestMessage).to(async (m: VerifyHandoffRequestMessage, c: PeerConnection) => this.handleVerifyHandoffRequest(m, c));
         this.node.peer?.bind(VerifyHandoffResponseMessage).to(async (m: VerifyHandoffResponseMessage, c: PeerConnection) => this.handleVerifyHandoffResponse(m, c));
+        this.node.peer?.bind(MerkleProofChallengeRequestMessage).to(async (m: MerkleProofChallengeRequestMessage, c: PeerConnection) => this.handleMerkleProofChallengeRequest(m, c));
+        this.node.peer?.bind(MerkleProofChallengeResponseMessage).to(async (m: MerkleProofChallengeResponseMessage, c: PeerConnection) => this.handleMerkleProofChallengeResponse(m, c));
 
         // Start native background tracking
         if (this.node.peer) {
@@ -333,74 +337,119 @@ class SyncEngine {
             const result = await this.node.storageProvider!.getBlockReadStream(msg.physicalId);
             if (result.status !== 'available' || !result.stream) {
                 return connection.send(new VerifyHandoffResponseMessage({
-                    marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkHashBase64: '', success: false
+                    marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkDataBase64: '', merkleSiblings: [], success: false
                 }));
             }
             
-            // Recompute dynamic byte limits mirroring exactly mapped bounds natively
-            const CHUNK_SIZE = 1024 * 1024;
-            let currentOffset = 0;
-            let targetBuffer: Buffer | null = null;
-            let capturedData = Buffer.alloc(0);
+            const CHUNK_SIZE = 64 * 1024; // 64KB Merkle boundaries natively
+            const chunks: Buffer[] = [];
+            let currentChunk = Buffer.alloc(0);
 
             result.stream.on('data', (c: Buffer) => {
-                const targetStart = msg.targetChunkIndex * CHUNK_SIZE;
-                const targetEnd = targetStart + CHUNK_SIZE;
-                
-                const chunkStart = currentOffset;
-                const chunkEnd = currentOffset + c.length;
-                
-                if (chunkEnd > targetStart && chunkStart < targetEnd) {
-                    // Extract intersection map boundaries
-                    const sliceStart = Math.max(0, targetStart - chunkStart);
-                    const sliceEnd = Math.min(c.length, targetEnd - chunkStart);
-                    capturedData = Buffer.concat([capturedData, c.subarray(sliceStart, sliceEnd)]);
-                }
-                
-                currentOffset += c.length;
-                
-                // If limit mapped dynamically, halt stream pulling dropping excess latency globally.
-                if (currentOffset >= targetEnd && !targetBuffer) {
-                    targetBuffer = capturedData;
-                    result.stream?.destroy(); // halt reading
+                currentChunk = Buffer.concat([currentChunk, c]);
+                while (currentChunk.length >= CHUNK_SIZE) {
+                    chunks.push(currentChunk.subarray(0, CHUNK_SIZE));
+                    currentChunk = currentChunk.subarray(CHUNK_SIZE);
                 }
             });
+
+            const flushAndResolve = () => {
+                if (currentChunk.length > 0) chunks.push(currentChunk);
+                currentChunk = Buffer.alloc(0);
+
+                if (chunks.length === 0 || msg.targetChunkIndex >= chunks.length) {
+                    return connection.send(new VerifyHandoffResponseMessage({
+                        marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkDataBase64: '', merkleSiblings: [], success: false
+                    }));
+                }
+
+                const { tree } = cryptoUtils.buildMerkleTree(chunks);
+                const merkleSiblings = cryptoUtils.getMerkleProof(tree, msg.targetChunkIndex);
+                const chunkDataBase64 = chunks[msg.targetChunkIndex].toString('base64');
+                
+                connection.send(new VerifyHandoffResponseMessage({
+                    marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkDataBase64, merkleSiblings, success: true
+                }));
+            };
+
+            result.stream.on('end', flushAndResolve);
 
             result.stream.on('error', () => {
                 connection.send(new VerifyHandoffResponseMessage({
-                    marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkHashBase64: '', success: false
+                    marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkDataBase64: '', merkleSiblings: [], success: false
                 }));
-            });
-
-            result.stream.on('close', () => {
-                 if (!targetBuffer && capturedData.length > 0) targetBuffer = capturedData;
-                 
-                 if (targetBuffer) {
-                     const hashedByte = cryptoUtils.hashData(targetBuffer);
-                     connection.send(new VerifyHandoffResponseMessage({
-                         marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkHashBase64: hashedByte, success: true
-                     }));
-                 } else {
-                     connection.send(new VerifyHandoffResponseMessage({
-                         marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkHashBase64: '', success: false
-                     }));
-                 }
-            });
-            
-            // Also map limits natively across end parameters catching identical closing structures limits
-            result.stream.on('end', () => {
-                 if (!targetBuffer && capturedData.length > 0) targetBuffer = capturedData;
             });
         } catch (error: any) {
             logger.error(`[Peer ${this.node.port}] Failed resolving verification handoff physically catching constraints: ${error.message}`);
             connection.send(new VerifyHandoffResponseMessage({
-                marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkHashBase64: '', success: false
+                marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkDataBase64: '', merkleSiblings: [], success: false
             }));
         }
     }
 
     async handleVerifyHandoffResponse(msg: VerifyHandoffResponseMessage, _unusedConnection: PeerConnection) {
         this.node.events.emit(`handoff_response:${msg.marketId}:${msg.physicalId}`, msg);
+    }
+
+    async handleMerkleProofChallengeRequest(msg: MerkleProofChallengeRequestMessage, connection: PeerConnection) {
+        if (!this.node.roles.includes(NodeRole.STORAGE)) return;
+
+        try {
+            const result = await this.node.storageProvider!.getBlockReadStream(msg.contractId);
+            if (result.status !== 'available' || !result.stream) {
+                return connection.send(new MerkleProofChallengeResponseMessage({
+                    contractId: msg.contractId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
+                }));
+            }
+            
+            const CHUNK_SIZE = 64 * 1024;
+            const chunks: Buffer[] = [];
+            let currentChunk = Buffer.alloc(0);
+
+            result.stream.on('data', (c: Buffer) => {
+                currentChunk = Buffer.concat([currentChunk, c]);
+                while (currentChunk.length >= CHUNK_SIZE) {
+                    chunks.push(currentChunk.subarray(0, CHUNK_SIZE));
+                    currentChunk = currentChunk.subarray(CHUNK_SIZE);
+                }
+            });
+
+            const flushAndResolve = () => {
+                if (currentChunk.length > 0) chunks.push(currentChunk);
+                currentChunk = Buffer.alloc(0);
+
+                if (chunks.length === 0 || msg.chunkIndex >= chunks.length) {
+                    return connection.send(new MerkleProofChallengeResponseMessage({
+                        contractId: msg.contractId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
+                    }));
+                }
+
+                const { tree } = cryptoUtils.buildMerkleTree(chunks);
+                const merkleSiblings = cryptoUtils.getMerkleProof(tree, msg.chunkIndex);
+                const chunkDataBase64 = chunks[msg.chunkIndex].toString('base64');
+                
+                connection.send(new MerkleProofChallengeResponseMessage({
+                    contractId: msg.contractId, chunkDataBase64, merkleSiblings, computedRootMatch: true
+                }));
+            };
+
+            result.stream.on('end', flushAndResolve);
+
+            result.stream.on('error', () => {
+                connection.send(new MerkleProofChallengeResponseMessage({
+                    contractId: msg.contractId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
+                }));
+            });
+        } catch (error: any) {
+            logger.error(`[Peer ${this.node.port}] Failed resolving verification handoff physically catching constraints: ${error.message}`);
+            connection.send(new MerkleProofChallengeResponseMessage({
+                contractId: msg.contractId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
+            }));
+        }
+    }
+
+    async handleMerkleProofChallengeResponse(msg: MerkleProofChallengeResponseMessage, _unusedConnection: PeerConnection) {
+        this.node.events.emit(`merkle_audit_response:${msg.contractId}`, msg);
     }
 
     async performInitialSync() {

@@ -39,12 +39,12 @@ export interface MerkleProofResponse {
 - **Latency Timeout:** If the host takes greater than 2000ms to respond, the auditor assumes the host is downloading the file from a remote source on-demand and marks the challenge as failed.
 
 ## 7. Granular Engineering Task Breakdown
-1. Incorporate a generic Merkle Tree builder utility inside `crypto_utils/CryptoUtils.ts`.
-2. Refactor `StorageContractPayload` mapping the `merkleRoot` string property in `index.d.ts`.
-3. Incorporate `MerkleProofChallenge` networking models within `messages/Message.ts` structure.
-4. Define dynamic auditor endpoints inside `ConsensusEngine.ts` that trigger every `N` blocks.
-5. Build a recursive verification function in `ConsensusEngine.ts` hashing the returned `chunkData` buffer against the `merkleSiblings` array.
-6. Write integration tests simulating a host returning an incorrect 64KB buffer, ensuring the auditor rejects the proof.
+- [x] 1. Incorporate a generic Merkle Tree builder utility inside `crypto_utils/CryptoUtils.ts`.
+- [x] 2. Refactor `StorageContractPayload` mapping the `merkleRoot` string property in `index.d.ts`.
+- [x] 3. Incorporate `MerkleProofChallenge` networking models within `messages/Message.ts` structure.
+- [x] 4. Define dynamic auditor endpoints inside `ConsensusEngine.ts` that trigger every `N` blocks.
+- [x] 5. Build a recursive verification function natively hashing the returned `chunkData` buffer against the `merkleSiblings` array.
+- [x] 6. Write integration tests simulating a host returning an incorrect 64KB buffer, ensuring the auditor rejects the proof.
 
 ## 8. Proposed Solution Pros & Cons
 ### Pros

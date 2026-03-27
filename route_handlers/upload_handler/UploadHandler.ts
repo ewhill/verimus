@@ -3,7 +3,7 @@ import * as crypto from 'crypto';
 import { Request, Response } from 'express';
 
 import { BLOCK_TYPES } from '../../constants';
-import { encryptPrivatePayload, signData } from '../../crypto_utils/CryptoUtils';
+import { encryptPrivatePayload, signData, verifyMerkleProof } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
 import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
 import { StorageShardTransferMessage } from '../../messages/storage_shard_transfer_message/StorageShardTransferMessage';
@@ -109,8 +109,10 @@ export default class UploadHandler extends BaseHandler {
                     if (!responseMsg.success) return rej(new Error('Host rejected processing logical blocks.'));
                     
                     const physicalId = responseMsg.physicalId;
-                    const chunkList = bundleResult.chunkMap[i];
-                    const targetIndex = Math.floor(Math.random() * chunkList.length);
+                    
+                    const CHUNK_SIZE = 64 * 1024;
+                    const totalChunks = Math.ceil(bundleResult.shards[i].length / CHUNK_SIZE);
+                    const targetIndex = totalChunks > 0 ? Math.floor(Math.random() * totalChunks) : 0;
                     
                     const verifyMsg = new VerifyHandoffRequestMessage({
                         marketId: marketReqId,
@@ -125,9 +127,19 @@ export default class UploadHandler extends BaseHandler {
 
                     this.node.events.once(`handoff_response:${marketReqId}:${physicalId}`, (handoffMsg: any) => {
                         clearTimeout(verifyTimeout);
-                        if (!handoffMsg.success || handoffMsg.chunkHashBase64 !== chunkList[targetIndex]) {
+                        
+                        let isValid = false;
+                        if (handoffMsg.success && handoffMsg.chunkDataBase64 && handoffMsg.merkleSiblings) {
+                            const buffer = Buffer.from(handoffMsg.chunkDataBase64, 'base64');
+                            isValid = verifyMerkleProof(buffer, handoffMsg.merkleSiblings, bundleResult.merkleRoots[i], targetIndex);
+                        }
+                        
+                        if (!isValid) {
+                            
+                            console.error(`VALIDITY TRACE: success=${handoffMsg.success}, target=${targetIndex}, chunkMatchesBase64=${!!handoffMsg.chunkDataBase64}, siblingsLen=${handoffMsg.merkleSiblings?.length}, rootExpected=${bundleResult.merkleRoots[i]}`);
+                            
                             // Structurally penalize the host for misstating bounds preventing ledger bloat!
-                            this.node.reputationManager.penalizeMajor(bid.peerId, "Data Verification Handoff Forgery");
+                            if (this.node.reputationManager) this.node.reputationManager.penalizeMajor(bid.peerId, "Data Verification Handoff Forgery");
                             return rej(new Error('Host definitively failed cryptographic chunk structural limits!'));
                         }
                         
@@ -189,7 +201,7 @@ export default class UploadHandler extends BaseHandler {
             remainingEgressEscrow: theoreticalMaxCost,
             erasureParams: { k: K, n: N, originalSize: bundleResult.originalSize! },
             fragmentMap: fragmentMap,
-            chunkMap: bundleResult.chunkMap
+            merkleRoots: bundleResult.merkleRoots
         };
 
         const signatureStr = signData(JSON.stringify(payloadResult), privateKey);

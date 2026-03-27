@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { ReedSolomonErasure } from '@subspace/reed-solomon-erasure.wasm';
 import archiver from 'archiver';
 
-import { hashData, encryptAES, createAESStream } from '../crypto_utils/CryptoUtils';
+import { hashData, encryptAES, createAESStream, buildMerkleTree } from '../crypto_utils/CryptoUtils';
 
 class Bundler {
     dataDir: string;
@@ -184,7 +184,7 @@ class Bundler {
             files: { path: string; contentHash: string; }[],
             shards: Buffer[],
             originalSize: number,
-            chunkMap: string[][]
+            merkleRoots: string[]
         } | null>(async (resolve, reject) => {
             if (!uploadedFiles || uploadedFiles.length === 0) return resolve(null);
 
@@ -202,16 +202,16 @@ class Bundler {
                     // Bypass splitting when matrices compute static 1:1 mirroring
                     const shards = (K === 1 && N === 1) ? [finalBuffer] : await Bundler.encodeErasureShards(finalBuffer, K, N);
                     
-                    const chunkMap: string[][] = [];
-                    const CHUNK_SIZE = 1024 * 1024; // 1MB constraint blocks
+                    const merkleRoots: string[] = [];
+                    const CHUNK_SIZE = 64 * 1024; // 64KB Merkle tree boundaries
 
                     for (const shard of shards) {
-                        const shardMap: string[] = [];
+                        const chunkBuffers: Buffer[] = [];
                         for (let offset = 0; offset < shard.length; offset += CHUNK_SIZE) {
-                            const chunk = shard.subarray(offset, Math.min(offset + CHUNK_SIZE, shard.length));
-                            shardMap.push(crypto.createHash('sha256').update(chunk).digest('hex'));
+                            chunkBuffers.push(shard.subarray(offset, Math.min(offset + CHUNK_SIZE, shard.length)));
                         }
-                        chunkMap.push(shardMap);
+                        const { root } = buildMerkleTree(chunkBuffers);
+                        merkleRoots.push(root);
                     }
                     
                     resolve({
@@ -221,7 +221,7 @@ class Bundler {
                         files,
                         shards,
                         originalSize,
-                        chunkMap
+                        merkleRoots
                     });
                 } catch(e) { reject(e); }
             });

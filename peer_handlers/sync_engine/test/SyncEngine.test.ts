@@ -401,15 +401,17 @@ describe('Backend: SyncEngine Integrity', () => {
 
         const dummyData = Buffer.from('HelloWorld');
         mockStream.emit('data', dummyData);
-        mockStream.emit('close');
+        mockStream.emit('end'); // Changed from close for stream integration compliance
 
-        const expectedHash = cryptoUtils.hashData(dummyData.toString('base64'));
+        // Explicit structural hashing mocking boundaries
+        const expectedBase64 = dummyData.toString('base64');
 
         // Allow event loop mapping native close emission hooks
         await new Promise(r => setImmediate(r));
 
         assert.ok(sentMessage !== null);
         assert.strictEqual(sentMessage!.success, true);
-        assert.strictEqual(sentMessage!.chunkHashBase64, expectedHash);
+        assert.strictEqual(sentMessage!.chunkDataBase64, expectedBase64);
+        assert.ok(Array.isArray(sentMessage!.merkleSiblings));
     });
 });
