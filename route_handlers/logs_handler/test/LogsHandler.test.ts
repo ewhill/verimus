@@ -1,38 +1,39 @@
 import assert from 'node:assert';
-import { describe, it } from 'node:test';
+import { describe, it, mock } from 'node:test';
 
 import logger from '../../../logger/Logger';
-import { MockPeerNode } from '../../../test/mocks/MockPeerNode';
-import { MockRequest } from '../../../test/mocks/MockRequest';
-import { MockResponse } from '../../../test/mocks/MockResponse';
 import logsHandler from '../LogsHandler';
+
+function createRes() {
+    const res: any = { statusCode: 200, body: null };
+    res.status = (code: number) => { res.statusCode = code; return res; };
+    res.json = (data: any) => { res.body = data; return res; };
+    res.send = (data: any) => { res.body = data; return res; };
+    return res;
+}
 
 describe('Backend: logsHandler Integrity', () => {
     it('Parses local winston logfile returning ordered output mapping', async () => {
-        const req = new MockRequest();
-        const res = new MockResponse();
-        const mockNode = new MockPeerNode();
-        const handler = new logsHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
+        const req: any = {};
+        const res: any = createRes();
+        const mockNode: any = {};
+        const handler = new logsHandler(mockNode);
+        await handler.handle(req, res);
         const data = res.body;
         assert.ok(Array.isArray(data));
     });
 
     it('Handles missing logfiles correctly returning fallback failure JSON', async () => {
-        const req = new MockRequest();
-        const res = new MockResponse();
-        const mockNode = new MockPeerNode();
+        const req: any = {};
+        const res = createRes();
+        const mockNode: any = {};
 
-        // Stub logger.getLogs to throw
-        const oldGetLogs = logger.getLogs;
-        logger.getLogs = () => { throw new Error('test error'); };
+        // Stub logger.getLogs to throw natively
+        mock.method(logger, 'getLogs', () => { throw new Error('test error'); });
         
-        try {
-            const handler = new logsHandler(mockNode.asPeerNode());
-            await handler.handle(req.asRequest(), res.asResponse());
-        } finally {
-            logger.getLogs = oldGetLogs; // restore
-        }
+        const handler = new logsHandler(mockNode);
+        await handler.handle(req, res);
+        mock.restoreAll();
         
         assert.strictEqual(res.statusCode, 500);
         const data = res.body;

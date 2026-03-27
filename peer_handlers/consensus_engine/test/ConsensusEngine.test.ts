@@ -8,7 +8,6 @@ import { generateRSAKeyPair } from '../../../crypto_utils/CryptoUtils';
 import * as proxyCrypto from '../../../crypto_utils/CryptoUtils';
 import Mempool from '../../../models/mempool/Mempool';
 import type PeerNode from '../../../peer_node/PeerNode';
-import { MockPeerNode } from '../../../test/mocks/MockPeerNode';
 import type { Block, PeerConnection } from '../../../types';
 import ConsensusEngine from '../ConsensusEngine';
 
@@ -30,26 +29,17 @@ describe('Backend: ConsensusEngine Integrity', () => {
     beforeEach(() => {
         keys = generateRSAKeyPair();
         const mempool = new Mempool();
-        const mockBase = new MockPeerNode({ port: 3000, privateKey: keys.privateKey, mempool });
-        mockNode = mockBase.asPeerNode();
-        mockNode.syncEngine.isSyncing = false;
-        mockNode.syncEngine.syncBuffer = [];
-        mockNode.getMajorityCount = () => 2;
-        mockNode.ledger.getLatestBlock = async () => ({ ...createMockBlock('sig', 'pk', '0000abc'), metadata: { index: 5, timestamp: 123 }, _id: new ObjectId() });
-        if (mockNode.ledger.collection) {
-            mockNode.ledger.collection.findOne = async () => null;
-        }
-        mockNode.ledger.addBlockToChain = async (block: Block) => { return block; };
-        if (mockNode.peer) {
-            Object.defineProperty(mockNode.peer, 'trustedPeers', { value: [{ peerAddress: '127.0.0.1:3001', send: () => {} }], writable: true });
-            mockNode.peer.broadcast = async () => {};
-        }
-        mockNode.events.emit = () => false;
-        mockNode.reputationManager.penalizeMajor = async () => null;
-        mockNode.reputationManager.penalizeCritical = async () => null;
-        mockNode.reputationManager.penalizeMinor = async () => null;
-        mockNode.reputationManager.rewardValidSync = async () => null;
-        mockNode.reputationManager.rewardHonestProposal = async () => null;
+        mockNode = { 
+            port: 3000, 
+            privateKey: keys.privateKey, 
+            mempool,
+            syncEngine: { isSyncing: false, syncBuffer: [] },
+            getMajorityCount: () => 2,
+            ledger: { collection: { findOne: async () => null }, getLatestBlock: async () => ({ ...createMockBlock('sig', 'pk', '0000abc'), metadata: { index: 5, timestamp: 123 }, _id: new ObjectId() }), addBlockToChain: async (block: Block) => block },
+            peer: { trustedPeers: [{ peerAddress: '127.0.0.1:3001', send: () => {} }], broadcast: async () => {} },
+            events: { emit: () => false },
+            reputationManager: { penalizeMajor: async () => null, penalizeCritical: async () => null, penalizeMinor: async () => null, rewardValidSync: async () => null, rewardHonestProposal: async () => null }
+        } as unknown as PeerNode;
         engine = new ConsensusEngine(mockNode);
     });
 

@@ -1,5 +1,4 @@
 import assert from 'node:assert';
-import * as fs from 'node:fs';
 import { describe, it, mock } from 'node:test';
 
 import Bundler from '../../bundler/Bundler';
@@ -9,8 +8,10 @@ import Mempool from '../../models/mempool/Mempool';
 import type { Peer } from '../../p2p';
 import BaseProvider from '../../storage_providers/base_provider/BaseProvider';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
-import { createMongoCursorStub, createMock } from '../../test/utils/StubFactory';
 import PeerNodeClass from '../PeerNode';
+
+const createMongoCursorStub = (items: any[]) => ({ toArray: async () => items });
+const createMock = <T>(shape: any = {}): T => shape as T;
 
 const getMockCredentials = (): PeerCredentials => ({
     ringPublicKeyPath: 'ring.pub',
@@ -66,7 +67,13 @@ describe('Backend: PeerNode Logical Verification Check', () => {
         mockNode.loadOwnedBlocksCache = async () => {};
         
         // Mock fs to bypass internal syncs
-        mock.method(fs, 'readFileSync', () => Buffer.from('MOCK_KEY'));
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const fsLib = require('node:fs');
+        const origRead = fsLib.readFileSync;
+        mock.method(fsLib, 'readFileSync', (pathStr: any, options: any) => {
+            if (typeof pathStr === 'string' && pathStr.includes('.pem')) return Buffer.from('MOCK_KEY');
+            return origRead(pathStr, options);
+        });
 
         try {
            await mockNode.init().catch((_unusedE: any) => {}); // Only care about internal instantiation sequence

@@ -1,9 +1,6 @@
 import assert from 'node:assert';
-import { describe, it } from 'node:test';
+import { describe, it, mock } from 'node:test';
 
-import { MockPeerNode } from '../../../test/mocks/MockPeerNode';
-import { MockRequest } from '../../../test/mocks/MockRequest';
-import { MockResponse } from '../../../test/mocks/MockResponse';
 import DefaultHandler from '../DefaultHandler';
 
 describe('Backend: defaultHandler Integrity', () => {
@@ -12,11 +9,11 @@ describe('Backend: defaultHandler Integrity', () => {
     });
 
     it('Returns static node verification welcome prompt JSON object', async () => {
-        const req = new MockRequest();
-        const res = new MockResponse();
-        const mockNode = new MockPeerNode();
-        const handler = new DefaultHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
-        assert.strictEqual(res.sentPath, 'index.html');
+        const req: any = {};
+        const res: any = { sendFile: mock.fn() };
+        const mockNode: any = {};
+        const handler = new DefaultHandler(mockNode);
+        await handler.handle(req, res);
+        assert.strictEqual(res.sendFile.mock.calls[0].arguments[0], 'index.html');
     });
 });

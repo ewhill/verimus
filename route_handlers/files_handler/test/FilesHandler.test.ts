@@ -2,12 +2,15 @@ import assert from 'node:assert';
 import { describe, it, beforeEach, mock } from 'node:test';
 
 import { generateRSAKeyPair, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
-// import PeerNode from '../../../peer_node/PeerNode';
-import { MockPeerNode } from '../../../test/mocks/MockPeerNode';
-import { MockRequest } from '../../../test/mocks/MockRequest';
-import { MockResponse } from '../../../test/mocks/MockResponse';
-import { createMongoCursorStub } from '../../../test/utils/StubFactory';
 import FilesHandler from '../FilesHandler';
+
+function createRes() {
+    const res: any = { statusCode: 200, body: null };
+    res.status = (code: number) => { res.statusCode = code; return res; };
+    res.json = (data: any) => { res.body = data; return res; };
+    res.send = (data: any) => { res.body = data; return res; };
+    return res;
+}
 
 const createValidPendingBlock = (sig: string, pub: string, hash: string, payload: any, ts: number) => ({
     committed: false,
@@ -26,25 +29,28 @@ const createValidPendingBlock = (sig: string, pub: string, hash: string, payload
 });
 
 describe('Backend: filesHandler Coverage', () => {
-    let mockNode: MockPeerNode;
-    let req: MockRequest;
-    let res: MockResponse;
+    let mockNode: any;
+    let req: any;
+    let res: any;
     let keys: any;
 
     beforeEach(() => {
         keys = generateRSAKeyPair();
-        mockNode = new MockPeerNode({ publicKey: 'testPubKey', privateKey: keys.privateKey });
-        mockNode.ownedBlocksCache = [];
-        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([]));
-        mockNode.mempool.pendingBlocks = new Map();
+        mockNode = { 
+            publicKey: 'testPubKey', 
+            privateKey: keys.privateKey,
+            ownedBlocksCache: [],
+            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [] })) } },
+            mempool: { pendingBlocks: new Map() }
+        };
 
-        req = new MockRequest();
-        res = new MockResponse();
+        req = {};
+        res = createRes();
     });
 
     it('Returns empty array on blank node payloads', async () => {
-        const handler = new FilesHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
+        const handler = new FilesHandler(mockNode);
+        await handler.handle(req, res);
         
         const responseData = res.body;
         assert.strictEqual(responseData.success, true);
@@ -58,10 +64,10 @@ describe('Backend: filesHandler Coverage', () => {
         });
         
         mockNode.ownedBlocksCache = ['hashABC'];
-        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([{ metadata: { index: 5, timestamp: 9999 }, hash: 'hashABC', previousHash: 'prev', publicKey: 'testPubKey', payload: encrypted, type: 'STORAGE_CONTRACT', signature: 'sig' }]));
+        mockNode.ledger.collection.find.mock.mockImplementationOnce(() => ({ toArray: async () => [{ metadata: { index: 5, timestamp: 9999 }, hash: 'hashABC', previousHash: 'prev', publicKey: 'testPubKey', payload: encrypted, type: 'STORAGE_CONTRACT', signature: 'sig' }] }));
         
-        const handler = new FilesHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
+        const handler = new FilesHandler(mockNode);
+        await handler.handle(req, res);
         
         const responseData = res.body;
         assert.strictEqual(responseData.success, true);
@@ -82,8 +88,8 @@ describe('Backend: filesHandler Coverage', () => {
         
         mockNode.mempool.pendingBlocks.set('pending-sig', createValidPendingBlock('pending-sig', 'testPubKey', 'pendingHash', encrypted, 100));
         
-        const handler = new FilesHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
+        const handler = new FilesHandler(mockNode);
+        await handler.handle(req, res);
         
         const responseData = res.body;
         assert.strictEqual(responseData.success, true);
@@ -92,12 +98,12 @@ describe('Backend: filesHandler Coverage', () => {
     });
 
     it('Gracefully catches and returns 500 on internal processor failure', async () => {
-        const brokenNode = mockNode.asPeerNode();
+        const brokenNode: any = { ...mockNode };
         brokenNode.ownedBlocksCache = ['trigger_db_query_hash'];
         Object.defineProperty(brokenNode, 'ledger', { value: null });
         
         const handler = new FilesHandler(brokenNode);
-        await handler.handle(req.asRequest(), res.asResponse());
+        await handler.handle(req, res);
         assert.strictEqual(res.statusCode, 500);
         const responseData = res.body;
         assert.strictEqual(responseData.success, false);
@@ -114,13 +120,13 @@ describe('Backend: filesHandler Coverage', () => {
         });
         
         mockNode.ownedBlocksCache = ['b1', 'b2'];
-        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([
+        mockNode.ledger.collection.find.mock.mockImplementationOnce(() => ({ toArray: async () => [
             { metadata: { index: 1, timestamp: 1000 }, hash: 'b1', previousHash: 'prev', publicKey: 'testPubKey', payload: encrypted, type: 'STORAGE_CONTRACT', signature: 'sig' },
             { metadata: { index: 2, timestamp: 2000 }, hash: 'b2', previousHash: 'prev', publicKey: 'testPubKey', payload: encrypted2, type: 'STORAGE_CONTRACT', signature: 'sig' }
-        ]));
+        ] }));
         
-        const handler = new FilesHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
+        const handler = new FilesHandler(mockNode);
+        await handler.handle(req, res);
         
         const responseData = res.body;
         assert.strictEqual(responseData.success, true);
@@ -135,12 +141,12 @@ describe('Backend: filesHandler Coverage', () => {
     it('Traps payload decryption pipeline errors bypassing invalid blocks', async () => {
         mockNode.ownedBlocksCache = ['badBlock'];
         const badEncrypted = encryptPrivatePayload(generateRSAKeyPair().publicKey, { physicalId: 'pid', location: { type: 'local'}, aesKey: '', aesIv: '', files: [] });
-        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([
+        mockNode.ledger.collection.find.mock.mockImplementationOnce(() => ({ toArray: async () => [
             { hash: 'badBlock', previousHash: 'prev', publicKey: 'testPubKey', payload: badEncrypted, metadata: { index: 0, timestamp: 0 }, type: 'STORAGE_CONTRACT', signature: 'sig' }
-        ]));
+        ] }));
         
-        const handler = new FilesHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
+        const handler = new FilesHandler(mockNode);
+        await handler.handle(req, res);
         
         const responseData = res.body;
         assert.strictEqual(responseData.success, true);
@@ -172,8 +178,8 @@ describe('Backend: filesHandler Coverage', () => {
         mockNode.mempool.pendingBlocks.set('pending3', createValidPendingBlock('pending3', 'testPubKey', 'loc3', encrypted3, 3));
         mockNode.mempool.pendingBlocks.set('pending4', createValidPendingBlock('pending4', 'testPubKey', 'loc4', encrypted4, 4));
         
-        const handler = new FilesHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
+        const handler = new FilesHandler(mockNode);
+        await handler.handle(req, res);
         
         const responseData = res.body;
         assert.strictEqual(responseData.files.length, 4);

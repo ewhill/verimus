@@ -2,11 +2,15 @@ import assert from 'node:assert';
 import { describe, it, beforeEach, mock } from 'node:test';
 
 import { generateRSAKeyPair, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
-import { MockPeerNode } from '../../../test/mocks/MockPeerNode';
-import { MockRequest } from '../../../test/mocks/MockRequest';
-import { MockResponse } from '../../../test/mocks/MockResponse';
-import { createMongoCursorStub } from '../../../test/utils/StubFactory';
 import BlocksHandler from '../BlocksHandler';
+
+function createRes() {
+    const res: any = { statusCode: 200, body: null };
+    res.status = (code: number) => { res.statusCode = code; return res; };
+    res.json = (data: any) => { res.body = data; return res; };
+    res.send = (data: any) => { res.body = data; return res; };
+    return res;
+}
 
 const createValidPendingBlock = (sig: string, pub: string, payload: any, ts: number) => ({
     committed: false,
@@ -25,28 +29,27 @@ const createValidPendingBlock = (sig: string, pub: string, payload: any, ts: num
 });
 
 describe('Backend: blocksHandler Coverage', () => {
-    let mockNode: MockPeerNode;
-    let req: MockRequest;
-    let res: MockResponse;
+    let mockNode: any;
+    let req: any;
+    let res: any;
     let keys: any;
 
     beforeEach(() => {
         keys = generateRSAKeyPair();
-        mockNode = new MockPeerNode({
+        mockNode = {
             publicKey: 'testPubKey',
             privateKey: keys.privateKey,
-        });
+            ledger: { collection: { find: mock.fn(() => ({ sort: () => ({ toArray: async () => [] }) })) } },
+            mempool: { pendingBlocks: new Map() }
+        };
 
-        // Replace stateful MockCollection implementation with behavioral stubbing boundary default
-        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([]));
-
-        req = new MockRequest({ query: {} });
-        res = new MockResponse();
+        req = { query: {} };
+        res = createRes();
     });
 
     it('Returns empty blocks list', async () => {
-        const handler = new BlocksHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
+        const handler = new BlocksHandler(mockNode);
+        await handler.handle(req, res);
         
         const responseData = res.body;
         assert.strictEqual(responseData.success, true);
@@ -55,12 +58,12 @@ describe('Backend: blocksHandler Coverage', () => {
 
     it('Returns fetched blocks', async () => {
         const encrypted = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'test.txt' }] });
-        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([
-            { metadata: { index: 1, timestamp: 0 }, hash: 'hash1', previousHash: 'prev', publicKey: 'testPubKey', payload: encrypted, type: 'STORAGE_CONTRACT', signature: 'sig' }
-        ]));
+        mockNode.ledger.collection.find.mock.mockImplementationOnce(() => ({
+            sort: () => ({ toArray: async () => [{ metadata: { index: 1, timestamp: 0 }, hash: 'hash1', previousHash: 'prev', publicKey: 'testPubKey', payload: encrypted, type: 'STORAGE_CONTRACT', signature: 'sig' }] })
+        }));
 
-        const handler = new BlocksHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
+        const handler = new BlocksHandler(mockNode);
+        await handler.handle(req, res);
         
         const responseData = res.body;
         assert.strictEqual(responseData.blocks.length, 1);
@@ -70,15 +73,17 @@ describe('Backend: blocksHandler Coverage', () => {
     it('Filters by local queries', async () => {
         const encryptedMatch = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'match-this.txt' }] });
         const encryptedNoMatch = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'other.txt' }] });
-        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([
-            { metadata: { index: 1, timestamp: 0 }, hash: 'hash1', previousHash: 'prev', publicKey: 'testPubKey', payload: encryptedMatch, type: 'STORAGE_CONTRACT', signature: 'sig1' },
-            { metadata: { index: 2, timestamp: 0 }, hash: 'hash2', previousHash: 'prev', publicKey: 'testPubKey', payload: encryptedNoMatch, type: 'STORAGE_CONTRACT', signature: 'sig2' }
-        ]));
+        mockNode.ledger.collection.find.mock.mockImplementationOnce(() => ({
+            sort: () => ({ toArray: async () => [
+                { metadata: { index: 1, timestamp: 0 }, hash: 'hash1', previousHash: 'prev', publicKey: 'testPubKey', payload: encryptedMatch, type: 'STORAGE_CONTRACT', signature: 'sig1' },
+                { metadata: { index: 2, timestamp: 0 }, hash: 'hash2', previousHash: 'prev', publicKey: 'testPubKey', payload: encryptedNoMatch, type: 'STORAGE_CONTRACT', signature: 'sig2' }
+            ]})
+        }));
 
         req.query.q = 'match';
         
-        const handler = new BlocksHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
+        const handler = new BlocksHandler(mockNode);
+        await handler.handle(req, res);
         
         const responseData = res.body;
         assert.strictEqual(responseData.blocks.length, 1);
@@ -89,8 +94,8 @@ describe('Backend: blocksHandler Coverage', () => {
         const encrypted = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'pending.txt' }] });
         mockNode.mempool.pendingBlocks.set('some-sig', createValidPendingBlock('some-sig', 'testPubKey', encrypted, 12345));
 
-        const handler = new BlocksHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
+        const handler = new BlocksHandler(mockNode);
+        await handler.handle(req, res);
 
         const responseData = res.body;
         assert.strictEqual(responseData.blocks.length, 1);
@@ -98,9 +103,8 @@ describe('Backend: blocksHandler Coverage', () => {
     });
 
     it('Returns 500 error on failure', async () => {
-        // @ts-ignore
-        const handler = new BlocksHandler(null); // Cannot avoid testing actual null boundary here easily without bypassing TS
-        await handler.handle(req.asRequest(), res.asResponse());
+        const handler = new BlocksHandler(null as any); // Cannot avoid testing actual null boundary here easily without bypassing TS
+        await handler.handle(req, res);
         assert.strictEqual(res.statusCode, 500);
         const responseData = res.body;
         assert.strictEqual(responseData.success, false);
@@ -114,8 +118,8 @@ describe('Backend: blocksHandler Coverage', () => {
 
         req.query.own = 'true';
 
-        const handler = new BlocksHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
+        const handler = new BlocksHandler(mockNode);
+        await handler.handle(req, res);
         
         const responseData = res.body;
         // Only the pending block with testPubKey should be returned
@@ -131,17 +135,17 @@ describe('Backend: blocksHandler Coverage', () => {
 
         // Test ASC
         req.query.sort = 'asc';
-        let handler = new BlocksHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
+        let handler = new BlocksHandler(mockNode);
+        await handler.handle(req, res);
         let resp = res.body;
         assert.strictEqual(resp.blocks[0].signature, 'b1');
         assert.strictEqual(resp.blocks[1].signature, 'b2');
 
         // Test DESC
-        res = new MockResponse();
+        res = createRes();
         req.query.sort = 'desc';
-        handler = new BlocksHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
+        handler = new BlocksHandler(mockNode);
+        await handler.handle(req, res);
         resp = res.body;
         assert.strictEqual(resp.blocks[0].signature, 'b2');
         assert.strictEqual(resp.blocks[1].signature, 'b1');
@@ -149,14 +153,16 @@ describe('Backend: blocksHandler Coverage', () => {
 
     it('Catches decryption errors', async () => {
         const encryptedMatch = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'match-this.txt' }] });
-        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([
-            { metadata: { index: 1, timestamp: 0 }, hash: 'hash1', previousHash: 'prev', publicKey: 'testPubKey', payload: encryptPrivatePayload(keys.publicKey, { physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] }), type: 'STORAGE_CONTRACT', signature: 'sig1' },
-            { metadata: { index: 2, timestamp: 0 }, hash: 'hash2', previousHash: 'prev', publicKey: 'testPubKey', payload: encryptedMatch, type: 'STORAGE_CONTRACT', signature: 'sig2' }
-        ]));
+        mockNode.ledger.collection.find.mock.mockImplementationOnce(() => ({
+            sort: () => ({ toArray: async () => [
+                { metadata: { index: 1, timestamp: 0 }, hash: 'hash1', previousHash: 'prev', publicKey: 'testPubKey', payload: encryptPrivatePayload(keys.publicKey, { physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] }), type: 'STORAGE_CONTRACT', signature: 'sig1' },
+                { metadata: { index: 2, timestamp: 0 }, hash: 'hash2', previousHash: 'prev', publicKey: 'testPubKey', payload: encryptedMatch, type: 'STORAGE_CONTRACT', signature: 'sig2' }
+            ]})
+        }));
 
         req.query.q = 'match';
-        const handler = new BlocksHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
+        const handler = new BlocksHandler(mockNode);
+        await handler.handle(req, res);
         
         const responseData = res.body;
         assert.strictEqual(responseData.blocks.length, 1);

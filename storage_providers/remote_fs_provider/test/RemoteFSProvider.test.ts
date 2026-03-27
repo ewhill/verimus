@@ -1,7 +1,6 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { MockSftpClient } from '../../../test/mocks/MockSftpClient';
 import RemoteFSStorageProvider from '../RemoteFSProvider';
 
 describe('Backend: remoteFSProvider Integrity', () => {
@@ -12,8 +11,11 @@ describe('Backend: remoteFSProvider Integrity', () => {
         assert.strictEqual(loc.dir, '/var/data');
 
         // Mock SFTP behavior
-        const mockSftp = new MockSftpClient();
-        // @ts-ignore - Authorized bypass mapping massive third-party ssh2-sftp-client API limits to locally required operations only
+        const mockSftp: any = {
+            put: async () => {},
+            get: async () => Buffer.from('mock'),
+            end: async () => {}
+        };
         prov._getSftp = async () => mockSftp;
         
         const { physicalBlockId, writeStream } = prov.createBlockStream();

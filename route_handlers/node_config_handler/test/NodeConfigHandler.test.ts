@@ -1,18 +1,23 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { MockPeerNode } from '../../../test/mocks/MockPeerNode';
-import { MockRequest } from '../../../test/mocks/MockRequest';
-import { MockResponse } from '../../../test/mocks/MockResponse';
 import nodeConfigHandler from '../NodeConfigHandler';
+
+function createRes() {
+    const res: any = { statusCode: 200, body: null };
+    res.status = (code: number) => { res.statusCode = code; return res; };
+    res.json = (data: any) => { res.body = data; return res; };
+    res.send = (data: any) => { res.body = data; return res; };
+    return res;
+}
 
 describe('Backend: nodeConfigHandler Integrity', () => {
     it('Responds with active node configuration parameters globally', async () => {
-        const req = new MockRequest();
-        const res = new MockResponse();
-        const mockNode = new MockPeerNode({ publicKey: 'pub', signature: 'sig', port: 1234 });
-        const handler = new nodeConfigHandler(mockNode.asPeerNode());
-        await handler.handle(req.asRequest(), res.asResponse());
+        const req: any = {};
+        const res: any = createRes();
+        const mockNode: any = { publicKey: 'pub', signature: 'sig', port: 1234 };
+        const handler = new nodeConfigHandler(mockNode);
+        await handler.handle(req, res);
         
         const data = res.body;
         assert.strictEqual(data.success, true);
