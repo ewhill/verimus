@@ -64,7 +64,7 @@ export default class UploadHandler extends BaseHandler {
             logger.info(`[Peer ${this.node.port}] Initiating async storage limit order ${marketReqId} searching mapping ${redundancy} hosts...`);
 
             // Triage Bid Harvesting parsing bounds against TCP buffers!
-            const bids = await this.node.consensusEngine.node.syncEngine.orchestrateStorageMarket(
+            const bids = await this.node.syncEngine.orchestrateStorageMarket(
                 marketReqId, totalSize, chunkSizeBytes, redundancy, maxCost
             );
 
