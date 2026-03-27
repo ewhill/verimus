@@ -10,7 +10,7 @@ import { Request, Response } from 'express';
 import Bundler from '../../../bundler/Bundler';
 import { generateRSAKeyPair, signData, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
 import type PeerNode from '../../../peer_node/PeerNode';
-import { createMock, createRes } from '../../../test/utils/TestUtils';
+import { createMock } from '../../../test/utils/TestUtils';
 import { NodeRole } from '../../../types/NodeRole';
 import DownloadFileHandler from '../DownloadFileHandler';
 
@@ -90,7 +90,17 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         const handler = new DownloadFileHandler(handlerOpts as PeerNode);
 
         const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } } as any);
-        const res = createRes();
+        const headers: Record<string, string> = {};
+        const res = createMock<Response>({
+            status: function (_unusedS: number) { return this as Response; },
+            send: function (_unusedB: any) { return this as Response; },
+            json: function (_unusedJ: any) { return this as Response; },
+            setHeader: function (name: string, val: string) { headers[name.toLowerCase()] = val; return this as Response; },
+            headersSent: false,
+            once: function () { return this as Response; },
+            emit: function () { return true; },
+            on: function () { return this as Response; }
+        });
         let bodyPayload = '';
         res.write = ((chunk: any) => { bodyPayload += chunk.toString(); return true; }) as any;
         res.end = (() => { return res; }) as any;
@@ -108,7 +118,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
             });
         });
 
-        assert.strictEqual(res.headers['Content-disposition'], 'attachment; filename="file.txt"');
+        assert.strictEqual(headers['content-disposition'], 'attachment; filename="file.txt"');
         assert.ok(bodyPayload.includes('hello world'));
     });
 
