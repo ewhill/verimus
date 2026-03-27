@@ -7,6 +7,7 @@ import { encryptPrivatePayload, signData } from '../../crypto_utils/CryptoUtils'
 import logger from '../../logger/Logger';
 import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
 import { StorageShardTransferMessage } from '../../messages/storage_shard_transfer_message/StorageShardTransferMessage';
+import { VerifyHandoffMessage } from '../../messages/verify_handoff_message/VerifyHandoffMessage';
 import type { Block, BlockPrivate, StorageContractPayload, PeerConnection, NodeShardMapping } from '../../types';
 import { NodeRole } from '../../types/NodeRole';
 import BaseHandler from '../base_handler/BaseHandler';
@@ -107,16 +108,47 @@ export default class UploadHandler extends BaseHandler {
                     clearTimeout(timeout);
                     if (!responseMsg.success) return rej(new Error('Host rejected processing logical blocks.'));
                     
+                    const physicalId = responseMsg.physicalId;
+                    const chunkList = bundleResult.chunkMap[i];
+                    const targetIndex = Math.floor(Math.random() * chunkList.length);
+                    
+                    const verifyMsg = new VerifyHandoffMessage({
+                        marketId: marketReqId,
+                        physicalId: physicalId,
+                        targetChunkIndex: targetIndex
+                    });
+
+                    const verifyTimeout = setTimeout(() => {
+                        this.node.events.removeAllListeners(`handoff_response:${marketReqId}:${physicalId}`);
+                        rej(new Error(`P2P chunk verification handoff loop timed out isolating limits.`));
+                    }, 10000);
+
+                    this.node.events.once(`handoff_response:${marketReqId}:${physicalId}`, (handoffMsg: any) => {
+                        clearTimeout(verifyTimeout);
+                        if (!handoffMsg.success || handoffMsg.chunkHashBase64 !== chunkList[targetIndex]) {
+                            // Structurally penalize the host for misstating bounds preventing ledger bloat!
+                            this.node.reputationManager.penalizeMajor(bid.peerId, "Data Verification Handoff Forgery");
+                            return rej(new Error('Host definitively failed cryptographic chunk structural limits!'));
+                        }
+                        
+                        try {
+                            fragmentMap.push({
+                                nodeId: bid.peerId,
+                                shardIndex: i,
+                                shardHash: crypto.createHash('sha256').update(bundleResult.shards[i]).digest('hex'),
+                                physicalId: physicalId
+                            });
+                            res();
+                        } catch (e) {
+                            rej(e);
+                        }
+                    });
+
                     try {
-                        fragmentMap.push({
-                            nodeId: bid.peerId,
-                            shardIndex: i,
-                            shardHash: crypto.createHash('sha256').update(bundleResult.shards[i]).digest('hex'),
-                            physicalId: responseMsg.physicalId
-                        });
-                        res();
-                    } catch (e) {
-                        rej(e);
+                        bid.connection.send(verifyMsg);
+                    } catch(err: any) {
+                        clearTimeout(verifyTimeout);
+                        rej(err);
                     }
                 });
 
@@ -156,7 +188,8 @@ export default class UploadHandler extends BaseHandler {
             allocatedEgressEscrow: theoreticalMaxCost,
             remainingEgressEscrow: theoreticalMaxCost,
             erasureParams: { k: K, n: N, originalSize: bundleResult.originalSize! },
-            fragmentMap: fragmentMap
+            fragmentMap: fragmentMap,
+            chunkMap: bundleResult.chunkMap
         };
 
         const signatureStr = signData(JSON.stringify(payloadResult), privateKey);

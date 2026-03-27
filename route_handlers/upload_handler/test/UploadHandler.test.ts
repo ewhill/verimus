@@ -39,7 +39,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             publicKey: publicKey,
             privateKey: privateKey,
             storageProvider: { createBlockStream: () => ({ physicalBlockId: 'mockId', writeStream: new Writable({ write(_c, _e, cb) { cb(); } }) }) },
-            bundler: { streamErasureBundle: async () => ({ aesKey: 'KEY', aesIv: 'IV', files: [], shards: [Buffer.from('mock')], authTag: '', originalSize: 0 }) },
+            bundler: { streamErasureBundle: async () => ({ aesKey: 'KEY', aesIv: 'IV', files: [], shards: [Buffer.from('mock')], authTag: '', originalSize: 0, chunkMap: [['fakeHash', 'fakeHash']] }) },
             consensusEngine: { handlePendingBlock: async () => { blockHandled = true; }, walletManager: { verifyFunds: async () => true, freezeFunds: () => {}, releaseFunds: () => {}, commitFunds: () => {} }, node: { syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }] } } },
             syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }] },
             peer: { broadcast: async () => { } },
@@ -47,6 +47,8 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                 once: (evt: string | symbol, cb: (...args: any[]) => void) => {
                     if (typeof evt === 'string' && evt.startsWith('shard_response')) {
                         setTimeout(() => cb({ success: true, physicalId: 'mockId' }), 5);
+                    } else if (typeof evt === 'string' && evt.startsWith('handoff_response')) {
+                        setTimeout(() => cb({ success: true, chunkHashBase64: 'fakeHash' }), 5);
                     } else {
                         setTimeout(() => cb({ hash: 'fakeHash settled' }), 5);
                     }
@@ -89,12 +91,16 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         const mockNode: any = {
             roles: [NodeRole.ORIGINATOR], publicKey, privateKey, port: 1234,
             storageProvider: { createBlockStream: () => ({ physicalBlockId: 'id', writeStream: new Writable({ write(_c, _e, cb) { cb(); } }) }) },
-            bundler: { streamErasureBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [Buffer.from('mock')], authTag: '', originalSize: 0 }) },
+            bundler: { streamErasureBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [Buffer.from('mock')], authTag: '', originalSize: 0, chunkMap: [['fakeHash', 'fakeHash']] }) },
             consensusEngine: { handlePendingBlock: async () => {}, walletManager: { verifyFunds: async () => true, freezeFunds: () => {}, releaseFunds: () => {}, commitFunds: () => {} }, node: { syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }] } } },
             syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }] },
             peer: { broadcast: async () => {} },
             events: {
-                once: (evt: string | symbol, cb: (...args: any[]) => void) => { if (typeof evt === 'string' && evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } return mockNode.events; },
+                once: (evt: string | symbol, cb: (...args: any[]) => void) => { 
+                    if (typeof evt === 'string' && evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } 
+                    else if (typeof evt === 'string' && evt.startsWith('handoff_response')) { cb({ success: true, chunkHashBase64: 'fakeHash' }); }
+                    return mockNode.events; 
+                },
                 removeAllListeners: () => mockNode.events
             }
         };
@@ -116,12 +122,16 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         const mockNode: any = {
             roles: [NodeRole.ORIGINATOR], publicKey, privateKey, port: 1234,
             storageProvider: { createBlockStream: () => ({ physicalBlockId: 'id', writeStream: new Writable({ write(_c, _e, cb) { cb(); } }) }) },
-            bundler: { streamErasureBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [Buffer.from('mock')], authTag: '', originalSize: 0 }) },
+            bundler: { streamErasureBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [Buffer.from('mock')], authTag: '', originalSize: 0, chunkMap: [['fakeHash', 'fakeHash']] }) },
             consensusEngine: { handlePendingBlock: async () => { throw new Error('Converge Error for test'); }, walletManager: { verifyFunds: async () => true, freezeFunds: () => {}, releaseFunds: () => {}, commitFunds: () => {} }, node: { syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }] } } },
             syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }] },
             peer: { broadcast: async () => {} },
             events: {
-                once: (evt: string | symbol, cb: (...args: any[]) => void) => { if (typeof evt === 'string' && evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } return mockNode.events; },
+                once: (evt: string | symbol, cb: (...args: any[]) => void) => { 
+                    if (typeof evt === 'string' && evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } 
+                    else if (typeof evt === 'string' && evt.startsWith('handoff_response')) { cb({ success: true, chunkHashBase64: 'fakeHash' }); }
+                    return mockNode.events; 
+                },
                 removeAllListeners: () => mockNode.events
             }
         };
@@ -136,6 +146,37 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         if (t?.mock?.timers) { t.mock.timers.tick(120000); }
         // ensure event loop flushes
         await new Promise<void>(resolve => setImmediate(resolve));
+    });
+    it('Penalizes and rejects storage market allocations returning invalid chunk maps', async () => {
+        let penalizedNode = '';
+        const { publicKey, privateKey } = generateRSAKeyPair();
+        const mockNode: any = {
+            roles: [NodeRole.ORIGINATOR], publicKey, privateKey, port: 1234,
+            storageProvider: { createBlockStream: () => ({ physicalBlockId: 'id', writeStream: new Writable({ write(_c, _e, cb) { cb(); } }) }) },
+            bundler: { streamErasureBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [Buffer.from('mock')], authTag: '', originalSize: 0, chunkMap: [['expectedHash']] }) },
+            consensusEngine: { handlePendingBlock: async () => {}, walletManager: { verifyFunds: async () => true, freezeFunds: () => {}, releaseFunds: () => {}, commitFunds: () => {} }, node: { syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }] } } },
+            syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }] },
+            reputationManager: { penalizeMajor: (peerId: string) => { penalizedNode = peerId; } },
+            peer: { broadcast: async () => {} },
+            events: {
+                once: (evt: string | symbol, cb: (...args: any[]) => void) => { 
+                    if (typeof evt === 'string' && evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } 
+                    else if (typeof evt === 'string' && evt.startsWith('handoff_response')) { cb({ success: true, chunkHashBase64: 'maliciousGarbageHash' }); }
+                    return mockNode.events; 
+                },
+                removeAllListeners: () => mockNode.events
+            }
+        };
+
+        const handler = new UploadHandler(mockNode);
+        const req: any = { files: [{ originalname: 'test' }], body: {} }; 
+        const res = createRes();
+
+        await handler.handle(req, res);
+        
+        assert.strictEqual(res.statusCode, 502);
+        assert.ok(typeof res.body === 'string' && res.body.includes('atally failed'));
+        assert.strictEqual(penalizedNode, 'mock-1');
     });
 });
 

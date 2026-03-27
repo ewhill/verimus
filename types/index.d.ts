@@ -57,6 +57,7 @@ export interface StorageContractPayload {
     activeHosts?: string[];
     erasureParams?: ErasureParameters;
     fragmentMap?: NodeShardMapping[];
+    chunkMap?: string[][];
 }
 
 export interface BlockPrivateFile {

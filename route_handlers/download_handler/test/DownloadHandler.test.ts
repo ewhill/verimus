@@ -181,7 +181,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
         let bodyPayload = '';
         res.write = ((chunk: any) => { bodyPayload += chunk.toString(); return true; }) as any;
         res.end = (() => { return res; }) as any;
-        res.on = ((evt: string, _unusedCb: Function) => { return res; }) as any;
+        res.on = ((_unusedEvt: string, _unusedCb: Function) => { return res; }) as any;
 
         await handler.handle(req, res);
         // Wait for unzipping stream to pipe all data out

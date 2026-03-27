@@ -11,6 +11,8 @@ import { StorageShardResponseMessage } from '../../messages/storage_shard_respon
 import { StorageShardRetrieveRequestMessage } from '../../messages/storage_shard_retrieve_request_message/StorageShardRetrieveRequestMessage';
 import { StorageShardRetrieveResponseMessage } from '../../messages/storage_shard_retrieve_response_message/StorageShardRetrieveResponseMessage';
 import { StorageShardTransferMessage } from '../../messages/storage_shard_transfer_message/StorageShardTransferMessage';
+import { VerifyHandoffMessage } from '../../messages/verify_handoff_message/VerifyHandoffMessage';
+import { VerifyHandoffResponseMessage } from '../../messages/verify_handoff_response_message/VerifyHandoffResponseMessage';
 import PeerNode from '../../peer_node/PeerNode';
 import type { Block, PeerConnection } from '../../types';
 import { NodeRole } from '../../types/NodeRole';
@@ -72,8 +74,10 @@ class SyncEngine {
         this.node.peer?.bind(StorageShardResponseMessage).to(async (m: StorageShardResponseMessage, c: PeerConnection) => this.handleStorageShardResponse(m, c));
         this.node.peer?.bind(StorageShardRetrieveRequestMessage).to(async (m: StorageShardRetrieveRequestMessage, c: PeerConnection) => this.handleStorageShardRetrieveRequest(m, c));
         this.node.peer?.bind(StorageShardRetrieveResponseMessage).to(async (m: StorageShardRetrieveResponseMessage, c: PeerConnection) => this.handleStorageShardRetrieveResponse(m, c));
+        this.node.peer?.bind(VerifyHandoffMessage).to(async (m: VerifyHandoffMessage, c: PeerConnection) => this.handleVerifyHandoffRequest(m, c));
+        this.node.peer?.bind(VerifyHandoffResponseMessage).to(async (m: VerifyHandoffResponseMessage, c: PeerConnection) => this.handleVerifyHandoffResponse(m, c));
 
-        // Start native background polling
+        // Start native background tracking
         if (this.node.peer) {
             this.syncInterval = setInterval(async () => {
                 if (!this.node.ledger.peersCollection) return;
@@ -320,6 +324,83 @@ class SyncEngine {
 
     async handleStorageShardRetrieveResponse(msg: StorageShardRetrieveResponseMessage, _unusedConnection: PeerConnection) {
         this.node.events.emit(`shard_retrieve:${msg.marketId}:${msg.physicalId}`, msg);
+    }
+
+    async handleVerifyHandoffRequest(msg: VerifyHandoffMessage, connection: PeerConnection) {
+        if (!this.node.roles.includes(NodeRole.STORAGE)) return;
+
+        try {
+            const result = await this.node.storageProvider!.getBlockReadStream(msg.physicalId);
+            if (result.status !== 'available' || !result.stream) {
+                return connection.send(new VerifyHandoffResponseMessage({
+                    marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkHashBase64: '', success: false
+                }));
+            }
+            
+            // Recompute dynamic byte limits mirroring exactly mapped bounds natively
+            const CHUNK_SIZE = 1024 * 1024;
+            let currentOffset = 0;
+            let targetBuffer: Buffer | null = null;
+            let capturedData = Buffer.alloc(0);
+
+            result.stream.on('data', (c: Buffer) => {
+                const targetStart = msg.targetChunkIndex * CHUNK_SIZE;
+                const targetEnd = targetStart + CHUNK_SIZE;
+                
+                const chunkStart = currentOffset;
+                const chunkEnd = currentOffset + c.length;
+                
+                if (chunkEnd > targetStart && chunkStart < targetEnd) {
+                    // Extract intersection map boundaries
+                    const sliceStart = Math.max(0, targetStart - chunkStart);
+                    const sliceEnd = Math.min(c.length, targetEnd - chunkStart);
+                    capturedData = Buffer.concat([capturedData, c.subarray(sliceStart, sliceEnd)]);
+                }
+                
+                currentOffset += c.length;
+                
+                // If limit mapped dynamically, halt stream pulling dropping excess latency globally.
+                if (currentOffset >= targetEnd && !targetBuffer) {
+                    targetBuffer = capturedData;
+                    result.stream?.destroy(); // halt reading
+                }
+            });
+
+            result.stream.on('error', () => {
+                connection.send(new VerifyHandoffResponseMessage({
+                    marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkHashBase64: '', success: false
+                }));
+            });
+
+            result.stream.on('close', () => {
+                 if (!targetBuffer && capturedData.length > 0) targetBuffer = capturedData;
+                 
+                 if (targetBuffer) {
+                     const hashedByte = cryptoUtils.hashData(targetBuffer);
+                     connection.send(new VerifyHandoffResponseMessage({
+                         marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkHashBase64: hashedByte, success: true
+                     }));
+                 } else {
+                     connection.send(new VerifyHandoffResponseMessage({
+                         marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkHashBase64: '', success: false
+                     }));
+                 }
+            });
+            
+            // Also map limits natively across end parameters catching identical closing structures limits
+            result.stream.on('end', () => {
+                 if (!targetBuffer && capturedData.length > 0) targetBuffer = capturedData;
+            });
+        } catch (error: any) {
+            logger.error(`[Peer ${this.node.port}] Failed resolving verification handoff physically catching constraints: ${error.message}`);
+            connection.send(new VerifyHandoffResponseMessage({
+                marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkHashBase64: '', success: false
+            }));
+        }
+    }
+
+    async handleVerifyHandoffResponse(msg: VerifyHandoffResponseMessage, _unusedConnection: PeerConnection) {
+        this.node.events.emit(`handoff_response:${msg.marketId}:${msg.physicalId}`, msg);
     }
 
     async performInitialSync() {

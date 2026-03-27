@@ -183,7 +183,8 @@ class Bundler {
             authTag: string, 
             files: { path: string; contentHash: string; }[],
             shards: Buffer[],
-            originalSize: number
+            originalSize: number,
+            chunkMap: string[][]
         } | null>(async (resolve, reject) => {
             if (!uploadedFiles || uploadedFiles.length === 0) return resolve(null);
 
@@ -201,13 +202,26 @@ class Bundler {
                     // Bypass splitting when matrices compute static 1:1 mirroring
                     const shards = (K === 1 && N === 1) ? [finalBuffer] : await Bundler.encodeErasureShards(finalBuffer, K, N);
                     
+                    const chunkMap: string[][] = [];
+                    const CHUNK_SIZE = 1024 * 1024; // 1MB constraint blocks
+
+                    for (const shard of shards) {
+                        const shardMap: string[] = [];
+                        for (let offset = 0; offset < shard.length; offset += CHUNK_SIZE) {
+                            const chunk = shard.subarray(offset, Math.min(offset + CHUNK_SIZE, shard.length));
+                            shardMap.push(crypto.createHash('sha256').update(chunk).digest('hex'));
+                        }
+                        chunkMap.push(shardMap);
+                    }
+                    
                     resolve({
                         aesKey: key,
                         aesIv: iv,
                         authTag: getAuthTag().toString('hex'),
                         files,
                         shards,
-                        originalSize
+                        originalSize,
+                        chunkMap
                     });
                 } catch(e) { reject(e); }
             });
