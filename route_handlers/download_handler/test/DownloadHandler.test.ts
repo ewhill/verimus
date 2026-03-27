@@ -24,16 +24,20 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const handler = new DownloadHandler(mockNode as PeerNode);
 
         const req = createMock<Request>({ params: { hash: 'nonexistent' } } as any);
+        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const res = Object.assign(new PassThrough(), {
-            status: mock.fn(function(this: any) { return this; }),
-            send: mock.fn(function(this: any) { return this; }),
-            json: mock.fn(function(this: any) { return this; }),
-            setHeader: mock.fn(function(this: any) { return this; })
+            status: mockStatus as any,
+            send: mockSend as any,
+            json: mockJson as any,
+            setHeader: mockSetHeader as any
         }) as unknown as Response;
 
         await handler.handle(req, res);
-        assert.strictEqual((res.status as import('node:test').Mock<any>).mock.calls[0].arguments[0], 404);
-        assert.strictEqual((res.send as import('node:test').Mock<any>).mock.calls[0].arguments[0], 'Block not found.');
+        assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 404);
+        assert.strictEqual(mockSend.mock.calls[0].arguments[0], 'Block not found.');
     });
 
     it('Rejects HTTP 403 on invalid remote signature validations restricting downloads', async () => {
@@ -48,16 +52,20 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const handler = new DownloadHandler(mockNode as PeerNode);
 
         const req = createMock<Request>({ params: { hash: 'validh' } } as any);
+        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const res = Object.assign(new PassThrough(), {
-            status: mock.fn(function(this: any) { return this; }),
-            send: mock.fn(function(this: any) { return this; }),
-            json: mock.fn(function(this: any) { return this; }),
-            setHeader: mock.fn(function(this: any) { return this; })
+            status: mockStatus as any,
+            send: mockSend as any,
+            json: mockJson as any,
+            setHeader: mockSetHeader as any
         }) as unknown as Response;
 
         await handler.handle(req, res);
-        assert.strictEqual((res.status as import('node:test').Mock<any>).mock.calls[0].arguments[0], 401);
-        assert.strictEqual((res.send as import('node:test').Mock<any>).mock.calls[0].arguments[0], 'Invalid block signature.');
+        assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 401);
+        assert.strictEqual(mockSend.mock.calls[0].arguments[0], 'Invalid block signature.');
     });
 
     it('Returns locally mapping Erasure Coded Shards via Reed-Solomon recombination', async () => {
@@ -136,11 +144,15 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const handler = new DownloadHandler(mockNode as PeerNode);
 
         const req = createMock<Request>({ params: { hash: 'validh' } } as any);
+        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const res = Object.assign(new PassThrough(), {
-            status: mock.fn(function(this: any) { return this; }),
-            send: mock.fn(function(this: any) { return this; }),
-            json: mock.fn(function(this: any) { return this; }),
-            setHeader: mock.fn(function(this: any) { return this; })
+            status: mockStatus as any,
+            send: mockSend as any,
+            json: mockJson as any,
+            setHeader: mockSetHeader as any
         }) as unknown as Response;
         let bodyPayload = '';
         res.write = ((chunk: any) => { bodyPayload += chunk.toString(); return true; }) as any;
@@ -154,7 +166,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
             });
         });
 
-        assert.strictEqual((res.setHeader as import('node:test').Mock<any>).mock.calls.find((c: any) => c.arguments[0] === 'Content-type')?.arguments[1], 'application/zip');
+        assert.strictEqual(mockSetHeader.mock.calls.find((c: any) => c.arguments[0] === 'Content-type')?.arguments[1], 'application/zip');
         assert.ok(bodyPayload.length > 20); // successfully decrypted zip binary map bounds
     });
 
@@ -192,11 +204,15 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const handler = new DownloadHandler(mockNode as PeerNode);
 
         const req = createMock<Request>({ params: { hash: 'validh' } } as any);
+        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const res = Object.assign(new PassThrough(), {
-            status: mock.fn(function(this: any) { return this; }),
-            send: mock.fn(function(this: any) { return this; }),
-            json: mock.fn(function(this: any) { return this; }),
-            setHeader: mock.fn(function(this: any) { return this; })
+            status: mockStatus as any,
+            send: mockSend as any,
+            json: mockJson as any,
+            setHeader: mockSetHeader as any
         }) as unknown as Response;
         let bodyPayload = '';
         res.write = ((chunk: any) => { bodyPayload += chunk.toString(); return true; }) as any;
@@ -207,7 +223,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
         // Wait for unzipping stream to pipe all data out
         await new Promise((r) => setTimeout(() => r(undefined), 100));
 
-        assert.strictEqual((res.setHeader as import('node:test').Mock<any>).mock.calls.find((c: any) => c.arguments[0] === 'Content-type')?.arguments[1], 'application/zip');
+        assert.strictEqual(mockSetHeader.mock.calls.find((c: any) => c.arguments[0] === 'Content-type')?.arguments[1], 'application/zip');
         // bodyPayload should contain compressed deflated bytes
         assert.ok(bodyPayload.length > 20);
     });
@@ -238,17 +254,21 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const handler = new DownloadHandler(mockNode as PeerNode);
 
         const req = createMock<Request>({ params: { hash: 'validh' }, query: { statusOnly: 'true' } } as any);
+        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const res = Object.assign(new PassThrough(), {
-            status: mock.fn(function(this: any) { return this; }),
-            send: mock.fn(function(this: any) { return this; }),
-            json: mock.fn(function(this: any) { return this; }),
-            setHeader: mock.fn(function(this: any) { return this; })
+            status: mockStatus as any,
+            send: mockSend as any,
+            json: mockJson as any,
+            setHeader: mockSetHeader as any
         }) as unknown as Response;
 
         await handler.handle(req, res);
 
-        assert.strictEqual((res.status as import('node:test').Mock<any>).mock.calls[0].arguments[0], 200);
-        assert.strictEqual((res.send as import('node:test').Mock<any>).mock.calls[0].arguments[0], 'Available');
+        assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 200);
+        assert.strictEqual(mockSend.mock.calls[0].arguments[0], 'Available');
         assert.strictEqual(streamDestroyed, true);
     });
 
@@ -270,16 +290,20 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const handler = new DownloadHandler(mockNode as PeerNode);
 
         const req = createMock<Request>({ params: { hash: 'validh' } } as any);
+        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const res = Object.assign(new PassThrough(), {
-            status: mock.fn(function(this: any) { return this; }),
-            send: mock.fn(function(this: any) { return this; }),
-            json: mock.fn(function(this: any) { return this; }),
-            setHeader: mock.fn(function(this: any) { return this; })
+            status: mockStatus as any,
+            send: mockSend as any,
+            json: mockJson as any,
+            setHeader: mockSetHeader as any
         }) as unknown as Response;
 
         await handler.handle(req, res);
-        assert.strictEqual((res.status as import('node:test').Mock<any>).mock.calls[0].arguments[0], 404);
-        assert.strictEqual((res.send as import('node:test').Mock<any>).mock.calls[0].arguments[0], 'Block not found.');
+        assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 404);
+        assert.strictEqual(mockSend.mock.calls[0].arguments[0], 'Block not found.');
     });
 
     it('Returns HTTP 500 capturing storage layer instantiation errors', async () => {
@@ -309,11 +333,15 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const handler = new DownloadHandler(mockNode as PeerNode);
 
         const req = createMock<Request>({ params: { hash: 'validh' } } as any);
+        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const res = Object.assign(new PassThrough(), {
-            status: mock.fn(function(this: any) { return this; }),
-            send: mock.fn(function(this: any) { return this; }),
-            json: mock.fn(function(this: any) { return this; }),
-            setHeader: mock.fn(function(this: any) { return this; })
+            status: mockStatus as any,
+            send: mockSend as any,
+            json: mockJson as any,
+            setHeader: mockSetHeader as any
         }) as unknown as Response;
 
         await new Promise<void>((resolve) => {
@@ -321,7 +349,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
         });
 
         // When decipher errors, it should fire the 'error' handler and send 500
-        assert.strictEqual((res.status as import('node:test').Mock<any>).mock.calls[0].arguments[0], 500);
+        assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 500);
     });
 
     it('Returns HTTP 500 on payload parsing logic failures', async () => {
@@ -330,15 +358,19 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const handler = new DownloadHandler(mockNode as PeerNode);
 
         const req = createMock<Request>({ params: { hash: 'validh' } } as any);
+        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const res = Object.assign(new PassThrough(), {
-            status: mock.fn(function(this: any) { return this; }),
-            send: mock.fn(function(this: any) { return this; }),
-            json: mock.fn(function(this: any) { return this; }),
-            setHeader: mock.fn(function(this: any) { return this; })
+            status: mockStatus as any,
+            send: mockSend as any,
+            json: mockJson as any,
+            setHeader: mockSetHeader as any
         }) as unknown as Response;
 
         await handler.handle(req, res);
-        assert.strictEqual((res.status as import('node:test').Mock<any>).mock.calls[0].arguments[0], 500);
+        assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 500);
     });
 
     it('Returns HTTP 401 catching invalid RSA signature parameter decryption keys', async () => {
@@ -354,16 +386,20 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const handler = new DownloadHandler(mockNode as PeerNode);
 
         const req = createMock<Request>({ params: { hash: 'validh' } } as any);
+        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const res = Object.assign(new PassThrough(), {
-            status: mock.fn(function(this: any) { return this; }),
-            send: mock.fn(function(this: any) { return this; }),
-            json: mock.fn(function(this: any) { return this; }),
-            setHeader: mock.fn(function(this: any) { return this; })
+            status: mockStatus as any,
+            send: mockSend as any,
+            json: mockJson as any,
+            setHeader: mockSetHeader as any
         }) as unknown as Response;
 
         await handler.handle(req, res);
-        assert.strictEqual((res.status as import('node:test').Mock<any>).mock.calls[0].arguments[0], 401);
-        assert.strictEqual((res.send as import('node:test').Mock<any>).mock.calls[0].arguments[0], 'Failed to decrypt private payload.');
+        assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 401);
+        assert.strictEqual(mockSend.mock.calls[0].arguments[0], 'Failed to decrypt private payload.');
     });
 
     it('Intercepts node ReadStream exceptions emitting HTTP 500', async () => {
@@ -396,17 +432,21 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const handler = new DownloadHandler(mockNode as PeerNode);
 
         const req = createMock<Request>({ params: { hash: 'validh' } } as any);
+        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const res = Object.assign(new PassThrough(), {
-            status: mock.fn(function(this: any) { return this; }),
-            send: mock.fn(function(this: any) { return this; }),
-            json: mock.fn(function(this: any) { return this; }),
-            setHeader: mock.fn(function(this: any) { return this; })
+            status: mockStatus as any,
+            send: mockSend as any,
+            json: mockJson as any,
+            setHeader: mockSetHeader as any
         }) as unknown as Response;
 
         await new Promise<void>((resolve) => {
             handler.handle(req, res).then(() => setTimeout(resolve, 50));
         });
 
-        assert.strictEqual((res.status as import('node:test').Mock<any>).mock.calls[0].arguments[0], 500);
+        assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 500);
     });
 });

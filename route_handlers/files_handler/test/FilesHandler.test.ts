@@ -1,12 +1,12 @@
 import * as assert from 'node:assert';
 import { describe, it, beforeEach, mock } from 'node:test';
 
-import { Request } from 'express';
+import { Request, Response } from 'express';
 
 import { generateRSAKeyPair, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
 import type { PendingBlockEntry } from '../../../models/mempool/Mempool';
 import type PeerNode from '../../../peer_node/PeerNode';
-import { createMock, createRes, MockResponse } from '../../../test/utils/TestUtils';
+import { createMock } from '../../../test/utils/TestUtils';
 import type { Block } from '../../../types';
 import FilesHandler from '../FilesHandler'; // Changed from filesHandler to FilesHandler to match original
 
@@ -29,7 +29,9 @@ const createValidPendingBlock = (sig: string, pub: string, hash: string, payload
 describe('Backend: filesHandler Coverage', () => {
     let mockNode: PeerNode;
     let req: Request;
-    let res: MockResponse;
+    let res: Response;
+    let mockStatus: import('node:test').Mock<any>;
+    let mockJson: import('node:test').Mock<any>;
     let keys: any;
 
     beforeEach(() => {
@@ -45,14 +47,16 @@ describe('Backend: filesHandler Coverage', () => {
         req = createMock<Request>({
             params: {}
         });
-        res = createRes();
+        mockStatus = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        mockJson = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        res = createMock<Response>({ status: mockStatus as any, json: mockJson as any });
     });
 
     it('Returns empty array on blank node payloads', async () => {
         const handler = new FilesHandler(mockNode);
         await handler.handle(req, res);
 
-        const responseData = res.body;
+        const responseData = mockJson.mock.calls[0].arguments[0];
         assert.strictEqual(responseData.success, true);
         assert.strictEqual(responseData.files.length, 0);
     });
@@ -69,7 +73,7 @@ describe('Backend: filesHandler Coverage', () => {
         const handler = new FilesHandler(mockNode);
         await handler.handle(req, res);
 
-        const responseData = res.body;
+        const responseData = mockJson.mock.calls[0].arguments[0];
         assert.strictEqual(responseData.success, true);
         assert.strictEqual(responseData.files.length, 1);
 
@@ -91,7 +95,7 @@ describe('Backend: filesHandler Coverage', () => {
         const handler = new FilesHandler(mockNode);
         await handler.handle(req, res);
 
-        const responseData = res.body;
+        const responseData = mockJson.mock.calls[0].arguments[0];
         assert.strictEqual(responseData.success, true);
         assert.strictEqual(responseData.files.length, 1);
         assert.strictEqual(responseData.files[0].path, 'pendingDoc.txt');
@@ -104,8 +108,8 @@ describe('Backend: filesHandler Coverage', () => {
 
         const handler = new FilesHandler(brokenNode);
         await handler.handle(req, res);
-        assert.strictEqual(res.statusCode, 500);
-        const responseData = res.body;
+        assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 500);
+        const responseData = mockJson.mock.calls[0].arguments[0];
         assert.strictEqual(responseData.success, false);
     });
 
@@ -130,7 +134,7 @@ describe('Backend: filesHandler Coverage', () => {
         const handler = new FilesHandler(mockNode);
         await handler.handle(req, res);
 
-        const responseData = res.body;
+        const responseData = mockJson.mock.calls[0].arguments[0];
         assert.strictEqual(responseData.success, true);
         assert.strictEqual(responseData.files.length, 1);
 
@@ -152,7 +156,7 @@ describe('Backend: filesHandler Coverage', () => {
         const handler = new FilesHandler(mockNode);
         await handler.handle(req, res);
 
-        const responseData = res.body;
+        const responseData = mockJson.mock.calls[0].arguments[0];
         assert.strictEqual(responseData.success, true);
         assert.strictEqual(responseData.files.length, 0);
     });
@@ -185,7 +189,7 @@ describe('Backend: filesHandler Coverage', () => {
         const handler = new FilesHandler(mockNode);
         await handler.handle(req, res);
 
-        const responseData = res.body;
+        const responseData = mockJson.mock.calls[0].arguments[0];
         assert.strictEqual(responseData.files.length, 4);
     });
 });

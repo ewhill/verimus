@@ -26,13 +26,16 @@ describe('Backend: privatePayloadHandler Coverage', () => {
 
         const req = createMock<Request>({ params: { hash: 'nonexistent' } } as any);
         const res = createMock<Response>({});
-        res.status = mock.fn(function() { return res; }) as any;
-        res.json = mock.fn(function() { return res; }) as any;
-        res.send = mock.fn(function() { return res; }) as any;
+        const mockStatus = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        res.status = mockStatus as any;
+        res.json = mockJson as any;
+        res.send = mockSend as any;
 
         await handler.handle(req as Request, res as Response);
-        assert.strictEqual((res.status as import('node:test').Mock<any>).mock.calls[0]?.arguments[0], 404);
-        assert.strictEqual((res.json as import('node:test').Mock<any>).mock.calls[0]?.arguments[0]?.success, false);
+        assert.strictEqual(mockStatus.mock.calls[0]?.arguments[0], 404);
+        assert.strictEqual(mockJson.mock.calls[0]?.arguments[0]?.success, false);
     });
 
     it('Returns 403 when public key mismatches authorization', async () => {
@@ -48,12 +51,15 @@ describe('Backend: privatePayloadHandler Coverage', () => {
 
         const req = createMock<Request>({ params: { hash: 'exists' } } as any);
         const res = createMock<Response>({});
-        res.status = mock.fn(function() { return res; }) as any;
-        res.json = mock.fn(function() { return res; }) as any;
-        res.send = mock.fn(function() { return res; }) as any;
+        const mockStatus = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        res.status = mockStatus as any;
+        res.json = mockJson as any;
+        res.send = mockSend as any;
 
         await handler.handle(req as Request, res as Response);
-        assert.strictEqual((res.status as import('node:test').Mock<any>).mock.calls[0]?.arguments[0], 403);
+        assert.strictEqual(mockStatus.mock.calls[0]?.arguments[0], 403);
     });
 
     it('Catches exceptions and returns 500 error mapping', async () => {
@@ -63,12 +69,15 @@ describe('Backend: privatePayloadHandler Coverage', () => {
 
         const req = createMock<Request>({ params: { hash: 'exists' } } as any);
         const res = createMock<Response>({});
-        res.status = mock.fn(function() { return res; }) as any;
-        res.json = mock.fn(function() { return res; }) as any;
-        res.send = mock.fn(function() { return res; }) as any;
+        const mockStatus = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        res.status = mockStatus as any;
+        res.json = mockJson as any;
+        res.send = mockSend as any;
 
         await handler.handle(req as Request, res as Response);
-        assert.strictEqual((res.status as import('node:test').Mock<any>).mock.calls[0]?.arguments[0], 500);
+        assert.strictEqual(mockStatus.mock.calls[0]?.arguments[0], 500);
     });
 
     it('Gets block from mempool when missing in ledger', async () => {
@@ -85,13 +94,16 @@ describe('Backend: privatePayloadHandler Coverage', () => {
 
         const req = createMock<Request>({ params: { hash: 'memhash' } } as any);
         const res = createMock<Response>({});
-        res.status = mock.fn(function() { return res; }) as any;
-        res.json = mock.fn(function() { return res; }) as any;
-        res.send = mock.fn(function() { return res; }) as any;
+        const mockStatus = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        res.status = mockStatus as any;
+        res.json = mockJson as any;
+        res.send = mockSend as any;
 
         await handler.handle(req as Request, res as Response);
         // It should reach signature verification and fail there, which gives 401, confirming it found the block in mempool
-        assert.strictEqual((res.status as import('node:test').Mock<any>).mock.calls[0]?.arguments[0], 401);
+        assert.strictEqual(mockStatus.mock.calls[0]?.arguments[0], 401);
     });
 
     it('Returns 401 when signature is invalid', async () => {
@@ -108,13 +120,16 @@ describe('Backend: privatePayloadHandler Coverage', () => {
 
         const req = createMock<Request>({ params: { hash: 'validh' } } as any);
         const res = createMock<Response>({});
-        res.status = mock.fn(function() { return res; }) as any;
-        res.json = mock.fn(function() { return res; }) as any;
-        res.send = mock.fn(function() { return res; }) as any;
+        const mockStatus = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        res.status = mockStatus as any;
+        res.json = mockJson as any;
+        res.send = mockSend as any;
 
         await handler.handle(req as Request, res as Response);
-        assert.strictEqual((res.status as import('node:test').Mock<any>).mock.calls[0]?.arguments[0], 401);
-        assert.strictEqual((res.json as import('node:test').Mock<any>).mock.calls[0]?.arguments[0]?.message || (res.send as import('node:test').Mock<any>).mock.calls[0]?.arguments[0]?.message, 'Invalid block signature.');
+        assert.strictEqual(mockStatus.mock.calls[0]?.arguments[0], 401);
+        assert.strictEqual(mockJson.mock.calls[0]?.arguments[0]?.message || mockSend.mock.calls[0]?.arguments[0]?.message, 'Invalid block signature.');
     });
 
     it('Returns 401 on invalid decryption validation', async () => {
@@ -134,13 +149,16 @@ describe('Backend: privatePayloadHandler Coverage', () => {
 
         const req = createMock<Request>({ params: { hash: 'validh' } } as any);
         const res = createMock<Response>({});
-        res.status = mock.fn(function() { return res; }) as any;
-        res.json = mock.fn(function() { return res; }) as any;
-        res.send = mock.fn(function() { return res; }) as any;
+        const mockStatus = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        res.status = mockStatus as any;
+        res.json = mockJson as any;
+        res.send = mockSend as any;
 
         await handler.handle(req as Request, res as Response);
-        assert.strictEqual((res.status as import('node:test').Mock<any>).mock.calls[0]?.arguments[0], 401);
-        assert.strictEqual((res.json as import('node:test').Mock<any>).mock.calls[0]?.arguments[0]?.message || (res.send as import('node:test').Mock<any>).mock.calls[0]?.arguments[0]?.message, 'Failed to decrypt private payload.');
+        assert.strictEqual(mockStatus.mock.calls[0]?.arguments[0], 401);
+        assert.strictEqual(mockJson.mock.calls[0]?.arguments[0]?.message || mockSend.mock.calls[0]?.arguments[0]?.message, 'Failed to decrypt private payload.');
     });
 
     it('Returns HTTP 200 returning deeply nested raw unencrypted private structures', async () => {
@@ -160,12 +178,15 @@ describe('Backend: privatePayloadHandler Coverage', () => {
 
         const req = createMock<Request>({ params: { hash: 'validh' } } as any);
         const res = createMock<Response>({});
-        res.status = mock.fn(function() { return res; }) as any;
-        res.json = mock.fn(function() { return res; }) as any;
-        res.send = mock.fn(function() { return res; }) as any;
+        const mockStatus = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn(function() { return res; }) as import('node:test').Mock<any>;
+        res.status = mockStatus as any;
+        res.json = mockJson as any;
+        res.send = mockSend as any;
 
         await handler.handle(req as Request, res as Response);
-        assert.ok((res.json as import('node:test').Mock<any>).mock.calls[0]?.arguments[0]?.success);
-        assert.strictEqual((res.json as import('node:test').Mock<any>).mock.calls[0]?.arguments[0]?.payload?.physicalId, 'pid');
+        assert.ok(mockJson.mock.calls[0]?.arguments[0]?.success);
+        assert.strictEqual(mockJson.mock.calls[0]?.arguments[0]?.payload?.physicalId, 'pid');
     });
 });
