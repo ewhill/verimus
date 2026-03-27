@@ -34,8 +34,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             // Override mocked components AFTER initialization to ensure tests don't leak external discovery attempts
             if (node.peer) {
                 node.peer.broadcast = async () => [];
-                // @ts-ignore - overriding internal handler for mock integrity
-                node.peer.request = async () => ({});
+                Object.assign(node.peer, { request: async () => ({}) });
             }
             node.consensusEngine.walletManager.verifyFunds = async () => true;
             node.consensusEngine.node.syncEngine.orchestrateStorageMarket = async (marketReqId: string) => {
@@ -109,7 +108,6 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
 
             const response = await fetch(`${baseUrl}/api/upload?trustedPeers=`, {
                 method: 'POST',
-                // @ts-ignore - TS casting for standard native FormData mechanics
                 body: formDataPayload
             });
 

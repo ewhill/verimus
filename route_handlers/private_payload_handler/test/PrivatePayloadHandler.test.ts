@@ -1,18 +1,19 @@
 import assert from 'node:assert';
-import { describe, it } from 'node:test';
+import { describe, it, mock } from 'node:test';
 
 import * as cryptoUtils from '../../../crypto_utils/CryptoUtils';
 import { MockPeerNode } from '../../../test/mocks/MockPeerNode';
 import { MockRequest } from '../../../test/mocks/MockRequest';
 import { MockResponse } from '../../../test/mocks/MockResponse';
+import { createMongoCursorStub } from '../../../test/utils/StubFactory';
 import PrivatePayloadHandler from '../PrivatePayloadHandler';
 
 describe('Backend: privatePayloadHandler Coverage', () => {
 
     it('Returns 404 for nonexistent block hash checking ledger and mempool', async () => {
         const mockNode = new MockPeerNode();
-        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [] }) } };
-        mockNode.mempool = { pendingBlocks: new Map() };
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([]));
+        mockNode.mempool.pendingBlocks = new Map();
         const handler = new PrivatePayloadHandler(mockNode.asPeerNode());
 
         const req = new MockRequest({ params: { hash: 'nonexistent' } });
@@ -24,9 +25,11 @@ describe('Backend: privatePayloadHandler Coverage', () => {
     });
 
     it('Returns 403 when public key mismatches authorization', async () => {
-        const mockBlock = { hash: 'exists', publicKey: 'OTHER_KEY' };
+        const { publicKey: otherPubKey } = cryptoUtils.generateRSAKeyPair();
+        const _unusedMockBlock = { hash: 'exists', publicKey: otherPubKey };
         const mockNode = new MockPeerNode({ publicKey: 'MY_KEY' });
-        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [mockBlock] }) } };
+        const payload = cryptoUtils.encryptPrivatePayload(otherPubKey, { physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] });
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([{ hash: 'exists', previousHash: 'prev', publicKey: otherPubKey, signature: '', payload: payload, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }]));
         const handler = new PrivatePayloadHandler(mockNode.asPeerNode());
 
         const req = new MockRequest({ params: { hash: ['exists'] } });
@@ -38,7 +41,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
 
     it('Catches exceptions and returns 500 error mapping', async () => {
         const mockNode = new MockPeerNode();
-        mockNode.ledger = { collection: { find: () => { throw new Error('DB Error'); } } };
+        mock.method(mockNode.ledger.collection!, 'find', () => { throw new Error('DB Error'); });
         const handler = new PrivatePayloadHandler(mockNode.asPeerNode());
 
         const req = new MockRequest({ params: { hash: 'exists' } });
@@ -50,10 +53,10 @@ describe('Backend: privatePayloadHandler Coverage', () => {
 
     it('Gets block from mempool when missing in ledger', async () => {
         const { publicKey } = cryptoUtils.generateRSAKeyPair();
-        const mockBlock = { hash: 'memhash', publicKey: publicKey, payload: {}, signature: 'bad_sig' };
+        const mockBlock = { hash: 'memhash', publicKey: publicKey, payload: cryptoUtils.encryptPrivatePayload(publicKey, { physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] }), signature: 'bad_sig', type: 'STORAGE_CONTRACT' as const, previousHash: 'prev', metadata: { index: -1, timestamp: 12345 } };
         const mockNode = new MockPeerNode({ publicKey });
-        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [] }) } };
-        mockNode.mempool = { pendingBlocks: new Map([['memhash', { block: mockBlock }]]) };
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([]));
+        mockNode.mempool.pendingBlocks = new Map([['memhash', { block: mockBlock, committed: false, verifications: new Set(), eligible: true, originalTimestamp: 0 }]]);
         const handler = new PrivatePayloadHandler(mockNode.asPeerNode());
 
         const req = new MockRequest({ params: { hash: 'memhash' } });
@@ -66,10 +69,11 @@ describe('Backend: privatePayloadHandler Coverage', () => {
 
     it('Returns 401 when signature is invalid', async () => {
         const { publicKey, privateKey } = cryptoUtils.generateRSAKeyPair();
-        const mockBlock = { hash: 'validh', publicKey: publicKey, payload: {}, signature: 'bad_sig' };
+        const _unusedMockBlock = { hash: 'validh', publicKey: publicKey, payload: {}, signature: 'bad_sig' };
         
         const mockNode = new MockPeerNode({ publicKey, privateKey });
-        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [mockBlock] }) } };
+        const payload = cryptoUtils.encryptPrivatePayload(publicKey, { physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] });
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([{ hash: 'validh', previousHash: 'prev', publicKey: publicKey, payload: payload, signature: 'bad_sig', type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }]));
         const handler = new PrivatePayloadHandler(mockNode.asPeerNode());
 
         const req = new MockRequest({ params: { hash: 'validh' } });
@@ -88,7 +92,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const sig = cryptoUtils.signData(JSON.stringify(encPriv), privateKey);
 
         const mockNode = new MockPeerNode({ publicKey, privateKey: 'wrong_private_key_to_force_failure' });
-        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', publicKey, payload: encPriv, signature: sig }] }) } };
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([{ hash: 'validh', previousHash: '', publicKey, payload: encPriv, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }]));
         const handler = new PrivatePayloadHandler(mockNode.asPeerNode());
 
         const req = new MockRequest({ params: { hash: 'validh' } });
@@ -107,7 +111,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const sig = cryptoUtils.signData(JSON.stringify(encPriv), privateKey);
 
         const mockNode = new MockPeerNode({ publicKey, privateKey });
-        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', publicKey, payload: encPriv, signature: sig }] }) } };
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([{ hash: 'validh', previousHash: '', publicKey, payload: encPriv, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }]));
         const handler = new PrivatePayloadHandler(mockNode.asPeerNode());
 
         const req = new MockRequest({ params: { hash: 'validh' } });

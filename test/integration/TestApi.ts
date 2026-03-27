@@ -41,7 +41,7 @@ async function runTest() {
     const listData: any = await listRes.json();
     console.log("Blocks JSON:", JSON.stringify(listData, null, 2));
 
-    let found = listData.blocks.find(p => p.hash === hash);
+    let found = listData.blocks.find((p: any) => p.hash === hash);
     if (!found) {
         console.error("Uploaded block not found in ledger!");
         process.exit(1);

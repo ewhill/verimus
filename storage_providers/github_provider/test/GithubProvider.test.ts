@@ -38,7 +38,6 @@ describe('Backend: githubProvider Integrity', () => {
         // Mock fetch mapped to the environment globally
         let fetchedUrl = '';
         let fetchedOpts: any = null;
-        // @ts-ignore
         global.fetch = async (url: any, opts: any) => {
             fetchedUrl = url;
             fetchedOpts = opts;
@@ -47,7 +46,7 @@ describe('Backend: githubProvider Integrity', () => {
                 status: 200,
                 text: async () => 'OK',
                 json: async () => ({ content: Buffer.from('hello').toString('base64') })
-            };
+            } as Response;
         };
 
         const hash = await prov.storeBlock(Buffer.from('hello'));
@@ -57,22 +56,19 @@ describe('Backend: githubProvider Integrity', () => {
         assert.ok(fetchedOpts.headers['Authorization'].includes('tkn'));
 
         const pt = await prov.getBlockReadStream(hash);
-        // @ts-ignore
+        if (pt.status !== 'available' || !pt.stream) throw new Error('Missing stream');
         assert.ok(pt.stream instanceof PassThrough);
         
         let readChunks = '';
-        // @ts-ignore
         pt.stream.on('data', (d: Buffer) => readChunks += d.toString());
-        // @ts-ignore
-        await new Promise(r => pt.stream.on('end', r));
+        await new Promise(r => pt.stream!.on('end', r));
         assert.strictEqual(readChunks, 'hello');
     });
 
     it('Handles 404 and when fetching github artifacts fails', async () => {
          const prov = new GithubStorageProvider('owner', 'repo', 'tkn', 'main');
          
-         // @ts-ignore
-         global.fetch = async () => ({ ok: false, status: 404 });
+         global.fetch = async () => ({ ok: false, status: 404 } as Response);
          const pt = await prov.getBlockReadStream('nonexistent');
          assert.deepStrictEqual(pt, { status: 'not_found' });
     });
@@ -80,8 +76,7 @@ describe('Backend: githubProvider Integrity', () => {
     it('Throws stream errors', async () => {
          const prov = new GithubStorageProvider('owner', 'repo', 'tkn', 'main');
          
-         // @ts-ignore
-         global.fetch = async () => ({ ok: false, status: 500, statusText: 'Internal Server Error' });
+         global.fetch = async () => ({ ok: false, status: 500, statusText: 'Internal Server Error' } as Response);
          
          const pt = await prov.getBlockReadStream('fail_test');
          assert.deepStrictEqual(pt, { status: 'not_found' });
@@ -91,11 +86,9 @@ describe('Backend: githubProvider Integrity', () => {
         const prov = new GithubStorageProvider('owner', 'repo', 'tkn', 'main');
         
         let fetchedOpts: any = null;
-        // @ts-ignore
         global.fetch = async (_unusedUrl: any, opts: any) => {
             fetchedOpts = opts;
-            // @ts-ignore
-            return { ok: true, status: 200 };
+            return { ok: true, status: 200 } as Response;
         };
 
         const { physicalBlockId, writeStream } = prov.createBlockStream();

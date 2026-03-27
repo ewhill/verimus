@@ -1,6 +1,7 @@
 "use strict";
 const fs = require('fs');
-const test = require('tape');
+const test = require('node:test');
+const assert = require('node:assert');
 
 const { Peer, Message } = require('../index.js');
 
@@ -9,7 +10,7 @@ const { Peer, Message } = require('../index.js');
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 
-test("PeerConstructor", async (assert) => {
+test("PeerConstructor", async () => {
   const sink = () => { };
   const fakeLogger = { error: sink, info: sink, log: sink, warn: sink };
 
@@ -28,7 +29,7 @@ test("PeerConstructor", async (assert) => {
       errorMessage = e.message;
     }
 
-    assert.equals(errorMessage, msg, text);
+    assert.strictEqual(errorMessage, msg, text);
   };
 
   let constructorOptions = {
@@ -60,10 +61,9 @@ test("PeerConstructor", async (assert) => {
   delete missingPublicKeyOptions.publicKeyPath;
   const peer = new Peer(missingPublicKeyOptions);
   await peer.init();
-  assert.notEqual(peer.publicKey, null,
+  assert.notStrictEqual(peer.publicKey, null,
     "When not given publicKey, but given privateKey should derrive publicKey " +
     " from privateKey.");
   await peer.close();
 
-  assert.end();
 });

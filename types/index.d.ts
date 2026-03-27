@@ -145,3 +145,5 @@ export interface StorageContractBlock extends BaseBlock {
 }
 
 export type Block = TransactionBlock | StorageContractBlock;
+
+declare module '@marsaud/smb2';

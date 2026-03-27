@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import * as crypto from 'node:crypto';
-import { describe, it } from 'node:test';
+import { describe, it, mock } from 'node:test';
 import { PassThrough } from 'stream';
 
 import Bundler from '../../../bundler/Bundler';
@@ -8,6 +8,8 @@ import { generateRSAKeyPair, signData, encryptPrivatePayload } from '../../../cr
 import { MockPeerNode } from '../../../test/mocks/MockPeerNode';
 import { MockRequest } from '../../../test/mocks/MockRequest';
 import { MockResponse } from '../../../test/mocks/MockResponse';
+import { MockStorageProvider } from '../../../test/mocks/MockStorageProvider';
+import { createMongoCursorStub } from '../../../test/utils/StubFactory';
 import { NodeRole } from '../../../types/NodeRole';
 import DownloadHandler from '../DownloadHandler';
 
@@ -15,7 +17,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
 
     it('Returns HTTP 404 when requesting missing block hashes', async () => {
         const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: 'PRIVKEY' });
-        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [] }) } };
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([]));
         const handler = new DownloadHandler(mockNode.asPeerNode());
 
         const req = new MockRequest({ params: { hash: 'nonexistent' } });
@@ -30,7 +32,8 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
 
         const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: privateKey });
-        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: {}, publicKey: publicKey, signature: 'bad_sig' }] }) } };
+        const validHPayload = encryptPrivatePayload(publicKey, { physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] });
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([{ hash: 'validh', previousHash: 'prev', payload: validHPayload, publicKey: publicKey, signature: 'bad_sig', type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }]));
         const handler = new DownloadHandler(mockNode.asPeerNode());
 
         const req = new MockRequest({ params: { hash: 'validh' } });
@@ -49,10 +52,9 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const pt = new PassThrough();
         const bufs: Buffer[] = [];
         pt.on('data', (c: Buffer) => bufs.push(c));
-        // @ts-ignore
-        const bundleP = bundler.streamBlockBundle([{ originalname: 'file.txt', buffer: Buffer.from('hello world here') }], pt);
-        // @ts-ignore
-        const { aesKey, aesIv, files } = await bundleP;
+        const mockFile = { fieldname: 'file', originalname: 'file.txt', encoding: '7bit', mimetype: 'text/plain', size: 16, destination: '', filename: 'file.txt', path: '', buffer: Buffer.from('hello world here'), stream: new PassThrough() };
+        const bundleP = bundler.streamBlockBundle([mockFile] as Express.Multer.File[], pt);
+        const { aesKey, aesIv, files } = (await bundleP)!;
         const fullZip = Buffer.concat(bufs);
 
         // 2. Setup block private and encrypt
@@ -61,14 +63,12 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
         const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: privateKey });
-        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } };
-        mockNode.storageProvider = {
-            getEgressCostPerGB: () => 0.0,
-            getBlockReadStream: async (_unusedId: string) => {
-                const rs = new PassThrough();
-                rs.end(fullZip);
-                return { status: 'available', stream: rs };
-            }
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }]));
+        mockNode.storageProvider = new MockStorageProvider();
+        mockNode.storageProvider.getBlockReadStream = async (_unusedId: string) => {
+            const rs = new PassThrough();
+            rs.end(fullZip);
+            return { status: 'available', stream: rs };
         };
         const handler = new DownloadHandler(mockNode.asPeerNode());
 
@@ -90,21 +90,18 @@ describe('Backend: downloadHandler Unit Tests', () => {
 
         // const _pt = new PassThrough();
         const priv = { key: 'a'.repeat(64), iv: 'b'.repeat(32), files: [], physicalId: 'pid', location: { type: 'local' } };
-        // @ts-ignore
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
         let streamDestroyed = false;
         const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: privateKey });
-        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } };
-        mockNode.storageProvider = {
-            getEgressCostPerGB: () => 0.0,
-            getBlockReadStream: async (_unusedId: string) => {
-                const rs = new PassThrough();
-                const origDestroy = rs.destroy.bind(rs);
-                rs.destroy = (err?: any) => { streamDestroyed = true; origDestroy(err); return rs; };
-                return { status: 'available', stream: rs };
-            }
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }]));
+        mockNode.storageProvider = new MockStorageProvider();
+        mockNode.storageProvider.getBlockReadStream = async (_unusedId: string) => {
+            const rs = new PassThrough();
+            const origDestroy = rs.destroy.bind(rs);
+            rs.destroy = (err?: any) => { streamDestroyed = true; origDestroy(err); return rs; };
+            return { status: 'available', stream: rs };
         };
         const handler = new DownloadHandler(mockNode.asPeerNode());
 
@@ -125,11 +122,9 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
         const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: privateKey });
-        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } };
-        mockNode.storageProvider = {
-            getEgressCostPerGB: () => 0.0,
-            getBlockReadStream: async () => ({ status: 'not_found' })
-        };
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }]));
+        mockNode.storageProvider = new MockStorageProvider();
+        mockNode.storageProvider.getBlockReadStream = async () => ({ status: 'not_found' });
         const handler = new DownloadHandler(mockNode.asPeerNode());
 
         const req = new MockRequest({ params: { hash: 'validh' } });
@@ -152,14 +147,12 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
         const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: privateKey });
-        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } };
-        mockNode.storageProvider = {
-            getEgressCostPerGB: () => 0.0,
-            getBlockReadStream: async (_unusedId: string) => {
-                const rs = new PassThrough();
-                rs.end(Buffer.from('corrupt_aes_stream'));
-                return { status: 'available', stream: rs };
-            }
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }]));
+        mockNode.storageProvider = new MockStorageProvider();
+        mockNode.storageProvider.getBlockReadStream = async (_unusedId: string) => {
+            const rs = new PassThrough();
+            rs.end(Buffer.from('corrupt_aes_stream'));
+            return { status: 'available', stream: rs };
         };
         const handler = new DownloadHandler(mockNode.asPeerNode());
 
@@ -176,7 +169,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
 
     it('Returns HTTP 500 on payload parsing logic failures', async () => {
         const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: 'PRIV' });
-        mockNode.ledger = null; // Will throw on usage
+        Object.defineProperty(mockNode, 'ledger', { value: null }); // Will throw on usage natively in JS without breaking TS validation
         const handler = new DownloadHandler(mockNode.asPeerNode());
 
         const req = new MockRequest({ params: { hash: 'validh' } });
@@ -188,12 +181,11 @@ describe('Backend: downloadHandler Unit Tests', () => {
 
     it('Returns HTTP 401 catching invalid RSA signature parameter decryption keys', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
-        // @ts-ignore
-        const encPriv = encryptPrivatePayload(publicKey, { bad: 'data' }); // Wrong structure
+        const encPriv = encryptPrivatePayload(publicKey, { physicalId: 'pid', location: { type: 'local'}, aesKey: '', aesIv: '', files: [] }); // Wrong structure bypasses decryption
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
         const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: generateRSAKeyPair().privateKey });
-        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } };
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }]));
         const handler = new DownloadHandler(mockNode.asPeerNode());
 
         const req = new MockRequest({ params: { hash: 'validh' } });
@@ -216,17 +208,15 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
         const mockNode = new MockPeerNode({ roles: [NodeRole.STORAGE], privateKey: privateKey });
-        mockNode.ledger = { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', payload: encPriv, publicKey: publicKey, signature: sig }] }) } };
-        mockNode.storageProvider = {
-            getEgressCostPerGB: () => 0.0,
-            getBlockReadStream: async (_unusedId: string) => {
-                const rs = new PassThrough();
-                setTimeout(() => {
-                    rs.emit('error', new Error('Disaster'));
-                    rs.destroy();
-                }, 10);
-                return { status: 'available', stream: rs };
-            }
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }]));
+        mockNode.storageProvider = new MockStorageProvider();
+        mockNode.storageProvider.getBlockReadStream = async (_unusedId: string) => {
+            const rs = new PassThrough();
+            setTimeout(() => {
+                rs.emit('error', new Error('Disaster'));
+                rs.destroy();
+            }, 10);
+            return { status: 'available', stream: rs };
         };
         const handler = new DownloadHandler(mockNode.asPeerNode());
 

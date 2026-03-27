@@ -18,31 +18,32 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
     let node2: PeerNode;
     let node3: PeerNode;
 
+    let tmp1: string, tmp2: string, tmp3: string;
     before(async () => {
         mongod1 = await MongoMemoryServer.create();
         mongod2 = await MongoMemoryServer.create();
 
-        const tmp1 = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
+        tmp1 = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
         // Node 1 (Partition A)
-        node1 = new PeerNode(31001, ['127.0.0.1:31002', '127.0.0.1:31003'], new MemoryStorageProvider(), new Bundler(tmp1), mongod1.getUri(), undefined, {
+        node1 = new PeerNode(0, ['127.0.0.1:31002', '127.0.0.1:31003'], new MemoryStorageProvider(), new Bundler(tmp1), mongod1.getUri(), undefined, {
             ringPublicKeyPath: 'keys/ring.ring.pub',
             publicKeyPath: 'keys/peer_31001.peer.pub',
             privateKeyPath: 'keys/peer_31001.peer.pem',
             signaturePath: 'keys/peer_31001.peer.signature'
         }, tmp1);
 
-        const tmp2 = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
+        tmp2 = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
         // Node 2 (Partition A)
-        node2 = new PeerNode(31002, ['127.0.0.1:31001', '127.0.0.1:31003'], new MemoryStorageProvider(), new Bundler(tmp2), mongod1.getUri(), undefined, {
+        node2 = new PeerNode(0, ['127.0.0.1:31001', '127.0.0.1:31003'], new MemoryStorageProvider(), new Bundler(tmp2), mongod1.getUri(), undefined, {
             ringPublicKeyPath: 'keys/ring.ring.pub',
             publicKeyPath: 'keys/peer_31002.peer.pub',
             privateKeyPath: 'keys/peer_31002.peer.pem',
             signaturePath: 'keys/peer_31002.peer.signature'
         }, tmp2);
 
-        const tmp3 = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
+        tmp3 = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
         // Node 3 (Partition B - Isolated DB and Network)
-        node3 = new PeerNode(31003, ['127.0.0.1:31001'], new MemoryStorageProvider(), new Bundler(tmp3), mongod2.getUri(), undefined, {
+        node3 = new PeerNode(0, ['127.0.0.1:31001'], new MemoryStorageProvider(), new Bundler(tmp3), mongod2.getUri(), undefined, {
             ringPublicKeyPath: 'keys/ring.ring.pub',
             publicKeyPath: 'keys/peer_31003.peer.pub',
             privateKeyPath: 'keys/peer_31003.peer.pem',
@@ -67,8 +68,7 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
                   bind: () => ({ to: () => {} }),
                   close: async () => {}
              };
-             // @ts-ignore - forcibly injecting mock peer to simulate partition architectures
-             node.peer = mockPeer;
+             Object.assign(node, { peer: mockPeer });
         };
 
         await Promise.all([initWithoutServer(node1), initWithoutServer(node2), initWithoutServer(node3)]);
@@ -82,30 +82,33 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
              mongod1.stop(),
              mongod2.stop()
         ]);
+        
+        fs.rmSync(tmp1, { recursive: true, force: true });
+        fs.rmSync(tmp2, { recursive: true, force: true });
+        fs.rmSync(tmp3, { recursive: true, force: true });
     });
 
     it('Drops minority forks during Network Partition', async () => {
         // Total Network Size = 3 (Majority = 2)
-        // @ts-ignore
-        node1.peer.trustedPeers = ['127.0.0.1:31002', '127.0.0.1:31003']; 
-        // @ts-ignore
-        node2.peer.trustedPeers = ['127.0.0.1:31001', '127.0.0.1:31003'];
+        Object.assign(node1.peer || {}, { trustedPeers: ['127.0.0.1:31002', '127.0.0.1:31003'] });
+        Object.assign(node2.peer || {}, { trustedPeers: ['127.0.0.1:31001', '127.0.0.1:31003'] });
         
         // Node 3 suffers a Byzantine Partition and only sees Node 1 (Simulated Split Brain)
-        // @ts-ignore
-        node3.peer.trustedPeers = ['127.0.0.1:31001'];
+        Object.assign(node3.peer || {}, { trustedPeers: ['127.0.0.1:31001'] });
         
         const majority = node3.getMajorityCount();
         assert.strictEqual(majority, 2, 'Node 3 bounds a local perception majority counting correctly.');
 
         // Node 3 tries to formulate a rogue fork on its own isolated chain mappings
-        // @ts-ignore
-        node3.mempool.pendingBlocks.set('rogue_block', { eligible: true, originalTimestamp: Date.now() });
-        // @ts-ignore
-        node3.mempool.eligibleForks.set('rogue_fork', { blockIds: ['rogue_block'], proposals: new Set(['127.0.0.1:31003']) });
+        node3.mempool.pendingBlocks.set('rogue_block', {
+            block: { type: 'TRANSACTION', metadata: { index: 1, timestamp: 1 }, publicKey: 'pk', signature: 'sig', hash: 'rogue_block', payload: { senderSignature: '', senderId: '', recipientId: '', amount: 0 } },
+            verifications: new Set(),
+            eligible: true,
+            originalTimestamp: Date.now()
+        });
+        node3.mempool.eligibleForks.set('rogue_fork', { blockIds: ['rogue_block'], proposals: new Set(['127.0.0.1:31003']), adopted: false, computedBlocks: [] });
         
-        // @ts-ignore
-        await node3.consensusEngine.handleProposeFork('rogue_fork', ['rogue_block'], { peerAddress: '127.0.0.1:31003' });
+        await node3.consensusEngine.handleProposeFork('rogue_fork', ['rogue_block'], { peerAddress: '127.0.0.1:31003', send: () => {} });
         
         // Assert the fork is NOT adopted because it didn't cross the threshold
         const fork = node3.mempool.eligibleForks.get('rogue_fork');
@@ -113,12 +116,10 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
     });
 
     it('Coordinates adoption across majority segments', async () => {
-        // @ts-ignore
-        node1.mempool.eligibleForks.set('valid_fork', { blockIds: ['valid_block'], proposals: new Set(['127.0.0.1:31001']) });
+        node1.mempool.eligibleForks.set('valid_fork', { blockIds: ['valid_block'], proposals: new Set(['127.0.0.1:31001']), adopted: false, computedBlocks: [] });
         
         // Node 2 votes for Node 1's proposal forming the required majority mapping
-        // @ts-ignore
-        await node1.consensusEngine.handleProposeFork('valid_fork', ['valid_block'], { peerAddress: '127.0.0.1:31002' });
+        await node1.consensusEngine.handleProposeFork('valid_fork', ['valid_block'], { peerAddress: '127.0.0.1:31002', send: () => {} });
         
         const fork = node1.mempool.eligibleForks.get('valid_fork');
         assert.ok(fork?.adopted, 'Primary partition scaled and mathematically executed the fork adoption over majority boundaries.');

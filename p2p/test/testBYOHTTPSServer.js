@@ -1,7 +1,8 @@
 "use strict";
 const fs = require('fs');
 var https = require('https');
-const test = require('tape');
+const test = require('node:test');
+const assert = require('node:assert');
 
 const { Peer, Message } = require('../index.js');
 const Server = require('../lib/Server');
@@ -14,7 +15,7 @@ const fakeLogger = { error: sink, info: sink, log: sink, warn: sink };
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 
-test("PeerBYOHTTPSServerTest", async (assert) => {
+test("PeerBYOHTTPSServerTest", async () => {
   //Create a server
   var server = https.createServer({
     key: fs.readFileSync('https.key.pem'),
@@ -41,7 +42,7 @@ test("PeerBYOHTTPSServerTest", async (assert) => {
 
   await p1.init();
 
-  assert.equal(p1.port, 48181,
+  assert.strictEqual(p1.port, 48181,
     "Created HTTPS server and HTTPS server of peer should be listening on " +
     "the same port as they should be the same server.");
 
@@ -70,10 +71,10 @@ test("PeerBYOHTTPSServerTest", async (assert) => {
     req.end();
   });
 
-  assert.equal(reqResult.statusCode, 200,
+  assert.strictEqual(reqResult.statusCode, 200,
     "HTTPS Server should have 200 response code, as given when created.");
 
-  assert.equal(reqResult.body, "BYOHTTPSServer",
+  assert.strictEqual(reqResult.body, "BYOHTTPSServer",
     "HTTPS Server should respond with predefined end string.");
 
   const p2 = new Peer({
@@ -96,7 +97,7 @@ test("PeerBYOHTTPSServerTest", async (assert) => {
   await p2.init();
   await p2.discover();
 
-  assert.equal(p2.peers.length, 1,
+  assert.strictEqual(p2.peers.length, 1,
     "Peers should be able to connect to peer with HTTPS Server not created " +
     "by RingNet library.");
 
@@ -104,5 +105,4 @@ test("PeerBYOHTTPSServerTest", async (assert) => {
   await p2.close();
 
   server.close();
-  assert.end();
 });

@@ -43,7 +43,7 @@ async function runTest() {
         });
 
     } catch (error) {
-        console.error("Test failed:", error.message);
+        console.error("Test failed:", (error as any).message);
         process.exit(1);
     }
 }

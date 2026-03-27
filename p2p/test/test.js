@@ -1,6 +1,7 @@
 "use strict";
 
-const test = require('tape');
+const test = require('node:test');
+const assert = require('node:assert');
 const { Peer, Message } = require('../index.js');
 
 class PingMessage extends Message {
@@ -28,7 +29,7 @@ const PongMessageHandler = (message, connection, logger = console) => {
 };
 
 
-test("PeerBYOHTTPSServerTest", async (assert) => {
+test("PeerBYOHTTPSServerTest", async () => {
 	const fakeLogger = console;
 
 	const peer1 = new Peer({
@@ -73,8 +74,7 @@ test("PeerBYOHTTPSServerTest", async (assert) => {
 		await peer1.close();
 		await peer2.close();
 
-		assert.pass('Peers can communicate.');
-		assert.end();
+		assert.ok(true, 'Peers can communicate.');
 	});
 
 	await peer1.broadcast(new PingMessage());

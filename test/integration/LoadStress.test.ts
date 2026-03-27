@@ -1,6 +1,7 @@
 import fs from 'fs';
 import http from 'http';
 import assert from 'node:assert';
+import type { AddressInfo } from 'node:net';
 import { describe, it, before, after } from 'node:test';
 import os from 'os';
 import path from 'path';
@@ -46,11 +47,13 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
     let node: PeerNode;
     let baselineMemory: number;
 
+    let tmpLoad: string;
+
     before(async () => {
         mongod = await MongoMemoryServer.create();
 
-        const tmpLoad = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
-        node = new PeerNode(32000, [], new NullStorageProvider(), new Bundler(tmpLoad), mongod.getUri(), undefined, {
+        tmpLoad = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
+        node = new PeerNode(0, [], new NullStorageProvider(), new Bundler(tmpLoad), mongod.getUri(), undefined, {
             ringPublicKeyPath: 'keys/ring.ring.pub',
             publicKeyPath: 'keys/peer_26780.peer.pub',
             privateKeyPath: 'keys/peer_26780.peer.pem',
@@ -67,11 +70,10 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
             bind: () => ({ to: () => { } }),
             close: async () => { }
         };
-        // @ts-ignore - inject mock socket configurations internally
-        node.peer = mockPeer;
+        Object.assign(node, { peer: mockPeer });
         node.consensusEngine.handlePendingBlock = async () => { };
 
-        await node.ledger.init(32000);
+        await node.ledger.init(0);
         await node.loadOwnedBlocksCache();
 
         // Pass integration escrows mapping stream limits bypassing real topologies
@@ -94,9 +96,11 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
         };
 
         const app = setupExpressApp(node);
-        // @ts-ignore - explicitly binding standard unencrypted HTTP stream mappings for stress overhead simulation
-        node.httpServer = http.createServer(app);
-        await new Promise<void>(resolve => node.httpServer!.listen(32000, '0.0.0.0', () => resolve()));
+        Object.assign(node, { httpServer: http.createServer(app) });
+        await new Promise<void>(resolve => node.httpServer!.listen(0, '0.0.0.0', () => {
+            node.port = (node.httpServer!.address() as AddressInfo).port;
+            resolve();
+        }));
     });
 
     after(async () => {
@@ -104,6 +108,9 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
         node.httpServer?.closeAllConnections();
         await node.ledger.client?.close();
         await mongod.stop();
+        if (tmpLoad) {
+            fs.rmSync(tmpLoad, { recursive: true, force: true });
+        }
     });
 
     it('Processes large scale injections with low memory footprint', async () => {
@@ -137,7 +144,7 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
         );
         const postDataEnd = Buffer.from(`\r\n--${boundary}--\r\n`);
 
-        const req = http.request('http://127.0.0.1:32000/api/upload', {
+        const req = http.request(`http://127.0.0.1:${node.port}/api/upload`, {
             method: 'POST',
             headers: {
                 'Content-Type': `multipart/form-data; boundary=${boundary}`,

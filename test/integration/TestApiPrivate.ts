@@ -14,7 +14,7 @@ async function verifyPayloads() {
         const bRes = await fetch('https://localhost:26780/api/blocks', { agent });
         const bData = await bRes.json();
         
-        const myBlock = bData.blocks.find(b => b.publicKey === config.publicKey);
+        const myBlock = bData.blocks.find((b: any) => b.publicKey === config.publicKey);
         if(!myBlock) {
             console.log('No blocks owned by node.');
             return;

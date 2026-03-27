@@ -1,6 +1,7 @@
 "use strict";
 
-const test = require('tape');
+const test = require('node:test');
+const assert = require('node:assert');
 const { Peer, Message } = require('../index.js');
 
 let peer;
@@ -13,10 +14,9 @@ const before = async () => {
 		publicKeyPath: "first.peer.pub",
 		privateKeyPath: "first.peer.pem",
 		httpsServerConfig: {
-			port: 56980,
+			port: 26780,
 		},
-		publicAddress: "127.0.0.1:56980",
-		discoveryConfig: { addresses: ["127.0.0.1"], range: { start: 56980, end: 56990 } },
+		publicAddress: "127.0.0.1:26780",
 		logger: fakeLogger
 	});
 
@@ -27,40 +27,43 @@ const after = async () => {
 	await peer.close();
 };
 
-const runTest = async (assert, testCase) => {
-	await before();
-	await testCase(assert);
-	await after();
+const doesThrow = async (fn, msg) => {
+	let err = null;
+	try {
+		await fn();
+	} catch (e) {
+		err = e;
+	}
+	assert.notStrictEqual(err, null, msg);
 };
 
-test("PeerMethods", async (assert) => {
-	assert.doesThrow = async (fn, msg) => {
-		try {
-			await fn();
-			assert.fail(msg);
-		} catch (e) {
-			assert.pass(msg);
-		}
-	};
+const runTest = async (testCase) => {
+	await before();
+	try {
+		await testCase();
+	} finally {
+		await after();
+	}
+};
 
-	await runTest(assert, testDiscoverAddress);
-	await runTest(assert, testSignature);
-	await runTest(assert, testSendToParams);
+test("PeerMethods", async () => {
+	await runTest(testDiscoverAddress);
+	await runTest(testSignature);
+	await runTest(testSendToParams);
 
 	await peer.close();
-	assert.end();
 });
 
-const testDiscoverAddress = async (assert) => {
-	let attemptedConnections = [];
-	peer.discoverPeer = ({ address }) => {
-		attemptedConnections.push(address);
+const testDiscoverAddress = async () => {
+	const attemptedConnections = [];
+	peer.attemptConnection = ({ originalAddress }) => {
+		attemptedConnections.push(originalAddress);
 		return Promise.resolve();
 	};
 
 	await peer.discover(["127.0.0.1"]);
 
-	assert.true(attemptedConnections.length > 0,
+	assert.ok(attemptedConnections.length > 0,
 		`Discovering on address should produce at least one attempted ` +
 		`connection.`);
 
@@ -69,7 +72,7 @@ const testDiscoverAddress = async (assert) => {
 			.slice(0)
 			.map(i => i.slice(i.lastIndexOf(":") + 1))
 			.indexOf(peer.port.toString()) > -1;
-	assert.true(hasAttemptedConnectionToOwnPort,
+	assert.ok(hasAttemptedConnectionToOwnPort,
 		`Discovering on address without port should assign port to the same ` +
 		`as the peer.`);
 
@@ -78,17 +81,17 @@ const testDiscoverAddress = async (assert) => {
 			.slice(0)
 			.map(i => i.slice(0, 6) === 'wss://')
 			.reduce((prev, curr) => prev && curr);
-	assert.true(allAttmptedAreWssProtocol,
+	assert.ok(allAttmptedAreWssProtocol,
 		`Discovering of address without a protocol should assign the ` +
 		`WebSocket protocol string.`);
 
-	await assert.doesThrow(() => {
+	await doesThrow(() => {
 		peer.enqueueDiscoveryAddress();
 	},
 		`Attempting to enqueue an invalid address for discovery should throw.`);
 };
 
-const testSignature = async (assert) => {
+const testSignature = async () => {
 	const testPeer = {
 		remotePublicKey: 'asdasdasd',
 		isConnected: true,
@@ -96,10 +99,10 @@ const testSignature = async (assert) => {
 	};
 	peer.peers_ = [testPeer];
 
-	assert.true(peer.isConnectedTo({ publicKey: 'asdasdasd' }),
+	assert.ok(peer.isConnectedTo({ publicKey: 'asdasdasd' }),
 		` reports if peer is connected to another peer.`);
 
-	await assert.doesThrow(async () => {
+	await doesThrow(async () => {
 		await peer.discoverPeer(testPeer);
 	},
 		`Attempting to discover on peer to which this peer has already ` +
@@ -107,25 +110,25 @@ const testSignature = async (assert) => {
 
 	const testPeerSignatureBuffer = Buffer.from('aaa', 'utf8');
 	peer.publicKey_ = testPeerSignatureBuffer;
-	assert.true(peer.isOwnSignature(testPeerSignatureBuffer),
+	assert.ok(peer.isOwnSignature(testPeerSignatureBuffer),
 		` reports if given signature is equal to this peer.`);
 
 	peer.peers_ = [];
-	await assert.doesThrow(async () => {
+	await doesThrow(async () => {
 		await peer.discoverPeer(testPeer);
 	},
 		`Attempting to discover on peer to which has signature equal ` +
 		`to this peer signature should throw.`);
 };
 
-const testSendToParams = async (assert) => {
-	await assert.doesThrow(async () => {
+const testSendToParams = async () => {
+	await doesThrow(async () => {
 		await peer.sendTo();
 	},
 		`Attempting to call sendTo without connection or message should ` +
 		`throw`);
 
-	await assert.doesThrow(async () => {
+	await doesThrow(async () => {
 		await peer.sendTo({});
 	},
 		`Attempting to call sendTo without message should throw`);

@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
+import { MockSmbClient } from '../../../test/mocks/MockSmbClient';
 import SambaStorageProvider from '../SambaProvider';
 
 describe('Backend: sambaProvider Integrity', () => {
@@ -10,10 +11,7 @@ describe('Backend: sambaProvider Integrity', () => {
         assert.strictEqual(loc.type, 'samba');
         assert.ok(typeof loc.share === 'string' || loc.share === undefined);
 
-        // @ts-ignore
-        prov.smbClient.writeFile = (_unusedName, _unusedData, cb) => cb(null);
-        // @ts-ignore
-        prov.smbClient.readFile = (_unusedName, cb) => cb(null, Buffer.from('data'));
+        prov.smbClient = new MockSmbClient() as unknown as typeof prov.smbClient;
         
         const { physicalBlockId, writeStream } = prov.createBlockStream();
         assert.ok(physicalBlockId);
@@ -25,14 +23,12 @@ describe('Backend: sambaProvider Integrity', () => {
         assert.ok(readStream);
         
         // Error read
-        // @ts-ignore
-        prov.smbClient.readFile = (_unusedName, cb) => cb(new Error('SMB err'));
+        (prov.smbClient as unknown as MockSmbClient).readFile = (_unusedName: any, cb: any) => cb(new Error('SMB err'));
         const rsFail = await prov.getBlockReadStream(physicalBlockId);
         assert.deepStrictEqual(rsFail, { status: 'not_found' });
         
         // Write fail
-        // @ts-ignore
-        prov.smbClient.writeFile = (_unusedName, _unusedData, cb) => cb(new Error('fail write'));
+        (prov.smbClient as unknown as MockSmbClient).writeFile = (_unusedName: any, _unusedData: any, cb: any) => cb(new Error('fail write'));
         const wfail = prov.createBlockStream();
         wfail.writeStream.end(Buffer.from('test'));
     });

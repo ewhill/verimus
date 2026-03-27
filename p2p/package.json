@@ -5,9 +5,9 @@
   "description": "A secure peer-to-peer networking NodeJS module based on WebSockets using RSA and AES.",
   "main": "index.js",
   "scripts": {
-    "coverage": "nyc tape 'test/**/test*.js'",
-    "coverage-html": "nyc --reporter=html tape 'test/**/test*.js'",
-    "test": "tape 'test/test*.js' | faucet",
+    "coverage": "nyc tsx --test --test-timeout=30000 'test/**/test*.js'",
+    "coverage-html": "nyc --reporter=html tsx --test --test-timeout=30000 'test/**/test*.js'",
+    "test": "tsx --test --test-timeout=30000 'test/test*.js'",
     "setup": "openssl genrsa -out https.key.pem 2048 && openssl req -new -key https.key.pem -out https.csr.pem -subj '/CN=localhost' && openssl x509 -req -days 9999 -in https.csr.pem -signkey https.key.pem -out https.cert.pem && node examples/peerSetup.js -o=first -b=2048 && node examples/peerSetup.js -o=second -b=2048",
     "peer1": "node --no-warnings --no-deprecation examples/chat/peerCommandLine.js -port=26781 -private=first.peer.pem -public=first.peer.pub -publicAddress=127.0.0.1:26781",
     "peer2": "node --no-warnings --no-deprecation examples/chat/peerCommandLine.js -port=26782 -peers=127.0.0.1:26781 -private=second.peer.pem -public=second.peer.pub -publicAddress=127.0.0.1:26782",
@@ -48,10 +48,8 @@
     "babelify": "^10.0.0",
     "browserify-shim": "^3.8.14",
     "crypto-browserify": "^3.12.0",
-    "faucet": "0.0.1",
     "handlebars": "^4.5.3",
     "nyc": "^15.1.0",
-    "tape": "^4.13.3",
     "tinyify": "^3.0.0"
   }
 }

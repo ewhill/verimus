@@ -1,6 +1,7 @@
 "use strict";
 
-const test = require('tape');
+const test = require('node:test');
+const assert = require('node:assert');
 
 const { Peer, Message } = require('../index.js');
 
@@ -46,19 +47,21 @@ const after = async () => {
   await peer2.close();
 };
 
-const runTest = async (testCase, assert) => {
+const runTest = async (testCase) => {
   await before();
-  await testCase.apply(null, [assert]);
-  await after();
+  try {
+    await testCase.apply(null, []);
+  } finally {
+    await after();
+  }
 };
 
-test("GossipOverlayTest", async (assert) => {
-  await runTest(testLRUCachePreventsDuplicates, assert);
-  await runTest(testTTLRestrictsPropagation, assert);
-  assert.end();
+test("GossipOverlayTest", async () => {
+  await runTest(testLRUCachePreventsDuplicates);
+  await runTest(testTTLRestrictsPropagation);
 });
 
-async function testLRUCachePreventsDuplicates(assert) {
+async function testLRUCachePreventsDuplicates() {
   return new Promise(async (resolve, reject) => {
     let receivedCount = 0;
 
@@ -81,14 +84,14 @@ async function testLRUCachePreventsDuplicates(assert) {
     await new Promise(r => setTimeout(r, 200));
 
     // The LRU cache should drop the 2nd and 3rd instance, protecting the application layer
-    assert.equal(receivedCount, 1, "LRU cache should intercept and drop raw duplicates matching hash and signature");
+    assert.strictEqual(receivedCount, 1, "LRU cache should intercept and drop raw duplicates matching hash and signature");
 
     peer2.unbind(OverlayMessage);
     resolve();
   });
 }
 
-async function testTTLRestrictsPropagation(assert) {
+async function testTTLRestrictsPropagation() {
   return new Promise(async (resolve, reject) => {
     let receivedCount = 0;
 
@@ -107,7 +110,7 @@ async function testTTLRestrictsPropagation(assert) {
     await new Promise(r => setTimeout(r, 200));
 
     // Peer1's broadcast routine dropped the payload because TTL bounds were exhausted
-    assert.equal(receivedCount, 0, "Broadcast bounds should instinctively halt propagation if TTL drops to zero");
+    assert.strictEqual(receivedCount, 0, "Broadcast bounds should instinctively halt propagation if TTL drops to zero");
 
     peer2.unbind(OverlayMessage);
     resolve();

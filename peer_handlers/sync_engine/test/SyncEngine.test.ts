@@ -4,7 +4,19 @@ import { describe, it, beforeEach } from 'node:test';
 import * as cryptoUtils from '../../../crypto_utils/CryptoUtils';
 import { BlockSyncResponseMessage } from '../../../messages/block_sync_response_message/BlockSyncResponseMessage';
 import { ChainStatusResponseMessage } from '../../../messages/chain_status_response_message/ChainStatusResponseMessage';
+import { StorageBidMessage } from '../../../messages/storage_bid_message/StorageBidMessage';
+import { StorageRequestMessage } from '../../../messages/storage_request_message/StorageRequestMessage';
+import type { Block, PeerConnection } from '../../../types';
 import SyncEngine from '../SyncEngine';
+
+const createMockBlock = (hash: string, pk: string = 'pk'): Block => ({
+    type: 'TRANSACTION',
+    metadata: { index: 1, timestamp: 1 },
+    publicKey: pk,
+    signature: 'sig',
+    hash,
+    payload: { senderSignature: '', senderId: '', recipientId: '', amount: 0 }
+});
 
 describe('Backend: SyncEngine Integrity', () => {
     let mockNode: any;
@@ -70,9 +82,9 @@ describe('Backend: SyncEngine Integrity', () => {
 
     it('Archives remotely retrieved blocks to ledger', async () => {
         syncEngine.isSyncing = true;
-        const mockBlock: any = { metadata: { index: 12 }, hash: 'newHash12' };
-        const mockConnection: import('../../../types').PeerConnection = { peerAddress: '127.0.0.1:3001', send: () => {} };
-        // @ts-ignore
+        const mockBlock = createMockBlock('newHash12');
+        mockBlock.metadata.index = 12;
+        const mockConnection: PeerConnection = { peerAddress: '127.0.0.1:3001', send: () => {} };
         await syncEngine.handleBlockSyncResponse(mockBlock, mockConnection);
         assert.strictEqual(syncEngine._blockSyncResponses.size, 1);
         const buffered = syncEngine._blockSyncResponses.get('12_127.0.0.1:3001');
@@ -81,9 +93,9 @@ describe('Backend: SyncEngine Integrity', () => {
 
     it('Drops unsolicited block responses', async () => {
         syncEngine.isSyncing = false;
-        const mockBlock: any = { metadata: { index: 12 }, hash: 'newHash12' };
-        const mockConnection: import('../../../types').PeerConnection = { peerAddress: '127.0.0.1:3001', send: () => {} };
-        // @ts-ignore
+        const mockBlock = createMockBlock('newHash12');
+        mockBlock.metadata.index = 12;
+        const mockConnection: PeerConnection = { peerAddress: '127.0.0.1:3001', send: () => {} };
         await syncEngine.handleBlockSyncResponse(mockBlock, mockConnection);
         assert.strictEqual(syncEngine._blockSyncResponses.size, 0);
     });
@@ -99,8 +111,7 @@ describe('Backend: SyncEngine Integrity', () => {
         };
 
         const originalSetTimeout = global.setTimeout;
-        // @ts-ignore
-        (global).setTimeout = (cb: any, _unusedMs: any) => { cb(); return {}; };
+        Object.assign(global, { setTimeout: (cb: Function) => { cb(); return originalSetTimeout(() => {}, 0); } });
 
         // Feed mock responses
         syncEngine._chainStatusResponses = [
@@ -110,21 +121,24 @@ describe('Backend: SyncEngine Integrity', () => {
         mockNode.ledger.getLatestBlock = async () => ({ metadata: { index: 9 }, hash: 'h9', previousHash: 'h8' });
 
         const mockNewBlock = { hash: 'h10', previousHash: 'h9', metadata: { index: 10 } };
-        // We need cryptoUtils to return h10
+        // We will generate the TRUE hash it expects natively to avoid 'must be method' ESM bugs
+        const blockToHash = { ...mockNewBlock };
+        delete (blockToHash as any).hash;
+        delete (blockToHash as any)._id;
+        const realH10 = cryptoUtils.hashData(JSON.stringify(blockToHash));
+        mockNewBlock.hash = realH10;
 
-        const origHashData = cryptoUtils.hashData;
-        // @ts-ignore
-        (cryptoUtils).hashData = () => 'h10';
+        syncEngine['_chainStatusResponses'][0].latestHash = realH10;
 
-        // @ts-ignore
-        syncEngine._blockSyncResponses.set('10_addr1', mockNewBlock);
+        syncEngine['_blockSyncResponses'].set(`10_addr1`, mockNewBlock as unknown as Block);
         // let blockAdded = false;
         mockNode.ledger.addBlockToChain = async (_unusedB: any) => {};
 
-        await syncEngine.performInitialSync();
-
-        // @ts-ignore
-        (cryptoUtils).hashData = origHashData;
+        try {
+            await syncEngine.performInitialSync();
+        } finally {
+            global.setTimeout = originalSetTimeout;
+        }
         global.setTimeout = originalSetTimeout;
 
         assert.strictEqual(syncEngine.isSyncing, false);
@@ -156,19 +170,17 @@ describe('Backend: SyncEngine Integrity', () => {
         };
 
         const originalSetTimeout = global.setTimeout;
-        // @ts-ignore
-        (global).setTimeout = (cb: any, _unusedMs: any) => {
+        Object.assign(global, { setTimeout: (cb: Function) => {
             syncEngine._chainStatusResponses = [
                 { latestIndex: 10, latestHash: 'h10', connection: mockConn1 }
             ];
-            // @ts-ignore
-            syncEngine.syncBuffer = [
-                { type: 'PendingBlock', block: {} as unknown as import('../../../types').Block, connection: mockConn1, timestamp: 123 },
+            syncEngine['syncBuffer'] = [
+                { type: 'PendingBlock', block: createMockBlock('buff1'), connection: mockConn1, timestamp: 123 },
                 { type: 'AdoptFork', forkId: 'f1', finalTipHash: 'h1', connection: mockConn1 }
             ];
             cb();
-            return {};
-        };
+            return originalSetTimeout(() => {}, 0);
+        } });
 
         // Buffer queue handling
         // let _pbHandled = false;
@@ -202,17 +214,15 @@ describe('Backend: SyncEngine Integrity', () => {
         };
 
         const originalSetTimeout = global.setTimeout;
-        // @ts-ignore
-        (global).setTimeout = (cb: any, _unusedMs: any) => {
+        Object.assign(global, { setTimeout: (cb: Function) => {
             syncEngine._chainStatusResponses = [{ latestIndex: 10, latestHash: 'h10', connection: mockConn1 }];
-            // @ts-ignore
-            syncEngine.syncBuffer = [
-                { type: 'PendingBlock', block: {} as unknown as import('../../../types').Block, connection: mockConn1, timestamp: 123 },
+            syncEngine['syncBuffer'] = [
+                { type: 'PendingBlock', block: createMockBlock('buff-handled'), connection: mockConn1, timestamp: 123 },
                 { type: 'AdoptFork', forkId: 'f1', finalTipHash: 'h1', connection: mockConn1 }
             ];
             cb();
-            return {};
-        };
+            return originalSetTimeout(() => {}, 0);
+        } });
 
         await syncEngine.performInitialSync();
         global.setTimeout = originalSetTimeout;
@@ -230,19 +240,16 @@ describe('Backend: SyncEngine Integrity', () => {
         const mockConn2: import('../../../types').PeerConnection = { peerAddress: 'addr2', send: () => { } };
 
         const originalSetTimeout = global.setTimeout;
-        // @ts-ignore
-        (global).setTimeout = (cb: any, _unusedMs: any) => {
+        Object.assign(global, { setTimeout: (cb: Function) => {
             // set responses inside mock
             syncEngine._chainStatusResponses = [
                 { latestIndex: 1, latestHash: 'h1', connection: mockConn1 },
                 { latestIndex: 1, latestHash: 'h1', connection: mockConn2 }
             ];
-            // @ts-ignore
-            syncEngine._blockSyncResponses.set('1_addr1', { hash: 'block1' });
-            // @ts-ignore
-            syncEngine._blockSyncResponses.set('1_addr2', { hash: 'block-diff' });
-            cb(); return {};
-        };
+            syncEngine['_blockSyncResponses'].set('1_addr1', { hash: 'block1' } as unknown as Block);
+            syncEngine['_blockSyncResponses'].set('1_addr2', { hash: 'block-diff' } as unknown as Block);
+            cb(); return originalSetTimeout(() => {}, 0);
+        } });
 
         await syncEngine.performInitialSync();
         global.setTimeout = originalSetTimeout;
@@ -262,29 +269,30 @@ describe('Backend: SyncEngine Integrity', () => {
         const mockConn1: import('../../../types').PeerConnection = { peerAddress: 'addr1', send: () => { } };
 
 
-        const origHash = cryptoUtils.hashData;
-
-        const computedHash1 = origHash(JSON.stringify({ metadata: { index: 1 }, previousHash: 'h0' }));
+        const mockBlock1 = createMockBlock('');
+        mockBlock1.metadata.index = 1;
+        mockBlock1.previousHash = 'h0';
+        const blockToHash1 = { ...mockBlock1 };
+        delete blockToHash1.hash;
+        delete (blockToHash1 as any)._id;
+        const computedHash1 = cryptoUtils.hashData(JSON.stringify(blockToHash1));
+        mockBlock1.hash = computedHash1;
 
         const originalSetTimeout = global.setTimeout;
-        // @ts-ignore
-        (global).setTimeout = (cb: any, _unusedMs: any) => {
-            syncEngine._chainStatusResponses = [
-                { latestIndex: 2, latestHash: 'h2', connection: mockConn1 }
-            ];
-            // Valid block for index 1
-            // @ts-ignore
-            syncEngine._blockSyncResponses.set('1_addr1', { metadata: { index: 1 }, previousHash: 'h0', hash: computedHash1 });
-            // Invalid block for index 2
-            // @ts-ignore
-            syncEngine._blockSyncResponses.set('2_addr1', { metadata: { index: 2 }, previousHash: 'h1', hash: 'invalidHash' });
-            cb(); return {};
-        };
+        try {
+            Object.assign(global, { setTimeout: (cb: Function) => {
+                syncEngine._chainStatusResponses = [
+                    { latestIndex: 2, latestHash: 'h2', connection: mockConn1 }
+                ];
+                syncEngine['_blockSyncResponses'].set('1_addr1', mockBlock1);
+                syncEngine['_blockSyncResponses'].set('2_addr1', Object.assign(createMockBlock('invalidHash'), { metadata: { index: 2 }, previousHash: computedHash1 }));
+                cb(); return originalSetTimeout(() => {}, 0);
+            } });
 
-        await syncEngine.performInitialSync();
-        global.setTimeout = originalSetTimeout;
-        // @ts-ignore
-        (cryptoUtils).hashData = origHash;
+            await syncEngine.performInitialSync();
+        } finally {
+            global.setTimeout = originalSetTimeout;
+        }
 
         assert.strictEqual(syncEngine.isSyncing, false);
         assert.strictEqual(addedCount, 1);
@@ -301,10 +309,8 @@ describe('Backend: SyncEngine Integrity', () => {
         const market = syncEngine.activeStorageMarkets.get('req-1');
         assert.ok(market);
 
-        // @ts-ignore
-        await syncEngine.handleStorageBid({ storageRequestId: 'req-1', storageHostId: 'host-1', proposedCostPerGB: 0.05, guaranteedUptimeMs: 1 }, {});
-        // @ts-ignore
-        await syncEngine.handleStorageBid({ storageRequestId: 'req-1', storageHostId: 'host-2', proposedCostPerGB: 0.08, guaranteedUptimeMs: 1 }, {});
+        await syncEngine.handleStorageBid(new StorageBidMessage({ storageRequestId: 'req-1', storageHostId: 'host-1', proposedCostPerGB: 0.05, guaranteedUptimeMs: 1 }), { peerAddress: 'host-1', send: () => {} });
+        await syncEngine.handleStorageBid(new StorageBidMessage({ storageRequestId: 'req-1', storageHostId: 'host-2', proposedCostPerGB: 0.08, guaranteedUptimeMs: 1 }), { peerAddress: 'host-2', send: () => {} });
 
         const result = await promise;
         assert.strictEqual(result.length, 2);
@@ -316,8 +322,7 @@ describe('Backend: SyncEngine Integrity', () => {
         const mockConnection: import('../../../types').PeerConnection = { peerAddress: 'mock', send: (msg: any) => { sentMessage = msg; } };
 
         mockNode.roles = ['ORIGINATOR'];
-        // @ts-ignore
-        await syncEngine.handleStorageRequest({ storageRequestId: 'r-2', senderId: 'remote', maxCostPerGB: 0.10 }, mockConnection);
+        await syncEngine.handleStorageRequest(new StorageRequestMessage({ fileSizeBytes: 100, chunkSizeBytes: 200, requiredNodes: 2, storageRequestId: 'r-2', senderId: 'remote', maxCostPerGB: 0.10 }), mockConnection);
 
         assert.strictEqual(sentMessage, null);
 
@@ -325,16 +330,13 @@ describe('Backend: SyncEngine Integrity', () => {
         mockNode.publicKey = 'local-storage';
         mockNode.storageProvider = { getEgressCostPerGB: () => 0.05 };
 
-        // @ts-ignore
-        await syncEngine.handleStorageRequest({ storageRequestId: 'r-2', senderId: 'remote', maxCostPerGB: 0.10 }, mockConnection);
+        await syncEngine.handleStorageRequest(new StorageRequestMessage({ fileSizeBytes: 100, chunkSizeBytes: 200, requiredNodes: 2, storageRequestId: 'r-2', senderId: 'remote', maxCostPerGB: 0.10 }), mockConnection);
         assert.ok(sentMessage !== null);
-        // @ts-ignore
-        assert.strictEqual(sentMessage.proposedCostPerGB, 0.05);
+        assert.strictEqual((sentMessage as StorageBidMessage).proposedCostPerGB, 0.05);
 
         // Tests dropping requests when internal limit mappings exceed ceiling
         sentMessage = null;
-        // @ts-ignore
-        await syncEngine.handleStorageRequest({ storageRequestId: 'r-3', senderId: 'remote', maxCostPerGB: 0.01 }, mockConnection);
+        await syncEngine.handleStorageRequest(new StorageRequestMessage({ fileSizeBytes: 100, chunkSizeBytes: 200, requiredNodes: 2, storageRequestId: 'r-3', senderId: 'remote', maxCostPerGB: 0.01 }), mockConnection);
         assert.strictEqual(sentMessage, null);
     });
 
@@ -343,15 +345,13 @@ describe('Backend: SyncEngine Integrity', () => {
         const originalSetTimeout = global.setTimeout;
 
         // Mock setTimeout to immediately execute preventing async drift
-        // @ts-ignore
-        (global).setTimeout = (cb: any, _unusedMs: any) => { cb(); return {}; };
+        Object.assign(global, { setTimeout: (cb: Function) => { cb(); return originalSetTimeout(() => {}, 0); } });
 
         const promise = syncEngine.orchestrateStorageMarket('req-timeout', 1000, 250, 5, 0.10);
 
         // Inject 1 partial bid mapping
         const market = syncEngine.activeStorageMarkets.get('req-timeout');
-        // @ts-ignore
-        market?.bids.push({ peerId: 'host-1', cost: 0.05, uptime: 10, connection: {} });
+        market?.bids.push({ peerId: 'host-1', cost: 0.05, uptime: 10, connection: { peerAddress: 'test', send: () => {} } });
 
         const result = await promise;
         assert.strictEqual(result.length, 1);

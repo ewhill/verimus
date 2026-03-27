@@ -1,6 +1,7 @@
 "use strict";
 
-const test = require('tape');
+const test = require('node:test');
+const assert = require('node:assert');
 
 const { Peer, Message } = require('../index.js');
 
@@ -54,25 +55,26 @@ const after = async () => {
   await peer2.close();
 };
 
-const runTest = async (testCase, assert) => {
+const runTest = async (testCase) => {
   await before();
-  await testCase.apply(null, [assert]);
-  await after();
+  try {
+    await testCase.apply(null, []);
+  } finally {
+    await after();
+  }
 };
 
-test("PeerTest", async (assert) => {
-  await runTest(testSendReceivePeer1, assert);
-  await runTest(testSendReceivePeer2, assert);
-  await runTest(testMessageOrder, assert);
-  await runTest(testSendWhenClosed, assert);
-
-  assert.end();
+test("PeerTest", async () => {
+  await runTest(testSendReceivePeer1);
+  await runTest(testSendReceivePeer2);
+  await runTest(testMessageOrder);
+  await runTest(testSendWhenClosed);
 });
 
-async function testSendReceivePeer1(assert) {
+async function testSendReceivePeer1() {
   return new Promise((resolve, reject) => {
     const testHandler = (message, connection, logger = console) => {
-      assert.equal(message.data, "Howdy, it's peer1!!!",
+      assert.strictEqual(message.data, "Howdy, it's peer1!!!",
         "Message body sent by peer1 and received by peer2 should be equal");
 
       peer2.unbind(TestMessage);
@@ -84,10 +86,10 @@ async function testSendReceivePeer1(assert) {
   });
 }
 
-async function testSendReceivePeer2(assert) {
+async function testSendReceivePeer2() {
   return new Promise((resolve, reject) => {
     const testHandler = (message, connection, logger = console) => {
-      assert.equal(message.data, "Hello, from peer2!!!",
+      assert.strictEqual(message.data, "Hello, from peer2!!!",
         "Message body sent by peer2 and received by peer1 should be equal.");
 
       peer1.unbind(TestMessage);
@@ -99,7 +101,7 @@ async function testSendReceivePeer2(assert) {
   });
 }
 
-async function testMessageOrder(assert) {
+async function testMessageOrder() {
   return new Promise((resolve, reject) => {
     const totalToSend = 7;
     const sent = [];
@@ -115,7 +117,7 @@ async function testMessageOrder(assert) {
       let failed = false;
       for (let i = 0; i < received.length; i++) {
         failed = received[i].body.data !== sent[i].body.data;
-        assert.equal(received[i].body.data, sent[i].body.data,
+        assert.strictEqual(received[i].body.data, sent[i].body.data,
           `Received message at position ${i} should match sent.`);
       }
 
@@ -137,7 +139,7 @@ async function testMessageOrder(assert) {
   });
 }
 
-async function testSendWhenClosed(assert) {
+async function testSendWhenClosed() {
   await peer1.close();
 
   // Timeout needed for close event to reach peer2 from peer1...
@@ -150,6 +152,6 @@ async function testSendWhenClosed(assert) {
     err = e;
   }
 
-  assert.equal(err, undefined,
+  assert.strictEqual(err, undefined,
     `Attempting to send to closed connection should resolve silently with bounded TTL broadcast rules.`);
 }

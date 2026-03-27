@@ -25,12 +25,12 @@ describe('Backend: peersHandler Integrity', () => {
         const res = new MockResponse();
         
         const node = new MockPeerNode();
-        node.peer.peers = [
+        Object.defineProperty(node.peer!, 'peers', { value: [
             { peerAddress: 'host1', remoteSignature: Buffer.from('remoteSig000000000000000000000'), isConnected: true, isTrusted: true },
             { peerAddress: 'host2', remoteSignature: null, isConnected: true, isTrusted: false },
             { peerAddress: 'host3', remoteSignature: null, isConnected: false },
             { remoteSignature: null, isConnected: false } // missing peerAddress
-        ];
+        ] });
         
         const handler = new peersHandler(node.asPeerNode());
         await handler.handle(req.asRequest(), res.asResponse());
@@ -53,7 +53,7 @@ describe('Backend: peersHandler Integrity', () => {
         const res = new MockResponse();
         
         const node = new MockPeerNode();
-        node.peer = {}; // peers undefined
+        Object.defineProperty(node, 'peer', { value: {} });
         
         const handler = new peersHandler(node.asPeerNode());
         await handler.handle(req.asRequest(), res.asResponse());

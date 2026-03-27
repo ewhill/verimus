@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-async function uploadBlock(port, filename, content) {
+async function uploadBlock(port: any, filename: any, content: any) {
     fs.writeFileSync(filename, content);
     const form = new FormData();
     const fileContent = fs.readFileSync(filename);
@@ -17,7 +17,7 @@ async function uploadBlock(port, filename, content) {
     return res.json();
 }
 
-async function getBlocks(port, own = false) {
+async function getBlocks(port: any, own = false) {
     let url = `https://127.0.0.1:${port}/api/blocks`;
     if (own) url += `?own=true`;
     

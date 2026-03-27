@@ -10,7 +10,7 @@
     "watch:ui": "npm --prefix ui run watch",
     "start:node": "tsx index.ts",
     "watch:node": "nodemon -x tsx -e ts --ignore data/ --ignore storage/ index.ts",
-    "test": "tsx --test \"!(ui|node_modules)/**/test/*.test.ts\" \"!(ui|node_modules)/**/*.test.ts\" && npm --prefix p2p run test",
+    "test": "tsx --test --test-timeout=30000 \"{apis_server,bundler,crypto_utils,ledger,logger,messages,models,peer_handlers,peer_node,route_handlers,storage_providers,test,wallet_manager}/**/*.test.ts\" && npm --prefix p2p run test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -33,9 +33,12 @@
     "ws": "^8.19.0"
   },
   "devDependencies": {
+    "@types/archiver": "^7.0.0",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.1.0",
     "@types/node": "^25.5.0",
+    "@types/node-fetch": "^2.6.13",
+    "@types/smb2": "^0.2.4",
     "@types/ssh2-sftp-client": "^9.0.6",
     "@types/unzipper": "^0.10.11",
     "@types/ws": "^8.18.1",

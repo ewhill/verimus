@@ -52,14 +52,12 @@ describe('Backend: memoryProvider Integrity (Hermetic in-memory file abstraction
          const hash = await prov.storeBlock('raw read data');
          
          const pt = await prov.getBlockReadStream(hash);
-         // @ts-ignore
+         if (pt.status !== 'available' || !pt.stream) throw new Error('Stream missing');
          assert.ok(pt.stream instanceof PassThrough);
          
          let readChunks = '';
-         // @ts-ignore
          pt.stream.on('data', (d: Buffer) => readChunks += d.toString());
-         // @ts-ignore
-         await new Promise(r => pt.stream.on('end', r));
+         await new Promise(r => pt.stream!.on('end', r));
          assert.strictEqual(readChunks, 'raw read data');
     });
 });

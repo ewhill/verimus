@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-async function uploadBlock(port, filename, content) {
+async function uploadBlock(port: any, filename: any, content: any) {
     fs.writeFileSync(filename, content);
     
     // Polyfill using FormData inside Node.js
@@ -19,7 +19,7 @@ async function uploadBlock(port, filename, content) {
     return res.json();
 }
 
-async function searchBlocks(port, queryStr) {
+async function searchBlocks(port: any, queryStr: any) {
     const url = `https://127.0.0.1:${port}/api/blocks?q=${encodeURIComponent(queryStr)}`;
     const res = await fetch(url);
     return res.json();

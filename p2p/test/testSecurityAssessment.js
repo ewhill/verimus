@@ -1,5 +1,6 @@
 "use strict";
-const test = require('tape');
+const test = require('node:test');
+const assert = require('node:assert');
 const crypto = require('crypto');
 const https = require('https');
 const EventEmitter = require('events');
@@ -10,13 +11,13 @@ const HelloMessage = require('../lib/messages/HelloMessage.js');
 const Server = require('../lib/Server.js');
 const Peer = require('../lib/Peer.js');
 
-test("Security: RSA OAEP Padding Enforced", (assert) => {
+test("Security: RSA OAEP Padding Enforced", () => {
 	const key = RSAKeyPair.generate();
 	const testData = Buffer.from('security_test_data', 'utf8');
 
 	const encrypted = key.encrypt(testData);
 
-	assert.notEqual(encrypted, null, 'Encrypted buffer generated via OAEP should not be null.');
+	assert.notStrictEqual(encrypted, null, 'Encrypted buffer generated via OAEP should not be null.');
 	
 	// Test decryption using forced padding to check Bleichenbacher mitigation
 	const decrypted = crypto.privateDecrypt({
@@ -25,13 +26,12 @@ test("Security: RSA OAEP Padding Enforced", (assert) => {
 		oaepHash: 'sha256'
 	}, encrypted);
 
-	assert.equal(decrypted.toString('utf8'), testData.toString('utf8'),
+	assert.strictEqual(decrypted.toString('utf8'), testData.toString('utf8'),
 		'Decrypted buffer should equal original buffer mapping OAEP padding correctly.');
 
-	assert.end();
 });
 
-test("Security: HelloMessage Hashcash PoW Validation", (assert) => {
+test("Security: HelloMessage Hashcash PoW Validation", () => {
     // Mock the client components required to test `heloHandler`
     const mockConnection = new EventEmitter();
     mockConnection.addEventListener = mockConnection.on.bind(mockConnection);
@@ -83,10 +83,9 @@ test("Security: HelloMessage Hashcash PoW Validation", (assert) => {
         assert.ok(e.message.includes('credentials') || true, 'Proceeds past Hashcash bounds.');
     }
 
-	assert.end();
 });
 
-test("Security: Decentralized IP Validation (SPOF removal)", async (assert) => {
+test("Security: Decentralized IP Validation (SPOF removal)", async () => {
     const server = new Server({ httpsServerMode: Server.MODES.NONE });
     
     // Mock HTTPS to track the requested host
@@ -119,10 +118,9 @@ test("Security: Decentralized IP Validation (SPOF removal)", async (assert) => {
         `Successfully load-balanced IP resolutions across multiple pools: ${Array.from(requestedHosts).join(', ')}`);
         
     server.close();
-    assert.end();
 });
 
-test("Security: Peer DoS Max Socket Protection", async (assert) => {
+test("Security: Peer DoS Max Socket Protection", async () => {
     const peer = new Peer({
         httpsServerConfig: { mode: Server.MODES.NONE },
         maxConnections: 5,
@@ -146,10 +144,9 @@ test("Security: Peer DoS Max Socket Protection", async (assert) => {
     assert.ok(terminated, 'Peer forcefully terminated raw socket connection immediately exceeding WS limits.');
 
     await peer.close();
-    assert.end();
 });
 
-test("Security: AES-GCM Dynamic IV Rotation & Message Bounds", async (assert) => {
+test("Security: AES-GCM Dynamic IV Rotation & Message Bounds", async () => {
     const mockConnection = new EventEmitter();
     mockConnection.readyState = 1; // WebSocket.OPEN
     const sentData = [];
@@ -183,7 +180,7 @@ test("Security: AES-GCM Dynamic IV Rotation & Message Bounds", async (assert) =>
 	    console.error("DEBUG ERROR: ", e);
 	}
 
-    assert.equal(sentData.length, 2, 'Client emitted 2 encrypted payloads.');
+    assert.strictEqual(sentData.length, 2, 'Client emitted 2 encrypted payloads.');
     
     // Parse wrapped messages correctly (they arrive as Prefix{JSON})
     const getIv = (payload) => {
@@ -196,7 +193,7 @@ test("Security: AES-GCM Dynamic IV Rotation & Message Bounds", async (assert) =>
     const iv2 = getIv(sentData[1]);
 
     assert.ok(iv1 && iv2, 'Messages bundled dynamic AES initialization vectors.');
-    assert.notEqual(iv1, iv2, 'AES-GCM uniquely rotated Initialization Vectors (IV) mitigating Galois Counter vulnerabilities.');
+    assert.notStrictEqual(iv1, iv2, 'AES-GCM uniquely rotated Initialization Vectors (IV) mitigating Galois Counter vulnerabilities.');
 
     // 2. Test pre-parse JSON allocation bounding
     let terminated = false;
@@ -206,5 +203,4 @@ test("Security: AES-GCM Dynamic IV Rotation & Message Bounds", async (assert) =>
 
     assert.ok(terminated, 'Client preemptively terminated 5MB+ WebSocket payload immediately prior to native JSON executions.');
 
-    assert.end();
 });

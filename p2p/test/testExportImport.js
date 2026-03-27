@@ -1,6 +1,7 @@
 "use strict";
 const fs = require('fs');
-const test = require('tape');
+const test = require('node:test');
+const assert = require('node:assert');
 
 const { Peer, Message } = require('../index.js');
 
@@ -9,7 +10,7 @@ const { Peer, Message } = require('../index.js');
 // ----------------------------------------------------------------------------------
 // ----------------------------------------------------------------------------------
 
-test("PeerExportImportTest", async (assert) => {
+test("PeerExportImportTest", async () => {
   const sink = () => { };
   const fakeLogger = { error: sink, info: sink, log: sink, warn: sink };
 
@@ -32,9 +33,8 @@ test("PeerExportImportTest", async (assert) => {
 
   await p2.init();
 
-  assert.equal(peerJson, p2.toString(),
+  assert.strictEqual(peerJson, p2.toString(),
     "Exported peer and corresponding import of exported peer should be equal");
 
   await p2.close();
-  assert.end();
 });

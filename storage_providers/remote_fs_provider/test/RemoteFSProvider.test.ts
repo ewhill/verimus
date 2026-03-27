@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
+import { MockSftpClient } from '../../../test/mocks/MockSftpClient';
 import RemoteFSStorageProvider from '../RemoteFSProvider';
 
 describe('Backend: remoteFSProvider Integrity', () => {
@@ -11,13 +12,8 @@ describe('Backend: remoteFSProvider Integrity', () => {
         assert.strictEqual(loc.dir, '/var/data');
 
         // Mock SFTP behavior
-        const mockSftp = {
-            connect: async () => {},
-            put: async () => {},
-            end: async () => {},
-            get: async () => {} 
-        };
-        // @ts-ignore
+        const mockSftp = new MockSftpClient();
+        // @ts-ignore - Authorized bypass mapping massive third-party ssh2-sftp-client API limits to locally required operations only
         prov._getSftp = async () => mockSftp;
         
         const { physicalBlockId, writeStream } = prov.createBlockStream();
@@ -28,7 +24,7 @@ describe('Backend: remoteFSProvider Integrity', () => {
         assert.ok(readStream);
         
         // Error read
-        prov._getSftp = async () => { throw new Error('SFTP err') };
+        prov._getSftp = async () => { throw new Error('SFTP err'); };
         const rsFail = await prov.getBlockReadStream(physicalBlockId);
         assert.deepStrictEqual(rsFail, { status: 'not_found' });
     });

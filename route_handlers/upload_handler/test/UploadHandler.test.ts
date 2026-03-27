@@ -1,10 +1,14 @@
 import assert from 'node:assert';
+import { Writable } from 'node:stream';
 import { describe, it } from 'node:test';
 
+
 import { generateRSAKeyPair } from '../../../crypto_utils/CryptoUtils';
+import { MockBundler } from '../../../test/mocks/MockBundler';
 import { MockPeerNode } from '../../../test/mocks/MockPeerNode';
 import { MockRequest } from '../../../test/mocks/MockRequest';
 import { MockResponse } from '../../../test/mocks/MockResponse';
+import { MockStorageProvider } from '../../../test/mocks/MockStorageProvider';
 // import { NodeRole } from '../../../types/NodeRole';
 import UploadHandler from '../UploadHandler';
 
@@ -32,41 +36,23 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             privateKey: privateKey,
         });
 
-        mockNode.storageProvider = {
-            createBlockStream: () => ({ physicalBlockId: 'mockId', writeStream: {} }),
-            getLocation: () => ({ type: 'local' })
-        };
-        mockNode.bundler = {
-            streamErasureBundle: async () => ({ aesKey: 'KEY', aesIv: 'IV', files: [], shards: [Buffer.from('mock')] })
-        };
-        mockNode.consensusEngine = {
-            handlePendingBlock: async () => { blockHandled = true; },
-            walletManager: {
-                verifyFunds: async () => true,
-                freezeFunds: () => {},
-                releaseFunds: () => {},
-                commitFunds: () => {}
-            },
-            node: {
-                syncEngine: {
-                    orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { send: () => {} } }]
-                }
+        mockNode.storageProvider = new MockStorageProvider();
+        mockNode.storageProvider.createBlockStream = () => ({ physicalBlockId: 'mockId', writeStream: new Writable({ write(_c, _e, cb) { cb(); } }) });
+        mockNode.bundler = new MockBundler();
+        mockNode.bundler!.streamErasureBundle = async () => ({ aesKey: 'KEY', aesIv: 'IV', files: [], shards: [Buffer.from('mock')], authTag: '', originalSize: 0 });
+        mockNode.consensusEngine.handlePendingBlock = async () => { blockHandled = true; };
+        mockNode.consensusEngine.walletManager.verifyFunds = async () => true;
+        mockNode.syncEngine.orchestrateStorageMarket = async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }];
+        if (mockNode.peer) mockNode.peer.broadcast = async () => { };
+        mockNode.events.once = (evt: string | symbol, cb: (...args: any[]) => void) => {
+            if (typeof evt === 'string' && evt.startsWith('shard_response')) {
+                setTimeout(() => cb({ success: true, physicalId: 'mockId' }), 5);
+            } else {
+                setTimeout(() => cb({ hash: 'fakeHash settled' }), 5);
             }
+            return mockNode.events;
         };
-        mockNode.peer = {
-            broadcast: async () => { }
-        };
-        // @ts-ignore
-        mockNode.events = {
-            once: (evt: string, cb: Function) => {
-                if (evt.startsWith('shard_response')) {
-                    setTimeout(() => cb({ success: true, physicalId: 'mockId' }), 5);
-                } else {
-                    setTimeout(() => cb({ hash: 'fakeHash settled' }), 5);
-                }
-            },
-            removeAllListeners: () => {}
-        };
+        mockNode.events.removeAllListeners = () => mockNode.events;
 
         const handler = new UploadHandler(mockNode.asPeerNode());
         const req = new MockRequest({ 
@@ -83,16 +69,9 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
 
     it('Handles and catches bubbled initialization API exception errors', async () => {
         const mockNode = new MockPeerNode();
-        mockNode.storageProvider = {
-            createBlockStream: () => { throw new Error('Simulated Creation Error') }
-        };
-        mockNode.consensusEngine = {
-            walletManager: {
-                verifyFunds: async () => true,
-                freezeFunds: () => {},
-                releaseFunds: () => {}
-            }
-        };
+        mockNode.storageProvider = new MockStorageProvider();
+        mockNode.storageProvider.createBlockStream = () => { throw new Error('Simulated Creation Error'); };
+        mockNode.consensusEngine.walletManager.verifyFunds = async () => true;
 
         const handler = new UploadHandler(mockNode.asPeerNode());
         const req = new MockRequest({ files: [{ originalname: 'throws' }], body: {} });
@@ -105,21 +84,16 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
     it('Maps custom string destination locations validating config fallback', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
         const mockNode = new MockPeerNode({ publicKey, privateKey, port: 1234 });
-        mockNode.storageProvider = { createBlockStream: () => ({ physicalBlockId: 'id', writeStream: { on: () => {} } }), getLocation: () => 'loc' };
-        mockNode.bundler = { streamErasureBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [Buffer.from('mock')] }) };
-        mockNode.consensusEngine = {
-            handlePendingBlock: async () => {},
-            walletManager: {
-                verifyFunds: async () => true,
-                freezeFunds: () => {},
-                releaseFunds: () => {},
-                commitFunds: () => {}
-            },
-            node: { syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { send: () => {} } }] } }
-        };
-        // @ts-ignore
-        mockNode.events = { once: (evt: string, cb: Function) => { if (evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } }, removeAllListeners: () => {} };
-        mockNode.peer = { broadcast: async () => {} };
+        mockNode.storageProvider = new MockStorageProvider();
+        mockNode.storageProvider.createBlockStream = () => ({ physicalBlockId: 'id', writeStream: new Writable({ write(_c, _e, cb) { cb(); } }) });
+        mockNode.bundler = new MockBundler();
+        mockNode.bundler.streamErasureBundle = async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [Buffer.from('mock')], authTag: '', originalSize: 0 });
+        mockNode.consensusEngine.handlePendingBlock = async () => {};
+        mockNode.consensusEngine.walletManager.verifyFunds = async () => true;
+        mockNode.syncEngine.orchestrateStorageMarket = async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }];
+        mockNode.events.once = (evt: string | symbol, cb: (...args: any[]) => void) => { if (typeof evt === 'string' && evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } return mockNode.events; };
+        mockNode.events.removeAllListeners = () => mockNode.events;
+        if (mockNode.peer) mockNode.peer.broadcast = async () => {};
 
         const handler = new UploadHandler(mockNode.asPeerNode());
         const req = new MockRequest({ files: [{ originalname: 'test' }], body: { paths: 'a/b/c' } });
@@ -136,21 +110,16 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
 
         const { publicKey, privateKey } = generateRSAKeyPair();
         const mockNode = new MockPeerNode({ publicKey, privateKey, port: 1234 });
-        mockNode.storageProvider = { createBlockStream: () => ({ physicalBlockId: 'id', writeStream: { on: () => {} } }), getLocation: () => 'loc' };
-        mockNode.bundler = { streamErasureBundle: async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [Buffer.from('mock')] }) };
-        mockNode.consensusEngine = {
-            handlePendingBlock: async () => { throw new Error('Converge Error for test'); },
-            walletManager: {
-                verifyFunds: async () => true,
-                freezeFunds: () => {},
-                releaseFunds: () => {},
-                commitFunds: () => {}
-            },
-            node: { syncEngine: { orchestrateStorageMarket: async () => [{ peerId: 'mock-1', connection: { send: () => {} } }] } }
-        };
-        // @ts-ignore
-        mockNode.events = { once: (evt: string, cb: Function) => { if (evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } }, removeAllListeners: () => {} };
-        mockNode.peer = { broadcast: async () => {} };
+        mockNode.storageProvider = new MockStorageProvider();
+        mockNode.storageProvider.createBlockStream = () => ({ physicalBlockId: 'id', writeStream: new Writable({ write(_c, _e, cb) { cb(); } }) });
+        mockNode.bundler = new MockBundler();
+        mockNode.bundler!.streamErasureBundle = async () => ({ files: [], aesKey: 'k', aesIv: 'iv', shards: [Buffer.from('mock')], authTag: '', originalSize: 0 });
+        mockNode.consensusEngine.handlePendingBlock = async () => { throw new Error('Converge Error for test'); };
+        mockNode.consensusEngine.walletManager.verifyFunds = async () => true;
+        mockNode.syncEngine.orchestrateStorageMarket = async () => [{ peerId: 'mock-1', connection: { peerAddress: 'address', send: () => {} } }];
+        mockNode.events.once = (evt: string | symbol, cb: (...args: any[]) => void) => { if (typeof evt === 'string' && evt.startsWith('shard_response')) { cb({ success: true, physicalId: 'id' }); } return mockNode.events; };
+        mockNode.events.removeAllListeners = () => mockNode.events;
+        if (mockNode.peer) mockNode.peer.broadcast = async () => {};
 
         const handler = new UploadHandler(mockNode.asPeerNode());
 

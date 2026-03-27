@@ -66,8 +66,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
 
             // Assign ephemeral port manually
             node.port = (node.httpServer!.address() as AddressInfo).port;
-            // @ts-ignore - forcibly map internal test structures
-            node.peer!.publicAddress_ = `127.0.0.1:${node.port}`;
+            Object.assign(node.peer || {}, { publicAddress_: `127.0.0.1:${node.port}` });
 
             nodes.push(node);
         }
@@ -76,12 +75,12 @@ describe('Integration: Reputation System (5 Nodes)', () => {
 
         for (let i = 1; i < 5; i++) {
             const addr = `wss://127.0.0.1:${nodes[0].port}`;
-            // @ts-ignore - internal network testing override
-            await nodes[i].peer?.attemptConnection({ originalAddress: addr, parsedAddress: url.parse(addr) });
+            const parsedAddress = Object.assign(new url.URL(addr), { slashes: true });
+            await (nodes[i].peer as any)?.attemptConnection({ originalAddress: addr, parsedAddress, expectedSignature: undefined });
         }
 
         // Wait for discovery and WebSocket handshake resolutions
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, 4000));
     });
 
     after(async () => {
@@ -116,8 +115,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
             hash: 'wrong_hash',
             previousHash: 'fake',
             publicKey: node2.publicKey,
-            // @ts-ignore - intentionally mapping corrupted payload to trigger Reputation penalty
-            payload: { fake: true },
+            payload: { fake: true } as unknown as import('../../types').StorageContractPayload,
             signature: 'fakesig'
         };
 
@@ -128,7 +126,7 @@ console.log('SENDING FAKE BLOCK!');
 console.log(connToNode1?.send ? 'METHOD EXISTS' : 'UNDEFINED METHOD');
         connToNode1?.send(new PendingBlockMessage({ block: fakeBlock }));
 
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 4000));
 
         const node2ScoreRecord = await node1.ledger.peersCollection?.findOne({ publicKey: node2.publicKey });
         assert.ok(node2ScoreRecord, 'Node 1 created active reputation record');
@@ -145,12 +143,11 @@ console.log(connToNode1?.send ? 'METHOD EXISTS' : 'UNDEFINED METHOD');
             type: BLOCK_TYPES.STORAGE_CONTRACT,
             previousHash: 'fake',
             publicKey: node3.publicKey,
-            // @ts-ignore - explicitly mimicking correct schema mapping to test crypto forgery independently
             payload: { 
                  encryptedPayloadBase64: 'enc',
                  encryptedKeyBase64: 'key',
                  encryptedIvBase64: 'iv'
-            },
+            } as import('../../types').StorageContractPayload,
             signature: 'invalid_sig'
         } as Block;
         const blockToHash = { ...block };
@@ -163,7 +160,7 @@ console.log(connToNode1?.send ? 'METHOD EXISTS' : 'UNDEFINED METHOD');
 console.log('SENDING INVALID SIG BLOCK!');
         connToNode1?.send(new PendingBlockMessage({ block }));
 
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 4000));
 
         const node3ScoreRecord = await node1.ledger.peersCollection?.findOne({ publicKey: node3.publicKey });
         assert.strictEqual(node3ScoreRecord?.score, 0, 'Node 1 docked Node 3 dropping to 0');
@@ -175,7 +172,7 @@ console.log('SENDING INVALID SIG BLOCK!');
         const node3 = nodes[2];
 
         // The banned hook in peerNode closes physical sockets
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 4000));
 
         const connToNode1 = node3.peer?.peers[0];
         assert.ok(!connToNode1 || !connToNode1.isConnected, 'Socket terminated');

@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import { describe, it } from 'node:test';
 import { PassThrough } from 'stream';
 
+import { MockAwsClient } from '../../../test/mocks/MockAwsClient';
 import GlacierStorageProvider from '../GlacierProvider';
 
 describe('Backend: glacierProvider Integrity', () => {
@@ -12,37 +13,33 @@ describe('Backend: glacierProvider Integrity', () => {
         assert.strictEqual(loc.vaultName, 'v');
 
         // Mock AWS Glacier behavior
-        // @ts-ignore
-        prov.client.send = async () => ({ archiveId: 'ARCH123', jobId: 'JOB123' });
+        const mockClient = new MockAwsClient();
+        mockClient.send = async () => ({ archiveId: 'ARCH123', jobId: 'JOB123' });
+        prov.client = mockClient as unknown as typeof prov.client;
         
         const { physicalBlockId, writeStream } = prov.createBlockStream();
         assert.ok(physicalBlockId);
         assert.ok(writeStream);
         
         let sendInvoked = false;
-        // @ts-ignore
-        prov.client.send = async () => { sendInvoked = true; return { archiveId: 'ARCH123', jobId: 'JOB123' }; };
+        (prov.client as unknown as MockAwsClient).send = async () => { sendInvoked = true; return { archiveId: 'ARCH123', jobId: 'JOB123' }; };
         
         writeStream.end();
         await new Promise(r => setTimeout(r, 10)); // Yield for async event handler
         assert.ok(sendInvoked);
 
         const { writeStream: wsErr } = prov.createBlockStream();
-        // @ts-ignore
-        prov.client.send = async () => { throw new Error('Glacier send failure'); };
+        (prov.client as unknown as MockAwsClient).send = async () => { throw new Error('Glacier send failure'); };
         wsErr.end();
         await new Promise(r => setTimeout(r, 10));
         
-        // @ts-ignore
-        prov.client.send = async () => { return { jobId: 'JOB123' }; };
+        (prov.client as unknown as MockAwsClient).send = async () => { return { jobId: 'JOB123' }; };
         const readResult = await prov.getBlockReadStream(physicalBlockId);
         assert.strictEqual(readResult.status, 'pending');
         
         // Error read
-        // @ts-ignore
-        prov.activeJobs.delete(physicalBlockId);
-        // @ts-ignore
-        prov.client.send = async () => { throw new Error('AWS error') };
+        prov['activeJobs'].delete(physicalBlockId);
+        (prov.client as unknown as MockAwsClient).send = async () => { throw new Error('AWS error'); };
         const readStreamFail = await prov.getBlockReadStream(physicalBlockId);
         assert.strictEqual(readStreamFail.status, 'not_found');
     });
@@ -51,8 +48,8 @@ describe('Backend: glacierProvider Integrity', () => {
         const prov = GlacierStorageProvider.parseArgs(['--glacier-vault', 'v', '--glacier-region', 'us-east-1'], { vaultName: 'v' });
         
         let invokeCount = 0;
-        // @ts-ignore
-        prov.client.send = async (cmd: any) => {
+        const mockClient = new MockAwsClient();
+        mockClient.send = async (cmd: any) => {
             invokeCount++;
             if (cmd.constructor.name === 'InitiateJobCommand') {
                 return { jobId: 'JOB_ID_123' };
@@ -65,6 +62,7 @@ describe('Backend: glacierProvider Integrity', () => {
                 return { body: pt };
             }
         };
+        prov.client = mockClient as unknown as typeof prov.client;
 
         const res1 = await prov.getBlockReadStream('ARCHIVE_XYZ');
         assert.deepEqual(res1, { status: 'pending', message: 'Glacier retrieval is asynchronous. Job initiated but data not immediately available.', jobId: 'JOB_ID_123' });
@@ -74,7 +72,7 @@ describe('Backend: glacierProvider Integrity', () => {
         
         const res3 = await prov.getBlockReadStream('ARCHIVE_XYZ');
         assert.strictEqual(res3.status, 'available');
-        // @ts-ignore
+        if (res3.status !== 'available' || !res3.stream) throw new Error('Stream missing');
         assert.ok(res3.stream);
     });
 });

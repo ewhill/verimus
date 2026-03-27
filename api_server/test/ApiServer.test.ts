@@ -10,9 +10,7 @@ describe('Backend: apiServer Integrity Check', () => {
         const mockNode = new MockPeerNode({
             publicKey: 'test',
             signature: 'test',
-            port: 3000,
-            ledger: { collection: { find: () => ({ toArray: async () => [] }) } },
-            mempool: { pendingBlocks: new Map() }
+            port: 3000
         });
         const app = setupExpressApp(mockNode.asPeerNode());
         

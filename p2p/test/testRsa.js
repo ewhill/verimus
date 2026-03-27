@@ -1,5 +1,6 @@
 "use strict";
-const test = require('tape');
+const test = require('node:test');
+const assert = require('node:assert');
 
 const RSAKeyPair = require('../lib/RSAKeyPair.js');
 
@@ -9,65 +10,65 @@ const testData = Buffer.from('hello world!', 'utf8');
 
 let key;
 
-test("RSA", (assert) => {
-	assert.doesThrow = (fn, msg) => {
+test("RSA", () => {
+	const doesThrow = (fn, msg) => {
 		let err = null;
 		try {
 			fn();
 		} catch (e) {
 			err = e;
 		}
-		assert.notEqual(err, null, msg);
+		assert.notStrictEqual(err, null, msg);
 	};
 
 	key = new RSAKeyPair({ privateKeyPath, publicKeyPath });
 
-	assert.notEqual(key.private, null,
+	assert.notStrictEqual(key.private, null,
 		'Loaded private RSA key should not be null.');
 
-	assert.notEqual(key.public, null,
+	assert.notStrictEqual(key.public, null,
 		'Loaded public RSA key should not be null.');
 
 	const signature = key.sign(testData);
 
-	assert.notEqual(signature, null, 'Generated signature should not be null.');
+	assert.notStrictEqual(signature, null, 'Generated signature should not be null.');
 
 	assert.ok(key.verify(testData, signature),
 		'Signature verification should return true.');
 
 	const encrypted = key.encrypt(testData);
 
-	assert.notEqual(encrypted, null, 'Encrypted buffer should not be null.');
+	assert.notStrictEqual(encrypted, null, 'Encrypted buffer should not be null.');
 
-	assert.notEqual(encrypted.toString('utf8'), testData.toString('utf8'),
+	assert.notStrictEqual(encrypted.toString('utf8'), testData.toString('utf8'),
 		'Encrypted buffer and original buffer should not be equal.');
 
 	const decrypted = key.decrypt(encrypted);
 
-	assert.equal(decrypted.toString('utf8'), testData.toString('utf8'),
+	assert.strictEqual(decrypted.toString('utf8'), testData.toString('utf8'),
 		'Decrypted buffer should equal original buffer');
 
 	key = new RSAKeyPair({ privateKeyPath });
 
-	assert.notEqual(key.public, null,
+	assert.notStrictEqual(key.public, null,
 		'Inferred public RSA key from private RSA key should not be null.');
 
 	key = RSAKeyPair.generate();
 
-	assert.notEqual(key.private, null,
+	assert.notStrictEqual(key.private, null,
 		'Generated private RSA key should not be null.');
 
-	assert.notEqual(key.public, null,
+	assert.notStrictEqual(key.public, null,
 		'Generated public RSA key should not be null.');
 
 	const exportedKeys = key.export({ mode: 'both', returnBuffer: true });
 
 	const exportedSignature = key.sign(testData);
 
-	assert.notEqual(exportedKeys.private, null,
+	assert.notStrictEqual(exportedKeys.private, null,
 		'Exported private RSA key should not be null.');
 
-	assert.notEqual(exportedKeys.public, null,
+	assert.notStrictEqual(exportedKeys.public, null,
 		'Exported public RSA key should not be null.');
 
 	const importedKeys = new RSAKeyPair({
@@ -75,10 +76,10 @@ test("RSA", (assert) => {
 		publicKeyBuffer: exportedKeys.public
 	});
 
-	assert.notEqual(exportedKeys.private, null,
+	assert.notStrictEqual(exportedKeys.private, null,
 		'Import of exported private RSA key should not be null.');
 
-	assert.notEqual(exportedKeys.public, null,
+	assert.notStrictEqual(exportedKeys.public, null,
 		'Import of exported public RSA key should not be null.');
 
 	assert.ok(importedKeys.verify(testData, exportedSignature),
@@ -86,56 +87,55 @@ test("RSA", (assert) => {
 
 	const loadedKeys = new RSAKeyPair({ privateKeyPath, publicKeyPath });
 
-	assert.doesThrow(() => { key.public = loadedKeys.public; },
+	doesThrow(() => { key.public = loadedKeys.public; },
 		'Attempting to set public key after private key value has already ' +
 		'been set should throw an error.');
 
-	assert.doesThrow(() => { key.private = loadedKeys.private; },
+	doesThrow(() => { key.private = loadedKeys.private; },
 		'Attempting to set private key after value has already been set ' +
 		'should throw an error.');
 
-	assert.doesThrow(() => { new RSAKeyPair({ privateKeyPath: '/InvalidPath' }); },
+	doesThrow(() => { new RSAKeyPair({ privateKeyPath: '/InvalidPath' }); },
 		'Providing an incorrect value for the private key file path should ' +
 		'throw an error.');
 
-	assert.doesThrow(() => { new RSAKeyPair({ publicKeyPath: '/InvalidPath' }); },
+	doesThrow(() => { new RSAKeyPair({ publicKeyPath: '/InvalidPath' }); },
 		'Providing an incorrect value for the public key file path should ' +
 		'throw an error.');
 
-	assert.doesThrow(() => { (new RSAKeyPair()).export({ mode: 'private' }); },
+	doesThrow(() => { (new RSAKeyPair()).export({ mode: 'private' }); },
 		'Attempting to export private key when the private key is not set ' +
 		'should throw an error.');
 
-	assert.doesThrow(() => { (new RSAKeyPair()).export({ mode: 'public' }); },
+	doesThrow(() => { (new RSAKeyPair()).export({ mode: 'public' }); },
 		'Attempting to export public key when the public key is not set ' +
 		'should throw an error.');
 
-	assert.doesThrow(() => { (new RSAKeyPair()).export({ mode: 'both' }); },
+	doesThrow(() => { (new RSAKeyPair()).export({ mode: 'both' }); },
 		'Attempting to export keys when either key is not set ' +
 		'should throw an error.');
 
-	assert.doesThrow(() => { (new RSAKeyPair()).encrypt(Buffer.from('')); },
+	doesThrow(() => { (new RSAKeyPair()).encrypt(Buffer.from('')); },
 		'Attempting to encrypt data when the public key is not set ' +
 		'should throw an error.');
 
-	assert.doesThrow(() => { (new RSAKeyPair()).decrypt(Buffer.from('')); },
+	doesThrow(() => { (new RSAKeyPair()).decrypt(Buffer.from('')); },
 		'Attempting to decrypt data when the private key is not set ' +
 		'should throw an error.');
 
-	assert.doesThrow(() => { (new RSAKeyPair()).sign(Buffer.from('')); },
+	doesThrow(() => { (new RSAKeyPair()).sign(Buffer.from('')); },
 		'Attempting to sign data when the private key is not set ' +
 		'should throw an error.');
 
-	assert.doesThrow(() => { (new RSAKeyPair()).verify(Buffer.from('')); },
+	doesThrow(() => { (new RSAKeyPair()).verify(Buffer.from('')); },
 		'Attempting to verify data when the public key is not set ' +
 		'should throw an error.');
 
-	assert.doesThrow(
+	doesThrow(
 		() => {
 			(new RSAKeyPair({ publicKeyPath })).public = loadedKeys.public;
 		},
 		'Attempting to set a new public key when one has already been ' +
 		'defined should throw an error.');
 
-	assert.end();
 });

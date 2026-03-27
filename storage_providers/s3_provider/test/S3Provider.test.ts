@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
+import { MockAwsClient } from '../../../test/mocks/MockAwsClient';
 import S3StorageProvider from '../S3Provider';
 
 describe('Backend: s3Provider Integrity', () => {
@@ -11,8 +12,9 @@ describe('Backend: s3Provider Integrity', () => {
         assert.strictEqual(loc.bucket, 'mybucket');
 
         // Mock AWS S3 behavior
-        // @ts-ignore
-        prov.client.send = async () => ({ Body: 'mock-stream' });
+        const mockClient = new MockAwsClient();
+        mockClient.send = async () => ({ Body: 'mock-stream' });
+        prov.client = mockClient as unknown as typeof prov.client;
         
         const { physicalBlockId, writeStream } = prov.createBlockStream();
         assert.ok(physicalBlockId);
@@ -22,8 +24,7 @@ describe('Backend: s3Provider Integrity', () => {
         assert.deepStrictEqual(readStream, { status: 'available', stream: 'mock-stream' });
         
         // Error read
-        // @ts-ignore
-        prov.client.send = async () => { throw new Error('AWS error') };
+        (prov.client as unknown as MockAwsClient).send = async () => { throw new Error('AWS error'); };
         const readStreamFail = await prov.getBlockReadStream(physicalBlockId);
         assert.deepStrictEqual(readStreamFail, { status: 'not_found' });
     });

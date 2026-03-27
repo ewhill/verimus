@@ -1,6 +1,7 @@
 "use strict";
 const { spawn } = require("child_process");
-const test = require('tape');
+const test = require('node:test');
+const assert = require('node:assert');
 
 const { Peer, Message } = require('../index.js');
 const { createPeerProxy } = require('../lib/PeerProxy.js');
@@ -200,8 +201,7 @@ const after = async () => {
 // Peer1 (alpha) -->
 //   --> Peer2 (alpha)
 //   --> Peer3 (beta)
-test("PeerProxy_proxiesMessageFromAlphaToBeta", async (assert) => {
-  assert.plan(8);
+test("PeerProxy_proxiesMessageFromAlphaToBeta", async () => {
   await setup();
   await before();
 
@@ -228,17 +228,17 @@ test("PeerProxy_proxiesMessageFromAlphaToBeta", async (assert) => {
   const [peer2alphaMessage, peer3betaMessage] =
     await Promise.all([peer2alphaReceivePromise, peer3betaReceivePromise]);
 
-  assert.true(!!peer2alphaMessage,
+  assert.ok(!!peer2alphaMessage,
     'peer2alpha should receive message broadcasted from peer1alpha.');
-  assert.equal(peer2alphaMessage.hash, greeting.hash);
-  assert.deepEquals(peer2alphaMessage.body, greeting.body);
-  assert.deepEquals(peer2alphaMessage.timestamp, greeting.timestamp);
+  assert.strictEqual(peer2alphaMessage.hash, greeting.hash);
+  assert.deepStrictEqual(peer2alphaMessage.body, greeting.body);
+  assert.deepStrictEqual(peer2alphaMessage.timestamp, greeting.timestamp);
 
-  assert.true(!!peer3betaMessage,
+  assert.ok(!!peer3betaMessage,
     'peer3beta should receive message broadcasted from peer1alpha.');
-  assert.equal(peer3betaMessage.hash, greeting.hash);
-  assert.deepEquals(peer3betaMessage.body, greeting.body);
-  assert.deepEquals(peer3betaMessage.timestamp, greeting.timestamp);
+  assert.strictEqual(peer3betaMessage.hash, greeting.hash);
+  assert.deepStrictEqual(peer3betaMessage.body, greeting.body);
+  assert.deepStrictEqual(peer3betaMessage.timestamp, greeting.timestamp);
 
   await after();
   await teardown();
@@ -247,8 +247,7 @@ test("PeerProxy_proxiesMessageFromAlphaToBeta", async (assert) => {
 // Peer2 (alpha) -->
 //   --> Peer1 (alpha)
 //   --> Peer3 (beta)
-test.skip("PeerProxy_proxiesMessageFromAlphaOtherToBeta", async (assert) => {
-  assert.plan(8);
+test.skip("PeerProxy_proxiesMessageFromAlphaOtherToBeta", async () => {
   await setup();
   await before();
 
@@ -275,17 +274,17 @@ test.skip("PeerProxy_proxiesMessageFromAlphaOtherToBeta", async (assert) => {
   const [peer1alphaMessage, peer3betaMessage] =
     await Promise.all([peer1alphaReceivePromise, peer3betaReceivePromise]);
 
-  assert.true(!!peer1alphaMessage,
+  assert.ok(!!peer1alphaMessage,
     'peer1alpha should receive message broadcasted from peer2alpha.');
-  assert.equal(peer1alphaMessage.hash, greeting.hash);
-  assert.deepEquals(peer1alphaMessage.body, greeting.body);
-  assert.deepEquals(peer1alphaMessage.timestamp, greeting.timestamp);
+  assert.strictEqual(peer1alphaMessage.hash, greeting.hash);
+  assert.deepStrictEqual(peer1alphaMessage.body, greeting.body);
+  assert.deepStrictEqual(peer1alphaMessage.timestamp, greeting.timestamp);
 
-  assert.true(!!peer3betaMessage,
+  assert.ok(!!peer3betaMessage,
     'peer3beta should receive message broadcasted from peer2alpha.');
-  assert.equal(peer3betaMessage.hash, greeting.hash);
-  assert.deepEquals(peer3betaMessage.body, greeting.body);
-  assert.deepEquals(peer3betaMessage.timestamp, greeting.timestamp);
+  assert.strictEqual(peer3betaMessage.hash, greeting.hash);
+  assert.deepStrictEqual(peer3betaMessage.body, greeting.body);
+  assert.deepStrictEqual(peer3betaMessage.timestamp, greeting.timestamp);
 
   await after();
   await teardown();
@@ -294,8 +293,7 @@ test.skip("PeerProxy_proxiesMessageFromAlphaOtherToBeta", async (assert) => {
 // Peer3 (beta) -->
 //   --> Peer1 (alpha)
 //   --> Peer2 (alpha)
-test.skip("PeerProxy_proxiesMessageFromBetaToAlpha", async (assert) => {
-  assert.plan(8);
+test.skip("PeerProxy_proxiesMessageFromBetaToAlpha", async () => {
   await setup();
   await before();
 
@@ -322,17 +320,17 @@ test.skip("PeerProxy_proxiesMessageFromBetaToAlpha", async (assert) => {
   const [peer1alphaMessage, peer2alphaMessage] =
     await Promise.all([peer1alphaReceivePromise, peer2alphaReceivePromise]);
 
-  assert.true(!!peer1alphaMessage,
+  assert.ok(!!peer1alphaMessage,
     'peer1alpha should receive message broadcasted from peer1alpha.');
-  assert.equal(peer1alphaMessage.hash, greeting.hash);
-  assert.deepEquals(peer1alphaMessage.body, greeting.body);
-  assert.deepEquals(peer1alphaMessage.timestamp, greeting.timestamp);
+  assert.strictEqual(peer1alphaMessage.hash, greeting.hash);
+  assert.deepStrictEqual(peer1alphaMessage.body, greeting.body);
+  assert.deepStrictEqual(peer1alphaMessage.timestamp, greeting.timestamp);
 
-  assert.true(!!peer2alphaMessage,
+  assert.ok(!!peer2alphaMessage,
     'peer2alpha should receive message broadcasted from peer1alpha.');
-  assert.equal(peer2alphaMessage.hash, greeting.hash);
-  assert.deepEquals(peer2alphaMessage.body, greeting.body);
-  assert.deepEquals(peer2alphaMessage.timestamp, greeting.timestamp);
+  assert.strictEqual(peer2alphaMessage.hash, greeting.hash);
+  assert.deepStrictEqual(peer2alphaMessage.body, greeting.body);
+  assert.deepStrictEqual(peer2alphaMessage.timestamp, greeting.timestamp);
 
   await after();
   await teardown();

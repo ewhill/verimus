@@ -1,9 +1,10 @@
-const test = require('tape');
+const test = require('node:test');
+const assert = require('node:assert');
 const Client = require('../lib/Client');
 const crypto = require('crypto');
 const EventEmitter = require('events');
 
-test("Security: Uncaught Exception Dos Prevented", async (assert) => {
+test("Security: Uncaught Exception Dos Prevented", async () => {
     const mockSocket = new EventEmitter();
     const mockCredentials = {
         rsaKeyPair: { public: 'foo', private: 'bar' }
@@ -35,5 +36,4 @@ test("Security: Uncaught Exception Dos Prevented", async (assert) => {
     }
     
     assert.ok(!threw, "The client swallowed internal syntax exceptions without crashing the Node process locally.");
-    assert.end();
 });

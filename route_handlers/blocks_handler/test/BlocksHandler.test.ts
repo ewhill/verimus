@@ -1,11 +1,28 @@
 import assert from 'node:assert';
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it, beforeEach, mock } from 'node:test';
 
 import { generateRSAKeyPair, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
 import { MockPeerNode } from '../../../test/mocks/MockPeerNode';
 import { MockRequest } from '../../../test/mocks/MockRequest';
 import { MockResponse } from '../../../test/mocks/MockResponse';
+import { createMongoCursorStub } from '../../../test/utils/StubFactory';
 import BlocksHandler from '../BlocksHandler';
+
+const createValidPendingBlock = (sig: string, pub: string, payload: any, ts: number) => ({
+    committed: false,
+    verifications: new Set<string>(),
+    eligible: true,
+    originalTimestamp: ts,
+    block: {
+        hash: 'hash_' + sig,
+        previousHash: 'prev',
+        type: 'STORAGE_CONTRACT' as const,
+        metadata: { index: -1, timestamp: ts },
+        publicKey: pub,
+        signature: sig,
+        payload: payload
+    }
+});
 
 describe('Backend: blocksHandler Coverage', () => {
     let mockNode: MockPeerNode;
@@ -20,12 +37,8 @@ describe('Backend: blocksHandler Coverage', () => {
             privateKey: keys.privateKey,
         });
 
-        // Add explicit overrides for this specific test suite
-        mockNode.ledger.collection.find = () => ({
-            sort: () => ({
-                toArray: async () => []
-            })
-        });
+        // Replace stateful MockCollection implementation with behavioral stubbing boundary default
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([]));
 
         req = new MockRequest({ query: {} });
         res = new MockResponse();
@@ -42,12 +55,9 @@ describe('Backend: blocksHandler Coverage', () => {
 
     it('Returns fetched blocks', async () => {
         const encrypted = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'test.txt' }] });
-        
-        mockNode.ledger.collection.find = () => ({
-            sort: () => ({
-                toArray: async () => [{ metadata: { index: 1 }, hash: 'hash1', publicKey: 'testPubKey', payload: encrypted }]
-            })
-        });
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([
+            { metadata: { index: 1, timestamp: 0 }, hash: 'hash1', previousHash: 'prev', publicKey: 'testPubKey', payload: encrypted, type: 'STORAGE_CONTRACT', signature: 'sig' }
+        ]));
 
         const handler = new BlocksHandler(mockNode.asPeerNode());
         await handler.handle(req.asRequest(), res.asResponse());
@@ -60,15 +70,10 @@ describe('Backend: blocksHandler Coverage', () => {
     it('Filters by local queries', async () => {
         const encryptedMatch = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'match-this.txt' }] });
         const encryptedNoMatch = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'other.txt' }] });
-        
-        mockNode.ledger.collection.find = () => ({
-            sort: () => ({
-                toArray: async () => [
-                    { metadata: { index: 1 }, hash: 'hash1', publicKey: 'testPubKey', payload: encryptedMatch },
-                    { metadata: { index: 2 }, hash: 'hash2', publicKey: 'testPubKey', payload: encryptedNoMatch }
-                ]
-            })
-        });
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([
+            { metadata: { index: 1, timestamp: 0 }, hash: 'hash1', previousHash: 'prev', publicKey: 'testPubKey', payload: encryptedMatch, type: 'STORAGE_CONTRACT', signature: 'sig1' },
+            { metadata: { index: 2, timestamp: 0 }, hash: 'hash2', previousHash: 'prev', publicKey: 'testPubKey', payload: encryptedNoMatch, type: 'STORAGE_CONTRACT', signature: 'sig2' }
+        ]));
 
         req.query.q = 'match';
         
@@ -82,10 +87,7 @@ describe('Backend: blocksHandler Coverage', () => {
     
     it('Appends pending blocks', async () => {
         const encrypted = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'pending.txt' }] });
-        mockNode.mempool.pendingBlocks.set('some-sig', { 
-            committed: false,
-            block: { signature: 'some-sig', publicKey: 'testPubKey', payload: encrypted, metadata: { timestamp: 12345 } }
-        });
+        mockNode.mempool.pendingBlocks.set('some-sig', createValidPendingBlock('some-sig', 'testPubKey', encrypted, 12345));
 
         const handler = new BlocksHandler(mockNode.asPeerNode());
         await handler.handle(req.asRequest(), res.asResponse());
@@ -107,14 +109,8 @@ describe('Backend: blocksHandler Coverage', () => {
     it('Filters by own blocks', async () => {
         const encrypted = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'test.txt' }] });
         
-        mockNode.mempool.pendingBlocks.set('some-sig', { 
-            committed: false,
-            block: { signature: 'some-sig', publicKey: 'otherKey', payload: encrypted, metadata: { timestamp: 12345 } }
-        });
-        mockNode.mempool.pendingBlocks.set('some-sig2', { 
-            committed: false,
-            block: { signature: 'some-sig2', publicKey: 'testPubKey', payload: encrypted, metadata: { timestamp: 123456 } }
-        });
+        mockNode.mempool.pendingBlocks.set('some-sig', createValidPendingBlock('some-sig', 'otherKey', encrypted, 12345));
+        mockNode.mempool.pendingBlocks.set('some-sig2', createValidPendingBlock('some-sig2', 'testPubKey', encrypted, 123456));
 
         req.query.own = 'true';
 
@@ -130,16 +126,8 @@ describe('Backend: blocksHandler Coverage', () => {
     it('Sorts pending blocks in ASC and DESC', async () => {
         const encrypted = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'test.txt' }] });
         
-        mockNode.mempool.pendingBlocks.set('block1', { 
-            committed: false,
-            block: { signature: 'b1', publicKey: 'testPubKey', payload: encrypted },
-            originalTimestamp: 1000
-        });
-        mockNode.mempool.pendingBlocks.set('block2', { 
-            committed: false,
-            block: { signature: 'b2', publicKey: 'testPubKey', payload: encrypted },
-            originalTimestamp: 2000
-        });
+        mockNode.mempool.pendingBlocks.set('block1', createValidPendingBlock('b1', 'testPubKey', encrypted, 1000));
+        mockNode.mempool.pendingBlocks.set('block2', createValidPendingBlock('b2', 'testPubKey', encrypted, 2000));
 
         // Test ASC
         req.query.sort = 'asc';
@@ -161,15 +149,10 @@ describe('Backend: blocksHandler Coverage', () => {
 
     it('Catches decryption errors', async () => {
         const encryptedMatch = encryptPrivatePayload(keys.publicKey, { files: [{ path: 'match-this.txt' }] });
-        
-        mockNode.ledger.collection.find = () => ({
-            sort: () => ({
-                toArray: async () => [
-                    { metadata: { index: 1 }, hash: 'hash1', publicKey: 'testPubKey', payload: 'CORRUPTED_PRIVATE_PAYLOAD' },
-                    { metadata: { index: 2 }, hash: 'hash2', publicKey: 'testPubKey', payload: encryptedMatch }
-                ]
-            })
-        });
+        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([
+            { metadata: { index: 1, timestamp: 0 }, hash: 'hash1', previousHash: 'prev', publicKey: 'testPubKey', payload: encryptPrivatePayload(keys.publicKey, { physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] }), type: 'STORAGE_CONTRACT', signature: 'sig1' },
+            { metadata: { index: 2, timestamp: 0 }, hash: 'hash2', previousHash: 'prev', publicKey: 'testPubKey', payload: encryptedMatch, type: 'STORAGE_CONTRACT', signature: 'sig2' }
+        ]));
 
         req.query.q = 'match';
         const handler = new BlocksHandler(mockNode.asPeerNode());
