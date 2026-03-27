@@ -1,3 +1,4 @@
+import EventEmitter from 'events';
 import assert from 'node:assert';
 import { describe, it, beforeEach } from 'node:test';
 
@@ -6,7 +7,9 @@ import { BlockSyncResponseMessage } from '../../../messages/block_sync_response_
 import { ChainStatusResponseMessage } from '../../../messages/chain_status_response_message/ChainStatusResponseMessage';
 import { StorageBidMessage } from '../../../messages/storage_bid_message/StorageBidMessage';
 import { StorageRequestMessage } from '../../../messages/storage_request_message/StorageRequestMessage';
+import { VerifyHandoffRequestMessage } from '../../../messages/verify_handoff_request_message/VerifyHandoffRequestMessage';
 import type { Block, PeerConnection } from '../../../types';
+import { NodeRole } from '../../../types/NodeRole';
 import SyncEngine from '../SyncEngine';
 
 const createMockBlock = (hash: string, pk: string = 'pk'): Block => ({
@@ -358,5 +361,55 @@ describe('Backend: SyncEngine Integrity', () => {
         assert.strictEqual(syncEngine.activeStorageMarkets.has('req-timeout'), false);
 
         global.setTimeout = originalSetTimeout;
+    });
+
+    it('Ignores verify handoff requests when Node skips STORAGE role', async () => {
+        let sentMessage: any = null;
+        const mockConn: PeerConnection = { peerAddress: 'host', send: (msg) => { sentMessage = msg; } };
+        mockNode.roles = [NodeRole.ORIGINATOR];
+
+        await syncEngine.handleVerifyHandoffRequest(new VerifyHandoffRequestMessage({ marketId: 'mHost', physicalId: 'pHost', targetChunkIndex: 0 }), mockConn);
+        assert.strictEqual(sentMessage, null);
+    });
+
+    it('Replies with verify handoff failure if underlying data is unavailable natively', async () => {
+        let sentMessage: any = null;
+        const mockConn: PeerConnection = { peerAddress: 'host', send: (msg: any) => { sentMessage = msg; } };
+        mockNode.roles = [NodeRole.STORAGE];
+        mockNode.storageProvider = { getBlockReadStream: async () => ({ status: 'unavailable', stream: null }) };
+
+        await syncEngine.handleVerifyHandoffRequest(new VerifyHandoffRequestMessage({ marketId: 'mHost', physicalId: 'pHost', targetChunkIndex: 0 }), mockConn);
+
+        assert.ok(sentMessage !== null);
+        assert.strictEqual(sentMessage.success, false);
+    });
+
+    it('Streams block data generating explicitly constrained validation 1MB bounds correctly', async () => {
+        let sentMessage: any = null;
+        const mockConn: PeerConnection = { peerAddress: 'host', send: (msg: any) => { sentMessage = msg; } };
+        mockNode.roles = [NodeRole.STORAGE];
+
+        const mockStream = new EventEmitter() as any;
+        mockStream.destroy = () => { mockStream.emit('close'); };
+
+        mockNode.storageProvider = { getBlockReadStream: async () => ({ status: 'available', stream: mockStream }) };
+
+        syncEngine.handleVerifyHandoffRequest(new VerifyHandoffRequestMessage({ marketId: 'mHost', physicalId: 'pHost', targetChunkIndex: 0 }), mockConn);
+
+        // Await next tick so promise settles event binding
+        await new Promise(r => setImmediate(r));
+
+        const dummyData = Buffer.from('HelloWorld');
+        mockStream.emit('data', dummyData);
+        mockStream.emit('close');
+
+        const expectedHash = cryptoUtils.hashData(dummyData.toString('base64'));
+
+        // Allow event loop mapping native close emission hooks
+        await new Promise(r => setImmediate(r));
+
+        assert.ok(sentMessage !== null);
+        assert.strictEqual(sentMessage!.success, true);
+        assert.strictEqual(sentMessage!.chunkHashBase64, expectedHash);
     });
 });

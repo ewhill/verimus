@@ -1,14 +1,14 @@
 import { Message } from '../../p2p';
 import { MessageOptions } from '../types/Types';
 
-export interface VerifyHandoffOptions {
+export interface VerifyHandoffRequestOptions {
     marketId: string;
     physicalId: string;
     targetChunkIndex: number;
 }
 
-export class VerifyHandoffMessage extends Message {
-    constructor(options: MessageOptions<VerifyHandoffOptions> = {}) {
+export class VerifyHandoffRequestMessage extends Message {
+    constructor(options: MessageOptions<VerifyHandoffRequestOptions> = {}) {
         super(options);
         if (options.marketId !== undefined) this.marketId = options.marketId;
         else if (options.body?.marketId !== undefined) this.marketId = options.body.marketId;

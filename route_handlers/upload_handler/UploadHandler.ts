@@ -7,7 +7,7 @@ import { encryptPrivatePayload, signData } from '../../crypto_utils/CryptoUtils'
 import logger from '../../logger/Logger';
 import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
 import { StorageShardTransferMessage } from '../../messages/storage_shard_transfer_message/StorageShardTransferMessage';
-import { VerifyHandoffMessage } from '../../messages/verify_handoff_message/VerifyHandoffMessage';
+import { VerifyHandoffRequestMessage } from '../../messages/verify_handoff_request_message/VerifyHandoffRequestMessage';
 import type { Block, BlockPrivate, StorageContractPayload, PeerConnection, NodeShardMapping } from '../../types';
 import { NodeRole } from '../../types/NodeRole';
 import BaseHandler from '../base_handler/BaseHandler';
@@ -112,7 +112,7 @@ export default class UploadHandler extends BaseHandler {
                     const chunkList = bundleResult.chunkMap[i];
                     const targetIndex = Math.floor(Math.random() * chunkList.length);
                     
-                    const verifyMsg = new VerifyHandoffMessage({
+                    const verifyMsg = new VerifyHandoffRequestMessage({
                         marketId: marketReqId,
                         physicalId: physicalId,
                         targetChunkIndex: targetIndex

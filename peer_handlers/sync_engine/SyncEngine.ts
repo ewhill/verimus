@@ -11,7 +11,7 @@ import { StorageShardResponseMessage } from '../../messages/storage_shard_respon
 import { StorageShardRetrieveRequestMessage } from '../../messages/storage_shard_retrieve_request_message/StorageShardRetrieveRequestMessage';
 import { StorageShardRetrieveResponseMessage } from '../../messages/storage_shard_retrieve_response_message/StorageShardRetrieveResponseMessage';
 import { StorageShardTransferMessage } from '../../messages/storage_shard_transfer_message/StorageShardTransferMessage';
-import { VerifyHandoffMessage } from '../../messages/verify_handoff_message/VerifyHandoffMessage';
+import { VerifyHandoffRequestMessage } from '../../messages/verify_handoff_request_message/VerifyHandoffRequestMessage';
 import { VerifyHandoffResponseMessage } from '../../messages/verify_handoff_response_message/VerifyHandoffResponseMessage';
 import PeerNode from '../../peer_node/PeerNode';
 import type { Block, PeerConnection } from '../../types';
@@ -74,7 +74,7 @@ class SyncEngine {
         this.node.peer?.bind(StorageShardResponseMessage).to(async (m: StorageShardResponseMessage, c: PeerConnection) => this.handleStorageShardResponse(m, c));
         this.node.peer?.bind(StorageShardRetrieveRequestMessage).to(async (m: StorageShardRetrieveRequestMessage, c: PeerConnection) => this.handleStorageShardRetrieveRequest(m, c));
         this.node.peer?.bind(StorageShardRetrieveResponseMessage).to(async (m: StorageShardRetrieveResponseMessage, c: PeerConnection) => this.handleStorageShardRetrieveResponse(m, c));
-        this.node.peer?.bind(VerifyHandoffMessage).to(async (m: VerifyHandoffMessage, c: PeerConnection) => this.handleVerifyHandoffRequest(m, c));
+        this.node.peer?.bind(VerifyHandoffRequestMessage).to(async (m: VerifyHandoffRequestMessage, c: PeerConnection) => this.handleVerifyHandoffRequest(m, c));
         this.node.peer?.bind(VerifyHandoffResponseMessage).to(async (m: VerifyHandoffResponseMessage, c: PeerConnection) => this.handleVerifyHandoffResponse(m, c));
 
         // Start native background tracking
@@ -326,7 +326,7 @@ class SyncEngine {
         this.node.events.emit(`shard_retrieve:${msg.marketId}:${msg.physicalId}`, msg);
     }
 
-    async handleVerifyHandoffRequest(msg: VerifyHandoffMessage, connection: PeerConnection) {
+    async handleVerifyHandoffRequest(msg: VerifyHandoffRequestMessage, connection: PeerConnection) {
         if (!this.node.roles.includes(NodeRole.STORAGE)) return;
 
         try {

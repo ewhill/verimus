@@ -1,12 +1,12 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { VerifyHandoffMessage } from '../VerifyHandoffMessage';
+import { VerifyHandoffRequestMessage } from '../VerifyHandoffRequestMessage';
 
-describe('Messages: VerifyHandoffMessage Definitions', () => {
+describe('Messages: VerifyHandoffRequestMessage Definitions', () => {
 
     it('Initializes with direct options properties correctly', () => {
-        const msg = new VerifyHandoffMessage({
+        const msg = new VerifyHandoffRequestMessage({
             marketId: 'market123',
             physicalId: 'physA',
             targetChunkIndex: 5
@@ -20,7 +20,7 @@ describe('Messages: VerifyHandoffMessage Definitions', () => {
     });
 
     it('Initializes via nested payload properties', () => {
-        const msg = new VerifyHandoffMessage({
+        const msg = new VerifyHandoffRequestMessage({
             body: {
                 marketId: 'market456',
                 physicalId: 'physB',
@@ -34,7 +34,7 @@ describe('Messages: VerifyHandoffMessage Definitions', () => {
     });
 
     it('Mutates structured data payloads supporting dynamic setters', () => {
-        const msg = new VerifyHandoffMessage();
+        const msg = new VerifyHandoffRequestMessage();
         
         msg.marketId = 'dynamic_market';
         msg.physicalId = 'dyn_physical';
