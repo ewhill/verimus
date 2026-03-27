@@ -1,29 +1,29 @@
 import assert from 'node:assert';
 import * as crypto from 'node:crypto';
+import { EventEmitter } from 'node:events';
 import { describe, it, mock } from 'node:test';
 import { PassThrough, Readable } from 'stream';
 
+import { Request } from 'express';
+
 import Bundler from '../../../bundler/Bundler';
 import { generateRSAKeyPair, signData, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
+import type PeerNode from '../../../peer_node/PeerNode';
+import { createMock, createRes } from '../../../test/utils/TestUtils';
 import { NodeRole } from '../../../types/NodeRole';
 import DownloadHandler from '../DownloadHandler';
-
-function createRes() {
-    const res: any = { statusCode: 200, body: null, headers: {} };
-    res.status = (code: number) => { res.statusCode = code; return res; };
-    res.json = (data: any) => { res.body = data; return res; };
-    res.send = (data: any) => { res.body = data; return res; };
-    res.setHeader = (name: string, value: string) => { res.headers[name] = value; return res; };
-    return res;
-}
 
 describe('Backend: downloadHandler Unit Tests', () => {
 
     it('Returns HTTP 404 when requesting missing block hashes', async () => {
-        const mockNode: any = { roles: [NodeRole.STORAGE], privateKey: 'PRIVKEY', ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [] })) } } };
-        const handler = new DownloadHandler(mockNode);
+        const mockNode = createMock<PeerNode>({ 
+            roles: [NodeRole.STORAGE], 
+            privateKey: 'PRIVKEY', 
+            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [] })) as any } as any } as any 
+        });
+        const handler = new DownloadHandler(mockNode as PeerNode);
 
-        const req: any = { params: { hash: 'nonexistent' } };
+        const req = createMock<Request>({ params: { hash: 'nonexistent' } } as any);
         const res = createRes();
 
         await handler.handle(req, res);
@@ -35,15 +35,112 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
 
         const validHPayload = encryptPrivatePayload(publicKey, { physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] });
-        const mockNode: any = { roles: [NodeRole.STORAGE], privateKey: privateKey, ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: validHPayload, publicKey: publicKey, signature: 'bad_sig', type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) } } };
-        const handler = new DownloadHandler(mockNode);
+        const mockNode = createMock<PeerNode>({ 
+            roles: [NodeRole.STORAGE], 
+            privateKey: privateKey, 
+            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: validHPayload, publicKey: publicKey, signature: 'bad_sig', type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) as any } as any } as any 
+        });
+        const handler = new DownloadHandler(mockNode as PeerNode);
 
-        const req: any = { params: { hash: 'validh' } };
+        const req = createMock<Request>({ params: { hash: 'validh' } } as any);
         const res = createRes();
 
         await handler.handle(req, res);
         assert.strictEqual(res.statusCode, 401);
         assert.strictEqual(res.body, 'Invalid block signature.');
+    });
+
+    it('Returns locally mapping Erasure Coded Shards via Reed-Solomon recombination', async () => {
+        const { publicKey, privateKey } = generateRSAKeyPair();
+
+        const bundler = new Bundler('./test_data');
+        const pt = new PassThrough();
+        const bufs: Buffer[] = [];
+        pt.on('data', (c: Buffer) => bufs.push(c));
+        const mockFile = { fieldname: 'file', originalname: 'file.txt', encoding: '7bit', mimetype: 'text/plain', size: 16, destination: '', filename: 'file.txt', path: '', buffer: Buffer.from('hello world here from erasure algorithms'), stream: new PassThrough() };
+        
+        // This calculates matrix sizes natively resolving shards directly against boundaries 
+        const bundleP = bundler.streamErasureBundle([mockFile] as Express.Multer.File[], 2, 3);
+        const bundleRes = (await bundleP)!;
+
+        const priv = { key: bundleRes.aesKey, iv: bundleRes.aesIv, authTag: bundleRes.authTag, files: bundleRes.files, physicalId: 'pid', location: { type: 'local' } };
+        const encPriv = encryptPrivatePayload(publicKey, priv);
+
+        const payload = {
+            ...encPriv,
+            erasureParams: { k: 2, n: 3, originalSize: bundleRes.originalSize },
+            fragmentMap: [
+                { nodeId: publicKey, shardIndex: 0, physicalId: 'shard_0' },
+                { nodeId: 'otherNode', shardIndex: 1, physicalId: 'shard_1' },
+                { nodeId: 'anotherNode', shardIndex: 2, physicalId: 'shard_2' }
+            ]
+        };
+
+        const sig = signData(JSON.stringify(payload), privateKey);
+        
+        const realEvents = new EventEmitter();
+
+        const mockNode = createMock<PeerNode>({ 
+            roles: [NodeRole.STORAGE], 
+            privateKey: privateKey, 
+            publicKey: publicKey,
+            events: realEvents as any,
+            peer: {
+                connectedPeers: [
+                    { 
+                        remotePublicKey: 'otherNode', 
+                        send: (msg: any) => {
+                            setTimeout(() => {
+                                realEvents.emit(`shard_retrieve:${msg.marketId}:shard_1`, { success: true, shardDataBase64: bundleRes.shards[1].toString('base64') })
+                            }, 5);
+                        } 
+                    },
+                    { 
+                        remotePublicKey: 'anotherNode', 
+                        send: (msg: any) => {
+                            setTimeout(() => {
+                                realEvents.emit(`shard_retrieve:${msg.marketId}:shard_2`, { success: false }) 
+                            }, 5);
+                        } 
+                    }
+                ]
+            } as any,
+            ledger: { 
+                collection: { 
+                    find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: payload, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) as any
+                } as any 
+            } as any 
+        });
+
+        mockNode.storageProvider = createMock<any>({
+            getEgressCostPerGB: () => 0.0,
+            getBlockReadStream: async (id: string) => {
+                if (id === 'shard_0') {
+                    const rs = new PassThrough();
+                    setTimeout(() => rs.end(bundleRes.shards[0]), 5);
+                    return { status: 'available', stream: rs };
+                }
+                return { status: 'not_found' };
+            }
+        });
+        const handler = new DownloadHandler(mockNode as PeerNode);
+
+        const req = createMock<Request>({ params: { hash: 'validh' } } as any);
+        const res = createRes();
+        let bodyPayload = '';
+        res.write = ((chunk: any) => { bodyPayload += chunk.toString(); return true; }) as any;
+        res.end = (() => { return res; }) as any;
+        res.on = ((_unusedEvt: string, _unusedCb: Function) => { return res; }) as any;
+        
+        // Trap pipe bounds dynamically resolving limits
+        await new Promise<void>((resolve) => {
+            handler.handle(req, res).then(() => {
+                setTimeout(() => resolve(undefined), 60);
+            });
+        });
+
+        assert.strictEqual(res.headers['Content-type'], 'application/zip');
+        assert.ok(bodyPayload.length > 20); // successfully decrypted zip binary map bounds
     });
 
     it('Returns continuous bundled block stream upon valid parameters', async () => {
@@ -64,18 +161,27 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const mockNode: any = { roles: [NodeRole.STORAGE], privateKey: privateKey, ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) } } };
-        mockNode.storageProvider = {};
-        mockNode.storageProvider.getBlockReadStream = async (_unusedId: string) => {
-            const rs = new PassThrough();
-            rs.end(fullZip);
-            return { status: 'available', stream: rs };
-        };
-        const handler = new DownloadHandler(mockNode);
+        const mockNode = createMock<PeerNode>({ 
+            roles: [NodeRole.STORAGE], 
+            privateKey: privateKey, 
+            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) as any } as any } as any 
+        });
+        mockNode.storageProvider = createMock<any>({
+            getEgressCostPerGB: () => 0.0,
+            getBlockReadStream: async (_unusedId: string) => {
+                const rs = new PassThrough();
+                rs.end(fullZip);
+                return { status: 'available', stream: rs };
+            }
+        });
+        const handler = new DownloadHandler(mockNode as PeerNode);
 
-        const req: any = { params: { hash: 'validh' } };
+        const req = createMock<Request>({ params: { hash: 'validh' } } as any);
         const res = createRes();
-        res.body = '';
+        let bodyPayload = '';
+        res.write = ((chunk: any) => { bodyPayload += chunk.toString(); return true; }) as any;
+        res.end = (() => { return res; }) as any;
+        res.on = ((evt: string, _unusedCb: Function) => { return res; }) as any;
 
         await handler.handle(req, res);
         // Wait for unzipping stream to pipe all data out
@@ -83,7 +189,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
 
         assert.strictEqual(res.headers['Content-type'], 'application/zip');
         // bodyPayload should contain compressed deflated bytes
-        assert.ok(res.body.length > 20);
+        assert.ok(bodyPayload.length > 20);
     });
 
     it('Intercepts active status tracking requests when statusOnly flag is flipped correctly cancelling full zip rendering', async () => {
@@ -95,17 +201,23 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
         let streamDestroyed = false;
-        const mockNode: any = { roles: [NodeRole.STORAGE], privateKey: privateKey, ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) } } };
-        mockNode.storageProvider = {};
-        mockNode.storageProvider.getBlockReadStream = async (_unusedId: string) => {
-            const rs = new PassThrough();
-            const origDestroy = rs.destroy.bind(rs);
-            rs.destroy = (err?: any) => { streamDestroyed = true; origDestroy(err); return rs; };
-            return { status: 'available', stream: rs };
-        };
-        const handler = new DownloadHandler(mockNode);
+        const mockNode = createMock<PeerNode>({ 
+            roles: [NodeRole.STORAGE], 
+            privateKey: privateKey, 
+            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) as any } as any } as any 
+        });
+        mockNode.storageProvider = createMock<any>({
+            getEgressCostPerGB: () => 0.0,
+            getBlockReadStream: async (_unusedId: string) => {
+                const rs = new PassThrough();
+                const origDestroy = rs.destroy.bind(rs);
+                rs.destroy = (err?: any) => { streamDestroyed = true; origDestroy(err); return rs; };
+                return { status: 'available', stream: rs };
+            }
+        });
+        const handler = new DownloadHandler(mockNode as PeerNode);
 
-        const req: any = { params: { hash: 'validh' }, query: { statusOnly: 'true' } };
+        const req = createMock<Request>({ params: { hash: 'validh' }, query: { statusOnly: 'true' } } as any);
         const res = createRes();
 
         await handler.handle(req, res);
@@ -121,12 +233,18 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const mockNode: any = { roles: [NodeRole.STORAGE], privateKey: privateKey, ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) } } };
-        mockNode.storageProvider = {};
-        mockNode.storageProvider.getBlockReadStream = async () => ({ status: 'not_found' });
-        const handler = new DownloadHandler(mockNode);
+        const mockNode = createMock<PeerNode>({ 
+            roles: [NodeRole.STORAGE], 
+            privateKey: privateKey, 
+            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) as any } as any } as any 
+        });
+        mockNode.storageProvider = createMock<any>({
+            getEgressCostPerGB: () => 0.0,
+            getBlockReadStream: async () => ({ status: 'not_found' })
+        });
+        const handler = new DownloadHandler(mockNode as PeerNode);
 
-        const req: any = { params: { hash: 'validh' } };
+        const req = createMock<Request>({ params: { hash: 'validh' } } as any);
         const res = createRes();
 
         await handler.handle(req, res);
@@ -145,16 +263,22 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const mockNode: any = { roles: [NodeRole.STORAGE], privateKey: privateKey, ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) } } };
-        mockNode.storageProvider = {};
-        mockNode.storageProvider.getBlockReadStream = async (_unusedId: string) => {
-            const rs = new PassThrough();
-            rs.end(Buffer.from('corrupt_aes_stream'));
-            return { status: 'available', stream: rs };
-        };
-        const handler = new DownloadHandler(mockNode);
+        const mockNode = createMock<PeerNode>({ 
+            roles: [NodeRole.STORAGE], 
+            privateKey: privateKey, 
+            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) as any } as any } as any 
+        });
+        mockNode.storageProvider = createMock<any>({
+            getEgressCostPerGB: () => 0.0,
+            getBlockReadStream: async (_unusedId: string) => {
+                const rs = new PassThrough();
+                rs.end(Buffer.from('corrupt_aes_stream'));
+                return { status: 'available', stream: rs };
+            }
+        });
+        const handler = new DownloadHandler(mockNode as PeerNode);
 
-        const req: any = { params: { hash: 'validh' } };
+        const req = createMock<Request>({ params: { hash: 'validh' } } as any);
         const res = createRes();
 
         await new Promise<void>((resolve) => {
@@ -166,11 +290,11 @@ describe('Backend: downloadHandler Unit Tests', () => {
     });
 
     it('Returns HTTP 500 on payload parsing logic failures', async () => {
-        const mockNode: any = { roles: [NodeRole.STORAGE], privateKey: 'PRIV' };
+        const mockNode = createMock<PeerNode>({ roles: [NodeRole.STORAGE], privateKey: 'PRIV' });
         Object.defineProperty(mockNode, 'ledger', { get: () => { throw new Error('Simulated null reference'); } });
-        const handler = new DownloadHandler(mockNode);
+        const handler = new DownloadHandler(mockNode as PeerNode);
 
-        const req: any = { params: { hash: 'validh' } };
+        const req = createMock<Request>({ params: { hash: 'validh' } } as any);
         const res = createRes();
 
         await handler.handle(req, res);
@@ -182,10 +306,14 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const encPriv = encryptPrivatePayload(publicKey, { physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] }); // Wrong structure bypasses decryption
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const mockNode: any = { roles: [NodeRole.STORAGE], privateKey: generateRSAKeyPair().privateKey, ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) } } };
-        const handler = new DownloadHandler(mockNode);
+        const mockNode = createMock<PeerNode>({ 
+            roles: [NodeRole.STORAGE], 
+            privateKey: generateRSAKeyPair().privateKey, 
+            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) as any } as any } as any 
+        });
+        const handler = new DownloadHandler(mockNode as PeerNode);
 
-        const req: any = { params: { hash: 'validh' } };
+        const req = createMock<Request>({ params: { hash: 'validh' } } as any);
         const res = createRes();
 
         await handler.handle(req, res);
@@ -204,19 +332,25 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const encPriv = encryptPrivatePayload(publicKey, priv);
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const mockNode: any = { roles: [NodeRole.STORAGE], privateKey: privateKey, ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) } } };
-        mockNode.storageProvider = {};
-        mockNode.storageProvider.getBlockReadStream = async (_unusedId: string) => {
-            const rs = new Readable({
-                read() {
-                    this.destroy(new Error('Disaster'));
-                }
-            });
-            return { status: 'available', stream: rs };
-        };
-        const handler = new DownloadHandler(mockNode);
+        const mockNode = createMock<PeerNode>({ 
+            roles: [NodeRole.STORAGE], 
+            privateKey: privateKey, 
+            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) as any } as any } as any 
+        });
+        mockNode.storageProvider = createMock<any>({
+            getEgressCostPerGB: () => 0.0,
+            getBlockReadStream: async (_unusedId: string) => {
+                const rs = new Readable({
+                    read() {
+                        this.destroy(new Error('Disaster'));
+                    }
+                });
+                return { status: 'available', stream: rs };
+            }
+        });
+        const handler = new DownloadHandler(mockNode as PeerNode);
 
-        const req: any = { params: { hash: 'validh' } };
+        const req = createMock<Request>({ params: { hash: 'validh' } } as any);
         const res = createRes();
 
         await new Promise<void>((resolve) => {

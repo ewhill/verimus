@@ -1,15 +1,116 @@
-import assert from 'node:assert';
+import * as assert from 'node:assert';
 import * as crypto from 'node:crypto';
+import { EventEmitter } from 'node:events';
 import { describe, it } from 'node:test';
 import { PassThrough } from 'stream';
 
+
+import { Request, Response } from 'express';
+
 import Bundler from '../../../bundler/Bundler';
 import { generateRSAKeyPair, signData, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
+import type PeerNode from '../../../peer_node/PeerNode';
+import { createMock, createRes } from '../../../test/utils/TestUtils';
 import { NodeRole } from '../../../types/NodeRole';
 import DownloadFileHandler from '../DownloadFileHandler';
 
 
 describe('Backend: downloadFileHandler Unit Tests', () => {
+
+    it('Returns unzipped file buffer resolving local and P2P Erasure Coded Shards via Reed-Solomon matrix', async () => {
+        const { publicKey, privateKey } = generateRSAKeyPair();
+        const bundler = new Bundler('./test_data');
+        const pt = new PassThrough();
+        const bufs: Buffer[] = [];
+        pt.on('data', (c: Buffer) => bufs.push(c));
+        const mockFile = { fieldname: 'file', originalname: 'file.txt', encoding: '7bit', mimetype: 'text/plain', size: 16, destination: '', filename: 'file.txt', path: '', buffer: Buffer.from('hello world here from erasure file mode'), stream: new PassThrough() };
+        
+        const bundleP = bundler.streamErasureBundle([mockFile] as Express.Multer.File[], 2, 3);
+        const bundleRes = (await bundleP)!;
+
+        const priv = { key: bundleRes.aesKey, iv: bundleRes.aesIv, authTag: bundleRes.authTag, files: bundleRes.files, physicalId: 'pid', location: { type: 'local' } };
+        const encPriv = encryptPrivatePayload(publicKey, priv);
+
+        const payload = {
+            ...encPriv,
+            erasureParams: { k: 2, n: 3, originalSize: bundleRes.originalSize },
+            fragmentMap: [
+                { nodeId: publicKey, shardIndex: 0, physicalId: 'shard_0' },
+                { nodeId: 'otherNode', shardIndex: 1, physicalId: 'shard_1' },
+                { nodeId: 'anotherNode', shardIndex: 2, physicalId: 'shard_2' }
+            ]
+        };
+
+        const sig = signData(JSON.stringify(payload), privateKey);
+        const realEvents = new EventEmitter();
+
+        const handlerOpts = { 
+            roles: [NodeRole.STORAGE], 
+            privateKey: privateKey, 
+            publicKey: publicKey,
+            events: realEvents as any,
+            peer: {
+                connectedPeers: [
+                    { 
+                        remotePublicKey: 'otherNode', 
+                        send: (msg: any) => {
+                            setTimeout(() => {
+                                realEvents.emit(`shard_retrieve:${msg.marketId}:shard_1`, { success: true, shardDataBase64: bundleRes.shards[1].toString('base64') })
+                            }, 5);
+                        } 
+                    },
+                    { 
+                        remotePublicKey: 'anotherNode', 
+                        send: (msg: any) => {
+                            setTimeout(() => {
+                                realEvents.emit(`shard_retrieve:${msg.marketId}:shard_2`, { success: false }) 
+                            }, 5);
+                        } 
+                    }
+                ]
+            } as any,
+            ledger: { 
+                collection: { 
+                    find: () => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: payload, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] }) 
+                } as any 
+            } as any,
+            storageProvider: {
+                getEgressCostPerGB: () => 0.0,
+                getBlockReadStream: async (id: string) => {
+                    if (id === 'shard_0') {
+                        const rs = new PassThrough();
+                        setTimeout(() => rs.end(bundleRes.shards[0]), 5);
+                        return { status: 'available', stream: rs };
+                    }
+                    return { status: 'not_found' };
+                }
+            } as any
+        };
+
+        const handler = new DownloadFileHandler(handlerOpts as PeerNode);
+
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } } as any);
+        const res = createRes();
+        let bodyPayload = '';
+        res.write = ((chunk: any) => { bodyPayload += chunk.toString(); return true; }) as any;
+        res.end = (() => { return res; }) as any;
+        
+        await new Promise<void>((resolve) => {
+            res.on = ((evt: string, _unusedCb: Function) => {
+                if (evt === 'finish' || evt === 'close') {
+                    setTimeout(() => { resolve(undefined); }, 30);
+                }
+                return res;
+            }) as any;
+
+            handler.handle(req, res).then(() => {
+                setTimeout(() => resolve(undefined), 60);
+            });
+        });
+
+        assert.strictEqual(res.headers['Content-disposition'], 'attachment; filename="file.txt"');
+        assert.ok(bodyPayload.includes('hello world'));
+    });
 
     it('Returns HTTP 404 when requesting missing block hashes', async () => {
         const handlerOpts = {
@@ -20,14 +121,14 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req: any = { params: { hash: 'nonexistent', filename: 'file.txt' } };
+        const req = createMock<Request>({ params: { hash: 'nonexistent', filename: 'file.txt' } as any });
         let statusSet = 0;
-        let bodyPayload: any = null;
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { bodyPayload = b; return res; },
+        let bodyPayload: unknown = null;
+        const res = createMock<Response>({
+            status: function (s: number) { statusSet = s; return this as Response; },
+            send: function (b: unknown) { bodyPayload = b; return this as Response; },
             headersSent: false
-        };
+        });
 
         await handler.handle(req, res);
         assert.strictEqual(statusSet, 404);
@@ -43,13 +144,13 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req: any = { params: { hash: 'nonexistent', filename: ['file.txt', 'other.txt'] } };
+        const req = createMock<Request>({ params: { hash: 'nonexistent', filename: ['file.txt', 'other.txt'] } as any });
         let statusSet = 0;
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: () => res, on: () => res,
+        const res = createMock<Response>({
+            status: function (s: number) { statusSet = s; return this as Response; },
+            send: function () { return this as Response; }, on: function () { return this as Response; },
             headersSent: false
-        };
+        });
 
         await handler.handle(req, res);
         assert.strictEqual(statusSet, 404);
@@ -66,14 +167,14 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } as any });
         let statusSet = 0;
-        let bodyPayload: any = null;
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { bodyPayload = b; return res; },
+        let bodyPayload: unknown = null;
+        const res = createMock<Response>({
+            status: function (s: number) { statusSet = s; return this as Response; },
+            send: function (b: unknown) { bodyPayload = b; return this as Response; },
             headersSent: false
-        };
+        });
 
         await handler.handle(req, res);
         assert.strictEqual(statusSet, 401);
@@ -115,32 +216,32 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } as any });
         // let _statusSet = 0;
         let bodyPayload: string = '';
-        const res: any = {
-            status: (_unusedS: number) => { return res; },
-            send: (b: any) => { bodyPayload += b; return res; },
-            setHeader: () => { },
-            write: (chunk: any) => { bodyPayload += chunk.toString(); },
-            end: () => { },
+        const res = createMock<Response>({
+            status: function (_unusedS: number) { return this as Response; },
+            send: function (b: unknown) { bodyPayload += b; return this as Response; },
+            setHeader: function (_unusedN: string, _unusedV: any) { return this as Response; },
+            write: function (chunk: any, _unusedEncoding?: any, _unusedCb?: any) { bodyPayload += chunk.toString(); return true; },
+            end: function (_unusedC?: any, _unusedE?: any, _unusedCb?: any) { return this as Response; },
             headersSent: false
-        };
+        });
 
         await new Promise<void>((resolve) => {
             const originalWrite = res.write;
-            res.write = (chunk: any) => {
-                originalWrite.call(res, chunk);
-            };
+            res.write = ((chunk: unknown, encoding?: BufferEncoding, cb?: any) => {
+                return (originalWrite as Function).call(res, chunk, encoding, cb) as boolean;
+            }) as any;
             // Pipe hook
-            res.once = () => { };
-            res.emit = () => { };
-            res.on = (evt: string, _unusedCb: Function) => {
+            res.once = (() => { }) as any;
+            res.emit = (() => { }) as any;
+            res.on = ((evt: string, _unusedCb: Function) => {
                 if (evt === 'finish' || evt === 'close') {
                     setTimeout(() => { resolve(undefined); }, 50);
                 }
                 return res;
-            };
+            }) as any;
 
             handler.handle(req, res).then(() => {
                 // Let the stream end creatively nicely expertly implicitly smartly realistically realistically
@@ -178,14 +279,14 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req: any = { params: { hash: 'validh', filename: 'file.txt' }, query: { statusOnly: 'true' } };
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' }, query: { statusOnly: 'true' } } as any);
         let statusSet = 0;
         let bodyPayload: string = '';
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { bodyPayload = b; return res; },
-            setHeader: () => { }, write: () => { }, end: () => { }, headersSent: false
-        };
+        const res = createMock<Response>({
+            status: function (s: number) { statusSet = s; return this as Response; },
+            send: function (b: unknown) { bodyPayload = b as string; return this as Response; },
+            setHeader: function (_unusedN: string, _unusedV: any) { return this as Response; }, write: function (_unusedChunk: any, _unusedEncoding?: any, _unusedCb?: any) { return true; }, end: function (_unusedC?: any, _unusedE?: any, _unusedCb?: any) { return this as Response; }, headersSent: false
+        });
 
         await handler.handle(req, res);
 
@@ -226,17 +327,17 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req: any = { params: { hash: 'validh', filename: 'MISSING_FILE.txt' } };
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'MISSING_FILE.txt' } } as any);
         let statusSet = 0;
         let bodyPayload: string = '';
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { bodyPayload += b; return res; },
-            setHeader: () => { }, write: () => { }, end: () => { bodyPayload += 'ended'; },
+        const res = createMock<Response>({
+            status: function (s: number) { statusSet = s; return this as Response; },
+            send: function (b: unknown) { bodyPayload += b; return this as Response; },
+            setHeader: function (_unusedN: string, _unusedV: any) { return this as Response; }, write: function (_unusedChunk: any, _unusedEncoding?: any, _unusedCb?: any) { return true; }, end: function (_unusedC?: any, _unusedE?: any, _unusedCb?: any) { bodyPayload += 'ended'; return this as Response; },
             headersSent: false
-        };
+        });
 
-        res.once = () => { }; res.emit = () => { }; res.on = () => res;
+        res.once = (() => { }) as any; res.emit = (() => { }) as any; res.on = (() => res) as any;
         await new Promise<void>((resolve) => {
             handler.handle(req, res).then(() => setTimeout(resolve, 100));
         });
@@ -272,17 +373,17 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } } as any);
         let statusSet = 0;
         let bodyPayload: string = '';
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { bodyPayload += b; return res; },
-            setHeader: () => { }, write: () => { }, end: () => { },
+        const res = createMock<Response>({
+            status: function (s: number) { statusSet = s; return this as Response; },
+            send: function (b: unknown) { bodyPayload += b; return this as Response; },
+            setHeader: function (_unusedN: string, _unusedV: any) { return this as Response; }, write: function (_unusedChunk: any, _unusedEncoding?: any, _unusedCb?: any) { return true; }, end: function (_unusedC?: any, _unusedE?: any, _unusedCb?: any) { return this as Response; },
             headersSent: false
-        };
+        });
 
-        res.once = () => { }; res.emit = () => { }; res.on = () => res;
+        res.once = (() => { }) as any; res.emit = (() => { }) as any; res.on = (() => res) as any;
         await new Promise<void>((resolve) => {
             handler.handle(req, res).then(() => setTimeout(resolve, 100));
         });
@@ -300,13 +401,13 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } } as any);
         let statusSet = 0;
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (_unusedB: any) => { return res; }, on: () => res,
+        const res = createMock<Response>({
+            status: function (s: number) { statusSet = s; return this as Response; },
+            send: function (_unusedB: unknown) { return this as Response; }, on: function () { return this as Response; },
             headersSent: false
-        };
+        });
 
         await handler.handle(req, res);
         assert.strictEqual(statusSet, 500);
@@ -322,12 +423,12 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } } as any);
         // let _statusSet = 0;
-        const res: any = {
-            status: (_unusedS: number) => { return res; },
-            send: () => { return res; }, on: () => res,
-        };
+        const res = createMock<Response>({
+            status: function (_unusedS: number) { return this as Response; },
+            send: function () { return this as Response; }, on: function () { return this as Response; },
+        });
 
         await handler.handle(req, res);
     });
@@ -346,12 +447,12 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } } as any);
         let statusSet = 0; let message = '';
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { message = b; return res; }, on: () => res,
-        };
+        const res = createMock<Response>({
+            status: function (s: number) { statusSet = s; return this as Response; },
+            send: function (b: unknown) { message = b as string; return this as Response; }, on: function () { return this as Response; },
+        });
 
         await handler.handle(req, res);
         assert.strictEqual(statusSet, 401);
@@ -377,12 +478,12 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req: any = { params: { hash: 'validh', filename: 'file.txt' } };
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } } as any);
         let statusSet = 0; let message = '';
-        const res: any = {
-            status: (s: number) => { statusSet = s; return res; },
-            send: (b: any) => { message = b; return res; }, on: () => res,
-        };
+        const res = createMock<Response>({
+            status: function (s: number) { statusSet = s; return this as Response; },
+            send: function (b: unknown) { message = b as string; return this as Response; }, on: function () { return this as Response; },
+        });
 
         await handler.handle(req, res);
         assert.strictEqual(statusSet, 404);
@@ -420,7 +521,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         const res: any = {
             status: (s: number) => { statusSet = s; return res; },
             send: (b: any) => { message = b; return res; },
-            setHeader: () => { }, write: () => { }, end: () => { },
+            setHeader: function (_unusedN: string, _unusedV: any) { return this as Response; }, write: function (_unusedChunk: any, _unusedEncoding?: any, _unusedCb?: any) { return true; }, end: function (_unusedC?: any, _unusedE?: any, _unusedCb?: any) { return this as Response; },
             headersSent: false
         };
 
@@ -469,11 +570,11 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         const res: any = {
             status: (_unusedS: number) => { return res; },
             send: (_unusedB: any) => { return res; },
-            setHeader: () => { }, write: () => { }, end: () => { bodyPayload += 'ended'; },
+            setHeader: function (_unusedN: string, _unusedV: any) { return this as Response; }, write: function (_unusedChunk: any, _unusedEncoding?: any, _unusedCb?: any) { return true; }, end: function (_unusedC?: any, _unusedE?: any, _unusedCb?: any) { bodyPayload += 'ended'; return this as Response; },
             headersSent: true // Emulate headers already sent!
         };
 
-        res.once = () => { }; res.emit = () => { }; res.on = () => res;
+        res.once = (() => { }) as any; res.emit = (() => { }) as any; res.on = (() => res) as any;
         await new Promise<void>((resolve) => {
             handler.handle(req, res).then(() => setTimeout(resolve, 50));
         });
