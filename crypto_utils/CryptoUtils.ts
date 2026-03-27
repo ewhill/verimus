@@ -156,6 +156,74 @@ function decryptPrivatePayload(privateKey: string, privateObj: { encryptedPayloa
     const decryptedStr = decryptAES(encryptedPayloadBase64, aesKeyHex, aesIvHex, authTagHex);
     return JSON.parse(decryptedStr);
 }
+/**
+ * Builds a cryptographic Merkle Tree mapping explicit chunk leaves mapping up toward a deterministic node root.
+ */
+function buildMerkleTree(leaves: (Buffer | string)[]): { tree: string[][]; root: string } {
+    if (leaves.length === 0) return { tree: [], root: '' };
+
+    const tree: string[][] = [];
+    let currentLayer = leaves.map(l => hashData(l));
+    tree.push(currentLayer);
+
+    while (currentLayer.length > 1) {
+        const nextLayer: string[] = [];
+        for (let i = 0; i < currentLayer.length; i += 2) {
+            const left = currentLayer[i];
+            const right = i + 1 < currentLayer.length ? currentLayer[i + 1] : left;
+            nextLayer.push(hashData(left + right));
+        }
+        tree.push(nextLayer);
+        currentLayer = nextLayer;
+    }
+
+    return { tree, root: currentLayer[0] };
+}
+
+/**
+ * Maps the sibling cryptographic boundaries mathematically pointing any physical chunk directly toward the root.
+ */
+function getMerkleProof(tree: string[][], leafIndex: number): string[] {
+    const proof: string[] = [];
+    let currentIndex = leafIndex;
+
+    for (let level = 0; level < tree.length - 1; level++) {
+        const layer = tree[level];
+        const isLeftOrEven = currentIndex % 2 === 0;
+        
+        if (isLeftOrEven) {
+            const rightSiblingIndex = currentIndex + 1 < layer.length ? currentIndex + 1 : currentIndex;
+            proof.push(layer[rightSiblingIndex]);
+        } else {
+            proof.push(layer[currentIndex - 1]);
+        }
+        
+        currentIndex = Math.floor(currentIndex / 2);
+    }
+
+    return proof;
+}
+
+/**
+ * Validates a returned physical data byte array against an escalating root boundary without mapping the full tree locally.
+ */
+function verifyMerkleProof(leaf: Buffer | string, proof: string[], root: string, leafIndex: number): boolean {
+    if (!root) return false;
+    let currentHash = hashData(leaf);
+    let currentIndex = leafIndex;
+
+    for (const siblingHash of proof) {
+        if (currentIndex % 2 === 0) {
+            currentHash = hashData(currentHash + siblingHash);
+        } else {
+            currentHash = hashData(siblingHash + currentHash);
+        }
+        currentIndex = Math.floor(currentIndex / 2);
+    }
+    
+    return currentHash === root;
+}
+
 export {
     generateRSAKeyPair,
     signData,
@@ -168,5 +236,8 @@ export {
     encryptWithRSA,
     decryptWithRSA,
     encryptPrivatePayload,
-    decryptPrivatePayload
+    decryptPrivatePayload,
+    buildMerkleTree,
+    getMerkleProof,
+    verifyMerkleProof
 };
