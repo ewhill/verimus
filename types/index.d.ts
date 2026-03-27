@@ -60,6 +60,18 @@ export interface StorageContractPayload {
     merkleRoots?: string[]; // Phase 4b - Constant size 64-character hash resolving entire physical matrix dynamically
 }
 
+export interface StakingContractPayload {
+    operatorPublicKey: string;
+    collateralAmount: number;
+    minEpochTimelineDays: number;
+}
+
+export interface SlashingPayload {
+    penalizedPublicKey: string;
+    evidenceSignature: string;
+    burntAmount: number;
+}
+
 export interface BlockPrivateFile {
     path: string;
     contentHash: string;
@@ -145,6 +157,16 @@ export interface StorageContractBlock extends BaseBlock {
     payload: StorageContractPayload; // The encrypted payload mapped
 }
 
-export type Block = TransactionBlock | StorageContractBlock;
+export interface StakingContractBlock extends BaseBlock {
+    type: typeof BLOCK_TYPES.STAKING_CONTRACT;
+    payload: StakingContractPayload;
+}
+
+export interface SlashingTransactionBlock extends BaseBlock {
+    type: typeof BLOCK_TYPES.SLASHING_TRANSACTION;
+    payload: SlashingPayload;
+}
+
+export type Block = TransactionBlock | StorageContractBlock | StakingContractBlock | SlashingTransactionBlock;
 
 declare module '@marsaud/smb2';

@@ -1,7 +1,7 @@
 import { BLOCK_TYPES } from '../constants';
 import type Ledger from '../ledger/Ledger';
 import logger from '../logger/Logger';
-import type { TransactionBlock, TransactionPayload, StorageContractBlock, StorageContractPayload } from '../types';
+import type { TransactionBlock, TransactionPayload, StorageContractBlock, StorageContractPayload, StakingContractBlock, SlashingTransactionBlock } from '../types';
 
 
 export default class WalletManager {
@@ -57,6 +57,30 @@ export default class WalletManager {
             for (const contract of activeContracts) {
                 if (contract.payload?.remainingEgressEscrow) {
                     balance -= contract.payload.remainingEgressEscrow;
+                }
+            }
+
+            // Phase 5b - Staking Collateral Escrows
+            const stakingLocks = await this.ledger.collection.find({
+                type: BLOCK_TYPES.STAKING_CONTRACT,
+                'payload.operatorPublicKey': peerId
+            }).toArray() as StakingContractBlock[];
+
+            for (const freeze of stakingLocks) {
+                if (freeze.payload?.collateralAmount) {
+                    balance -= freeze.payload.collateralAmount;
+                }
+            }
+
+            // Phase 5b - Permanent Slashing Confiscation
+            const slashes = await this.ledger.collection.find({
+                type: BLOCK_TYPES.SLASHING_TRANSACTION,
+                'payload.penalizedPublicKey': peerId
+            }).toArray() as SlashingTransactionBlock[];
+
+            for (const slash of slashes) {
+                if (slash.payload?.burntAmount) {
+                    balance -= slash.payload.burntAmount; // permanent removal from liquid wealth
                 }
             }
 

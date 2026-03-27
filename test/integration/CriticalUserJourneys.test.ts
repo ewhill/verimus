@@ -32,9 +32,8 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
 
             await node.init();
             
-            // Override mocked components AFTER initialization to ensure tests don't leak external discovery attempts
-            
-            mock.method(cryptoUtils, 'verifyMerkleProof', () => true);
+            // Create a local map tracking the physical Shard limits for valid mathematical verification 
+            const globalIntegrationShards: { [marketReqId: string]: Buffer } = {};
             
             if (node.peer) {
                 node.peer.broadcast = async (msg: any) => {
@@ -55,9 +54,31 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             node.consensusEngine.node.syncEngine.orchestrateStorageMarket = async (marketReqId: string) => {
                 return [{ peerId: node.publicKey, connection: {
                     send: (msg: any) => {
+                        if (msg.constructor && msg.constructor.name === 'VerifyHandoffRequestMessage') {
+                            setTimeout(() => {
+                                const fullShardBuffer = globalIntegrationShards[msg.body.physicalId];
+                                const CHUNK_SIZE = 64 * 1024;
+                                const chunks: Buffer[] = [];
+                                for (let offset = 0; offset < fullShardBuffer.length; offset += CHUNK_SIZE) {
+                                    chunks.push(fullShardBuffer.subarray(offset, offset + CHUNK_SIZE));
+                                }
+                                
+                                const { tree } = cryptoUtils.buildMerkleTree(chunks);
+                                const siblingPath = cryptoUtils.getMerkleProof(tree, msg.body.targetChunkIndex);
+                                
+                                node.events.emit(`handoff_response:${marketReqId}:${msg.body.physicalId}`, {
+                                    success: true,
+                                    merkleSiblings: siblingPath,
+                                    chunkDataBase64: chunks[msg.body.targetChunkIndex].toString('base64')
+                                });
+                            }, 5);
+                            return;
+                        }
+                        
                         // Physically store mocking the remote node reception natively mapping bounds
                         const buf = Buffer.from(msg.body.shardDataBase64, 'base64');
                         const blockResult = node.storageProvider!.createBlockStream();
+                        globalIntegrationShards[blockResult.physicalBlockId] = buf;
                         blockResult.writeStream.write(buf);
                         blockResult.writeStream.end();
                         

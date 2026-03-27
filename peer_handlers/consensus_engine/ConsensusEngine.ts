@@ -25,6 +25,7 @@ class ConsensusEngine {
     committing: boolean;
     proposalTimeout: NodeJS.Timeout | null;
     walletManager: WalletManager;
+    private auditedIntervals: Map<string, number> = new Map();
 
     constructor(peerNode: PeerNode) {
         this.node = peerNode;
@@ -91,12 +92,22 @@ class ConsensusEngine {
             const hasFunds = await this.walletManager.verifyFunds(txPayload.senderId, txPayload.amount);
             if (!hasFunds && txPayload.senderId !== 'SYSTEM') {
                 logger.warn(`[Peer ${this.node.port}] Rejected Transaction: Insufficient Funds from ${txPayload.senderId}`);
-                await this.node.reputationManager.penalizeMajor(block.publicKey, "Insufficient Funds Double Spend");
+                if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(block.publicKey, "Insufficient Funds Double Spend");
                 return;
             }
         }
 
-        await this.node.reputationManager.rewardHonestProposal(block.publicKey);
+        if (block.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
+            const slashPayload = block.payload as any;
+            if (!slashPayload.evidenceSignature || !slashPayload.penalizedPublicKey || !slashPayload.burntAmount) {
+                logger.warn(`[Peer ${this.node.port}] Rejected Slashing: Forgery of evidence signature bounds`);
+                if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.publicKey, "Slashing Forgery");
+                return;
+            }
+            // Trust network participants auditing mathematically to map slashing bounds internally
+        }
+
+        if (this.node.reputationManager) await this.node.reputationManager.rewardHonestProposal(block.publicKey);
 
         if (!this.mempool.pendingBlocks.has(blockId)) {
             this.mempool.pendingBlocks.set(blockId, {
@@ -376,18 +387,78 @@ class ConsensusEngine {
             this.committing = false;
         }
     }
+    private computeXORDistance(hashA: string, hashB: string): string {
+        let result = '';
+        for (let i = 0; i < hashA.length; i++) {
+            const hexA = parseInt(hashA[i], 16);
+            const hexB = parseInt(hashB[i], 16);
+            result += (hexA ^ hexB).toString(16);
+        }
+        return result;
+    }
+
+    private isSmallerDistance(hexA: string, hexB: string): boolean {
+        if (hexA.length !== hexB.length) return hexA.length < hexB.length;
+        for (let i = 0; i < hexA.length; i++) {
+            const a = parseInt(hexA[i], 16);
+            const b = parseInt(hexB[i], 16);
+            if (a !== b) return a < b;
+        }
+        return false;
+    }
+
+    computeDeterministicAuditor(contractId: string, latestBlockHash: string, intervalBucket: number): boolean {
+        const challengeString = `${contractId}-${latestBlockHash}-${intervalBucket}`;
+        const challengeHashHex = crypto.createHash('sha256').update(challengeString).digest('hex');
+        
+        let closestId = this.node.publicKey;
+        const selfHashHex = crypto.createHash('sha256').update(this.node.publicKey).digest('hex');
+        let minDistance = this.computeXORDistance(challengeHashHex, selfHashHex);
+
+        if (this.node.peer && this.node.peer.peers) {
+            for (const p of this.node.peer.peers) {
+                const pubKey = p.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
+                if (pubKey) {
+                    const peerHashHex = crypto.createHash('sha256').update(pubKey).digest('hex');
+                    const distance = this.computeXORDistance(challengeHashHex, peerHashHex);
+                    if (this.isSmallerDistance(distance, minDistance)) {
+                        minDistance = distance;
+                        closestId = pubKey;
+                    }
+                }
+            }
+        }
+
+        return closestId === this.node.publicKey;
+    }
+
     async runGlobalAudit() {
         if (this.node.syncEngine && this.node.syncEngine.isSyncing) return;
         
-        const AUDIT_PROBABILITY = 0.2;
-        if (Math.random() > AUDIT_PROBABILITY) return;
+        const latestBlock = await this.node.ledger.getLatestBlock();
+        const latestBlockHash = latestBlock ? latestBlock.hash! : 'genesis_hash';
         
-        logger.info(`[Peer ${this.node.port}] Node elected as Auditor. Initiating global Proof of Spacetime audits...`);
+        const intervalBucket = Math.floor(Date.now() / (1000 * 60 * 60)); // Hourly buckets securely tracking bounds
 
         const contracts = await this.node.ledger.collection!.find({ type: BLOCK_TYPES.STORAGE_CONTRACT }).sort({ 'metadata.timestamp': -1 }).limit(10).toArray();
         if (!contracts.length) return;
 
+        let hasAudited = false;
+
         for (const contract of contracts) {
+            const trackKey = `${contract._id!.toString()}-${intervalBucket}`;
+            if (this.auditedIntervals.has(trackKey)) continue;
+
+            const isElected = this.computeDeterministicAuditor(contract._id!.toString(), latestBlockHash, intervalBucket);
+            if (!isElected) continue;
+
+            this.auditedIntervals.set(trackKey, intervalBucket);
+            
+            if (!hasAudited) {
+                logger.info(`[Peer ${this.node.port}] Node deterministically elected as Auditor. Initiating mathematical Proof of Spacetime intervals...`);
+                hasAudited = true;
+            }
+
             const contractPayload = contract.payload as StorageContractPayload;
             if (!contractPayload.fragmentMap || !contractPayload.merkleRoots) continue;
 
@@ -401,7 +472,10 @@ class ConsensusEngine {
                 const paddedSize = Math.ceil(contractPayload.erasureParams!.originalSize / K) * K;
                 const shardSize = paddedSize / K;
                 const totalChunks = Math.ceil(shardSize / CHUNK_SIZE);
-                const targetIndex = totalChunks > 0 ? Math.floor(Math.random() * totalChunks) : 0;
+                
+                const challengeHashHex = crypto.createHash('sha256').update(`${contract._id!.toString()}-${latestBlockHash}-${intervalBucket}`).digest('hex');
+                const numericHash = parseInt(challengeHashHex.slice(0, 8), 16);
+                const targetIndex = totalChunks > 0 ? numericHash % totalChunks : 0;
 
                 const challengeMsg = new MerkleProofChallengeRequestMessage({
                     contractId: contract._id!.toString(), 
@@ -409,11 +483,33 @@ class ConsensusEngine {
                     chunkIndex: targetIndex
                 });
                 
+                const executeSlashing = async (nodeId: string, reason: string) => {
+                    const slashPayload = {
+                        penalizedPublicKey: nodeId,
+                        evidenceSignature: crypto.createHash('sha256').update(JSON.stringify(challengeMsg) + reason).digest('hex'),
+                        burntAmount: 50000
+                    };
+                    try {
+                        const signatureStr = signData(JSON.stringify(slashPayload), this.node.privateKey) as string;
+                        const pendingBlock: Block = {
+                            metadata: { index: -1, timestamp: Date.now() },
+                            type: BLOCK_TYPES.SLASHING_TRANSACTION,
+                            payload: slashPayload,
+                            publicKey: this.node.publicKey,
+                            signature: signatureStr
+                        };
+                        await this.handlePendingBlock(pendingBlock, { peerAddress: '0.0.0.0', send: () => {} } as any, Date.now());
+                    } catch (e: any) {
+                        logger.warn(`[Peer ${this.node.port}] Failed to execute slashing block: ${e.message}`);
+                    }
+                };
+
                 const auditId = contract._id!.toString();
-                const timeout = setTimeout(() => {
+                const timeout = setTimeout(async () => {
                     this.node.events.removeAllListeners(`merkle_audit_response:${auditId}`);
-                    this.node.reputationManager.penalizeMajor(fragment.nodeId, "Audit Timeout Offense");
+                    if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(fragment.nodeId, "Audit Timeout Offense");
                     logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof resolving logical blocks! Penalty mapped.`);
+                    await executeSlashing(fragment.nodeId, "TIMEOUT");
                 }, 5000);
 
                 this.node.events.once(`merkle_audit_response:${auditId}`, async (resMsg: any) => {
@@ -428,11 +524,42 @@ class ConsensusEngine {
                     }
                     
                     if (!isValid) {
-                        await this.node.reputationManager.penalizeCritical(fragment.nodeId, "Proof of Spacetime Forgery");
+                        if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(fragment.nodeId, "Proof of Spacetime Forgery");
                         logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} explicitly failed mathematical audit! Banned!`);
+                        await executeSlashing(fragment.nodeId, "FORGERY_INVALID_BOUNDS");
                     } else {
-                        await this.node.reputationManager.rewardHonestProposal(fragment.nodeId);
+                        if (this.node.reputationManager) await this.node.reputationManager.rewardHonestProposal(fragment.nodeId);
                         logger.info(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} perfectly mapped rigorous spacetime boundaries!`);
+                        
+                        // Phase 5 Financial Execution 
+                        const reward = WalletManager.calculateSystemReward(Date.now(), GENESIS_TIMESTAMP);
+                        const hostReward = reward * 0.9;
+                        const auditorReward = reward * 0.1;
+                        
+                        try {
+                            const [hostTx, auditorTx] = await Promise.all([
+                                this.walletManager.allocateFunds('SYSTEM', fragment.nodeId, hostReward, 'SYSTEM_SIG'),
+                                this.walletManager.allocateFunds('SYSTEM', this.node.publicKey, auditorReward, 'SYSTEM_SIG')
+                            ]);
+                            
+                            const mintTxBlock = async (txPayload: any) => {
+                                if (!txPayload) return;
+                                const sig = signData(JSON.stringify(txPayload), this.node.privateKey) as string;
+                                const b: Block = {
+                                    metadata: { index: -1, timestamp: Date.now() },
+                                    type: BLOCK_TYPES.TRANSACTION,
+                                    payload: txPayload,
+                                    publicKey: this.node.publicKey,
+                                    signature: sig
+                                };
+                                await this.handlePendingBlock(b, { peerAddress: '0.0.0.0', send: () => {} } as any, Date.now());
+                            };
+
+                            await mintTxBlock(hostTx);
+                            await mintTxBlock(auditorTx);
+                        } catch (e: any) {
+                            logger.error(`Failed to formulate compensation bounds: ${e.message}`);
+                        }
                     }
                 });
 

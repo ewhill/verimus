@@ -2,7 +2,7 @@ import fs from 'fs';
 import http from 'http';
 import assert from 'node:assert';
 import type { AddressInfo } from 'node:net';
-import { describe, it, before, after, mock } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import os from 'os';
 import path from 'path';
 import { Readable } from 'stream';
@@ -12,9 +12,9 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import setupExpressApp from '../../api_server/ApiServer';
 import Bundler from '../../bundler/Bundler';
+import * as cryptoUtils from '../../crypto_utils/CryptoUtils';
 import PeerNode from '../../peer_node/PeerNode';
 import BaseProvider, { GetBlockReadStreamResult } from '../../storage_providers/base_provider/BaseProvider';
-import * as cryptoUtils from '../../crypto_utils/CryptoUtils';
 
 class NullStorageProvider extends BaseProvider {
     createBlockStream(): { physicalBlockId: string, writeStream: NodeJS.WritableStream } {
@@ -82,8 +82,6 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
             close: async () => { }
         };
         Object.assign(node, { peer: mockPeer });
-        
-        mock.method(cryptoUtils, 'verifyMerkleProof', () => true);
 
         node.consensusEngine.handlePendingBlock = async () => { };
 
@@ -92,14 +90,43 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
 
         // Pass integration escrows mapping stream limits bypassing real topologies
         node.consensusEngine.walletManager.verifyFunds = async () => true;
+        const storedShards = new Map<string, { tree: string[][], chunks: Buffer[] }>();
+
         node.consensusEngine.node.syncEngine.orchestrateStorageMarket = async (marketReqId: string) => {
             return [{
                 peerId: node.publicKey, connection: {
                     send: (msg: any) => {
+                        if (!msg.body.shardDataBase64) {
+                            const physicalId = msg.body.physicalId;
+                            const targetIdx = msg.body.targetChunkIndex;
+                            const shardData = storedShards.get(physicalId)!;
+                            const siblings = cryptoUtils.getMerkleProof(shardData.tree, targetIdx);
+                            const chunkBase64 = shardData.chunks[targetIdx].toString('base64');
+
+                            setTimeout(() => {
+                                node.events.emit(`handoff_response:${msg.body.marketId}:${msg.body.physicalId}`, {
+                                    success: true,
+                                    merkleSiblings: siblings,
+                                    chunkDataBase64: chunkBase64
+                                });
+                            }, 5);
+                            return;
+                        }
+
                         const buf = Buffer.from(msg.body.shardDataBase64, 'base64');
+                        
+                        const CHUNK_SIZE = 64 * 1024;
+                        const chunks: Buffer[] = [];
+                        for (let i = 0; i < buf.length; i += CHUNK_SIZE) {
+                            chunks.push(buf.subarray(i, i + CHUNK_SIZE));
+                        }
+                        const { tree } = cryptoUtils.buildMerkleTree(chunks);
+
                         const blockResult = node.storageProvider!.createBlockStream();
                         blockResult.writeStream.write(buf);
                         blockResult.writeStream.end();
+
+                        storedShards.set(blockResult.physicalBlockId, { tree, chunks });
 
                         setTimeout(() => {
                             node.events.emit(`shard_response:${marketReqId}:${msg.body.shardIndex}`, { success: true, physicalId: blockResult.physicalBlockId });
