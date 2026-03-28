@@ -9,7 +9,7 @@ import { Request, Response } from 'express';
 
 import Bundler from '../../../bundler/Bundler';
 import { generateRSAKeyPair, signData, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
-import type PeerNode from '../../../peer_node/PeerNode';
+import type { Peer } from '../../../p2p';
 import { createMock } from '../../../test/utils/TestUtils';
 import { NodeRole } from '../../../types/NodeRole';
 import DownloadFileHandler from '../DownloadFileHandler';
@@ -48,8 +48,8 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
             publicKey: publicKey,
-            events: realEvents as any,
-            peer: {
+            events: realEvents,
+            peer: createMock<Peer>({
                 connectedPeers: [
                     { 
                         remotePublicKey: 'otherNode', 
@@ -68,12 +68,10 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
                         } 
                     }
                 ]
-            } as any,
-            ledger: { 
-                collection: { 
-                    find: () => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: payload, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] }) 
-                } as any 
-            } as any,
+            }),
+            // @ts-ignore
+            ledger: { collection: { find: () => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: payload, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] }) } },
+            // @ts-ignore
             storageProvider: {
                 getEgressCostPerGB: () => 0.0,
                 getBlockReadStream: async (id: string) => {
@@ -84,12 +82,13 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
                     }
                     return { status: 'not_found' };
                 }
-            } as any
+            }
         };
 
-        const handler = new DownloadFileHandler(handlerOpts as PeerNode);
+        // @ts-ignore
+        const handler = new DownloadFileHandler(handlerOpts);
 
-        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } } as any);
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } });
         const headers: Record<string, string> = {};
         const res = createMock<Response>({
             status: function (_unusedS: number) { return this as Response; },
@@ -102,16 +101,19 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
             on: function () { return this as Response; }
         });
         let bodyPayload = '';
-        res.write = ((chunk: any) => { bodyPayload += chunk.toString(); return true; }) as any;
-        res.end = (() => { return res; }) as any;
+        // @ts-ignore
+        res.write = (chunk: Buffer | string) => { bodyPayload += chunk.toString(); return true; };
+        // @ts-ignore
+        res.end = () => { return res; };
         
         await new Promise<void>((resolve) => {
-            res.on = ((evt: string, _unusedCb: Function) => {
+            // @ts-ignore
+            res.on = (evt: string, _unusedCb: Function) => {
                 if (evt === 'finish' || evt === 'close') {
                     setTimeout(() => { resolve(undefined); }, 30);
                 }
                 return res;
-            }) as any;
+            };
 
             handler.handle(req, res).then(() => {
                 setTimeout(() => resolve(undefined), 60);
@@ -131,7 +133,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req = createMock<Request>({ params: { hash: 'nonexistent', filename: 'file.txt' } as any });
+        const req = createMock<Request>({ params: { hash: 'nonexistent', filename: 'file.txt' } });
         let statusSet = 0;
         let bodyPayload: unknown = null;
         const res = createMock<Response>({
@@ -154,7 +156,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req = createMock<Request>({ params: { hash: 'nonexistent', filename: ['file.txt', 'other.txt'] } as any });
+        const req = createMock<Request>({ params: { hash: 'nonexistent', filename: ['file.txt', 'other.txt'] } });
         let statusSet = 0;
         const res = createMock<Response>({
             status: function (s: number) { statusSet = s; return this as Response; },
@@ -177,7 +179,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } as any });
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } });
         let statusSet = 0;
         let bodyPayload: unknown = null;
         const res = createMock<Response>({
@@ -226,7 +228,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } as any });
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } });
         // let _statusSet = 0;
         let bodyPayload: string = '';
         const res = createMock<Response>({
@@ -240,18 +242,22 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
 
         await new Promise<void>((resolve) => {
             const originalWrite = res.write;
-            res.write = ((chunk: unknown, encoding?: BufferEncoding, cb?: any) => {
+            // @ts-ignore
+            res.write = (chunk: unknown, encoding?: BufferEncoding, cb?: any) => {
                 return (originalWrite as Function).call(res, chunk, encoding, cb) as boolean;
-            }) as any;
+            };
             // Pipe hook
-            res.once = (() => { }) as any;
-            res.emit = (() => { }) as any;
-            res.on = ((evt: string, _unusedCb: Function) => {
+            // @ts-ignore
+            res.once = () => { };
+            // @ts-ignore
+            res.emit = () => { };
+            // @ts-ignore
+            res.on = (evt: string, _unusedCb: Function) => {
                 if (evt === 'finish' || evt === 'close') {
                     setTimeout(() => { resolve(undefined); }, 50);
                 }
                 return res;
-            }) as any;
+            };
 
             handler.handle(req, res).then(() => {
                 // Let the stream end creatively nicely expertly implicitly smartly realistically realistically
@@ -289,7 +295,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' }, query: { statusOnly: 'true' } } as any);
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' }, query: { statusOnly: 'true' } });
         let statusSet = 0;
         let bodyPayload: string = '';
         const res = createMock<Response>({
@@ -337,7 +343,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req = createMock<Request>({ params: { hash: 'validh', filename: 'MISSING_FILE.txt' } } as any);
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'MISSING_FILE.txt' } });
         let statusSet = 0;
         let bodyPayload: string = '';
         const res = createMock<Response>({
@@ -383,7 +389,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } } as any);
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } });
         let statusSet = 0;
         let bodyPayload: string = '';
         const res = createMock<Response>({
@@ -393,7 +399,12 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
             headersSent: false
         });
 
-        res.once = (() => { }) as any; res.emit = (() => { }) as any; res.on = (() => res) as any;
+        // @ts-ignore
+        res.once = () => { }; 
+        // @ts-ignore
+        res.emit = () => { }; 
+        // @ts-ignore
+        res.on = () => res;
         await new Promise<void>((resolve) => {
             handler.handle(req, res).then(() => setTimeout(resolve, 100));
         });
@@ -411,7 +422,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } } as any);
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } });
         let statusSet = 0;
         const res = createMock<Response>({
             status: function (s: number) { statusSet = s; return this as Response; },
@@ -433,7 +444,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } } as any);
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } });
         // let _statusSet = 0;
         const res = createMock<Response>({
             status: function (_unusedS: number) { return this as Response; },
@@ -457,7 +468,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } } as any);
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } });
         let statusSet = 0; let message = '';
         const res = createMock<Response>({
             status: function (s: number) { statusSet = s; return this as Response; },
@@ -488,7 +499,7 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
         // @ts-ignore
         const handler = new DownloadFileHandler(handlerOpts);
 
-        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } } as any);
+        const req = createMock<Request>({ params: { hash: 'validh', filename: 'file.txt' } });
         let statusSet = 0; let message = '';
         const res = createMock<Response>({
             status: function (s: number) { statusSet = s; return this as Response; },
@@ -584,7 +595,12 @@ describe('Backend: downloadFileHandler Unit Tests', () => {
             headersSent: true // Emulate headers already sent!
         };
 
-        res.once = (() => { }) as any; res.emit = (() => { }) as any; res.on = (() => res) as any;
+        // @ts-ignore
+        res.once = () => { }; 
+        // @ts-ignore
+        res.emit = () => { }; 
+        // @ts-ignore
+        res.on = () => res;
         await new Promise<void>((resolve) => {
             handler.handle(req, res).then(() => setTimeout(resolve, 50));
         });

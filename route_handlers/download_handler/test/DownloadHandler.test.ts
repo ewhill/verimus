@@ -5,11 +5,16 @@ import { describe, it, mock } from 'node:test';
 import { PassThrough, Readable } from 'stream';
 
 import { Request, Response } from 'express';
+import { Collection, FindCursor, ObjectId, WithId } from 'mongodb';
 
 import Bundler from '../../../bundler/Bundler';
 import { generateRSAKeyPair, signData, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
+import type Ledger from '../../../ledger/Ledger';
+import type { Peer } from '../../../p2p';
 import type PeerNode from '../../../peer_node/PeerNode';
+import type BaseProvider from '../../../storage_providers/base_provider/BaseProvider';
 import { createMock } from '../../../test/utils/TestUtils';
+import type { Block } from '../../../types';
 import { NodeRole } from '../../../types/NodeRole';
 import DownloadHandler from '../DownloadHandler';
 
@@ -19,21 +24,22 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const mockNode = createMock<PeerNode>({ 
             roles: [NodeRole.STORAGE], 
             privateKey: 'PRIVKEY', 
-            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [] })) as any } as any } as any 
+            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [] })) as any }) }) 
         });
-        const handler = new DownloadHandler(mockNode as PeerNode);
+        const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'nonexistent' } } as any);
-        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const res = Object.assign(new PassThrough(), {
-            status: mockStatus as any,
-            send: mockSend as any,
-            json: mockJson as any,
-            setHeader: mockSetHeader as any
-        }) as unknown as Response;
+        const req = createMock<Request>({ params: { hash: 'nonexistent' } });
+        const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn<(_name: string, _value: string) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        // @ts-ignore
+        const res = createMock<Response>(Object.assign(new PassThrough(), {
+            status: mockStatus,
+            send: mockSend,
+            json: mockJson,
+            setHeader: mockSetHeader
+        }));
 
         await handler.handle(req, res);
         assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 404);
@@ -47,21 +53,22 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const mockNode = createMock<PeerNode>({ 
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
-            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: validHPayload, publicKey: publicKey, signature: 'bad_sig', type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) as any } as any } as any 
+            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: validHPayload, publicKey: publicKey, signature: 'bad_sig', type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
         });
-        const handler = new DownloadHandler(mockNode as PeerNode);
+        const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } } as any);
-        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const res = Object.assign(new PassThrough(), {
-            status: mockStatus as any,
-            send: mockSend as any,
-            json: mockJson as any,
-            setHeader: mockSetHeader as any
-        }) as unknown as Response;
+        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn<(_name: string, _value: string) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        // @ts-ignore
+        const res = createMock<Response>(Object.assign(new PassThrough(), {
+            status: mockStatus,
+            send: mockSend,
+            json: mockJson,
+            setHeader: mockSetHeader
+        }));
 
         await handler.handle(req, res);
         assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 401);
@@ -88,9 +95,9 @@ describe('Backend: downloadHandler Unit Tests', () => {
             ...encPriv,
             erasureParams: { k: 2, n: 3, originalSize: bundleRes.originalSize },
             fragmentMap: [
-                { nodeId: publicKey, shardIndex: 0, physicalId: 'shard_0' },
-                { nodeId: 'otherNode', shardIndex: 1, physicalId: 'shard_1' },
-                { nodeId: 'anotherNode', shardIndex: 2, physicalId: 'shard_2' }
+                { nodeId: publicKey, shardIndex: 0, physicalId: 'shard_0', shardHash: 'h0' },
+                { nodeId: 'otherNode', shardIndex: 1, physicalId: 'shard_1', shardHash: 'h1' },
+                { nodeId: 'anotherNode', shardIndex: 2, physicalId: 'shard_2', shardHash: 'h2' }
             ]
         };
 
@@ -102,8 +109,8 @@ describe('Backend: downloadHandler Unit Tests', () => {
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
             publicKey: publicKey,
-            events: realEvents as any,
-            peer: {
+            events: realEvents,
+            peer: createMock<Peer>({
                 connectedPeers: [
                     { 
                         remotePublicKey: 'otherNode', 
@@ -122,15 +129,11 @@ describe('Backend: downloadHandler Unit Tests', () => {
                         } 
                     }
                 ]
-            } as any,
-            ledger: { 
-                collection: { 
-                    find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: payload, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) as any
-                } as any 
-            } as any 
+            }),
+            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: payload, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
         });
 
-        mockNode.storageProvider = createMock<any>({
+        mockNode.storageProvider = createMock<BaseProvider>({
             getEgressCostPerGB: () => 0.0,
             getBlockReadStream: async (id: string) => {
                 if (id === 'shard_0') {
@@ -141,23 +144,27 @@ describe('Backend: downloadHandler Unit Tests', () => {
                 return { status: 'not_found' };
             }
         });
-        const handler = new DownloadHandler(mockNode as PeerNode);
+        const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } } as any);
-        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const res = Object.assign(new PassThrough(), {
-            status: mockStatus as any,
-            send: mockSend as any,
-            json: mockJson as any,
-            setHeader: mockSetHeader as any
-        }) as unknown as Response;
+        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn<(_name: string, _value: string) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        // @ts-ignore
+        const res = createMock<Response>(Object.assign(new PassThrough(), {
+            status: mockStatus,
+            send: mockSend,
+            json: mockJson,
+            setHeader: mockSetHeader
+        }));
         let bodyPayload = '';
-        res.write = ((chunk: any) => { bodyPayload += chunk.toString(); return true; }) as any;
-        res.end = (() => { return res; }) as any;
-        res.on = ((_unusedEvt: string, _unusedCb: Function) => { return res; }) as any;
+        // @ts-ignore
+        res.write = (chunk: Buffer | string) => { bodyPayload += chunk.toString(); return true; };
+        // @ts-ignore
+        res.end = () => { return res; };
+        // @ts-ignore
+        res.on = () => { return res; };
         
         // Trap pipe bounds dynamically resolving limits
         await new Promise<void>((resolve) => {
@@ -191,9 +198,9 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const mockNode = createMock<PeerNode>({ 
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
-            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) as any } as any } as any 
+            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
         });
-        mockNode.storageProvider = createMock<any>({
+        mockNode.storageProvider = createMock<BaseProvider>({
             getEgressCostPerGB: () => 0.0,
             getBlockReadStream: async (_unusedId: string) => {
                 const rs = new PassThrough();
@@ -201,23 +208,27 @@ describe('Backend: downloadHandler Unit Tests', () => {
                 return { status: 'available', stream: rs };
             }
         });
-        const handler = new DownloadHandler(mockNode as PeerNode);
+        const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } } as any);
-        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const res = Object.assign(new PassThrough(), {
-            status: mockStatus as any,
-            send: mockSend as any,
-            json: mockJson as any,
-            setHeader: mockSetHeader as any
-        }) as unknown as Response;
+        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn<(_name: string, _value: string) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        // @ts-ignore
+        const res = createMock<Response>(Object.assign(new PassThrough(), {
+            status: mockStatus,
+            send: mockSend,
+            json: mockJson,
+            setHeader: mockSetHeader
+        }));
         let bodyPayload = '';
-        res.write = ((chunk: any) => { bodyPayload += chunk.toString(); return true; }) as any;
-        res.end = (() => { return res; }) as any;
-        res.on = ((_unusedEvt: string, _unusedCb: Function) => { return res; }) as any;
+        // @ts-ignore
+        res.write = (chunk: Buffer | string) => { bodyPayload += chunk.toString(); return true; };
+        // @ts-ignore
+        res.end = () => { return res; };
+        // @ts-ignore
+        res.on = () => { return res; };
 
         await handler.handle(req, res);
         // Wait for unzipping stream to pipe all data out
@@ -240,9 +251,9 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const mockNode = createMock<PeerNode>({ 
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
-            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) as any } as any } as any 
+            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
         });
-        mockNode.storageProvider = createMock<any>({
+        mockNode.storageProvider = createMock<BaseProvider>({
             getEgressCostPerGB: () => 0.0,
             getBlockReadStream: async (_unusedId: string) => {
                 const rs = new PassThrough();
@@ -251,19 +262,20 @@ describe('Backend: downloadHandler Unit Tests', () => {
                 return { status: 'available', stream: rs };
             }
         });
-        const handler = new DownloadHandler(mockNode as PeerNode);
+        const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' }, query: { statusOnly: 'true' } } as any);
-        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const res = Object.assign(new PassThrough(), {
-            status: mockStatus as any,
-            send: mockSend as any,
-            json: mockJson as any,
-            setHeader: mockSetHeader as any
-        }) as unknown as Response;
+        const req = createMock<Request>({ params: { hash: 'validh' }, query: { statusOnly: 'true' } });
+        const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn<(_name: string, _value: string) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        // @ts-ignore
+        const res = createMock<Response>(Object.assign(new PassThrough(), {
+            status: mockStatus,
+            send: mockSend,
+            json: mockJson,
+            setHeader: mockSetHeader
+        }));
 
         await handler.handle(req, res);
 
@@ -281,25 +293,26 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const mockNode = createMock<PeerNode>({ 
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
-            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) as any } as any } as any 
+            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
         });
-        mockNode.storageProvider = createMock<any>({
+        mockNode.storageProvider = createMock<BaseProvider>({
             getEgressCostPerGB: () => 0.0,
             getBlockReadStream: async () => ({ status: 'not_found' })
         });
-        const handler = new DownloadHandler(mockNode as PeerNode);
+        const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } } as any);
-        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const res = Object.assign(new PassThrough(), {
-            status: mockStatus as any,
-            send: mockSend as any,
-            json: mockJson as any,
-            setHeader: mockSetHeader as any
-        }) as unknown as Response;
+        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn<(_name: string, _value: string) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        // @ts-ignore
+        const res = createMock<Response>(Object.assign(new PassThrough(), {
+            status: mockStatus,
+            send: mockSend,
+            json: mockJson,
+            setHeader: mockSetHeader
+        }));
 
         await handler.handle(req, res);
         assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 404);
@@ -320,9 +333,9 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const mockNode = createMock<PeerNode>({ 
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
-            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) as any } as any } as any 
+            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
         });
-        mockNode.storageProvider = createMock<any>({
+        mockNode.storageProvider = createMock<BaseProvider>({
             getEgressCostPerGB: () => 0.0,
             getBlockReadStream: async (_unusedId: string) => {
                 const rs = new PassThrough();
@@ -330,19 +343,20 @@ describe('Backend: downloadHandler Unit Tests', () => {
                 return { status: 'available', stream: rs };
             }
         });
-        const handler = new DownloadHandler(mockNode as PeerNode);
+        const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } } as any);
-        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const res = Object.assign(new PassThrough(), {
-            status: mockStatus as any,
-            send: mockSend as any,
-            json: mockJson as any,
-            setHeader: mockSetHeader as any
-        }) as unknown as Response;
+        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn<(_name: string, _value: string) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        // @ts-ignore
+        const res = createMock<Response>(Object.assign(new PassThrough(), {
+            status: mockStatus,
+            send: mockSend,
+            json: mockJson,
+            setHeader: mockSetHeader
+        }));
 
         await new Promise<void>((resolve) => {
             handler.handle(req, res).then(() => setTimeout(resolve, 100));
@@ -355,19 +369,20 @@ describe('Backend: downloadHandler Unit Tests', () => {
     it('Returns HTTP 500 on payload parsing logic failures', async () => {
         const mockNode = createMock<PeerNode>({ roles: [NodeRole.STORAGE], privateKey: 'PRIV' });
         Object.defineProperty(mockNode, 'ledger', { get: () => { throw new Error('Simulated null reference'); } });
-        const handler = new DownloadHandler(mockNode as PeerNode);
+        const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } } as any);
-        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const res = Object.assign(new PassThrough(), {
-            status: mockStatus as any,
-            send: mockSend as any,
-            json: mockJson as any,
-            setHeader: mockSetHeader as any
-        }) as unknown as Response;
+        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn<(_name: string, _value: string) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        // @ts-ignore
+        const res = createMock<Response>(Object.assign(new PassThrough(), {
+            status: mockStatus,
+            send: mockSend,
+            json: mockJson,
+            setHeader: mockSetHeader
+        }));
 
         await handler.handle(req, res);
         assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 500);
@@ -381,21 +396,22 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const mockNode = createMock<PeerNode>({ 
             roles: [NodeRole.STORAGE], 
             privateKey: generateRSAKeyPair().privateKey, 
-            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) as any } as any } as any 
+            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
         });
-        const handler = new DownloadHandler(mockNode as PeerNode);
+        const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } } as any);
-        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const res = Object.assign(new PassThrough(), {
-            status: mockStatus as any,
-            send: mockSend as any,
-            json: mockJson as any,
-            setHeader: mockSetHeader as any
-        }) as unknown as Response;
+        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn<(_name: string, _value: string) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        // @ts-ignore
+        const res = createMock<Response>(Object.assign(new PassThrough(), {
+            status: mockStatus,
+            send: mockSend,
+            json: mockJson,
+            setHeader: mockSetHeader
+        }));
 
         await handler.handle(req, res);
         assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 401);
@@ -416,9 +432,9 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const mockNode = createMock<PeerNode>({ 
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
-            ledger: { collection: { find: mock.fn(() => ({ toArray: async () => [{ hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } }] })) as any } as any } as any 
+            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
         });
-        mockNode.storageProvider = createMock<any>({
+        mockNode.storageProvider = createMock<BaseProvider>({
             getEgressCostPerGB: () => 0.0,
             getBlockReadStream: async (_unusedId: string) => {
                 const rs = new Readable({
@@ -429,19 +445,20 @@ describe('Backend: downloadHandler Unit Tests', () => {
                 return { status: 'available', stream: rs };
             }
         });
-        const handler = new DownloadHandler(mockNode as PeerNode);
+        const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } } as any);
-        const mockStatus = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSend = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockJson = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSetHeader = mock.fn(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const res = Object.assign(new PassThrough(), {
+        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        const mockSetHeader = mock.fn<(_name: string, _value: string) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
+        // @ts-ignore
+        const res = createMock<Response>(Object.assign(new PassThrough(), {
             status: mockStatus as any,
             send: mockSend as any,
             json: mockJson as any,
             setHeader: mockSetHeader as any
-        }) as unknown as Response;
+        }));
 
         await new Promise<void>((resolve) => {
             handler.handle(req, res).then(() => setTimeout(resolve, 50));

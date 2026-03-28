@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import * as crypto from 'node:crypto';
-import { describe, it, beforeEach, afterEach } from 'node:test';
+import { describe, it, beforeEach, afterEach, mock } from 'node:test';
 import { EventEmitter } from 'node:events';
 
 import { ObjectId } from 'mongodb';
@@ -11,6 +11,7 @@ import Mempool from '../../../models/mempool/Mempool';
 import type PeerNode from '../../../peer_node/PeerNode';
 import type { Block, PeerConnection } from '../../../types';
 import ConsensusEngine from '../ConsensusEngine';
+import { createMock } from '../../../test/utils/TestUtils';
 
 const mockConn: PeerConnection = { peerAddress: '127.0.0.1:3001', send: () => { } };
 const createMockBlock = (signature: string, publicKey: string, hash: string): Block => ({
@@ -30,18 +31,32 @@ describe('Backend: ConsensusEngine Integrity', () => {
     beforeEach(() => {
         keys = generateRSAKeyPair();
         const mempool = new Mempool();
-        mockNode = {
+        mockNode = createMock<PeerNode>({
             port: 3000,
             privateKey: keys.privateKey,
             publicKey: keys.publicKey,
             mempool,
-            syncEngine: { isSyncing: false, syncBuffer: [] },
-            getMajorityCount: () => 2,
-            ledger: { collection: { findOne: async () => null }, getLatestBlock: async () => ({ ...createMockBlock('sig', 'pk', '0000abc'), metadata: { index: 5, timestamp: 123 }, _id: new ObjectId() }), addBlockToChain: async (block: Block) => block },
-            peer: { trustedPeers: [{ peerAddress: '127.0.0.1:3001', send: () => { } }], broadcast: async () => { } },
-            events: new EventEmitter(),
-            reputationManager: { penalizeMajor: async () => null, penalizeCritical: async () => null, penalizeMinor: async () => null, rewardValidSync: async () => null, rewardHonestProposal: async () => null }
-        } as unknown as PeerNode;
+            syncEngine: createMock<any>({ isSyncing: false, syncBuffer: [] }),
+            getMajorityCount: mock.fn<() => number>(() => 2),
+            ledger: createMock<any>({
+                collection: createMock<any>({ findOne: mock.fn<() => Promise<null>>(async () => null) as any }),
+                getLatestBlock: mock.fn<() => Promise<Block>>(async () => ({ ...createMockBlock('sig', 'pk', '0000abc'), metadata: { index: 5, timestamp: 123 }, _id: new ObjectId('000000000000000000000001') }) as any),
+                addBlockToChain: mock.fn<(block: Block) => Promise<Block>>(async (block: Block) => block)
+            }),
+            peer: createMock<any>({
+                trustedPeers: [{ peerAddress: '127.0.0.1:3001', send: () => { } }] as any,
+                broadcast: mock.fn<() => Promise<void>>(async () => { }) as any,
+                bind: mock.fn<() => void>() as any
+            }),
+            events: new EventEmitter() as any,
+            reputationManager: createMock<any>({
+                penalizeMajor: mock.fn<() => Promise<any>>(async () => null as any),
+                penalizeCritical: mock.fn<() => Promise<any>>(async () => null as any),
+                penalizeMinor: mock.fn<() => Promise<any>>(async () => null as any),
+                rewardValidSync: mock.fn<() => Promise<any>>(async () => null as any),
+                rewardHonestProposal: mock.fn<() => Promise<any>>(async () => null as any)
+            })
+        });
         engine = new ConsensusEngine(mockNode);
     });
 

@@ -3,7 +3,6 @@ import assert from 'node:assert';
 import { Writable } from 'node:stream';
 import { describe, it, mock } from 'node:test';
 
-
 import type { Request, Response } from 'express';
 
 import type Bundler from '../../../bundler/Bundler';
@@ -19,6 +18,7 @@ import { NodeRole } from '../../../types/NodeRole';
 import WalletManager from '../../../wallet_manager/WalletManager';
 import UploadHandler from '../UploadHandler';
 
+
 describe('Backend: uploadHandler Coverage Unit Tests', () => {
 
     it('Rejects requests attempting to stream zero bundled files', async () => {
@@ -30,8 +30,8 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             files: []
         });
         let response: any;
-        const mockResponseStatus = mock.fn((_unusedCode: number) => response);
-        const mockResponseJson = mock.fn();
+        const mockResponseStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
+        const mockResponseJson = mock.fn<(_unusedBody?: any) => Response>();
         response = createMock<Response>({
             status: mockResponseStatus as any,
             json: mockResponseJson as any,
@@ -142,8 +142,8 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             }
         });
         let response: Response;
-        const mockResponseStatus = mock.fn((_unusedCode: number) => response);
-        const mockResponseJson = mock.fn();
+        const mockResponseStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
+        const mockResponseJson = mock.fn<(_unusedBody?: any) => Response>();
         response = createMock<Response>({
             status: mockResponseStatus as any,
             json: mockResponseJson as any,
@@ -185,8 +185,8 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             }
         });
         let response: Response;
-        const mockResponseStatus = mock.fn((_unusedCode: number) => response);
-        const mockResponseJson = mock.fn();
+        const mockResponseStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
+        const mockResponseJson = mock.fn<(_unusedBody?: any) => Response>();
         response = createMock<Response>({
             status: mockResponseStatus as any,
             json: mockResponseJson as any,
@@ -286,8 +286,8 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             }
         });
         let response: Response;
-        const mockResponseStatus = mock.fn((_unusedCode: number) => response);
-        const mockResponseJson = mock.fn();
+        const mockResponseStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
+        const mockResponseJson = mock.fn<(_unusedBody?: any) => Response>();
         response = createMock<Response>({
             status: mockResponseStatus as any,
             json: mockResponseJson as any,
@@ -388,8 +388,8 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             body: {}
         });
         let response: any;
-        const mockResponseStatus = mock.fn((_unusedCode: number) => response);
-        const mockResponseJson = mock.fn();
+        const mockResponseStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
+        const mockResponseJson = mock.fn<(_unusedBody?: any) => Response>();
         response = createMock<Response>({
             status: mockResponseStatus as any,
             json: mockResponseJson as any,
@@ -490,8 +490,8 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             body: {}
         });
         let response: Response;
-        const mockResponseStatus = mock.fn((_unusedCode: number) => response);
-        const mockResponseJson = mock.fn();
+        const mockResponseStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
+        const mockResponseJson = mock.fn<(_unusedBody?: any) => Response>();
         response = createMock<Response>({
             status: mockResponseStatus as any,
             json: mockResponseJson as any,

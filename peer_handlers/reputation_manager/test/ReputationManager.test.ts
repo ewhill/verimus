@@ -1,83 +1,77 @@
 import assert from 'node:assert';
-import { describe, it } from 'node:test';
+import { describe, it, mock } from 'node:test';
 
 
 import { Collection } from 'mongodb';
 
 import type { PeerReputation } from '../../../types';
 import { ReputationManager } from '../ReputationManager';
+import { createMock } from '../../../test/utils/TestUtils';
 
-class MockCollection {
-    data: Record<string, any> = {};
-    async findOne({ publicKey }: { publicKey: string }) {
-        return this.data[publicKey] || null;
-    }
-    async insertOne(doc: any) {
-        this.data[doc.publicKey] = { ...doc };
-    }
-    async updateOne({ publicKey }: { publicKey: string }, { $set }: any) {
-        this.data[publicKey] = { ...this.data[publicKey], ...$set };
-    }
-    
-    asCollection(): Collection<PeerReputation> {
-        return this as unknown as Collection<PeerReputation>;
-    }
-}
+const createMockCollection = (data: Record<string, any> = {}) => createMock<Collection<PeerReputation>>({
+    findOne: mock.fn<({ publicKey }: { publicKey: string }) => Promise<PeerReputation | null>>(async ({ publicKey }: { publicKey: string }) => data[publicKey] || null) as any,
+    insertOne: mock.fn<(doc: any) => Promise<void>>(async (doc: any) => { data[doc.publicKey] = { ...doc }; }) as any,
+    updateOne: mock.fn<({ publicKey }: { publicKey: string }, { $set }: any) => Promise<void>>(async ({ publicKey }: { publicKey: string }, { $set }: any) => { data[publicKey] = { ...data[publicKey], ...$set }; }) as any
+});
 
 describe('Backend: ReputationManager Analytics and Threshold Parsing', () => {
 
     it('Enforces 100 maximum score bounds', async () => {
-        const mockCollection = new MockCollection();
-        const manager = new ReputationManager(mockCollection.asCollection());
-        
+        const mockCollectionData: Record<string, any> = {};
+        const mockCollection = createMockCollection(mockCollectionData);
+        const manager = new ReputationManager(mockCollection);
+
         await manager.rewardValidSync('test_honest'); // Starts at 100 
         const updatedScore = await manager.getScore('test_honest');
-        
+
         // Assert mathematical bound caps at precisely 100 without overextending
-        assert.strictEqual(updatedScore, 100); 
+        assert.strictEqual(updatedScore, 100);
     });
 
     it('Penalizes without dropping below 0', async () => {
-        const mockCollection = new MockCollection();
-        const manager = new ReputationManager(mockCollection.asCollection());
-        
+        const mockCollectionData: Record<string, any> = {};
+        const mockCollection = createMockCollection(mockCollectionData);
+        const manager = new ReputationManager(mockCollection);
+
         await manager.penalizeCritical('test_malicious', 'Signature forgery');
         await manager.penalizeMinor('test_malicious', 'Spam looping'); // Drops below 0 internally
-        
+
         const score = await manager.getScore('test_malicious');
         const bannedStatus = await manager.isBanned('test_malicious');
-        
+
         // Assert strict baseline limits
         assert.strictEqual(score, 0);
         assert.strictEqual(bannedStatus, true);
     });
 
     it('Computes strikes based on infractions', async () => {
-        const mockCollection = new MockCollection();
-        const manager = new ReputationManager(mockCollection.asCollection());
-        
+        const mockCollectionData: Record<string, any> = {};
+        const mockCollection = createMockCollection(mockCollectionData);
+        const manager = new ReputationManager(mockCollection);
+
         await manager.penalizeMinor('test_faulty', 'Spam');
         await manager.penalizeMajor('test_faulty', 'Bad schema');
-        
-        const peer = await mockCollection.findOne({ publicKey: 'test_faulty' });
-        
+
+        const peer = await mockCollection.findOne({ publicKey: 'test_faulty' } as any) as any;
+
         assert.strictEqual(peer.score, 89);
         assert.strictEqual(peer.strikeCount, 2);
         assert.strictEqual(peer.lastOffense, 'Bad schema');
     });
 
     it('Ignores invalid reputation penalties', async () => {
-        const mockCollection = new MockCollection();
-        const manager = new ReputationManager(mockCollection.asCollection());
-        
+        const mockCollectionData: Record<string, any> = {};
+        const mockCollection = createMockCollection(mockCollectionData);
+        const manager = new ReputationManager(mockCollection);
+
         // Seed peer implicitly
-        mockCollection.data['test_node'] = {
-            publicKey: 'test_node', score: 95, strikeCount: 1, isBanned: false, lastOffense: 'Spam' 
+        mockCollectionData['test_node'] = {
+            publicKey: 'test_node', score: 95, strikeCount: 1, isBanned: false, lastOffense: 'Spam'
         };
 
         await manager.rewardValidSync('test_node');
 
-        const peer = await mockCollection.findOne({ publicKey: 'test_node' });
+        const peer = await mockCollection.findOne({ publicKey: 'test_node' } as any) as any;
         assert.strictEqual(peer.score, 96);
         assert.strictEqual(peer.strikeCount, 1); // Reward MUST NOT artificially alter strike metrics
     });

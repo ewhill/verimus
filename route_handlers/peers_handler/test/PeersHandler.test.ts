@@ -1,49 +1,77 @@
 import assert from 'node:assert';
-import { describe, it } from 'node:test';
+import { describe, it, mock } from 'node:test';
 
-import peersHandler from '../PeersHandler';
+import { Request, Response } from 'express';
 
-function createRes() {
-    const res: any = { statusCode: 200, body: null };
-    res.status = (code: number) => { res.statusCode = code; return res; };
-    res.json = (data: any) => { res.body = data; return res; };
-    return res;
-}
+import Ledger from '../../../ledger/Ledger';
+import { Peer } from '../../../p2p';
+import type PeerNode from '../../../peer_node/PeerNode';
+import { createMock } from '../../../test/utils/TestUtils';
+import PeersHandler from '../PeersHandler';
 
 describe('Backend: peersHandler Integrity', () => {
     it('Returns empty array when no peer data exists globally', async () => {
-        const req: any = {};
-        const res = createRes();
+        const mockRequest = createMock<Request>({});
+        let mockResponse: Response;
+        const mockResponseJson = mock.fn<(_unusedBody?: any) => Response>((_unusedBody?: any) => mockResponse);
+        mockResponse = createMock<Response>({ json: mockResponseJson });
 
-        const node: any = { peer: {}, ledger: {}, publicKey: Buffer.from('MOCK_PUB_KEY') };
-        const handler = new peersHandler(node);
-        await handler.handle(req, res);
+        const mockNode = createMock<PeerNode>({
+            ledger: createMock<Ledger>({}),
+            peer: createMock<Peer>({}),
+            publicKey: 'MOCK_PUB_KEY'
+        });
+        const handler = new PeersHandler(mockNode);
+        await handler.handle(mockRequest, mockResponse);
 
-        const data = res.body;
+        assert.strictEqual(mockResponseJson.mock.calls.length, 1);
+        const data = mockResponseJson.mock.calls.pop()?.arguments[0];
         assert.strictEqual(data.success, true);
         assert.strictEqual(data.peers.length, 1); // MockPeerNode provides publicKey, so 'self' is always listed.
     });
 
     it('Maps populated local peer structs matching API expectations', async () => {
-        const req: any = {};
-        const res = createRes();
+        const mockRequest = createMock<Request>({});
+        let mockResponse: Response;
+        const mockResponseJson = mock.fn<(_unusedBody?: any) => Response>((_unusedBody?: any) => mockResponse);
+        mockResponse = createMock<Response>({ json: mockResponseJson });
 
-        const node: any = { ledger: {}, publicKey: Buffer.from('MOCK_PUB_KEY') };
-        Object.defineProperty(node, 'peer', {
-            value: {
+        const mockNode = createMock<PeerNode>({
+            ledger: createMock<Ledger>({}),
+            publicKey: 'MOCK_PUB_KEY',
+            peer: createMock<Peer>({
                 peers: [
-                    { peerAddress: 'host1', remoteSignature: Buffer.from('remoteSig000000000000000000000'), isConnected: true, isTrusted: true },
-                    { peerAddress: 'host2', remoteSignature: null, isConnected: true, isTrusted: false },
-                    { peerAddress: 'host3', remoteSignature: null, isConnected: false },
-                    { remoteSignature: null, isConnected: false } // missing peerAddress
+                    {
+                        peerAddress: 'host1',
+                        remoteSignature: Buffer.from('remoteSig000000000000000000000'),
+                        isConnected: true,
+                        isTrusted: true
+                    },
+                    {
+                        peerAddress: 'host2',
+                        remoteSignature: null,
+                        isConnected: true,
+                        isTrusted: false
+                    },
+                    {
+                        peerAddress: 'host3',
+                        remoteSignature: null,
+                        isConnected: false
+                    },
+                    {
+                        // missing peerAddress
+                        remoteSignature: null,
+                        isConnected: false
+                    }
                 ]
-            }
+            })
         });
 
-        const handler = new peersHandler(node);
-        await handler.handle(req, res);
+        const handler = new PeersHandler(mockNode);
+        await handler.handle(mockRequest, mockResponse);
 
-        const data = res.body;
+        assert.strictEqual(mockResponseJson.mock.calls.length, 1);
+        const data = mockResponseJson.mock.calls.pop()?.arguments[0];
         assert.strictEqual(data.success, true);
         assert.strictEqual(data.peers.length, 5); // 1 self + 4 mock peers
         assert.strictEqual(data.connectedCount, 1);
@@ -58,33 +86,54 @@ describe('Backend: peersHandler Integrity', () => {
     });
 
     it('Defaults to an empty peers array preventing missing definition crashes', async () => {
-        const req: any = {};
-        const res = createRes();
+        const mockRequest = createMock<Request>({});
+        let mockResponse: Response;
+        const mockResponseJson = mock.fn<(_unusedBody?: any) => Response>((_unusedBody?: any) => mockResponse);
+        mockResponse = createMock<Response>({ json: mockResponseJson });
 
-        const node: any = { ledger: {}, publicKey: Buffer.from('MOCK_PUB_KEY') };
-        Object.defineProperty(node, 'peer', { value: {} });
+        const mockNode = createMock<PeerNode>({
+            ledger: createMock<Ledger>({}),
+            publicKey: 'MOCK_PUB_KEY',
+            peer: createMock<Peer>({})
+        });
 
-        const handler = new peersHandler(node);
-        await handler.handle(req, res);
+        const handler = new PeersHandler(mockNode);
+        await handler.handle(mockRequest, mockResponse);
 
-        const data = res.body;
+        assert.strictEqual(mockResponseJson.mock.calls.length, 1);
+        const data = mockResponseJson.mock.calls.pop()?.arguments[0];
         assert.strictEqual(data.success, true);
         assert.strictEqual(data.peers.length, 1); // Only self
     });
 
     it('Catches exceptions and returns 500 error', async () => {
-        const req: any = {};
-        const res = createRes();
-        const node: any = { ledger: {}, publicKey: Buffer.from('MOCK_PUB_KEY') };
-        Object.defineProperty(node, 'peer', {
-            get: function () { throw new Error("peer crash test"); }
+        const mockRequest = createMock<Request>({});
+        let mockResponseObj: any;
+        const mockResponseStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => mockResponseObj);
+        const mockResponseJson = mock.fn<(_unusedBody?: any) => Response>((_unusedBody?: any) => mockResponseObj);
+        mockResponseObj = createMock<Response>({
+            status: mockResponseStatus,
+            json: mockResponseJson
         });
 
-        const handler = new peersHandler(node);
-        await handler.handle(req, res);
+        const mockNode = createMock<PeerNode>({
+            ledger: createMock<Ledger>({}),
+            publicKey: 'MOCK_PUB_KEY',
+            peer: createMock<Peer>({
+                get peers(): string[] {
+                    throw new Error("peer crash test");
+                }
+            })
+        });
 
-        assert.strictEqual(res.statusCode, 500);
-        const data = res.body;
+        const handler = new PeersHandler(mockNode);
+        await handler.handle(mockRequest, mockResponseObj);
+
+        assert.strictEqual(mockResponseStatus.mock.calls.length, 1);
+        assert.strictEqual(mockResponseStatus.mock.calls.pop()?.arguments[0], 500);
+
+        assert.strictEqual(mockResponseJson.mock.calls.length, 1);
+        const data = mockResponseJson.mock.calls.pop()?.arguments[0];
         assert.strictEqual(data.success, false);
     });
 });

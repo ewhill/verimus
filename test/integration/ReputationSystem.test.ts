@@ -18,6 +18,8 @@ import RSAKeyPair from '../../p2p/lib/RSAKeyPair';
 import PeerNode from '../../peer_node/PeerNode';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
 import type { Block } from '../../types';
+import { StorageContractPayload } from '../../types';
+import { createMock } from '../../test/utils/TestUtils';
 
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -76,7 +78,8 @@ describe('Integration: Reputation System (5 Nodes)', () => {
         for (let i = 1; i < 5; i++) {
             const addr = `wss://127.0.0.1:${nodes[0].port}`;
             const parsedAddress = Object.assign(new url.URL(addr), { slashes: true });
-            await (nodes[i].peer as any)?.attemptConnection({ originalAddress: addr, parsedAddress, expectedSignature: undefined });
+            // @ts-ignore
+            await nodes[i].peer?.attemptConnection({ originalAddress: addr, parsedAddress, expectedSignature: undefined });
         }
 
         // Wait for discovery and WebSocket handshake resolutions
@@ -115,15 +118,15 @@ describe('Integration: Reputation System (5 Nodes)', () => {
             hash: 'wrong_hash',
             previousHash: 'fake',
             publicKey: node2.publicKey,
-            payload: { fake: true } as unknown as import('../../types').StorageContractPayload,
+            payload: createMock<StorageContractPayload>({}),
             signature: 'fakesig'
         };
 
         const connToNode1 = node2.peer?.peers[0];
 
 
-console.log('SENDING FAKE BLOCK!');
-console.log(connToNode1?.send ? 'METHOD EXISTS' : 'UNDEFINED METHOD');
+        console.log('SENDING FAKE BLOCK!');
+        console.log(connToNode1?.send ? 'METHOD EXISTS' : 'UNDEFINED METHOD');
         connToNode1?.send(new PendingBlockMessage({ block: fakeBlock }));
 
         await new Promise(r => setTimeout(r, 4000));
@@ -143,10 +146,10 @@ console.log(connToNode1?.send ? 'METHOD EXISTS' : 'UNDEFINED METHOD');
             type: BLOCK_TYPES.STORAGE_CONTRACT,
             previousHash: 'fake',
             publicKey: node3.publicKey,
-            payload: { 
-                 encryptedPayloadBase64: 'enc',
-                 encryptedKeyBase64: 'key',
-                 encryptedIvBase64: 'iv'
+            payload: {
+                encryptedPayloadBase64: 'enc',
+                encryptedKeyBase64: 'key',
+                encryptedIvBase64: 'iv'
             } as import('../../types').StorageContractPayload,
             signature: 'invalid_sig'
         } as Block;
@@ -157,7 +160,7 @@ console.log(connToNode1?.send ? 'METHOD EXISTS' : 'UNDEFINED METHOD');
         const connToNode1 = node3.peer?.peers[0];
 
 
-console.log('SENDING INVALID SIG BLOCK!');
+        console.log('SENDING INVALID SIG BLOCK!');
         connToNode1?.send(new PendingBlockMessage({ block }));
 
         await new Promise(r => setTimeout(r, 4000));

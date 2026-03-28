@@ -10,7 +10,7 @@ describe('Backend: defaultHandler Integrity', () => {
 
     it('Returns static node verification welcome prompt JSON object', async () => {
         const req: any = {};
-        const res: any = { sendFile: mock.fn() };
+        const res: any = { sendFile: mock.fn<(_unusedPath: string) => void>() };
         const mockNode: any = {};
         const handler = new DefaultHandler(mockNode);
         await handler.handle(req, res);

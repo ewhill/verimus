@@ -1,6 +1,8 @@
 import assert from 'node:assert';
 import { describe, it, mock } from 'node:test';
 
+import { Collection, DeleteResult, FindCursor, InsertManyResult, InsertOneResult, WithId } from 'mongodb';
+
 import Bundler from '../../bundler/Bundler';
 import type { PeerCredentials } from '../../credential_provider/CredentialProvider';
 import type Ledger from '../../ledger/Ledger';
@@ -8,10 +10,9 @@ import Mempool from '../../models/mempool/Mempool';
 import type { Peer } from '../../p2p';
 import BaseProvider from '../../storage_providers/base_provider/BaseProvider';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
+import { createMock } from '../../test/utils/TestUtils';
+import { Block } from '../../types';
 import PeerNodeClass from '../PeerNode';
-
-const createMongoCursorStub = (items: any[]) => ({ toArray: async () => items });
-const createMock = <T>(shape: any = {}): T => shape as T;
 
 const getMockCredentials = (): PeerCredentials => ({
     ringPublicKeyPath: 'ring.pub',
@@ -32,22 +33,22 @@ const createDummyBlock = (hash: string, pk: string = 'pk'): import('../../types'
 const getMockNode = async (PeerNodeClass: any) => {
     const node = new PeerNodeClass(3002, [], new MemoryStorageProvider(), new Bundler('data'), 'mongodb://localhost:27017/test', 'mockPubKey', getMockCredentials(), 'data');
     node.ledger = createMock<Ledger>({
-        init: async () => {},
-        collection: {
-            find: () => createMongoCursorStub([]),
-            insertMany: async () => {},
-            countDocuments: async () => 1
-        } as any,
-        ownedBlocksCollection: {
-            find: () => createMongoCursorStub([]),
-            insertOne: async () => {},
-            insertMany: async () => {},
-            deleteMany: async () => {},
-            countDocuments: async () => 1
-        } as any,
-        peersCollection: {
-            find: () => createMongoCursorStub([])
-        } as any
+        init: async () => { },
+        collection: createMock<Collection<any>>({
+            find: mock.fn<() => FindCursor<WithId<any>>>(() => createMock<FindCursor<WithId<any>>>({ toArray: async () => [] })) as any,
+            insertMany: mock.fn<() => Promise<InsertManyResult<any>>>(),
+            countDocuments: mock.fn<() => Promise<number>>(async () => 1)
+        }),
+        ownedBlocksCollection: createMock<Collection<any>>({
+            find: mock.fn<() => FindCursor<WithId<any>>>(() => createMock<FindCursor<WithId<any>>>({ toArray: async () => [] })) as any,
+            insertOne: mock.fn<() => Promise<any>>(),
+            insertMany: mock.fn<() => Promise<any>>(),
+            deleteMany: mock.fn<() => Promise<any>>(),
+            countDocuments: mock.fn<() => Promise<number>>(async () => 1)
+        }),
+        peersCollection: createMock<Collection<any>>({
+            find: mock.fn<() => FindCursor<WithId<any>>>(() => createMock<FindCursor<WithId<any>>>({ toArray: async () => [] })) as any
+        })
     });
     await node.ledger.init();
     node.mempool = new Mempool();
@@ -61,11 +62,11 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     });
 
     it('Instantiates ReputationManager mapped to the database', async () => {
-        
+
         const mockNode = await getMockNode(PeerNodeClass);
-        
-        mockNode.loadOwnedBlocksCache = async () => {};
-        
+
+        mockNode.loadOwnedBlocksCache = async () => { };
+
         // Mock fs to bypass internal syncs
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const fsLib = require('node:fs');
@@ -76,8 +77,8 @@ describe('Backend: PeerNode Logical Verification Check', () => {
         });
 
         try {
-           await mockNode.init().catch((_unusedE: any) => {}); // Only care about internal instantiation sequence
-        } catch (_unusedE: any) {}
+            await mockNode.init().catch((_unusedE: any) => { }); // Only care about internal instantiation sequence
+        } catch (_unusedE: any) { }
 
         assert.ok(mockNode.reputationManager !== undefined, 'ReputationManager MUST exist post-initialization');
         assert.ok(mockNode.reputationManager.peersCollection !== undefined && mockNode.reputationManager.peersCollection !== null, 'ReputationManager bridged native persistent Mongo DB Collections');
@@ -86,37 +87,37 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     });
 
     it('Restores block caching arrays on initialization from MongoDB', async () => {
-        
+
         const mockNode = await getMockNode(PeerNodeClass);
         mockNode.publicKey = 'myPubKey';
         mock.method(mockNode.ledger.ownedBlocksCollection!, 'countDocuments', async () => 0);
         mock.method(mockNode.ledger.collection!, 'countDocuments', async () => 5);
-        mock.method(mockNode.ledger.collection!, 'find', () => createMongoCursorStub([
-            createDummyBlock('hash1', 'myPubKey')
-        ]));
+        mock.method(mockNode.ledger.collection!, 'find', mock.fn<() => FindCursor<WithId<any>>>(() => createMock<FindCursor<WithId<any>>>({
+            toArray: async () => [createDummyBlock('hash1', 'myPubKey') as any]
+        })) as any);
 
         await mockNode.loadOwnedBlocksCache();
-        
+
         assert.strictEqual(mockNode.ownedBlocksCache.length, 1);
         assert.strictEqual(mockNode.ownedBlocksCache[0], 'hash1');
     });
 
     it('Adds newly owned blocks directly to MongoDB correctly', async () => {
         const PeerNode = PeerNodeClass;
-        
+
         const mockNode = new PeerNode(3002, [], createMock<BaseProvider>(), createMock<Bundler>(), 'mongodb://localhost:27017/test', createMock<string>(), createMock<PeerCredentials>(), 'data');
         mockNode.publicKey = 'myPubKey';
         mockNode.ownedBlocksCache = [];
-        
+
         mockNode.mempool = createMock<Mempool>({
-             pendingBlocks: new Map() as any
+            pendingBlocks: new Map() as any
         });
 
         let insertedHash = '';
         mockNode.ledger = createMock<Ledger>({
-            ownedBlocksCollection: {
-                 insertOne: async (doc: any) => { insertedHash = doc.hash; }
-            } as any
+            ownedBlocksCollection: createMock<Collection<any>>({
+                insertOne: mock.fn<(doc: any) => Promise<InsertOneResult<any>>>(async (doc: any) => { insertedHash = doc.hash; return { acknowledged: true, insertedId: 'mock' } as any; })
+            })
         });
 
         const dummyBlock2: import('../../types').Block = {
@@ -128,25 +129,25 @@ describe('Backend: PeerNode Logical Verification Check', () => {
             payload: { senderSignature: '', senderId: '', recipientId: '', amount: 0 }
         };
         await mockNode.addOwnedBlockToCache(dummyBlock2);
-        
+
         assert.strictEqual(mockNode.ownedBlocksCache.length, 1);
         assert.ok(mockNode.ownedBlocksCache.includes('hash2'));
         assert.strictEqual(insertedHash, 'hash2', 'Native MongoDB insertion fired');
     });
 
     it('Bypasses cache population when cache matches ledger', async () => {
-        
+
         const mockNode = await getMockNode(PeerNodeClass);
         mockNode.publicKey = 'myPubKey';
-        
+
         mock.method(mockNode.ledger.collection!, 'countDocuments', async () => 5);
         mock.method(mockNode.ledger.ownedBlocksCollection!, 'countDocuments', async () => 5);
-        mock.method(mockNode.ledger.ownedBlocksCollection!, 'find', () => createMongoCursorStub([
-            { hash: 'hash_from_cache' }
-        ]));
-        
+        mock.method(mockNode.ledger.ownedBlocksCollection!, 'find', mock.fn<() => FindCursor<WithId<any>>>(() => createMock<FindCursor<WithId<any>>>({
+            toArray: async () => [{ hash: 'hash_from_cache' } as any]
+        })) as any);
+
         await mockNode.loadOwnedBlocksCache();
-        
+
         assert.strictEqual(mockNode.ownedBlocksCache.length, 1);
         assert.strictEqual(mockNode.ownedBlocksCache[0], 'hash_from_cache');
     });
@@ -154,19 +155,19 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     it('Auto-invalidates stale cache if database appears purged', async () => {
         const mockNode = await getMockNode(PeerNodeClass);
         mockNode.publicKey = 'myPubKey';
-        
+
         let deleted = false;
         mockNode.ownedBlocksCache = ['hash1']; // Simulate existing cache
         mockNode.ledger = createMock<Ledger>({
-            collection: { countDocuments: async () => 1 } as any, // Only Genesis
-            ownedBlocksCollection: { 
-                 countDocuments: async () => 5, // Stale
-                 deleteMany: async () => { deleted = true; }
-            } as any
+            collection: createMock<Collection<Block>>({ countDocuments: mock.fn<() => Promise<number>>(async () => 1) }),
+            ownedBlocksCollection: createMock<Collection<any>>({
+                countDocuments: mock.fn<() => Promise<number>>(async () => 5),
+                deleteMany: mock.fn<() => Promise<DeleteResult>>(async () => { deleted = true; return { deletedCount: 1 } as DeleteResult; })
+            })
         });
 
         await mockNode.loadOwnedBlocksCache();
-        
+
         assert.strictEqual(mockNode.ownedBlocksCache.length, 0); // Fails
         assert.strictEqual(deleted, true);
     });
@@ -174,20 +175,20 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     it('Handles outer wrapper failures during cache recovery', async () => {
         const mockNode = await getMockNode(PeerNodeClass);
         mockNode.ledger = createMock<Ledger>({
-            collection: { countDocuments: async () => { throw new Error('DB Crash'); } } as any
+            collection: createMock<Collection<Block>>({ countDocuments: mock.fn<() => Promise<number>>(async () => { throw new Error('DB Crash'); }) })
         });
 
         await mockNode.loadOwnedBlocksCache();
-        
+
         assert.strictEqual(mockNode.ownedBlocksCache.length, 0); // Outer catch handles it
     });
 
     it('Synchronizes deletion from unverified blocks', async () => {
         const mockNode = await getMockNode(PeerNodeClass);
         mockNode.publicKey = 'myPubKey';
-        
+
         mockNode.mempool = createMock<Mempool>({
-             pendingBlocks: new Map() as any
+            pendingBlocks: new Map() as any
         });
         const dummyBlock3: import('../../types').Block = {
             type: 'TRANSACTION',
@@ -197,17 +198,17 @@ describe('Backend: PeerNode Logical Verification Check', () => {
             hash: 'hash3',
             payload: { senderSignature: '', senderId: '', recipientId: '', amount: 0 }
         };
-        const mockConn = { peerAddress: '127.0.0.1:1234', send: () => {} };
+        const mockConn = { peerAddress: '127.0.0.1:1234', send: () => { } };
         mockNode.mempool.pendingBlocks.set('hash3', { block: dummyBlock3, connection: mockConn, timestamp: 12345 });
 
         mockNode.ledger = createMock<Ledger>({
-            ownedBlocksCollection: {
-                 insertOne: async () => { throw new Error('Write error'); }
-            } as any
+            ownedBlocksCollection: createMock<Collection<any>>({
+                insertOne: mock.fn<() => Promise<InsertOneResult<any>>>(async () => { throw new Error('Write error'); })
+            })
         });
 
         await mockNode.addOwnedBlockToCache(dummyBlock3);
-        
+
         assert.ok(!mockNode.mempool.pendingBlocks.has('hash3'));
         assert.ok(mockNode.ownedBlocksCache.includes('hash3'));
 

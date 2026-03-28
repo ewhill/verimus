@@ -9,7 +9,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { BLOCK_TYPES } from '../../constants';
 import { generateRSAKeyPair, hashData, signData } from '../../crypto_utils/CryptoUtils';
 import PeerNode from '../../peer_node/PeerNode';
-
+import { createMock } from '../../test/utils/TestUtils';
 
 test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async (_unusedT: any) => {
 
@@ -42,16 +42,17 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
         };
 
         const stakingSig = signData(JSON.stringify(stakingLockPayload), maliciousHostKeys.privateKey);
-        
-        const stakingBlock = {
+
+        const stakingBlock = createMock<import('../../types').Block>({
             metadata: { index: -1, timestamp: Date.now() },
             type: BLOCK_TYPES.STAKING_CONTRACT,
             payload: stakingLockPayload,
             publicKey: maliciousHostKeys.publicKey,
             signature: stakingSig
-        };
+        });
+        const mockConn = createMock<import('../../types').PeerConnection>({ peerAddress: '0.0.0.0', send: () => { } });
 
-        await node.consensusEngine.handlePendingBlock(stakingBlock as any, { peerAddress: '0.0.0.0', send: () => { } } as any, Date.now());
+        await node.consensusEngine.handlePendingBlock(stakingBlock, mockConn, Date.now());
 
         // Finalize Staking Mints into Local DB mapping state natively 
         const forkEvent = new Promise<void>(res => {
@@ -60,7 +61,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
 
         const blockId = hashData(stakingSig);
         const pMsg = { blockId: blockId, signature: stakingSig };
-        await node.consensusEngine.handleVerifyBlock(pMsg.blockId, pMsg.signature, { peerAddress: '0.0.0.0', send: () => { } } as any);
+        await node.consensusEngine.handleVerifyBlock(pMsg.blockId, pMsg.signature, mockConn);
 
         await forkEvent;
 
@@ -77,22 +78,22 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
 
         const slashSig = signData(JSON.stringify(slashPayload), node.privateKey);
 
-        const slashBlock = {
+        const slashBlock = createMock<import('../../types').Block>({
             metadata: { index: -1, timestamp: Date.now() },
             type: BLOCK_TYPES.SLASHING_TRANSACTION,
             payload: slashPayload,
             publicKey: node.publicKey,
             signature: slashSig
-        };
+        });
 
-        await node.consensusEngine.handlePendingBlock(slashBlock as any, { peerAddress: '0.0.0.0', send: () => { } } as any, Date.now());
+        await node.consensusEngine.handlePendingBlock(slashBlock, mockConn, Date.now());
 
         const slashFork = new Promise<void>(res => {
             node!.ledger.events.once('blockAdded', () => res());
         });
 
         const slashId = hashData(slashSig);
-        await node.consensusEngine.handleVerifyBlock(slashId, slashSig, { peerAddress: '0.0.0.0', send: () => { } } as any);
+        await node.consensusEngine.handleVerifyBlock(slashId, slashSig, mockConn);
 
         await slashFork;
 
