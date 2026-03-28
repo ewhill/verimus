@@ -10,7 +10,7 @@
     "watch:ui": "npm --prefix ui run watch",
     "start:node": "tsx index.ts",
     "watch:node": "nodemon -x tsx -e ts --ignore data/ --ignore storage/ index.ts",
-    "test": "tsx --test --test-timeout=30000 \"{apis_server,bundler,crypto_utils,ledger,logger,messages,models,peer_handlers,peer_node,route_handlers,storage_providers,test,wallet_manager}/**/*.test.ts\" && npm --prefix p2p run test",
+    "test": "tsx --test --test-timeout=30000 \"{apis_server,bundler,crypto_utils,ledger,logger,messages,models,peer_handlers,peer_node,route_handlers,storage_providers,test,wallet_manager}/**/*.test.ts\" \"p2p/test/test*.js\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -19,6 +19,7 @@
     "@aws-sdk/lib-storage": "^3.1010.0",
     "@subspace/reed-solomon-erasure.wasm": "^0.2.5",
     "archiver": "^7.0.1",
+    "bufferutil": "^4.0.6",
     "express": "^5.2.1",
     "glob": "^13.0.6",
     "mongodb": "^7.1.0",
