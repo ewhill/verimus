@@ -1,5 +1,6 @@
 import { mkdtempSync } from 'fs';
 import assert from 'node:assert';
+import { createHash } from 'node:crypto';
 import test from 'node:test';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -11,7 +12,7 @@ import { generateRSAKeyPair, hashData, signData } from '../../crypto_utils/Crypt
 import PeerNode from '../../peer_node/PeerNode';
 import { createMock } from '../../test/utils/TestUtils';
 
-test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async (_unusedT: any) => {
+test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async () => {
 
     const testDir = mkdtempSync(join(tmpdir(), 'verimus-slash-test-'));
     const keys = generateRSAKeyPair();
@@ -70,9 +71,32 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
         assert.strictEqual(testBalance, -50000, '50,000 collateral effectively tracked removing liquid boundaries');
 
         // Stage 2: Intercept global mathematical failure! Injecting native Slashing penalty!
+        const invalidSlashPayload = {
+            penalizedPublicKey: maliciousHostKeys.publicKey,
+            evidenceSignature: 'INVALID_GARBAGE_STRING_NOT_A_HASH',
+            burntAmount: 50000
+        };
+
+        const invalidSlashSig = signData(JSON.stringify(invalidSlashPayload), node.privateKey);
+
+        const invalidSlashBlock = createMock<import('../../types').Block>({
+            metadata: { index: -1, timestamp: Date.now() },
+            type: BLOCK_TYPES.SLASHING_TRANSACTION,
+            payload: invalidSlashPayload,
+            publicKey: node.publicKey,
+            signature: invalidSlashSig
+        });
+
+        await node.consensusEngine.handlePendingBlock(invalidSlashBlock, mockConn, Date.now());
+        
+        // Balance should still be -50000 
+        const interimBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousHostKeys.publicKey);
+        assert.strictEqual(interimBalance, -50000, 'Invalid evidence signature was correctly rejected by consensus engine');
+
+        // Stage 3: Inject valid Slashing penalty!
         const slashPayload = {
             penalizedPublicKey: maliciousHostKeys.publicKey,
-            evidenceSignature: 'FORGERY_EVIDENCE_MAP',
+            evidenceSignature: createHash('sha256').update('FORGERY_EVIDENCE_MAP').digest('hex'),
             burntAmount: 50000
         };
 
