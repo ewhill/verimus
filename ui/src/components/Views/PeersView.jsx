@@ -1,9 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
+import GossipStatsPanel from './Network/GossipStatsPanel';
 
 const PeersView = () => {
     const [peers, setPeers] = useState([]);
+    const [gossipTelemetry, setGossipTelemetry] = useState(null);
     const [error, setError] = useState(false);
     const canvasRef = useRef(null);
+    const particlesRef = useRef([]);
 
     const fetchPeers = async () => {
         try {
@@ -11,6 +14,7 @@ const PeersView = () => {
             const data = await response.json();
             if (data.success) {
                 setPeers(data.peers);
+                if (data.gossipTelemetry) setGossipTelemetry(data.gossipTelemetry);
                 setError(false);
             }
         } catch (error) {
@@ -61,8 +65,38 @@ const PeersView = () => {
                     ctx.moveTo(selfPeer.x, selfPeer.y);
                     ctx.lineTo(peer.x, peer.y);
                     ctx.stroke();
+
+                    // Generate dynamic particles epidemically simulating NetworkHealthSyncMessages natively
+                    if (Math.random() < 0.05) {
+                         particlesRef.current.push({
+                              x: selfPeer.x, y: selfPeer.y,
+                              tx: peer.x, ty: peer.y,
+                              progress: 0,
+                              speed: 0.02 + Math.random() * 0.03
+                         });
+                    }
                 }
             });
+        }
+
+        // Animate propagating particles
+        ctx.fillStyle = '#38bdf8';
+        for (let i = particlesRef.current.length - 1; i >= 0; i--) {
+            const p = particlesRef.current[i];
+            p.progress += p.speed;
+            if (p.progress >= 1) {
+                particlesRef.current.splice(i, 1);
+                continue;
+            }
+            const cx = p.x + (p.tx - p.x) * p.progress;
+            const cy = p.y + (p.ty - p.y) * p.progress;
+            
+            ctx.beginPath();
+            ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#38bdf8';
+            ctx.fill();
+            ctx.shadowBlur = 0;
         }
 
         // Draw nodes
@@ -96,18 +130,17 @@ const PeersView = () => {
         });
     };
 
-    // Re-draw essentially on resize or peers update
+    // Re-draw effectively mapping particles recursively 60fps natively
     useEffect(() => {
-        drawNetwork();
+        let animationFrameId;
         
-        const handleResize = () => drawNetwork();
-        window.addEventListener('resize', handleResize);
-        // double-trigger to capture dynamic flex bounds instantly
-        const t = setTimeout(drawNetwork, 50);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            clearTimeout(t);
+        const renderLoop = () => {
+            drawNetwork();
+            animationFrameId = window.requestAnimationFrame(renderLoop);
         };
+        renderLoop();
+
+        return () => window.cancelAnimationFrame(animationFrameId);
     }, [peers]);
 
     const otherPeers = peers.filter(p => p.status !== 'self');
@@ -115,11 +148,13 @@ const PeersView = () => {
 
     return (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
+            <GossipStatsPanel telemetry={gossipTelemetry} />
+
             <section className="glass-panel stagger-1">
                 <div className="section-header">
-                    <h2>Network</h2>
+                    <h2>Network Diagnostics</h2>
                 </div>
-                <div id="canvas-container" className="canvas-grid-bg" style={{ width: '100%', height: '350px', position: 'relative', overflow: 'hidden' }}>
+                <div id="canvas-container" className="canvas-grid-bg" style={{ width: '100%', height: '400px', position: 'relative', overflow: 'hidden' }}>
                     <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }}></canvas>
                 </div>
             </section>
