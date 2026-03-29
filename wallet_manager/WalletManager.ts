@@ -1,7 +1,9 @@
+import * as crypto from 'crypto';
+
 import { BLOCK_TYPES } from '../constants';
 import type Ledger from '../ledger/Ledger';
 import logger from '../logger/Logger';
-import type { TransactionBlock, TransactionPayload, StorageContractBlock, StorageContractPayload, StakingContractBlock, SlashingTransactionBlock } from '../types';
+import type { TransactionPayload, StorageContractBlock, StorageContractPayload, StakingContractPayload, SlashingPayload, Block } from '../types';
 
 
 export default class WalletManager {
@@ -10,14 +12,48 @@ export default class WalletManager {
 
     constructor(ledger: Ledger) {
         this.ledger = ledger;
+        this.ledger.events.on('blockAdded', (block: Block) => {
+            this.updateIncrementalState(block).catch(err => {
+                logger.error(`Error updating incremental state: ${(err as Error).message}`);
+            });
+        });
     }
 
-    /**
-     * Calculates the deterministic token balance of a peer by sweeping the public blockchain.
-     * Genesis injections act as base token creation events.
-     * @param peerId The public key hash or ID of the peer
-     * @returns The floating-point token map of the peer's actual network wealth 
-     */
+    async updateIncrementalState(block: Block): Promise<void> {
+        if (!this.ledger.balancesCollection) return;
+        const balances = this.ledger.balancesCollection;
+        const activeContracts = this.ledger.activeContractsCollection;
+
+        if (block.type === BLOCK_TYPES.TRANSACTION) {
+            const p = block.payload as TransactionPayload;
+            if (p.senderId !== 'SYSTEM') {
+                await balances.updateOne({ publicKey: p.senderId }, { $inc: { balance: -p.amount } }, { upsert: true });
+            }
+            if (p.recipientId !== 'SYSTEM') {
+                await balances.updateOne({ publicKey: p.recipientId }, { $inc: { balance: p.amount } }, { upsert: true });
+            }
+        } else if (block.type === BLOCK_TYPES.STORAGE_CONTRACT) {
+            const p = block.payload as StorageContractPayload;
+            if (activeContracts) {
+                await activeContracts.updateOne({ contractId: block.hash }, { $set: { payload: p, publicKey: block.publicKey } }, { upsert: true });
+            }
+            const escrowToDeduct = p.remainingEgressEscrow ?? p.allocatedEgressEscrow ?? 0;
+            if (escrowToDeduct > 0) {
+                await balances.updateOne({ publicKey: block.publicKey }, { $inc: { balance: -escrowToDeduct } }, { upsert: true });
+            }
+        } else if (block.type === BLOCK_TYPES.STAKING_CONTRACT) {
+            const p = block.payload as StakingContractPayload;
+            if (p.collateralAmount) {
+                await balances.updateOne({ publicKey: p.operatorPublicKey }, { $inc: { balance: -p.collateralAmount } }, { upsert: true });
+            }
+        } else if (block.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
+            const p = block.payload as SlashingPayload;
+            if (p.burntAmount) {
+                await balances.updateOne({ publicKey: p.penalizedPublicKey }, { $inc: { balance: -p.burntAmount } }, { upsert: true });
+            }
+        }
+    }
+
     async calculateBalance(peerId: string): Promise<number> {
         if (peerId === 'SYSTEM') {
             return Infinity;
@@ -26,64 +62,12 @@ export default class WalletManager {
         let balance = 0;
 
         try {
-            if (!this.ledger.collection) {
-                return 0; // Prevent querying against uninitialized local structures
-            }
-
-            const transactions = await this.ledger.collection.find({
-                type: BLOCK_TYPES.TRANSACTION,
-                $or: [
-                    { 'payload.senderId': peerId },
-                    { 'payload.recipientId': peerId }
-                ]
-            }).toArray() as TransactionBlock[];
-
-            for (const block of transactions) {
-                if (block.payload?.senderId === peerId) {
-                    balance -= block.payload.amount;
-                }
-                if (block.payload?.recipientId === peerId) {
-                    balance += block.payload.amount;
+            if (this.ledger.balancesCollection) {
+                const record = await this.ledger.balancesCollection.findOne({ publicKey: peerId });
+                if (record && record.balance) {
+                    balance = record.balance;
                 }
             }
-
-            // Deduct dynamic public escrow costs reserved exclusively mapping physical chunks limiting runaway downloads
-            const activeContracts = await this.ledger.collection.find({
-                type: BLOCK_TYPES.STORAGE_CONTRACT,
-                publicKey: peerId,
-                'payload.remainingEgressEscrow': { $gt: 0 }
-            }).toArray() as StorageContractBlock[];
-
-            for (const contract of activeContracts) {
-                if (contract.payload?.remainingEgressEscrow) {
-                    balance -= contract.payload.remainingEgressEscrow;
-                }
-            }
-
-            // Phase 5b - Staking Collateral Escrows
-            const stakingLocks = await this.ledger.collection.find({
-                type: BLOCK_TYPES.STAKING_CONTRACT,
-                'payload.operatorPublicKey': peerId
-            }).toArray() as StakingContractBlock[];
-
-            for (const freeze of stakingLocks) {
-                if (freeze.payload?.collateralAmount) {
-                    balance -= freeze.payload.collateralAmount;
-                }
-            }
-
-            // Phase 5b - Permanent Slashing Confiscation
-            const slashes = await this.ledger.collection.find({
-                type: BLOCK_TYPES.SLASHING_TRANSACTION,
-                'payload.penalizedPublicKey': peerId
-            }).toArray() as SlashingTransactionBlock[];
-
-            for (const slash of slashes) {
-                if (slash.payload?.burntAmount) {
-                    balance -= slash.payload.burntAmount; // permanent removal from liquid wealth
-                }
-            }
-
         } catch (error) {
             logger.error(`Error calculating balance for peer ${peerId}: ${(error as Error).message}`);
         }
@@ -161,13 +145,8 @@ export default class WalletManager {
         };
     }
 
-    /**
-     * Deducts calculated stream costs from a block's allocated egress escrow atomically.
-     * @param blockHash The target contract block bounding the extraction.
-     * @param calculatedCost Float numerical reduction to apply.
-     */
     async deductEgressEscrow(blockHash: string, calculatedCost: number): Promise<void> {
-        if (!this.ledger.collection) return;
+        if (!this.ledger.collection || !this.ledger.activeContractsCollection || !this.ledger.balancesCollection) return;
         if (calculatedCost <= 0) return;
 
         const block = await this.ledger.collection.findOne({ hash: blockHash }) as StorageContractBlock | null;
@@ -177,11 +156,42 @@ export default class WalletManager {
         const currentRemaining = p.remainingEgressEscrow ?? p.allocatedEgressEscrow ?? 0;
 
         const newRemaining = Math.max(0, currentRemaining - calculatedCost);
+        const actualDeduction = currentRemaining - newRemaining;
 
         await this.ledger.collection.updateOne(
             { hash: blockHash },
             { $set: { "payload.remainingEgressEscrow": newRemaining } }
         );
+
+        await this.ledger.activeContractsCollection.updateOne(
+            { contractId: blockHash },
+            { $set: { "payload.remainingEgressEscrow": newRemaining } }
+        );
+
+        if (actualDeduction > 0) {
+            await this.ledger.balancesCollection.updateOne(
+                { publicKey: block.publicKey },
+                { $inc: { balance: actualDeduction } },
+                { upsert: true }
+            );
+        }
+    }
+
+    async buildStateRoot(): Promise<{ stateMerkleRoot: string, activeContractsMerkleRoot: string }> {
+        if (!this.ledger.balancesCollection || !this.ledger.activeContractsCollection) {
+            return { stateMerkleRoot: '', activeContractsMerkleRoot: '' };
+        }
+        
+        // Exclude system accounts or Mongo IDs explicitly during mapping
+        const stateStream = await this.ledger.balancesCollection.find({}, { projection: { _id: 0 } }).sort({ publicKey: 1 }).toArray();
+        const stateStr = JSON.stringify(stateStream);
+        const stateMerkleRoot = crypto.createHash('sha256').update(stateStr).digest('hex');
+
+        const contractsStream = await this.ledger.activeContractsCollection.find({}, { projection: { _id: 0 } }).sort({ contractId: 1 }).toArray();
+        const contractsStr = JSON.stringify(contractsStream);
+        const activeContractsMerkleRoot = crypto.createHash('sha256').update(contractsStr).digest('hex');
+
+        return { stateMerkleRoot, activeContractsMerkleRoot };
     }
 
     /**

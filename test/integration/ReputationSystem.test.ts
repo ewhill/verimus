@@ -17,9 +17,9 @@ import { PendingBlockMessage } from '../../messages/pending_block_message/Pendin
 import RSAKeyPair from '../../p2p/lib/RSAKeyPair';
 import PeerNode from '../../peer_node/PeerNode';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
+import { createMock } from '../../test/utils/TestUtils';
 import type { Block } from '../../types';
 import { StorageContractPayload } from '../../types';
-import { createMock } from '../../test/utils/TestUtils';
 
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';

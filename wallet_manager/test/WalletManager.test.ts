@@ -1,55 +1,35 @@
 import assert from 'node:assert';
-import { describe, it, before, after, mock } from 'node:test';
+import { describe, it, mock } from 'node:test';
 
-import { MongoMemoryServer } from 'mongodb-memory-server';
-
-import { Collection, FindCursor, WithId } from 'mongodb';
-
-import { createMock } from '../../test/utils/TestUtils';
-import { BLOCK_TYPES } from '../../constants';
+import { Collection } from 'mongodb';
 import Ledger from '../../ledger/Ledger';
-import type { Block } from '../../types';
+import { createMock } from '../../test/utils/TestUtils';
 import WalletManager from '../WalletManager';
 
 describe('WalletManager', () => {
-    let mongod: MongoMemoryServer;
-    let mockLedger: any;
 
-    before(async () => {
-        mongod = await MongoMemoryServer.create();
-    });
-
-    after(async () => {
-        if (mongod) await mongod.stop();
-    });
-
-    it('Calculates base balance from transaction mapping correctly', async () => {
-        mockLedger = createMock<Ledger>({
-            collection: createMock<Collection<Block>>({
-                find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({
-                    toArray: async () => [
-                        createMock<WithId<Block>>({ type: BLOCK_TYPES.TRANSACTION, payload: { senderId: 'SYSTEM', recipientId: 'peerA', amount: 100, senderSignature: '' } }),
-                        createMock<WithId<Block>>({ type: BLOCK_TYPES.TRANSACTION, payload: { senderId: 'peerA', recipientId: 'peerB', amount: 20, senderSignature: '' } }),
-                        createMock<WithId<Block>>({ type: BLOCK_TYPES.TRANSACTION, payload: { senderId: 'peerC', recipientId: 'peerA', amount: 50, senderSignature: '' } })
-                    ]
-                })) as any
-            })
+    it('Calculates base balance from continuous mapping correctly', async () => {
+        const mockLedger = createMock<Ledger>({
+            balancesCollection: createMock<Collection<any>>({
+                findOne: mock.fn<(...args: any[]) => Promise<any>>(async (query: any) => {
+                    if (query.publicKey === 'peerA') return { balance: 130 };
+                    return null;
+                })
+            }),
+            events: { on: mock.fn() } as any
         });
 
         const walletManager = new WalletManager(mockLedger);
         const balance = await walletManager.calculateBalance('peerA');
-
-        // 0 base + 100 - 20 + 50 = 130
         assert.strictEqual(balance, 130);
     });
 
     it('Returns zero if no ledger history maps peer', async () => {
-        mockLedger = createMock<Ledger>({
-            collection: createMock<Collection<Block>>({
-                find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({
-                    toArray: async () => []
-                })) as any
-            })
+        const mockLedger = createMock<Ledger>({
+            balancesCollection: createMock<Collection<any>>({
+                findOne: mock.fn<(...args: any[]) => Promise<any>>(async () => null)
+            }),
+            events: { on: mock.fn() } as any
         });
 
         const walletManager = new WalletManager(mockLedger);
@@ -58,14 +38,11 @@ describe('WalletManager', () => {
     });
 
     it('Verifies boundaries checking mathematical state', async () => {
-        mockLedger = createMock<Ledger>({
-            collection: createMock<Collection<Block>>({
-                find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({
-                    toArray: async () => [
-                        createMock<WithId<Block>>({ type: BLOCK_TYPES.TRANSACTION, payload: { senderId: 'SYSTEM', recipientId: 'peerA', amount: 50, senderSignature: '' } })
-                    ]
-                })) as any
-            })
+        const mockLedger = createMock<Ledger>({
+            balancesCollection: createMock<Collection<any>>({
+                findOne: mock.fn<(...args: any[]) => Promise<any>>(async () => ({ balance: 50 }))
+            }),
+            events: { on: mock.fn() } as any
         });
 
         const walletManager = new WalletManager(mockLedger);
@@ -77,14 +54,11 @@ describe('WalletManager', () => {
     });
 
     it('Allocates valid transactions blocking invalid mappings', async () => {
-        mockLedger = createMock<Ledger>({
-            collection: createMock<Collection<Block>>({
-                find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({
-                    toArray: async () => [
-                        createMock<WithId<Block>>({ type: BLOCK_TYPES.TRANSACTION, payload: { senderId: 'SYSTEM', recipientId: 'peerA', amount: 50, senderSignature: '' } })
-                    ]
-                })) as any
-            })
+        const mockLedger = createMock<Ledger>({
+            balancesCollection: createMock<Collection<any>>({
+                findOne: mock.fn<(...args: any[]) => Promise<any>>(async () => ({ balance: 50 }))
+            }),
+            events: { on: mock.fn() } as any
         });
 
         const walletManager = new WalletManager(mockLedger);
@@ -99,11 +73,10 @@ describe('WalletManager', () => {
 
     it('Tests SYSTEM boundary checks verifying mint capabilities', async () => {
         const mockLedger = createMock<Ledger>({
-            collection: createMock<Collection<Block>>({
-                find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({
-                    toArray: async () => []
-                })) as any
-            })
+            balancesCollection: createMock<Collection<any>>({
+                findOne: mock.fn<(...args: any[]) => Promise<any>>(async () => null)
+            }),
+            events: { on: mock.fn() } as any
         });
         const walletManager = new WalletManager(mockLedger);
         const balance = await walletManager.calculateBalance('SYSTEM');
@@ -120,60 +93,45 @@ describe('WalletManager', () => {
     it('Calculates fractional block rewards via continuous mathematical scaling formulas', async () => {
         const genesisTimestamp = 1774310400000;
 
-        // Exact genesis time mappings reward full node payload bounds
         const genesisReward = WalletManager.calculateSystemReward(genesisTimestamp, genesisTimestamp);
         assert.strictEqual(genesisReward, 50.0);
 
-        // 4 Years physical timing maps half-life Kryders mapping mathematically
         const fourYearsLater = genesisTimestamp + (4 * 365.25 * 24 * 60 * 60 * 1000);
         const fourYearReward = WalletManager.calculateSystemReward(fourYearsLater, genesisTimestamp);
-        // Approximately 25.0
         assert.ok(fourYearReward > 24.9 && fourYearReward < 25.1);
 
-        // 10 Years out verifies long term fractional decay
         const tenYearsLater = genesisTimestamp + (10 * 365.25 * 24 * 60 * 60 * 1000);
         const tenYearReward = WalletManager.calculateSystemReward(tenYearsLater, genesisTimestamp);
-
-        // expected: 50 * exp(-ln2 * 10 / 4) = 50 * exp(-1.7328) = 50 * 0.17677 = 8.838
         assert.ok(tenYearReward > 8.8 && tenYearReward < 8.9);
 
-        // Sub-genesis blocks revert mapping exactly 50
         const preGenesis = genesisTimestamp - 1000000;
         const preGenesisReward = WalletManager.calculateSystemReward(preGenesis, genesisTimestamp);
         assert.strictEqual(preGenesisReward, 50.0);
     });
 
     it('Freezes funds calculating frozen limits preventing double spending', async () => {
-        mockLedger = createMock<Ledger>({
-            collection: createMock<Collection<Block>>({
-                find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({
-                    toArray: async () => [
-                        createMock<WithId<Block>>({ type: BLOCK_TYPES.TRANSACTION, payload: { senderId: 'SYSTEM', recipientId: 'peerX', amount: 300, senderSignature: '' } })
-                    ]
-                })) as any
-            })
+        const mockLedger = createMock<Ledger>({
+            balancesCollection: createMock<Collection<any>>({
+                findOne: mock.fn<(...args: any[]) => Promise<any>>(async () => ({ balance: 300 }))
+            }),
+            events: { on: mock.fn() } as any
         });
 
         const walletManager = new WalletManager(mockLedger);
-        // Initially 300
         const initialBalance = await walletManager.calculateBalance('peerX');
         assert.strictEqual(initialBalance, 300);
 
-        // Freeze 200 for contract A
         walletManager.freezeFunds('peerX', 200, 'contract-A');
         const activeBalance = await walletManager.calculateBalance('peerX');
         assert.strictEqual(activeBalance, 100);
 
-        // Try to allocate 150 which should fail since active is 100
         const blocked = await walletManager.allocateFunds('peerX', 'peerY', 150, 'sig');
         assert.strictEqual(blocked, null);
 
-        // Release funds
         walletManager.releaseFunds('contract-A');
         const releasedBalance = await walletManager.calculateBalance('peerX');
         assert.strictEqual(releasedBalance, 300);
 
-        // Commit funds clears the lock
         walletManager.freezeFunds('peerX', 250, 'contract-B');
         assert.strictEqual(await walletManager.calculateBalance('peerX'), 50);
         walletManager.commitFunds('contract-B');

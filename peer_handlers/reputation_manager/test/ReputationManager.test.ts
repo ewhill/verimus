@@ -4,9 +4,9 @@ import { describe, it, mock } from 'node:test';
 
 import { Collection } from 'mongodb';
 
+import { createMock } from '../../../test/utils/TestUtils';
 import type { PeerReputation } from '../../../types';
 import { ReputationManager } from '../ReputationManager';
-import { createMock } from '../../../test/utils/TestUtils';
 
 const createMockCollection = (data: Record<string, any> = {}) => createMock<Collection<PeerReputation>>({
     findOne: mock.fn<({ publicKey }: { publicKey: string }) => Promise<PeerReputation | null>>(async ({ publicKey }: { publicKey: string }) => data[publicKey] || null) as any,

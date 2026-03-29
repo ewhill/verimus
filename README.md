@@ -15,6 +15,7 @@ This project implements a secure, decentralized, blockchain-backed distributed s
   - `remote-fs` (Network SFTP)
 - **Decentralized Token Economics:** Natively enforces strict token balances via the newly minted `WalletManager`, rejecting double-spend transaction blocks and instituting a decentralized VERI marketplace initialized organically by an unforgeable Genesis `SYSTEM` treasury.
 - **Validated Data Seeding:** Orchestrates strict proof-of-absorption cryptographic challenges (`VerifyHandoff`) mapping linear stream boundary checksums seamlessly ensuring shard arrays are written physically to remote disks before minting escrow contract blocks.
+- **Phase 6 O(1) Checkpoint Pruning:** Introduces strict `CHECKPOINT` epoch boundary limits at 1,000,000 block intervals. The engine intrinsically maintains a Continuous Incremental State Map of peer wealth physically within MongoDB, bypassing legacy O(E) ledger sweeping and permitting infinite historical history eviction natively prioritizing disk elasticity.
 - **Advanced UI Platform:** The frontend relies on a dynamic React & Zustand state-management system resolving asynchronous telemetry data via Vite.
 
 ## Repository Setup & Integration

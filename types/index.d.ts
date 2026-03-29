@@ -72,6 +72,14 @@ export interface SlashingPayload {
     burntAmount: number;
 }
 
+export interface CheckpointStatePayload {
+    epochIndex: number;
+    startHash: string;
+    endHash: string;
+    stateMerkleRoot: string;
+    activeContractsMerkleRoot: string;
+}
+
 export interface BlockPrivateFile {
     path: string;
     contentHash: string;
@@ -167,6 +175,11 @@ export interface SlashingTransactionBlock extends BaseBlock {
     payload: SlashingPayload;
 }
 
-export type Block = TransactionBlock | StorageContractBlock | StakingContractBlock | SlashingTransactionBlock;
+export interface CheckpointBlock extends BaseBlock {
+    type: typeof BLOCK_TYPES.CHECKPOINT;
+    payload: CheckpointStatePayload;
+}
+
+export type Block = TransactionBlock | StorageContractBlock | StakingContractBlock | SlashingTransactionBlock | CheckpointBlock;
 
 declare module '@marsaud/smb2';

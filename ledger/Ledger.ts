@@ -13,6 +13,8 @@ class Ledger {
     collection: Collection<Block> | null;
     peersCollection: Collection<PeerReputation> | null;
     ownedBlocksCollection: Collection<any> | null;
+    balancesCollection: Collection<any> | null;
+    activeContractsCollection: Collection<any> | null;
     events: EventEmitter;
     constructor(mongoUri: string = 'mongodb://127.0.0.1:27017') {
         this.client = new MongoClient(mongoUri, {
@@ -26,6 +28,8 @@ class Ledger {
         this.collection = null;
         this.peersCollection = null;
         this.ownedBlocksCollection = null;
+        this.balancesCollection = null;
+        this.activeContractsCollection = null;
         this.events = new EventEmitter();
     }
 
@@ -35,14 +39,17 @@ class Ledger {
         this.collection = this.db.collection('blocks');
         this.peersCollection = this.db.collection('peers');
         this.ownedBlocksCollection = this.db.collection('ownedBlocks');
+        this.balancesCollection = this.db.collection('balances');
+        this.activeContractsCollection = this.db.collection('activeContracts');
 
         // Enforce strict mathematical sequence indexing to prevent silent ledger race bounds mapping identical heights 
         await this.collection.createIndex({ "metadata.index": 1 }, { unique: true });
 
         // Ensure peer lookups by publicKey are bound mathematically O(1) matching uniquely
         await this.peersCollection.createIndex({ "publicKey": 1 }, { unique: true });
-
         await this.ownedBlocksCollection.createIndex({ hash: 1 }, { unique: true });
+        await this.balancesCollection.createIndex({ publicKey: 1 }, { unique: true });
+        await this.activeContractsCollection.createIndex({ contractId: 1 }, { unique: true });
 
         // Ensure genesis block exists
         const count = await this.collection.countDocuments();
@@ -86,8 +93,18 @@ class Ledger {
         // Drop all blocks completely securing bounds
         // DO NOT drop peersCollection. Not doing so persists reputation across reboots.
         await this.collection!.deleteMany({});
+        await this.balancesCollection!.deleteMany({});
+        await this.activeContractsCollection!.deleteMany({});
+
         const genesis = this.createGenesisBlock();
         await this.collection!.insertOne(genesis);
+    }
+
+    async pruneHistory(checkpointIndex: number) {
+        if (!this.collection) return;
+        // The checkpoint index serves as the new base limit. All prior blocks (except Genesis if we wanted) are burned.
+        // Actually, we burn EVERYTHING strictly < checkpointIndex.
+        await this.collection.deleteMany({ "metadata.index": { $lt: checkpointIndex } });
     }
 
     async addBlockToChain(block: Block) {

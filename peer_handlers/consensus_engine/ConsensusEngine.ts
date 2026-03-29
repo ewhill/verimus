@@ -10,7 +10,7 @@ import { ProposeForkMessage } from '../../messages/propose_fork_message/ProposeF
 import { VerifyBlockMessage } from '../../messages/verify_block_message/VerifyBlockMessage';
 import Mempool from '../../models/mempool/Mempool';
 import PeerNode from '../../peer_node/PeerNode';
-import type { Block, PeerConnection, TransactionPayload, StorageContractPayload, SlashingPayload } from '../../types';
+import type { Block, PeerConnection, TransactionPayload, StorageContractPayload, SlashingPayload, CheckpointStatePayload } from '../../types';
 import WalletManager from '../../wallet_manager/WalletManager';
 
 
@@ -109,6 +109,18 @@ class ConsensusEngine {
                 if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.publicKey, "Slashing Forgery");
                 return;
             }
+        }
+
+        if (block.type === BLOCK_TYPES.CHECKPOINT) {
+            const chkPayload = block.payload as CheckpointStatePayload;
+            const expectedRoots = await this.walletManager.buildStateRoot();
+            
+            if (chkPayload.stateMerkleRoot !== expectedRoots.stateMerkleRoot || chkPayload.activeContractsMerkleRoot !== expectedRoots.activeContractsMerkleRoot) {
+                logger.warn(`[Peer ${this.node.port}] Rejected CHECKPOINT: State Root mismatch! Forgery detected. Expected SR: ${expectedRoots.stateMerkleRoot.slice(0,8)} vs Got SR: ${chkPayload.stateMerkleRoot.slice(0,8)}`);
+                if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.publicKey, "Checkpoint State Forgery");
+                return;
+            }
+            logger.info(`[Peer ${this.node.port}] Verified CHECKPOINT Block successfully matching local physical Merkle roots.`);
         }
 
         if (this.node.reputationManager) await this.node.reputationManager.rewardHonestProposal(block.publicKey);
@@ -370,6 +382,39 @@ class ConsensusEngine {
 
                 await this.node.ledger.addBlockToChain(block);
                 logger.info(`[Peer ${this.node.port}] Committed block index ${block.metadata.index} (hash: ${block.hash!.slice(0, 8)})`);
+
+                if (block.type === BLOCK_TYPES.CHECKPOINT) {
+                    await this.node.ledger.pruneHistory(block.metadata.index);
+                    logger.info(`[Peer ${this.node.port}] Successfully pruned historical ledger up to boundary limit ${block.metadata.index} based on structural CHECKPOINT validation.`);
+                } else {
+                    const EPOCH_SIZE = 1000000;
+                    if (block.metadata.index > 0 && block.metadata.index % EPOCH_SIZE === 0) {
+                        if (block.publicKey === this.node.publicKey) {
+                            logger.info(`[Peer ${this.node.port}] Node triggered Epoch Boundary at index ${block.metadata.index}! Formulating Checkpoint block...`);
+                            
+                            const stateRoots = await this.walletManager.buildStateRoot();
+                            const checkpointPayload: CheckpointStatePayload = {
+                                epochIndex: Math.floor(block.metadata.index / EPOCH_SIZE),
+                                startHash: ''.padStart(64, '0'),
+                                endHash: block.hash!,
+                                stateMerkleRoot: stateRoots.stateMerkleRoot,
+                                activeContractsMerkleRoot: stateRoots.activeContractsMerkleRoot
+                            };
+                            
+                            const sigStr = signData(JSON.stringify(checkpointPayload), this.node.privateKey);
+                            const checkpointBlock: Block = {
+                                metadata: { index: block.metadata.index + 1, timestamp: Date.now() },
+                                type: BLOCK_TYPES.CHECKPOINT,
+                                payload: checkpointPayload,
+                                publicKey: this.node.publicKey,
+                                previousHash: block.hash!,
+                                signature: sigStr as string
+                            };
+                            
+                            await this.handlePendingBlock(checkpointBlock, { peerAddress: '0.0.0.0', send: () => {} } as any, Date.now());
+                        }
+                    }
+                }
 
                 const sigHash = crypto.createHash('sha256').update(block.signature).digest('hex');
                 for (const [bId, pEntry] of this.mempool.pendingBlocks.entries()) {

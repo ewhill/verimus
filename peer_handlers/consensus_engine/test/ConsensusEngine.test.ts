@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import * as crypto from 'node:crypto';
-import { describe, it, beforeEach, afterEach, mock } from 'node:test';
 import { EventEmitter } from 'node:events';
+import { describe, it, beforeEach, afterEach, mock } from 'node:test';
 
 import { ObjectId } from 'mongodb';
 
@@ -9,9 +9,9 @@ import { generateRSAKeyPair } from '../../../crypto_utils/CryptoUtils';
 import * as proxyCrypto from '../../../crypto_utils/CryptoUtils';
 import Mempool from '../../../models/mempool/Mempool';
 import type PeerNode from '../../../peer_node/PeerNode';
+import { createMock } from '../../../test/utils/TestUtils';
 import type { Block, PeerConnection } from '../../../types';
 import ConsensusEngine from '../ConsensusEngine';
-import { createMock } from '../../../test/utils/TestUtils';
 
 const mockConn: PeerConnection = { peerAddress: '127.0.0.1:3001', send: () => { } };
 const createMockBlock = (signature: string, publicKey: string, hash: string): Block => ({
@@ -39,8 +39,9 @@ describe('Backend: ConsensusEngine Integrity', () => {
             syncEngine: createMock<any>({ isSyncing: false, syncBuffer: [] }),
             getMajorityCount: mock.fn<() => number>(() => 2),
             ledger: createMock<any>({
-                collection: createMock<any>({ findOne: mock.fn<() => Promise<null>>(async () => null) as any }),
-                getLatestBlock: mock.fn<() => Promise<Block>>(async () => ({ ...createMockBlock('sig', 'pk', '0000abc'), metadata: { index: 5, timestamp: 123 }, _id: new ObjectId('000000000000000000000001') }) as any),
+                collection: createMock<any>({ findOne: mock.fn<(...args: any[]) => Promise<null>>(async () => null) as any }),
+                getLatestBlock: mock.fn<(...args: any[]) => Promise<Block>>(async () => ({ ...createMockBlock('sig', 'pk', '0000abc'), metadata: { index: 5, timestamp: 123 }, _id: new ObjectId('000000000000000000000001') }) as any),
+                events: { on: mock.fn(), emit: mock.fn(), once: mock.fn() } as any,
                 addBlockToChain: mock.fn<(block: Block) => Promise<Block>>(async (block: Block) => block)
             }),
             peer: createMock<any>({

@@ -65,6 +65,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
         await node.consensusEngine.handleVerifyBlock(pMsg.blockId, pMsg.signature, mockConn);
 
         await forkEvent;
+        await new Promise(res => setTimeout(res, 50));
 
         // Assert Step: WalletManager tracks initial Locked Escrow correctly 
         const testBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousHostKeys.publicKey);
@@ -120,6 +121,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
         await node.consensusEngine.handleVerifyBlock(slashId, slashSig, mockConn);
 
         await slashFork;
+        await new Promise(res => setTimeout(res, 50));
 
         // Finalize state limits natively executing collateral mathematical checks limits
         const postSlashBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousHostKeys.publicKey);

@@ -8,11 +8,11 @@ import { ChainStatusResponseMessage } from '../../../messages/chain_status_respo
 import { StorageBidMessage } from '../../../messages/storage_bid_message/StorageBidMessage';
 import { StorageRequestMessage } from '../../../messages/storage_request_message/StorageRequestMessage';
 import { VerifyHandoffRequestMessage } from '../../../messages/verify_handoff_request_message/VerifyHandoffRequestMessage';
+import type PeerNode from '../../../peer_node/PeerNode';
+import { createMock } from '../../../test/utils/TestUtils';
 import type { Block, PeerConnection } from '../../../types';
 import { NodeRole } from '../../../types/NodeRole';
-import type PeerNode from '../../../peer_node/PeerNode';
 import SyncEngine from '../SyncEngine';
-import { createMock } from '../../../test/utils/TestUtils';
 
 const createMockBlock = (hash: string, pk: string = 'pk'): Block => ({
     type: 'TRANSACTION',
