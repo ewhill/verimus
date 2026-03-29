@@ -40,7 +40,15 @@ export default class PeersHandler extends BaseHandler {
             strikeCount: selfPg ? selfPg.strikeCount : 0
         };
         const connectedCount = peers.filter(p => p.status === 'connected').length;
-        res.json({ success: true, peers: [self, ...peers], connectedCount });
+
+        // Extract internal Engine P2P limits dynamically
+        const gossipTelemetry = {
+             messageCacheSize: this.node.peer.seenMessageHashes_ ? this.node.peer.seenMessageHashes_.size : 0,
+             discoveryBookSize: this.node.peer.discoveryAddressBook_ ? Object.keys(this.node.peer.discoveryAddressBook_).length : 0,
+             maxPeers: (this.node.peer as any).maxSockets_ || 50
+        };
+
+        res.json({ success: true, peers: [self, ...peers], connectedCount, gossipTelemetry });
     } catch (error: any) {
         console.error('[API Error] /api/peers:', error);
         res.status(500).json({ success: false, message: error.message });
