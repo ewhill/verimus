@@ -101,6 +101,8 @@ Once started, navigate your browser to:
 
 The engine uses isolated environments to eliminate volatile filesystem residue. All physical data interactions bypass persistent allocations via `mongodb-memory-server` and explicit virtualized providers (`MemoryStorageProvider`).
 
+- **Clementine E2E Lifecycle Master Sandbox:** A monumental 5-node continuous topology mesh organically simulating Phase 0 structures natively shifting to Phase 6 Checkpoint evaluations seamlessly inside `test/integration/ClementineLifecycle.test.ts` without touching a single physical disk environment.
+
 ```bash
 # Execute full backend verification validating components, integrations, and logic handlers (Requires ZERO active physical databases/artifacts): 
 npm test
