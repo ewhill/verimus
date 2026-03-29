@@ -4,7 +4,8 @@
 The decentralized environment requires issuing autonomous fractional `SYSTEM` rewards. This inflates the linear `Ledger` scale over time. New or offline node instances spinning up require massive historical retrieval payloads to calculate the base arithmetic balances before participating in network consensus. We must implement state checkpoints that consolidate past blocks and discard old transaction data.
 
 ## 2. System Architecture Context (For Un-onboarded Engineers)
-Verimus nodes synchronize the state of the network by gossiping blocks through the `RingNet` topology. The `ConsensusEngine.ts` validates incoming blocks and asks the `Ledger.ts` database interface to append them. If a node connects for the first time, it downloads the entire blockchain history and runs `WalletManager.ts` to iterate from the Genesis block to current height, summing all transaction rewards and contract costs. To prune this history, we must introduce a single summarizing object (`CHECKPOINT` block) that encapsulates the exact final balance calculation state, allowing new nodes to start computing from that specific checkpoint hash rather than Genesis.
+Verimus nodes synchronize the state of the network by gossiping blocks through the `RingNet` topology. The `ConsensusEngine.ts` validates incoming blocks and asks the `Ledger.ts` database interface to append them. If a node connects for the first time, it downloads the entire blockchain history and runs `WalletManager.ts` to iterate from the Genesis block to current height, summing all transaction rewards and contract costs. 
+To securely prune this history and prevent catastrophic Out-of-Memory scaling bugs for highly populated networks (millions of wallets), we are transitioning from Epoch Recalculation natively to **Continuous Incremental State Mapping**. `WalletManager` natively processes state changes permanently into a `balances` MongoDB collection matching every newly adopted block seamlessly. Because the state is continuously tracked on-disk, generating a `CHECKPOINT` block natively pulls exactly $O(1)$ RAM limits securely.
 
 ## 3. Target Component Scope
 - **`ledger/Ledger.ts`:** Construct state checkpoint insertions and trim previous historic blocks.
@@ -19,8 +20,8 @@ export interface CheckpointStatePayload {
     epochIndex: number;
     startHash: string;
     endHash: string; // The concluding block of the previous epoch timeframe
-    compiledBalances: { [publicKey: string]: number }; // Aggregate target mapping arithmetic limits 
-    activeContracts: { [contractId: string]: StorageContractPayload };
+    stateMerkleRoot: string; // Cryptographic sum of all out-of-band state maps limits
+    activeContractsMerkleRoot: string; 
 }
 
 export interface CheckpointBlock {
@@ -51,12 +52,12 @@ export interface CheckpointBlock {
 
 ## 8. Proposed Solution Pros & Cons
 ### Pros
-- Condenses blockchain resynchronization times from terabytes to sub-minute cryptographic checkpoints.
-- Solves the infinite linear ledger dilemma securing physical SSD bounds independently.
+- Condenses blockchain resynchronization times from terabytes natively to sub-minute cryptographic checkpoints explicitly embedding $O(1)$ state roots preventing overarching bandwidth exhaustion.
+- Resolves the in-memory array bottleneck; tracking continuous state inside a persistent MongoDB `balances` collection scales to infinity natively terminating overarching RAM OOM crash matrices natively.
+- Solves the infinite linear physical ledger dilemma aggressively securing physical SSD footprint bounds natively by physically pruning historical `blocks`.
 
 ### Cons
-- Complicates `WalletManager` inference tracking and forces dual-phase historical validation.
-- Compiling active contracts into forced consensus pushes heavy active voting sequences.
+- Restructures foundational Wallet routing mechanics significantly, requiring continuous atomic database state mutations per block adopted independently natively.
 
 ## 9. Alternative Solution: Centralized Archival Data Hubs
 Define centralized "Archival Tier" nodes mandated to map the full immutable chain history, allowing generic nodes to query RPC arrays discarding direct database persistence.
