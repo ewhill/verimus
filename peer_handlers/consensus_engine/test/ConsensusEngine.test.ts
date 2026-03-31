@@ -122,10 +122,10 @@ describe('Backend: ConsensusEngine Integrity', () => {
             let broadcastCount = 0;
             mockNode.peer!.broadcast = async () => { broadcastCount++; };
 
-            // Should verify and process successfully
+            // Should verify and process successfully generating both a block gossip broadcast and a signature approval broadcast
             await engine.handlePendingBlock(mockBlock, { peerAddress: 'peer1', send: () => { } }, Date.now());
             assert.strictEqual(verifyCallCount, 1);
-            assert.strictEqual(broadcastCount, 1);
+            assert.strictEqual(broadcastCount, 2);
 
             // Orphan verification map test
             const blockId = crypto.createHash('sha256').update(mockBlock.signature).digest('hex');

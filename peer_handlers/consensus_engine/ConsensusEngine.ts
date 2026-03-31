@@ -38,11 +38,17 @@ class ConsensusEngine {
     bindHandlers() {
         this.node.peer?.bind(PendingBlockMessage).to(async (m: PendingBlockMessage, c: PeerConnection) => {
             // @ts-ignore
-            this.handlePendingBlock(m.block, c, m.header?.timestamp.getTime());
+            await this.handlePendingBlock(m.block, c, m.header?.timestamp.getTime());
         });
-        this.node.peer?.bind(VerifyBlockMessage).to(async (m: VerifyBlockMessage, c: PeerConnection) => this.handleVerifyBlock(m.blockId, m.signature, c));
-        this.node.peer?.bind(ProposeForkMessage).to(async (m: ProposeForkMessage, c: PeerConnection) => this.handleProposeFork(m.forkId, m.blockIds, c));
-        this.node.peer?.bind(AdoptForkMessage).to(async (m: AdoptForkMessage, c: PeerConnection) => this.handleAdoptFork(m.forkId, m.finalTipHash, c));
+        this.node.peer?.bind(VerifyBlockMessage).to(async (m: VerifyBlockMessage, c: PeerConnection) => {
+            await this.handleVerifyBlock(m.blockId, m.signature, c);
+        });
+        this.node.peer?.bind(ProposeForkMessage).to(async (m: ProposeForkMessage, c: PeerConnection) => {
+            await this.handleProposeFork(m.forkId, m.blockIds, c);
+        });
+        this.node.peer?.bind(AdoptForkMessage).to(async (m: AdoptForkMessage, c: PeerConnection) => {
+            await this.handleAdoptFork(m.forkId, m.finalTipHash, c);
+        });
     }
 
     async handlePendingBlock(block: Block, connection: PeerConnection, headerTimestamp: number) {
@@ -131,6 +137,12 @@ class ConsensusEngine {
                 verifications: new Set(),
                 originalTimestamp: headerTimestamp ? new Date(headerTimestamp).getTime() : Date.now()
             });
+            // Successfully verified as novel and valid, relay to external peers!
+            if (this.node.peer && connection.peerAddress !== `127.0.0.1:${this.node.port}`) {
+                this.node.peer.broadcast(new PendingBlockMessage({ block })).catch(err => {
+                    logger.warn(`[Peer ${this.node.port}] Suppressed relayed PendingBlock broadcast exception: ${err.message}`);
+                });
+            }
         }
 
         logger.info(`[Peer ${this.node.port}] Verified Pending Block ${blockId.slice(0, 8)} from ${connection.peerAddress}`);
@@ -171,8 +183,15 @@ class ConsensusEngine {
             return;
         }
 
+        if (pendingEntry.verifications.has(connection.peerAddress)) return;
         pendingEntry.verifications.add(connection.peerAddress);
         logger.info(`[Peer ${this.node.port}] Verification for ${blockId.slice(0, 8)} from ${connection.peerAddress}. Total: ${pendingEntry.verifications.size}`);
+
+        if (this.node.peer && connection.peerAddress !== `127.0.0.1:${this.node.port}`) {
+            this.node.peer.broadcast(new VerifyBlockMessage({ blockId, signature })).catch(err => {
+                logger.warn(`[Peer ${this.node.port}] Suppressed VerifyBlock relay exception: ${err.message}`);
+            });
+        }
 
         const majority = this.node.getMajorityCount();
         if (pendingEntry.verifications.size >= majority && !pendingEntry.eligible) {
@@ -189,45 +208,15 @@ class ConsensusEngine {
 
     async _checkAndProposeFork() {
         const eligibleBlockIds: string[] = [];
-        let hasStorageContract = false;
         for (const [bId, pEntry] of this.mempool.pendingBlocks.entries()) {
             if (pEntry.eligible && !pEntry.committed) {
                 eligibleBlockIds.push(bId);
-                if (pEntry.block.type === BLOCK_TYPES.STORAGE_CONTRACT) {
-                    hasStorageContract = true;
-                }
             }
         }
 
         if (eligibleBlockIds.length === 0) return;
 
-        if (hasStorageContract) {
-            const reward = WalletManager.calculateSystemReward(Date.now(), GENESIS_TIMESTAMP);
-            
-            const txPayload = await this.walletManager.allocateFunds('SYSTEM', this.node.publicKey, reward, 'SYSTEM_MINT');
-            if (txPayload) {
-                const sig = signData(JSON.stringify(txPayload), this.node.privateKey);
-                const newBlock: Block = {
-                    metadata: { index: -1, timestamp: Date.now() },
-                    type: BLOCK_TYPES.TRANSACTION,
-                    payload: txPayload,
-                    publicKey: this.node.publicKey,
-                    signature: sig as string
-                };
-                
-                const blockId = crypto.createHash('sha256').update(sig as string).digest('hex');
-                
-                this.mempool.pendingBlocks.set(blockId, {
-                    block: newBlock,
-                    verifications: new Set([`127.0.0.1:${this.node.port}`]),
-                    originalTimestamp: Date.now(),
-                    eligible: true,
-                    committed: false
-                });
-                
-                eligibleBlockIds.push(blockId);
-            }
-        }
+        if (eligibleBlockIds.length === 0) return;
 
         eligibleBlockIds.sort((a, b) => {
             const entryA = this.mempool.pendingBlocks.get(a);
@@ -259,8 +248,16 @@ class ConsensusEngine {
         }
 
         const forkEntry = this.mempool.eligibleForks.get(forkId);
+        if (forkEntry!.proposals.has(connection.peerAddress)) return;
+        
         forkEntry!.proposals.add(connection.peerAddress);
         logger.info(`[Peer ${this.node.port}] Proposal for Fork ${forkId.slice(0, 8)} from ${connection.peerAddress}. Total: ${forkEntry!.proposals.size}`);
+
+        if (this.node.peer && connection.peerAddress !== `127.0.0.1:${this.node.port}`) {
+            this.node.peer.broadcast(new ProposeForkMessage({ forkId, blockIds })).catch(e => {
+                logger.warn(`[Peer ${this.node.port}] Suppressed ProposeFork relay exception: ${e.message}`);
+            });
+        }
 
         const majority = this.node.getMajorityCount();
         if (forkEntry!.proposals.size >= majority && !forkEntry!.adopted) {
@@ -325,9 +322,16 @@ class ConsensusEngine {
 
         const settledEntry = this.mempool.settledForks.get(forkId);
         if (settledEntry!.finalTipHash !== finalTipHash) return;
+        if (settledEntry!.adoptions.has(connection.peerAddress)) return;
 
         settledEntry!.adoptions.add(connection.peerAddress);
         logger.info(`[Peer ${this.node.port}] Adoption for Fork ${forkId.slice(0, 8)} from ${connection.peerAddress}. Total: ${settledEntry!.adoptions.size}`);
+
+        if (this.node.peer && connection.peerAddress !== `127.0.0.1:${this.node.port}`) {
+            this.node.peer.broadcast(new AdoptForkMessage({ forkId, finalTipHash })).catch(e => {
+                logger.warn(`[Peer ${this.node.port}] Suppressed consensus adoption relay exception: ${e.message}`);
+            });
+        }
 
         const majority = this.node.getMajorityCount();
         if (settledEntry!.adoptions.size >= majority && !settledEntry!.committed) {
@@ -563,7 +567,15 @@ class ConsensusEngine {
                             publicKey: this.node.publicKey,
                             signature: signatureStr
                         };
-                        await this.handlePendingBlock(pendingBlock, { peerAddress: '0.0.0.0', send: () => {} } as any, Date.now());
+                        await this.handlePendingBlock(pendingBlock, { peerAddress: `127.0.0.1:${this.node.port}` } as any, Date.now());
+                        if (this.node.peer) {
+                            const p2pMsg = new PendingBlockMessage({ block: pendingBlock });
+                            try {
+                                await this.node.peer.broadcast(p2pMsg);
+                            } catch (err: any) {
+                                logger.warn(`[Peer ${this.node.port}] Broadcast error for slashing block: ${err.message}`);
+                            }
+                        }
                     } catch (e: any) {
                         logger.warn(`[Peer ${this.node.port}] Failed to execute slashing block: ${e.message}`);
                     }
@@ -620,7 +632,15 @@ class ConsensusEngine {
                                     publicKey: this.node.publicKey,
                                     signature: sig
                                 };
-                                await this.handlePendingBlock(b, { peerAddress: '0.0.0.0', send: () => {} } as any, Date.now());
+                                await this.handlePendingBlock(b, { peerAddress: `127.0.0.1:${this.node.port}` } as any, Date.now());
+                                if (this.node.peer) {
+                                    const p2pMsg = new PendingBlockMessage({ block: b });
+                                    try {
+                                        await this.node.peer.broadcast(p2pMsg);
+                                    } catch (err: any) {
+                                        logger.warn(`[Peer ${this.node.port}] Broadcast error for audit reward block: ${err.message}`);
+                                    }
+                                }
                             };
 
                             await mintTxBlock(hostTx);

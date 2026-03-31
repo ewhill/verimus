@@ -199,12 +199,17 @@ class SyncEngine {
         
         await this.node.peer!.broadcast(reqMsg);
 
-        // Await N valid bids filling the order book instantly, or timeout
         return new Promise((resolve) => {
             const market = this.activeStorageMarkets.get(requestId)!;
-            market.resolve = resolve;
             
-            setTimeout(() => {
+            let timer: NodeJS.Timeout | undefined;
+
+            market.resolve = (bids: any) => {
+                if (timer) clearTimeout(timer);
+                resolve(bids);
+            };
+
+            timer = setTimeout(() => {
                 const finalMarket = this.activeStorageMarkets.get(requestId);
                 if (finalMarket) {
                     finalMarket.resolve(finalMarket.bids);
