@@ -51,6 +51,7 @@ for i in {1..4}; do
     "$(dirname "$0")/spawn_node.sh" --watch --skip-ui --mongo-port 27018 --port $PORT --discover $DISCOVER --public-address 127.0.0.1:$PORT --force > /dev/null 2>&1 &
     echo "Started Node $((i+1)) on port $PORT"
     sleep 3
+done
 
 echo "Waiting for network convergence..."
 MAX_RETRIES=30

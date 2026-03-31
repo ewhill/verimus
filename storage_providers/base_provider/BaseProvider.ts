@@ -32,12 +32,12 @@ abstract class BaseStorageProvider {
     }
 
     /**
-     * Stores the encrypted block and returns a block ID.
-     * @param {Buffer|string} encryptedData 
-     * @returns {string} physicalBlockId
+     * Stores a data shard at a precisely predetermined physical block ID.
+     * @param {string} physicalBlockId
+     * @param {Buffer|string} encryptedData
      */
-    async storeBlock(_unusedEncryptedData: Buffer | string): Promise<string> {
-        throw new Error("storeBlock() must be implemented by subclasses");
+    async storeShard(_unusedPhysicalBlockId: string, _unusedEncryptedData: Buffer | string): Promise<void> {
+        throw new Error("storeShard() must be implemented by subclasses");
     }
 
     /**
@@ -66,17 +66,38 @@ abstract class BaseStorageProvider {
         throw new Error("generatePhysicalBlockId() must be implemented by subclasses");
     }
 
+    protected costPerGB: number = 1.5;
+    protected egressCostPerGB: number = 0.0;
+
     /**
      * Determines the cost per Gigabyte for a 30-day billing cycle.
      * @returns Float denoting the VERI token cost.
      */
-    abstract getCostPerGB(): number;
+    getCostPerGB(): number {
+        return this.costPerGB;
+    }
+
+    /**
+     * Set the Storage physical hosting limitations natively!
+     */
+    setCostPerGB(cost: number): void {
+        this.costPerGB = cost;
+    }
 
     /**
      * Determines the cost per Gigabyte transferred via the REST egress streaming HTTP pipe.
      * @returns Float denoting VERI token deduction mapping byte iterations uniformly.
      */
-    abstract getEgressCostPerGB(): number;
+    getEgressCostPerGB(): number {
+        return this.egressCostPerGB;
+    }
+
+    /**
+     * Update dynamic streaming penalty bounds visually
+     */
+    setEgressCostPerGB(cost: number): void {
+        this.egressCostPerGB = cost;
+    }
 }
 
 export default BaseStorageProvider;

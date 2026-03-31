@@ -12,8 +12,7 @@ class MemoryStorageProvider extends BaseStorageProvider {
         this.storage = new Map<string, Buffer>();
     }
 
-    getCostPerGB(): number { return 0.0; }
-    getEgressCostPerGB(): number { return 0.0; }
+
 
     getLocation() {
         return {
@@ -27,12 +26,9 @@ class MemoryStorageProvider extends BaseStorageProvider {
         return new MemoryStorageProvider();
     }
 
-    async storeBlock(encryptedData: Buffer | string): Promise<string> {
-        const physicalBlockId = hashData(Date.now().toString() + Math.random().toString());
+    async storeShard(physicalBlockId: string, encryptedData: Buffer | string): Promise<void> {
         const content = Buffer.isBuffer(encryptedData) ? encryptedData : Buffer.from(encryptedData);
-        
         this.storage.set(physicalBlockId, content);
-        return physicalBlockId;
     }
 
     createBlockStream() {

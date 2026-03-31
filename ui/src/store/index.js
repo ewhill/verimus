@@ -17,6 +17,7 @@ export const useStore = create(
     pagination: { page: 1, limit: 16, pages: 1 },
     nodeConfig: { publicKey: null, signature: null },
     isModalOpen: false,
+    isNodeConfigModalOpen: false,
     selectedBlockHash: null,
     isLoading: false,
     error: null,
@@ -40,6 +41,7 @@ export const useStore = create(
             case 'SET_FILES_MAP': return { filesMap: action.payload };
             case 'SET_NODE_CONFIG': return { nodeConfig: action.payload };
             case 'SET_MODAL_OPEN': return { isModalOpen: action.payload.isOpen, selectedBlockHash: action.payload.hash || null };
+            case 'SET_NODE_CONFIG_MODAL_OPEN': return { isNodeConfigModalOpen: action.payload };
             case 'SET_FILES_FILTER': return { filesLocationFilter: action.payload };
             case 'SET_FILES_PATH': return { filesSelectedPath: action.payload };
             case 'SET_FILES_SEARCH': return { filesSearchQuery: action.payload };

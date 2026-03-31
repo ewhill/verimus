@@ -20,8 +20,7 @@ class LocalFileStorageProvider extends BaseStorageProvider {
         }
     }
 
-    getCostPerGB(): number { return 1.5; }
-    getEgressCostPerGB(): number { return 0.0; }
+
 
     getLocation() {
         return {
@@ -42,11 +41,9 @@ class LocalFileStorageProvider extends BaseStorageProvider {
         return new LocalFileStorageProvider(storageDir);
     }
 
-    async storeBlock(encryptedData: Buffer | string) {
-        const physicalBlockId = hashData(encryptedData + Date.now().toString());
+    async storeShard(physicalBlockId: string, encryptedData: Buffer | string): Promise<void> {
         const filePath = path.join(this.storageDir, `${physicalBlockId}.pkg`);
         fs.writeFileSync(filePath, encryptedData);
-        return physicalBlockId;
     }
 
     createBlockStream() {

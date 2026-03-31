@@ -31,6 +31,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
             signature: 'MOCK_SIG'
         }, testDir);
         await node.init();
+        node.consensusEngine.runGlobalAudit = async () => {};
 
         node.publicKey = keys.publicKey;
         node.privateKey = keys.privateKey;

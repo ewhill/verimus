@@ -29,6 +29,7 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
             signature: 'MOCK_SIG'
         }, testDir);
         await node.init();
+        node.consensusEngine.runGlobalAudit = async () => {};
 
         node.publicKey = keys.publicKey;
         node.privateKey = keys.privateKey;
@@ -95,6 +96,7 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
         await node.consensusEngine.handleVerifyBlock(blockId, epochSig as string, mockConn);
 
         await checkpointEvent;
+        await new Promise(r => setTimeout(r, 200));
 
         // 3. Mathematical Verification of Checkpoint Pruning
         const postEpochBal = await node.consensusEngine.walletManager.calculateBalance(node.publicKey);

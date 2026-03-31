@@ -176,7 +176,7 @@ class Bundler {
     /**
      * Zips, encrypts, and buffers uploaded files, calculating Reed-Solomon Erasure subsets mathematically.
      */
-    streamErasureBundle(uploadedFiles: Express.Multer.File[], K: number, N: number, sourcePaths: string[] = []) {
+    streamErasureBundle(uploadedFiles: Express.Multer.File[], K: number, N: number, sourcePaths: string[] = [], onProgress?: (status: string, message: string, bytes?: number) => void) {
         return new Promise<{ 
             aesKey: string, 
             aesIv: string, 
@@ -193,9 +193,21 @@ class Bundler {
             const { cipherStream, key, iv, getAuthTag } = createAESStream();
 
             const chunks: Buffer[] = [];
-            cipherStream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+            let processedBytes = 0;
+            let lastAesEmitBytes = 0;
+            cipherStream.on('data', (chunk) => {
+                processedBytes += chunk.length;
+                chunks.push(Buffer.from(chunk));
+                if (onProgress && processedBytes - lastAesEmitBytes > 1024 * 512) { // Emit every 512KB restricting SSE flood
+                    lastAesEmitBytes = processedBytes;
+                    onProgress('AES_ENCRYPTION', `AES-256-GCM Encryption Trace [${processedBytes} Bytes Processed]`, processedBytes);
+                }
+            });
             
             cipherStream.on('end', async () => {
+                if (onProgress && processedBytes > lastAesEmitBytes) {
+                    onProgress('AES_ENCRYPTION', `AES-256-GCM Encryption Trace [${processedBytes} Bytes Processed]`, processedBytes);
+                }
                 const finalBuffer = Buffer.concat(chunks);
                 const originalSize = finalBuffer.length;
                 try {
@@ -240,8 +252,24 @@ class Bundler {
                     contentHash = await new Promise<string>((res, rej) => {
                         const hash = crypto.createHash('sha256');
                         const st = fs.createReadStream(file.path);
-                        st.on('data', (d: any) => hash.update(d));
-                        st.on('end', () => res(hash.digest('hex')));
+                        let hashBytes = 0;
+                        let lastHashEmit = 0;
+                        st.on('data', (d: any) => {
+                            hash.update(d);
+                            hashBytes += d.length;
+                            if (onProgress && hashBytes - lastHashEmit > 1024 * 512) {
+                                lastHashEmit = hashBytes;
+                                onProgress('HASH_ABSORPTION', `SHA-256 Stream Absorb [${file.originalname}]: ${hashBytes} bytes`, hashBytes);
+                            }
+                        });
+                        st.on('end', () => {
+                            if (onProgress && hashBytes > lastHashEmit) {
+                                onProgress('HASH_ABSORPTION', `SHA-256 Stream Absorb [${file.originalname}]: ${hashBytes} bytes`, hashBytes);
+                            }
+                            const resHash = hash.digest('hex');
+                            if (onProgress) onProgress('HASH_RESOLVED', `SHA-256 Content Validation Merkle Resolved: ${resHash}`, 0);
+                            res(resHash);
+                        });
                         st.on('error', rej);
                     });
                     files.push({ path: filePath, contentHash });

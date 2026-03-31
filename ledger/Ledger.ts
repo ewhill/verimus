@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 
 import { MongoClient, Db, Collection } from 'mongodb';
 
-import { BLOCK_TYPES } from '../constants';
+import { BLOCK_TYPES, GENESIS_FUNDING_BLOCK, GENESIS_STORAGE_CONTRACT } from '../constants';
 import { hashData } from '../crypto_utils/CryptoUtils';
 import type { Block, PeerReputation, BlockType } from '../types';
 
@@ -16,6 +16,7 @@ class Ledger {
     balancesCollection: Collection<any> | null;
     activeContractsCollection: Collection<any> | null;
     events: EventEmitter;
+    public blockAddedSubscribers: ((block: Block) => Promise<void>)[] = [];
     constructor(mongoUri: string = 'mongodb://127.0.0.1:27017') {
         this.client = new MongoClient(mongoUri, {
             serverSelectionTimeoutMS: 5000,
@@ -54,29 +55,16 @@ class Ledger {
         // Ensure genesis block exists
         const count = await this.collection.countDocuments();
         if (count === 0) {
-            const genesis = this.createGenesisBlock();
-            await this.collection.insertOne(genesis);
+            const genesisBlocks = this.createGenesisBlocks();
+            await this.collection.insertMany(genesisBlocks);
         }
     }
 
-    createGenesisBlock() {
-        return {
-            metadata: {
-                index: 0,
-                timestamp: 1700000000000 // deterministic genesis timestamp
-            },
-            type: BLOCK_TYPES.TRANSACTION, // Genesis acts as a base token instantiation
-            previousHash: '',
-            hash: hashData(''),
-            payload: {
-                senderId: 'SYSTEM',
-                recipientId: 'SYSTEM',
-                amount: Number.MAX_VALUE, // Maximum Float Value for Node.js
-                senderSignature: ''
-            },
-            publicKey: '',
-            signature: '',
-        };
+    createGenesisBlocks(): [Block, Block] {
+        return [
+            JSON.parse(JSON.stringify(GENESIS_FUNDING_BLOCK)),
+            JSON.parse(JSON.stringify(GENESIS_STORAGE_CONTRACT))
+        ];
     }
 
     async getLatestBlock() {
@@ -96,8 +84,8 @@ class Ledger {
         await this.balancesCollection!.deleteMany({});
         await this.activeContractsCollection!.deleteMany({});
 
-        const genesis = this.createGenesisBlock();
-        await this.collection!.insertOne(genesis);
+        const genesisBlocks = this.createGenesisBlocks();
+        await this.collection!.insertMany(genesisBlocks);
     }
 
     async pruneHistory(checkpointIndex: number) {
@@ -109,6 +97,9 @@ class Ledger {
 
     async addBlockToChain(block: Block) {
         await this.collection!.insertOne(block);
+        for (const sub of this.blockAddedSubscribers) {
+            await sub(block);
+        }
         this.events.emit('blockAdded', block);
         return block;
     }
@@ -133,6 +124,9 @@ class Ledger {
         };
         newBlock.hash = hashData(JSON.stringify(newBlock));
         await this.collection!.insertOne(newBlock);
+        for (const sub of this.blockAddedSubscribers) {
+            await sub(newBlock);
+        }
         this.events.emit('blockAdded', newBlock);
         return newBlock;
     }

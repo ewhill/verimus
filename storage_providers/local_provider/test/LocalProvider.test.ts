@@ -26,9 +26,9 @@ describe('Backend: localProvider Integrity', () => {
         assert.ok(physicalBlockId);
         assert.ok(writeStream);
         
-        // Store block
-        const blockId = await prov.storeBlock('testData123');
-        assert.ok(blockId);
+        // Store shard
+        await prov.storeShard('testData123_shard', 'testData123');
+        const blockId = 'testData123_shard';
         
         // Read stream
         t.mock.method(fs, 'existsSync', () => true);

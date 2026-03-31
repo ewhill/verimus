@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import { describe, it, mock } from 'node:test';
 
 import { Collection } from 'mongodb';
+
 import Ledger from '../../ledger/Ledger';
 import { createMock } from '../../test/utils/TestUtils';
 import WalletManager from '../WalletManager';
@@ -16,7 +17,8 @@ describe('WalletManager', () => {
                     return null;
                 })
             }),
-            events: { on: mock.fn() } as any
+            events: { on: mock.fn() } as any,
+            blockAddedSubscribers: []
         });
 
         const walletManager = new WalletManager(mockLedger);
@@ -29,7 +31,8 @@ describe('WalletManager', () => {
             balancesCollection: createMock<Collection<any>>({
                 findOne: mock.fn<(...args: any[]) => Promise<any>>(async () => null)
             }),
-            events: { on: mock.fn() } as any
+            events: { on: mock.fn() } as any,
+            blockAddedSubscribers: []
         });
 
         const walletManager = new WalletManager(mockLedger);
@@ -42,7 +45,8 @@ describe('WalletManager', () => {
             balancesCollection: createMock<Collection<any>>({
                 findOne: mock.fn<(...args: any[]) => Promise<any>>(async () => ({ balance: 50 }))
             }),
-            events: { on: mock.fn() } as any
+            events: { on: mock.fn() } as any,
+            blockAddedSubscribers: []
         });
 
         const walletManager = new WalletManager(mockLedger);
@@ -58,7 +62,8 @@ describe('WalletManager', () => {
             balancesCollection: createMock<Collection<any>>({
                 findOne: mock.fn<(...args: any[]) => Promise<any>>(async () => ({ balance: 50 }))
             }),
-            events: { on: mock.fn() } as any
+            events: { on: mock.fn() } as any,
+            blockAddedSubscribers: []
         });
 
         const walletManager = new WalletManager(mockLedger);
@@ -76,7 +81,8 @@ describe('WalletManager', () => {
             balancesCollection: createMock<Collection<any>>({
                 findOne: mock.fn<(...args: any[]) => Promise<any>>(async () => null)
             }),
-            events: { on: mock.fn() } as any
+            events: { on: mock.fn() } as any,
+            blockAddedSubscribers: []
         });
         const walletManager = new WalletManager(mockLedger);
         const balance = await walletManager.calculateBalance('SYSTEM');
@@ -114,7 +120,8 @@ describe('WalletManager', () => {
             balancesCollection: createMock<Collection<any>>({
                 findOne: mock.fn<(...args: any[]) => Promise<any>>(async () => ({ balance: 300 }))
             }),
-            events: { on: mock.fn() } as any
+            events: { on: mock.fn() } as any,
+            blockAddedSubscribers: []
         });
 
         const walletManager = new WalletManager(mockLedger);

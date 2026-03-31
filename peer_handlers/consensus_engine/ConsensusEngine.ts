@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 
-import { GENESIS_TIMESTAMP, BLOCK_TYPES } from '../../constants';
+import { GENESIS_TIMESTAMP, BLOCK_TYPES, calculateAuditDecayInterval } from '../../constants';
 import { hashData, signData, verifySignature, verifyMerkleProof } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
 import { AdoptForkMessage } from '../../messages/adopt_fork_message/AdoptForkMessage';
@@ -391,7 +391,7 @@ class ConsensusEngine {
                     if (block.metadata.index > 0 && block.metadata.index % EPOCH_SIZE === 0) {
                         if (block.publicKey === this.node.publicKey) {
                             logger.info(`[Peer ${this.node.port}] Node triggered Epoch Boundary at index ${block.metadata.index}! Formulating Checkpoint block...`);
-                            
+
                             const stateRoots = await this.walletManager.buildStateRoot();
                             const checkpointPayload: CheckpointStatePayload = {
                                 epochIndex: Math.floor(block.metadata.index / EPOCH_SIZE),
@@ -497,7 +497,10 @@ class ConsensusEngine {
         const latestBlock = await this.node.ledger.getLatestBlock();
         const latestBlockHash = latestBlock ? latestBlock.hash! : 'genesis_hash';
         
-        const intervalBucket = Math.floor(Date.now() / (1000 * 60 * 60)); // Hourly buckets securely tracking bounds
+        const genesisBlock = await this.node.ledger.getBlockByIndex(0);
+        const genesisTimestamp = genesisBlock?.metadata?.timestamp || Date.now();
+        const intervalBucketMs = calculateAuditDecayInterval(genesisTimestamp);
+        const intervalBucket = Math.floor(Date.now() / intervalBucketMs);
 
         const contracts = await this.node.ledger.collection!.find({ type: BLOCK_TYPES.STORAGE_CONTRACT }).sort({ 'metadata.timestamp': -1 }).limit(10).toArray();
         if (!contracts.length) return;

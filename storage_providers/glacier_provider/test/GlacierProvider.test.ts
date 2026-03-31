@@ -2,8 +2,8 @@ import assert from 'node:assert';
 import { describe, it } from 'node:test';
 import { PassThrough } from 'stream';
 
-import GlacierStorageProvider from '../GlacierProvider';
 import { createMock } from '../../../test/utils/TestUtils';
+import GlacierStorageProvider from '../GlacierProvider';
 
 describe('Backend: glacierProvider Integrity', () => {
     it('Initializes Glacier vault storage connectivity matching API specifications', async () => {

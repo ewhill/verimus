@@ -42,7 +42,9 @@ describe('Backend: ConsensusEngine Integrity', () => {
                 collection: createMock<any>({ findOne: mock.fn<(...args: any[]) => Promise<null>>(async () => null) as any }),
                 getLatestBlock: mock.fn<(...args: any[]) => Promise<Block>>(async () => ({ ...createMockBlock('sig', 'pk', '0000abc'), metadata: { index: 5, timestamp: 123 }, _id: new ObjectId('000000000000000000000001') }) as any),
                 events: { on: mock.fn(), emit: mock.fn(), once: mock.fn() } as any,
-                addBlockToChain: mock.fn<(block: Block) => Promise<Block>>(async (block: Block) => block)
+                getBlockByIndex: mock.fn<(index: number) => Promise<Block | null>>(async () => ({ metadata: { timestamp: Date.now() - 86400000 * 5 } } as any)),
+                addBlockToChain: mock.fn<(block: Block) => Promise<Block>>(async (block: Block) => block),
+                blockAddedSubscribers: []
             }),
             peer: createMock<any>({
                 trustedPeers: [{ peerAddress: '127.0.0.1:3001', send: () => { } }] as any,

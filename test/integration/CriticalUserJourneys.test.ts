@@ -31,10 +31,10 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             }, mockDataDir);
 
             await node.init();
-            
+
             // Create a local map tracking the physical Shard limits for valid mathematical verification 
             const globalIntegrationShards: { [marketReqId: string]: Buffer } = {};
-            
+
             if (node.peer) {
                 node.peer.broadcast = async (msg: any) => {
                     if (msg.name === 'VerifyHandoffRequestMessage') {
@@ -51,42 +51,45 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
                 Object.assign(node.peer, { request: async () => ({}) });
             }
             node.consensusEngine.walletManager.verifyFunds = async () => true;
+            node.consensusEngine.runGlobalAudit = async () => { };
             node.consensusEngine.node.syncEngine.orchestrateStorageMarket = async (marketReqId: string) => {
-                return [{ peerId: node.publicKey, connection: {
-                    send: (msg: any) => {
-                        if (msg.constructor && msg.constructor.name === 'VerifyHandoffRequestMessage') {
+                return [{
+                    peerId: node.publicKey, connection: {
+                        send: (msg: any) => {
+                            if (msg.constructor && msg.constructor.name === 'VerifyHandoffRequestMessage') {
+                                setTimeout(() => {
+                                    const fullShardBuffer = globalIntegrationShards[msg.body.physicalId];
+                                    const CHUNK_SIZE = 64 * 1024;
+                                    const chunks: Buffer[] = [];
+                                    for (let offset = 0; offset < fullShardBuffer.length; offset += CHUNK_SIZE) {
+                                        chunks.push(fullShardBuffer.subarray(offset, offset + CHUNK_SIZE));
+                                    }
+
+                                    const { tree } = cryptoUtils.buildMerkleTree(chunks);
+                                    const siblingPath = cryptoUtils.getMerkleProof(tree, msg.body.targetChunkIndex);
+
+                                    node.events.emit(`handoff_response:${marketReqId}:${msg.body.physicalId}`, {
+                                        success: true,
+                                        merkleSiblings: siblingPath,
+                                        chunkDataBase64: chunks[msg.body.targetChunkIndex].toString('base64')
+                                    });
+                                }, 5);
+                                return;
+                            }
+
+                            // Physically store mocking the remote node reception natively mapping bounds
+                            const buf = Buffer.from(msg.body.shardDataBase64, 'base64');
+                            const blockResult = node.storageProvider!.createBlockStream();
+                            globalIntegrationShards[blockResult.physicalBlockId] = buf;
+                            blockResult.writeStream.write(buf);
+                            blockResult.writeStream.end();
+
                             setTimeout(() => {
-                                const fullShardBuffer = globalIntegrationShards[msg.body.physicalId];
-                                const CHUNK_SIZE = 64 * 1024;
-                                const chunks: Buffer[] = [];
-                                for (let offset = 0; offset < fullShardBuffer.length; offset += CHUNK_SIZE) {
-                                    chunks.push(fullShardBuffer.subarray(offset, offset + CHUNK_SIZE));
-                                }
-                                
-                                const { tree } = cryptoUtils.buildMerkleTree(chunks);
-                                const siblingPath = cryptoUtils.getMerkleProof(tree, msg.body.targetChunkIndex);
-                                
-                                node.events.emit(`handoff_response:${marketReqId}:${msg.body.physicalId}`, {
-                                    success: true,
-                                    merkleSiblings: siblingPath,
-                                    chunkDataBase64: chunks[msg.body.targetChunkIndex].toString('base64')
-                                });
+                                node.events.emit(`shard_response:${marketReqId}:${msg.body.shardIndex}`, { success: true, physicalId: blockResult.physicalBlockId });
                             }, 5);
-                            return;
                         }
-                        
-                        // Physically store mocking the remote node reception natively mapping bounds
-                        const buf = Buffer.from(msg.body.shardDataBase64, 'base64');
-                        const blockResult = node.storageProvider!.createBlockStream();
-                        globalIntegrationShards[blockResult.physicalBlockId] = buf;
-                        blockResult.writeStream.write(buf);
-                        blockResult.writeStream.end();
-                        
-                        setTimeout(() => {
-                            node.events.emit(`shard_response:${marketReqId}:${msg.body.shardIndex}`, { success: true, physicalId: blockResult.physicalBlockId });
-                        }, 5);
                     }
-                } }];
+                }];
             };
 
             const server = node.httpServer!;
@@ -130,7 +133,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
 
             assert.ok(data.port !== undefined, 'UI configuration surface exposed');
             assert.ok(data.publicKey, 'Generated RSA definitions mapped');
-        } catch(e: any) {
+        } catch (e: any) {
             console.error('Config Error:', e);
             throw e;
         }
@@ -149,7 +152,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
 
             assert.strictEqual(response.status, 202, 'Upload resolved saving file');
             const data: any = await response.json();
-            
+
             assert.strictEqual(data.success, true, 'Block formally committed mapping physical blocks');
             assert.ok(data.hash, 'Uploaded block hash structured');
             assert.ok(data.aesKey, 'Encryption definitions returned');
@@ -170,7 +173,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
                 await new Promise(r => setTimeout(r, 100));
             }
             assert.ok(ledger.blocks.length >= 1, 'Genesis block instantiated');
-        } catch(e: any) {
+        } catch (e: any) {
             console.error('Ledger Error:', e);
             throw e;
         }
@@ -208,7 +211,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             let targetBlock;
             for (let i = 0; i < 20; i++) {
                 blockRes = await (await fetch(`${baseUrl}/api/blocks`)).json();
-                targetBlock = blockRes.blocks.find((b: any) => b.metadata && b.metadata.index > 0 && b.type === BLOCK_TYPES.STORAGE_CONTRACT);
+                targetBlock = blockRes.blocks.find((b: any) => b.metadata && b.metadata.index > 1 && b.type === BLOCK_TYPES.STORAGE_CONTRACT);
                 if (targetBlock) break;
                 await new Promise(r => setTimeout(r, 200));
             }
@@ -216,7 +219,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
 
             const decryptRes = await fetch(`${baseUrl}/api/blocks/${targetBlock.hash}/private?privateKey=${encodeURIComponent(node.privateKey)}`);
             assert.strictEqual(decryptRes.status, 200, 'Private payload decryption mapping completed');
-            
+
             const decryptedPayload: any = await decryptRes.json();
             assert.strictEqual(decryptedPayload.payload.files[0].path, 'integration.txt', 'Raw structures resolved mapped locally');
         } catch (e: any) {
@@ -232,7 +235,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             // Wait for consensus commit logic (index > 0) moving block out of mempool onto storage native collection
             for (let i = 0; i < 20; i++) {
                 blockRes = await (await fetch(`${baseUrl}/api/blocks`)).json();
-                targetBlock = blockRes.blocks.find((b: any) => b.metadata && b.metadata.index > 0 && b.type === BLOCK_TYPES.STORAGE_CONTRACT);
+                targetBlock = blockRes.blocks.find((b: any) => b.metadata && b.metadata.index > 1 && b.type === BLOCK_TYPES.STORAGE_CONTRACT);
                 if (targetBlock) break;
                 await new Promise(r => setTimeout(r, 200));
             }
@@ -246,7 +249,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             }
             assert.strictEqual(downloadRes.status, 200, 'Download payload streaming handled');
             const buffer = await downloadRes.text();
-            
+
             assert.strictEqual(buffer, 'Integration test payload data mapping', 'AES stream mapped recovering original payload');
         } catch (e: any) {
             console.error('Download Error:', e);

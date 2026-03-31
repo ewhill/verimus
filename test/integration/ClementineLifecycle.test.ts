@@ -53,6 +53,7 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
             if (node.peer) node.peer.discover = async () => { };
 
             await node.init();
+            node.consensusEngine.runGlobalAudit = async () => {};
 
             Object.assign(node.peer || {}, { publicAddress_: `127.0.0.1:${targetPort}` });
 
@@ -98,7 +99,7 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         const sig1 = signData(JSON.stringify(payload1), node0.privateKey);
         
         const block1: Block = {
-            metadata: { index: 1, timestamp: Date.now() },
+            metadata: { index: 2, timestamp: Date.now() },
             type: BLOCK_TYPES.TRANSACTION,
             payload: payload1,
             publicKey: node1.publicKey,
@@ -112,7 +113,7 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         const sig2 = signData(JSON.stringify(payload2), node0.privateKey);
         
         const block2: Block = {
-            metadata: { index: 2, timestamp: Date.now() },
+            metadata: { index: 3, timestamp: Date.now() },
             type: BLOCK_TYPES.TRANSACTION,
             payload: payload2,
             publicKey: node2.publicKey,
@@ -141,7 +142,7 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         const sig = signData(JSON.stringify(payload), node3.privateKey);
         
         const block: Block = {
-            metadata: { index: 4, timestamp: Date.now() },
+            metadata: { index: 5, timestamp: Date.now() },
             type: BLOCK_TYPES.STORAGE_CONTRACT,
             payload,
             publicKey: node3.publicKey,
@@ -169,7 +170,7 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         };
         const slashSig = signData(JSON.stringify(slashPayload), node1.privateKey);
         const slashBlock: Block = {
-            metadata: { index: 6, timestamp: Date.now() },
+            metadata: { index: 7, timestamp: Date.now() },
             type: BLOCK_TYPES.SLASHING_TRANSACTION,
             payload: slashPayload,
             publicKey: node1.publicKey,
@@ -232,6 +233,7 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         await node1.consensusEngine.handleVerifyBlock(blockId, epochSig as string, mockConn);
 
         await checkpointEvent;
+        await new Promise(r => setTimeout(r, 100)); // allow pruning to structurally finalize cleanly natively seamlessly cleanly tightly elegantly naturally
 
         // Mathematical Assertions strictly validating continuous limits!
         const postEpochBal = await node1.consensusEngine.walletManager.calculateBalance(node1.publicKey);

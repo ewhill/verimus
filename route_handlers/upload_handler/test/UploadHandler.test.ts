@@ -85,10 +85,10 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                     blockHandled = true;
                 },
                 walletManager: createMock<WalletManager>({
-                    verifyFunds: async () => true,
-                    freezeFunds: () => { },
-                    releaseFunds: () => { },
-                    commitFunds: () => { }
+                    verifyFunds: mock.fn<() => Promise<boolean>>(() => Promise.resolve(true)),
+                    freezeFunds: mock.fn<() => void>(),
+                    releaseFunds: mock.fn<() => void>(),
+                    commitFunds: mock.fn<() => void>()
                 })
             }),
             syncEngine: createMock<SyncEngine>({
@@ -128,6 +128,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                     }
                     return mockNode.events;
                 },
+                emit: () => true,
                 removeAllListeners: () => mockNode.events
             })
         });
@@ -153,8 +154,8 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         await handler.handle(request, response);
 
         const responseStatus = mockResponseStatus.mock.calls.pop()?.arguments[0];
-        assert.strictEqual(responseStatus, 202);
         const responseBody = mockResponseJson.mock.calls.pop()?.arguments[0];
+        assert.strictEqual(responseStatus, 202);
         assert.strictEqual(responseBody.success, true);
         assert.ok(blockHandled, 'Should kick off a consensus settlement correctly intrinsically');
     });
@@ -169,10 +170,10 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             }),
             consensusEngine: createMock<ConsensusEngine>({
                 walletManager: createMock<WalletManager>({
-                    verifyFunds: async () => true,
-                    freezeFunds: () => { },
-                    releaseFunds: () => { },
-                    commitFunds: () => { }
+                    verifyFunds: mock.fn<() => Promise<boolean>>(() => Promise.resolve(true)),
+                    freezeFunds: mock.fn<() => void>(),
+                    releaseFunds: mock.fn<() => void>(),
+                    commitFunds: mock.fn<() => void>()
                 })
             })
         });
@@ -234,10 +235,10 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             consensusEngine: createMock<ConsensusEngine>({
                 handlePendingBlock: async () => { },
                 walletManager: createMock<WalletManager>({
-                    verifyFunds: async () => true,
-                    freezeFunds: () => { },
-                    releaseFunds: () => { },
-                    commitFunds: () => { }
+                    verifyFunds: mock.fn<() => Promise<boolean>>(() => Promise.resolve(true)),
+                    freezeFunds: mock.fn<() => void>(),
+                    releaseFunds: mock.fn<() => void>(),
+                    commitFunds: mock.fn<() => void>()
                 })
             }),
             syncEngine: createMock<SyncEngine>({
@@ -273,6 +274,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                     }
                     return mockNode.events;
                 },
+                emit: () => true,
                 removeAllListeners: () => mockNode.events
             })
         });
@@ -338,10 +340,10 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                     throw new Error('Converge Error for test');
                 },
                 walletManager: createMock<WalletManager>({
-                    verifyFunds: async () => true,
-                    freezeFunds: () => { },
-                    releaseFunds: () => { },
-                    commitFunds: () => { }
+                    verifyFunds: mock.fn<() => Promise<boolean>>(() => Promise.resolve(true)),
+                    freezeFunds: mock.fn<() => void>(),
+                    releaseFunds: mock.fn<() => void>(),
+                    commitFunds: mock.fn<() => void>()
                 })
             }),
             syncEngine: createMock<SyncEngine>({
@@ -377,6 +379,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                     }
                     return mockNode.events;
                 },
+                emit: () => true,
                 removeAllListeners: () => mockNode.events
             })
         });
@@ -437,10 +440,10 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             consensusEngine: createMock<ConsensusEngine>({
                 handlePendingBlock: async () => { },
                 walletManager: createMock<WalletManager>({
-                    verifyFunds: async () => true,
-                    freezeFunds: () => { },
-                    releaseFunds: () => { },
-                    commitFunds: () => { }
+                    verifyFunds: mock.fn<() => Promise<boolean>>(() => Promise.resolve(true)),
+                    freezeFunds: mock.fn<() => void>(),
+                    releaseFunds: mock.fn<() => void>(),
+                    commitFunds: mock.fn<() => void>()
                 })
             }),
             syncEngine: createMock<SyncEngine>({
@@ -479,6 +482,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                     }
                     return mockNode.events;
                 },
+                emit: () => true,
                 removeAllListeners: (): EventEmitter => mockNode.events
             })
         });

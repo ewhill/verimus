@@ -3,6 +3,7 @@ import { describe, it, before, after } from 'node:test';
 
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
+import proxyCrypto = require('../../crypto_utils/CryptoUtils');
 import Ledger from '../Ledger';
 
 
@@ -37,19 +38,22 @@ describe('Backend: Ledger Integrity and Tamper Evidence', () => {
     it('Initializes with a Genesis Block', async () => {
         const latest = await ledger.getLatestBlock();
         assert.ok(latest, 'Genesis block should successfully exist');
-        assert.strictEqual(latest.metadata.index, 0, 'Genesis block maps index 0');
-        assert.strictEqual(latest.previousHash, '', 'Genesis block lacks previous hash definitionally');
+        assert.strictEqual(latest.metadata.index, 1, 'Genesis block maps index 1');
+        const fundingBlock = await ledger.getBlockByIndex(0);
+        assert.strictEqual(latest.previousHash, fundingBlock?.hash, 'Genesis block computes previous hash definitionally');
     });
 
     it('Appends blocks with sequential index', async () => {
+        const { publicKey, privateKey } = proxyCrypto.generateRSAKeyPair();
         const dummyPayload = { encryptedPayloadBase64: 'abc', encryptedKeyBase64: 'xyz', encryptedIvBase64: '123' };
-        const newBlock = await ledger.addBlock('PUBKEY_123', dummyPayload, 'SIG_123');
-        assert.strictEqual(newBlock.metadata.index, 1);
-        assert.strictEqual(newBlock.publicKey, 'PUBKEY_123');
+        const sig = proxyCrypto.signData(JSON.stringify(dummyPayload), privateKey) as string;
+        const newBlock = await ledger.addBlock(publicKey, dummyPayload, sig);
+        assert.strictEqual(newBlock.metadata.index, 2);
+        assert.strictEqual(newBlock.publicKey, publicKey);
 
         const latest = await ledger.getLatestBlock();
         assert.strictEqual(latest.hash, newBlock.hash, 'Appended block must correctly correlate to head ledger pointers');
-        assert.strictEqual(latest.metadata.index, 1);
+        assert.strictEqual(latest.metadata.index, 2);
     });
 
     it('Validates cryptography of chain', async () => {

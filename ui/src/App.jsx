@@ -8,7 +8,9 @@ import PeersView from './components/Views/PeersView';
 import LogsView from './components/Views/LogsView';
 import UploadView from './components/Views/UploadView';
 import LedgerView from './components/Views/LedgerView';
+import WalletView from './components/Views/WalletView';
 import BlockModal from './components/Modals/BlockModal';
+import NodeConfigModal from './components/Modals/NodeConfigModal';
 import ToastContainer from './components/Layout/ToastContainer';
 
 function App() {
@@ -96,6 +98,7 @@ function App() {
             case 'peers':  return <PeersView />;
             case 'logs':   return <LogsView />;
             case 'ledger': return <LedgerView />;
+            case 'wallet': return <WalletView />;
             case 'files':
             default:       return <FilesView />;
         }
@@ -110,6 +113,7 @@ function App() {
                 </ErrorBoundary>
             </main>
             <BlockModal />
+            <NodeConfigModal />
             <ToastContainer />
         </div>
     );

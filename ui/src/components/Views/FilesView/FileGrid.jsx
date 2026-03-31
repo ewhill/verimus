@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../../store';
 import { ApiService } from '../../../services/api';
+import ShardGraph from './ShardGraph';
 
 const FileGrid = ({ displayItems }) => {
     const dispatch = useStore(s => s.dispatch);
@@ -65,38 +66,52 @@ const FileGrid = ({ displayItems }) => {
                     else if (isAudio) iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>;
                     else iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>;
 
-                    const hasVersions = f.versions.length > 1;
                     const latestBlock = f.versions[0];
                     const isDropdownOpen = openDropdown === i;
                     
                     return (
-                        <div key={`file-${f.path}-${i}`} className={`file-card redesigned ${hasVersions ? 'has-versions' : ''}`} style={{ zIndex: isDropdownOpen ? 10 : 1 }}>
+                        <div key={`file-${f.path}-${i}`} className={`file-card redesigned has-versions`} style={{ zIndex: isDropdownOpen ? 10 : 1 }}>
                             <div 
                                 className="file-icon-wrap click-to-download" 
-                                onClick={(e) => hasVersions ? toggleDropdown(i, e) : handleDownload(latestBlock.blockHash, f.path, e)}
+                                onClick={(e) => toggleDropdown(i, e)}
                             >
                                 {iconHtml}
                             </div>
                             
-                            {hasVersions && (
-                                <div className="versions-badge toggle-versions" onClick={(e) => toggleDropdown(i, e)}>
-                                    {f.versions.length}
-                                </div>
-                            )}
+                            <div className="versions-badge toggle-versions" onClick={(e) => toggleDropdown(i, e)} title="Inspect Fragmentation Maps" style={{ background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                            </div>
                             
-                            <div className="file-name toggle-versions" onClick={(e) => hasVersions ? toggleDropdown(i, e) : null} title={item.displayName}>
+                            <div className="file-name toggle-versions" onClick={(e) => toggleDropdown(i, e)} title={item.displayName}>
                                 {item.displayName}
                             </div>
                             
-                            {hasVersions && isDropdownOpen && (
-                                <div className="versions-panel show" onClick={(e) => e.stopPropagation()}>
-                                    <div className="versions-panel-title">Previous Versions</div>
-                                    {f.versions.map((v, vidx) => (
-                                        <div className="version-row" key={`v-${vidx}`}>
-                                            <span className="version-meta">{new Date(v.timestamp).toLocaleString()} (Blk {v.index})</span>
-                                            <button className="btn-download" onClick={() => handleDownload(v.blockHash, f.path)}>Get</button>
+                            {isDropdownOpen && (
+                                <div className="versions-panel show" style={{ width: '400px', right: '0', pointerEvents: 'auto', background: '#0f172a', padding: '1.25rem', border: '1px solid rgba(255,255,255,0.1)' }} onClick={(e) => e.stopPropagation()}>
+                                    <div className="versions-panel-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                        <span style={{ color: '#f8fafc', fontSize: '0.85rem' }}>Cryptographic Inspection</span>
+                                        <button className="btn-download" onClick={(e) => handleDownload(latestBlock.blockHash, f.path, e)} style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Extract ZIP</button>
+                                    </div>
+                                    
+                                    {latestBlock.fragmentMap && latestBlock.fragmentMap.length > 0 ? (
+                                        <ShardGraph fragmentMap={latestBlock.fragmentMap} />
+                                    ) : (
+                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '0.5rem', marginTop: '1rem' }}>Local Escrow Boundary (No Shard Matrix Data)</div>
+                                    )}
+
+                                    {f.versions.length > 1 && (
+                                        <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <div className="versions-panel-title" style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginBottom: '0.5rem' }}>Previous Revisions</div>
+                                            {f.versions.map((v, vidx) => (
+                                                vidx > 0 && (
+                                                    <div className="version-row" key={`v-${vidx}`}>
+                                                        <span className="version-meta" style={{ fontSize: '0.7rem' }}>{new Date(v.timestamp).toLocaleString()} (Blk {v.index})</span>
+                                                        <button className="btn-download" style={{ fontSize: '0.7rem' }} onClick={(e) => handleDownload(v.blockHash, f.path, e)}>Get</button>
+                                                    </div>
+                                                )
+                                            ))}
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             )}
                         </div>

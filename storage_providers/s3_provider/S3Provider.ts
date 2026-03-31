@@ -34,8 +34,7 @@ class S3StorageProvider extends BaseStorageProvider {
         logger.info(`[S3StorageProvider] Initialized for bucket: ${this.bucket}`);
     }
 
-    getCostPerGB(): number { return 5.0; }
-    getEgressCostPerGB(): number { return 4.0; }
+
 
     getLocation() {
         return {
@@ -59,6 +58,18 @@ class S3StorageProvider extends BaseStorageProvider {
         }
 
         return new S3StorageProvider(bucket, region, accessKey, secretKey);
+    }
+
+    async storeShard(physicalBlockId: string, encryptedData: Buffer | string): Promise<void> {
+        const upload = new Upload({
+            client: this.client,
+            params: {
+                Bucket: this.bucket,
+                Key: `${physicalBlockId}.pkg`,
+                Body: encryptedData
+            }
+        });
+        await upload.done();
     }
 
     createBlockStream() {

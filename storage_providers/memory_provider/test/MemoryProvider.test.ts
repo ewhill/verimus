@@ -19,8 +19,8 @@ describe('Backend: memoryProvider Integrity (Hermetic in-memory file abstraction
     it('Stores physical blocks resolving base64 data', async () => {
         const prov = new MemoryStorageProvider();
         
-        const blockHash = await prov.storeBlock(Buffer.from('volatile chunk streamed'));
-        assert.ok(prov.storage.has(blockHash));
+        await prov.storeShard('mem-shard-1', Buffer.from('volatile chunk streamed'));
+        const blockHash = 'mem-shard-1';
         assert.strictEqual(prov.storage.get(blockHash)!.toString(), 'volatile chunk streamed');
     });
 
@@ -49,7 +49,8 @@ describe('Backend: memoryProvider Integrity (Hermetic in-memory file abstraction
 
     it('Provides valid read streams emitting buffers', async () => {
          const prov = new MemoryStorageProvider();
-         const hash = await prov.storeBlock('raw read data');
+         await prov.storeShard('mem-shard-2', 'raw read data');
+        const hash = 'mem-shard-2';
          
          const pt = await prov.getBlockReadStream(hash);
          if (pt.status !== 'available' || !pt.stream) throw new Error('Stream missing');

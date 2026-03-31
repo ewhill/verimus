@@ -59,7 +59,8 @@ export default class FilesHandler extends BaseHandler {
                                         blockHash: block.hash,
                                         timestamp: block.metadata ? block.metadata.timestamp : Date.now(),
                                         index: block.metadata && block.metadata.index !== undefined ? block.metadata.index : 'Pending',
-                                        size: file.size || null
+                                        size: file.size || null,
+                                        fragmentMap: (block.payload as any).fragmentMap || []
                                     };
 
                                     if (!filesMap.has(key)) {
@@ -113,5 +114,6 @@ interface VersionData {
     blockHash?: string,
     timestamp: number,
     index: string | number,
-    size?: number
+    size?: number,
+    fragmentMap?: any[]
 }

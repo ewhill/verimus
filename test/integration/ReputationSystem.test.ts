@@ -65,6 +65,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
             }
 
             await node.init();
+            node.consensusEngine.runGlobalAudit = async () => {};
 
             // Assign ephemeral port manually
             node.port = (node.httpServer!.address() as AddressInfo).port;

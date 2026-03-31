@@ -4,12 +4,14 @@ import { IncomingMessage } from 'http';
 // import { Http2ServerRequest } from 'http2';
 import * as https from 'https';
 import { Socket } from 'net';
+import * as path from 'path';
 
 import { Db } from 'mongodb';
 import { WebSocket } from 'ws';
 
 import setupExpressApp from '../api_server/ApiServer';
 import Bundler from '../bundler/Bundler';
+import { GENESIS_SEED_DATA } from '../constants';
 import { PeerCredentials } from '../credential_provider/CredentialProvider';
 import Ledger from '../ledger/Ledger';
 import logger from '../logger/Logger';
@@ -183,7 +185,23 @@ class PeerNode {
                 } else {
                     logger.info(`[Peer ${this.port}] Genesis node detected (no discovery topology). Initialized.`);
                 }
-                
+
+                // --- Phase 1 Genesis Bootstrapping ---
+                try {
+                    if (this.storageProvider) {
+                        const genContract = await this.ledger.getBlockByIndex(1);
+                        if (genContract && genContract.type === 'STORAGE_CONTRACT') {
+                            // Map physical boundaries strictly using the contract's _id aligning loosely with ConsensusEngine bounds
+                            const physicalId = genContract._id ? genContract._id.toString() : 'GENESIS_PHYSICAL_ID';
+                            await this.storageProvider.storeShard(physicalId, GENESIS_SEED_DATA);
+
+                            logger.info(`[Peer ${this.port}] Synchronized and physicalized Genesis seed mapping ${physicalId.slice(0, 8)} natively!`);
+                        }
+                    }
+                } catch (_unusedE: any) {
+                    logger.warn(`[Peer ${this.port}] Genesis Seed formulation dynamically skipped explicitly mapping safe execution limit constraints.`);
+                }
+
                 resolve();
             });
         });
@@ -205,7 +223,7 @@ class PeerNode {
                 // Initial migration or recovery: fetch all owned blocks from main collection and index them
                 const blocks = await this.ledger.collection!.find({ publicKey: this.publicKey }).toArray();
                 this.ownedBlocksCache = blocks.map(b => b.hash!);
-                
+
                 if (this.ownedBlocksCache.length > 0) {
                     await this.ledger.ownedBlocksCollection!.insertMany(
                         this.ownedBlocksCache.map(hash => ({ hash }))

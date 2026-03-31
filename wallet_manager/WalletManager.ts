@@ -12,10 +12,14 @@ export default class WalletManager {
 
     constructor(ledger: Ledger) {
         this.ledger = ledger;
-        this.ledger.events.on('blockAdded', (block: Block) => {
-            this.updateIncrementalState(block).catch(err => {
-                logger.error(`Error updating incremental state: ${(err as Error).message}`);
-            });
+        // Map synchronous listeners
+        this.ledger.events.on('blockAdded', (_unusedBlock: Block) => {
+            // (Keep for other non-async listeners or legacy integrations if any, but we ignore updating state here)
+        });
+        
+        // Map deterministic async subscriber explicitly
+        this.ledger.blockAddedSubscribers.push(async (block: Block) => {
+            await this.updateIncrementalState(block);
         });
     }
 

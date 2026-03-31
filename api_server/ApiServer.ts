@@ -12,9 +12,12 @@ import DownloadHandler from '../route_handlers/download_handler/DownloadHandler'
 import FilesHandler from '../route_handlers/files_handler/FilesHandler';
 import LogsHandler from '../route_handlers/logs_handler/LogsHandler';
 import NodeConfigHandler from '../route_handlers/node_config_handler/NodeConfigHandler';
+import UpdateNodeConfigHandler from '../route_handlers/node_config_handler/UpdateNodeConfigHandler';
 import PeersHandler from '../route_handlers/peers_handler/PeersHandler';
 import PrivatePayloadHandler from '../route_handlers/private_payload_handler/PrivatePayloadHandler';
+import UploadEventsHandler from '../route_handlers/upload_events_handler/UploadEventsHandler';
 import UploadHandler from '../route_handlers/upload_handler/UploadHandler';
+import WalletHandler from '../route_handlers/wallet_handler/WalletHandler';
 
 export default function setupExpressApp(peerNode: PeerNode) {
     const app = express();
@@ -53,6 +56,8 @@ export default function setupExpressApp(peerNode: PeerNode) {
     app.use(express.json());
 
     app.get('/api/node/config', new NodeConfigHandler(peerNode).handle);
+    app.post('/api/node/config', new UpdateNodeConfigHandler(peerNode).handle);
+    app.get('/api/upload/events', new UploadEventsHandler(peerNode).handle);
     app.get('/api/blocks', new BlocksHandler(peerNode).handle);
     app.get('/api/peers', new PeersHandler(peerNode).handle);
     app.post('/api/upload', upload.array('files'), new UploadHandler(peerNode).handle);
@@ -60,6 +65,7 @@ export default function setupExpressApp(peerNode: PeerNode) {
     app.get('/api/download/:hash/file/:filename', new DownloadFileHandler(peerNode).handle);
     app.get('/api/blocks/:hash/private', new PrivatePayloadHandler(peerNode).handle);
     app.get('/api/files', new FilesHandler(peerNode).handle);
+    app.get('/api/wallet', new WalletHandler(peerNode).handle);
     app.get('/api/logs', new LogsHandler(peerNode).handle);
 
     // Fallback for SPA path-based routing

@@ -11,8 +11,7 @@ describe('Backend: BaseStorageProvider Coverage Tests', () => {
 
     it('Throws interface errors when invoking unimplemented virtual stream methods', async () => {
         class DummyProvider extends BaseStorageProvider {
-            getCostPerGB() { return 0; }
-            getEgressCostPerGB() { return 0; }
+
         }
         const provider = new DummyProvider();
         
@@ -20,10 +19,10 @@ describe('Backend: BaseStorageProvider Coverage Tests', () => {
         assert.throws(() => BaseStorageProvider.parseArgs([]), { message: 'parseArgs() must be implemented by subclasses' });
         
         try {
-            await provider.storeBlock(Buffer.from('data'));
+            await provider.storeShard('id', Buffer.from('data'));
             assert.fail('Should throw');
         } catch (err: any) {
-            assert.strictEqual(err.message, 'storeBlock() must be implemented by subclasses');
+            assert.strictEqual(err.message, 'storeShard() must be implemented by subclasses');
         }
 
         assert.throws(() => provider.createBlockStream(), { message: 'createBlockStream not implemented' });

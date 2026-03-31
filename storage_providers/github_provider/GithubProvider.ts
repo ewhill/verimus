@@ -24,8 +24,7 @@ class GithubStorageProvider extends BaseStorageProvider {
         this.branch = branch;
     }
 
-    getCostPerGB(): number { return 0.0; }
-    getEgressCostPerGB(): number { return 0.0; }
+
 
     getLocation() {
         return {
@@ -56,10 +55,8 @@ class GithubStorageProvider extends BaseStorageProvider {
         return new GithubStorageProvider(owner, repo, token, branch);
     }
 
-    async storeBlock(encryptedData: Buffer | string): Promise<string> {
-        const payload = typeof encryptedData === 'string' ? encryptedData : encryptedData.toString('base64');
-        const contentBase64 = typeof encryptedData === 'string' ? Buffer.from(encryptedData).toString('base64') : payload;
-        const physicalBlockId = hashData(Date.now().toString() + Math.random().toString());
+    async storeShard(physicalBlockId: string, encryptedData: Buffer | string): Promise<void> {
+        const contentBase64 = Buffer.isBuffer(encryptedData) ? encryptedData.toString('base64') : Buffer.from(encryptedData).toString('base64');
 
         const res = await fetch(`https://api.github.com/repos/${this.owner}/${this.repo}/contents/${physicalBlockId}.pkg`, {
             method: 'PUT',
@@ -70,7 +67,7 @@ class GithubStorageProvider extends BaseStorageProvider {
                 'User-Agent': 'Verimus-Node'
             },
             body: JSON.stringify({
-                message: `Upload block ${physicalBlockId}`,
+                message: `Upload shard ${physicalBlockId}`,
                 content: contentBase64,
                 branch: this.branch
             })
@@ -80,8 +77,6 @@ class GithubStorageProvider extends BaseStorageProvider {
             const err = await res.text();
             throw new Error(`GitHub API error: ${res.status} ${res.statusText} - ${err}`);
         }
-        
-        return physicalBlockId;
     }
 
     createBlockStream() {

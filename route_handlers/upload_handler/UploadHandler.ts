@@ -63,6 +63,8 @@ export default class UploadHandler extends BaseHandler {
             this.node.consensusEngine.walletManager.freezeFunds(publicKey, theoreticalMaxCost, marketReqId);
             logger.info(`[Peer ${this.node.port}] Initiating async storage limit order ${marketReqId} searching mapping ${redundancy} hosts...`);
 
+            this.node.events.emit('upload_telemetry', { status: 'MARKET_INITIATED', message: `Broadcasting Limit Orders (${redundancy} Hosts, $${theoreticalMaxCost.toFixed(3)} VERI Escrow)` });
+
             // Triage Bid Harvesting parsing bounds against TCP buffers!
             const bids = await this.node.syncEngine.orchestrateStorageMarket(
                 marketReqId, totalSize, chunkSizeBytes, redundancy, maxCost
@@ -75,11 +77,16 @@ export default class UploadHandler extends BaseHandler {
 
             logger.info(`[Peer ${this.node.port}] Decentralized array acquired mapping 100% boundary limits. Hosts: ${bids.map((b: { peerId: string }) => b.peerId.slice(0, 8)).join(', ')}`);
 
-            // Erasure Configuration 
+            this.node.events.emit('upload_telemetry', { status: 'BIDS_ACQUIRED', activeHosts: bids.map((b: { peerId: string }) => b.peerId), message: `Acquired exactly ${bids.length} Contract Obligations natively.` });
+            this.node.events.emit('upload_telemetry', { status: 'SHARDING_STARTED', message: `Executing Reed-Solomon Zip Cryptography...` });
+
+            // Erasure Configuration
             const K = Math.max(1, Math.ceil(redundancy / 2));
             const N = redundancy;
 
-            const bundleResult = await this.node.bundler!.streamErasureBundle(files, K, N, paths);
+            const bundleResult = await this.node.bundler!.streamErasureBundle(files, K, N, paths, (status, message, bytes) => {
+                this.node.events.emit('upload_telemetry', { status, message, bytes });
+            });
             if (!bundleResult) {
                 this.node.consensusEngine.walletManager.releaseFunds(marketReqId);
                 return res.status(500).send('Internal Node Array Zip mapping collapsed constructing mathematical matrices.');
@@ -87,7 +94,11 @@ export default class UploadHandler extends BaseHandler {
 
             const fragmentMap: NodeShardMapping[] = [];
 
+            let shardsDispatchedCount = 0;
+
             logger.info(`[Peer ${this.node.port}] Dispersing ${bundleResult.shards.length} shards globally matching active logical HTTP boundaries...`);
+
+            this.node.events.emit('upload_telemetry', { status: 'SHARDS_DISPATCHING', message: `Distributing K/N Parity fragments securely across matrices.` });
 
             // Transmit each shard mapping physically limiting loops Native WebSocket Protocol
             const shardDispatchPromises = bids.map(async (bid: { peerId: string, connection: any }, i: number) => {
@@ -150,6 +161,8 @@ export default class UploadHandler extends BaseHandler {
                                     shardHash: crypto.createHash('sha256').update(bundleResult.shards[i]).digest('hex'),
                                     physicalId: physicalId
                                 });
+                                shardsDispatchedCount++;
+                                this.node.events.emit('upload_telemetry', { status: 'SHARD_DISPATCHED', progress: shardsDispatchedCount, total: bundleResult.shards.length, message: `Dispatched Shard ${i+1}/${bundleResult.shards.length} -> 0x${bid.peerId.slice(0, 8)}` });
                                 res();
                             } catch (e) {
                                 rej(e);
@@ -180,6 +193,8 @@ export default class UploadHandler extends BaseHandler {
                 this.node.consensusEngine.walletManager.releaseFunds(marketReqId);
                 return res.status(502).send('Decentralized P2P transmission array sequence fatally failed communicating limits.');
             }
+
+            this.node.events.emit('upload_telemetry', { status: 'CONSENSUS_INITIATED', message: `Broadcasting Verimus Block payload...` });
 
             // 7. Generate Pending Block and initiate consensus
             const privatePayload: BlockPrivate = {
@@ -259,7 +274,9 @@ export default class UploadHandler extends BaseHandler {
                 blockIndex: "Pending",
                 hash: blockId,
                 aesKey: bundleResult.aesKey,
-                aesIv: bundleResult.aesIv
+                aesIv: bundleResult.aesIv,
+                fragmentMap: fragmentMap,
+                activeHosts: payloadResult.activeHosts
             });
 
         } catch (error: any) {

@@ -49,8 +49,8 @@ describe('Backend: githubProvider Integrity', () => {
             } as Response;
         };
 
-        const hash = await prov.storeBlock(Buffer.from('hello'));
-        assert.ok(hash);
+        await prov.storeShard('github-shard-1', Buffer.from('hello'));
+        const hash = 'github-shard-1';
         assert.ok(fetchedUrl.includes('api.github.com/repos/owner/repo/contents/'));
         assert.strictEqual(fetchedOpts.method, 'PUT');
         assert.ok(fetchedOpts.headers['Authorization'].includes('tkn'));

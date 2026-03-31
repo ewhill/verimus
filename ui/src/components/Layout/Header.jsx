@@ -46,9 +46,9 @@ const Header = () => {
                             <path d="M12 6L18 12L12 18L6 12L12 6Z" fill="#ffffff" />
                         </svg>
                     </div>
-                    <div className="logo-titles">
-                        <h1>{title}</h1>
-                        <div className="node-status">
+                    <div className="logo-titles node-identity-trigger" onClick={() => dispatch({ type: 'SET_NODE_CONFIG_MODAL_OPEN', payload: true })} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-sm)', transition: 'background 0.2s', margin: '-0.2rem -0.5rem' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'} title="Configure Node Settings">
+                        <h1 style={{ cursor: 'pointer' }}>{title}</h1>
+                        <div className="node-status" style={{ cursor: 'pointer' }}>
                             <span className={`status-indicator ${error ? 'offline' : 'active'}`}></span> {error ? 'Node Offline' : 'Node Online'}
                         </div>
                     </div>
@@ -68,6 +68,7 @@ const Header = () => {
             <nav className={`main-nav ${isNavOpen ? 'active' : ''}`}>
                 <a href="#" className={`nav-link ${activeRoute === 'files' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'files')}>Files</a>
                 <a href="#" className={`nav-link ${activeRoute === 'ledger' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'ledger')}>Ledger</a>
+                <a href="#" className={`nav-link ${activeRoute === 'wallet' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'wallet')}>Wallet</a>
                 
                 {(nodeConfig?.roles?.includes('ORIGINATOR')) && (
                     <a href="#" className={`nav-link ${activeRoute === 'upload' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'upload')}>Upload</a>

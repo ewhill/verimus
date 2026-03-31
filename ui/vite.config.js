@@ -13,8 +13,9 @@ export default defineConfig({
     // If we run `npm run dev` in ui-v3, proxy API to the backend
     proxy: {
       '/api': {
-        target: 'http://localhost:3000', // Default port, adjust if node uses different
-        changeOrigin: true
+        target: 'https://localhost:26780', // Default port, adjust if node uses different
+        changeOrigin: true,
+        secure: false
       }
     }
   }

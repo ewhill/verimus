@@ -30,8 +30,7 @@ class RemoteFSStorageProvider extends BaseStorageProvider {
         logger.info(`[RemoteFSStorageProvider] Initialized for ${username}@${host}:${remoteDir}`);
     }
 
-    getCostPerGB(): number { return 1.0; }
-    getEgressCostPerGB(): number { return 0.5; }
+
 
     getLocation() {
         return {
@@ -64,6 +63,16 @@ class RemoteFSStorageProvider extends BaseStorageProvider {
         const sftp = new SftpClient();
         await sftp.connect(this.config!);
         return sftp;
+    }
+
+    async storeShard(physicalBlockId: string, encryptedData: Buffer | string): Promise<void> {
+        const sftp = await this._getSftp();
+        const remotePath = `${this.remoteDir}/${physicalBlockId}.pkg`;
+        try {
+            await sftp.put(Buffer.isBuffer(encryptedData) ? encryptedData : Buffer.from(encryptedData), remotePath);
+        } finally {
+            await sftp.end();
+        }
     }
 
     createBlockStream() {
