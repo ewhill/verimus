@@ -5,11 +5,13 @@ import express from 'express';
 import multer from 'multer';
 
 import PeerNode from '../peer_node/PeerNode';
+import AuditEventsHandler from '../route_handlers/audit_events_handler/AuditEventsHandler';
 import BlocksHandler from '../route_handlers/blocks_handler/BlocksHandler';
 import DefaultHandler from '../route_handlers/default_handler/DefaultHandler';
 import DownloadFileHandler from '../route_handlers/download_file_handler/DownloadFileHandler';
 import DownloadHandler from '../route_handlers/download_handler/DownloadHandler';
 import FilesHandler from '../route_handlers/files_handler/FilesHandler';
+import LedgerMetricsHandler from '../route_handlers/ledger_metrics_handler/LedgerMetricsHandler';
 import LogsHandler from '../route_handlers/logs_handler/LogsHandler';
 import NodeConfigHandler from '../route_handlers/node_config_handler/NodeConfigHandler';
 import UpdateNodeConfigHandler from '../route_handlers/node_config_handler/UpdateNodeConfigHandler';
@@ -58,6 +60,8 @@ export default function setupExpressApp(peerNode: PeerNode) {
     app.get('/api/node/config', new NodeConfigHandler(peerNode).handle);
     app.post('/api/node/config', new UpdateNodeConfigHandler(peerNode).handle);
     app.get('/api/upload/events', new UploadEventsHandler(peerNode).handle);
+    app.get('/api/audit/events', new AuditEventsHandler(peerNode).handle);
+    app.get('/api/ledger/metrics', new LedgerMetricsHandler(peerNode).handle);
     app.get('/api/blocks', new BlocksHandler(peerNode).handle);
     app.get('/api/peers', new PeersHandler(peerNode).handle);
     app.post('/api/upload', upload.array('files'), new UploadHandler(peerNode).handle);

@@ -518,6 +518,7 @@ class ConsensusEngine {
             
             if (!hasAudited) {
                 logger.info(`[Peer ${this.node.port}] Node deterministically elected as Auditor. Initiating mathematical Proof of Spacetime intervals...`);
+                this.node.events.emit('audit_telemetry', { status: 'ELECTION_INITIATED', message: 'Node deterministically elected as Auditor. Initiating mathematical Proof of Spacetime intervals...' });
                 hasAudited = true;
             }
 
@@ -545,6 +546,8 @@ class ConsensusEngine {
                     chunkIndex: targetIndex
                 });
                 
+                this.node.events.emit('audit_telemetry', { status: 'CHALLENGE_DISPATCHED', message: `Dispatching Merkle challenge targeting Shard ${fragment.shardIndex} at Chunk Index ${targetIndex}...`, targetPeer: fragment.nodeId });
+                
                 const executeSlashing = async (nodeId: string, reason: string) => {
                     const slashPayload = {
                         penalizedPublicKey: nodeId,
@@ -571,6 +574,7 @@ class ConsensusEngine {
                     this.node.events.removeAllListeners(`merkle_audit_response:${auditId}`);
                     if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(fragment.nodeId, "Audit Timeout Offense");
                     logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof resolving logical blocks! Penalty mapped.`);
+                    this.node.events.emit('audit_telemetry', { status: 'SLASHING_EXECUTED', message: `Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof. Executing Slashing...`, targetPeer: fragment.nodeId });
                     await executeSlashing(fragment.nodeId, "TIMEOUT");
                 }, 5000);
 
@@ -588,10 +592,12 @@ class ConsensusEngine {
                     if (!isValid) {
                         if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(fragment.nodeId, "Proof of Spacetime Forgery");
                         logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} explicitly failed mathematical audit! Banned!`);
+                        this.node.events.emit('audit_telemetry', { status: 'SLASHING_EXECUTED', message: `Host ${fragment.nodeId.slice(0, 8)} explicitly failed mathematical audit! Banned!`, targetPeer: fragment.nodeId });
                         await executeSlashing(fragment.nodeId, "FORGERY_INVALID_BOUNDS");
                     } else {
                         if (this.node.reputationManager) await this.node.reputationManager.rewardHonestProposal(fragment.nodeId);
                         logger.info(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} perfectly mapped rigorous spacetime boundaries!`);
+                        this.node.events.emit('audit_telemetry', { status: 'AUDIT_SUCCESS', message: `Host ${fragment.nodeId.slice(0, 8)} perfectly mapped rigorous spacetime boundaries!`, targetPeer: fragment.nodeId });
                         
                         // Phase 5 Financial Execution 
                         const reward = WalletManager.calculateSystemReward(Date.now(), GENESIS_TIMESTAMP);

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../../store';
 import { ApiService } from '../../services/api';
+import EpochTelemetryWidget from './Ledger/EpochTelemetryWidget';
 import LedgerToolbar from './LedgerToolbar';
 import LedgerGrid from './LedgerGrid';
 
@@ -14,6 +15,7 @@ const LedgerView = () => {
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('upload') === 'success') {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setShowCallout(true);
             window.history.replaceState({}, '', '/ledger');
         }
@@ -76,6 +78,7 @@ const LedgerView = () => {
             )}
             
             <section className="ledger-section">
+                <EpochTelemetryWidget />
                 <div className="stagger-1">
                     <LedgerToolbar />
                 </div>
