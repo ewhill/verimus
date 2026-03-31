@@ -39,8 +39,13 @@ export default class UploadHandler extends BaseHandler {
             if (isNaN(maxCost) || maxCost <= 0) return res.status(400).send('Invalid maxCost boundary.');
 
             // Cap minimum redundancy bounds
-            if (redundancy > 5) redundancy = 5;
-
+            const activePeers = this.node.peer ? this.node.peer.trustedPeers.length : 0;
+            if (activePeers < 1) {
+                return res.status(503).send('No peers connected to natively fulfill limit orders.');
+            }
+            const absoluteMax = Math.min(5, activePeers);
+            if (redundancy > absoluteMax) redundancy = absoluteMax;
+            
             let paths: string[] = [];
             try {
                 paths = JSON.parse(req.body.paths || '[]');
