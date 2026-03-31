@@ -242,8 +242,8 @@ class Client {
 		}
 
 		if (this.isTrusted) {
-			if (message.length > 5 * 1024 * 1024) {
-				this.logger_.error(`Message size exceeds 5MB limit. Terminating payload to prevent potential V8 parse exhaustion.`);
+			if (message.length > 100 * 1024 * 1024) {
+				this.logger_.error(`Message size exceeds 100MB limit. Terminating payload to prevent potential V8 parse exhaustion.`);
 				this.connection_.terminate();
 				return;
 			}

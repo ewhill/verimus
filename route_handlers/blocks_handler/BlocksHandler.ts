@@ -30,17 +30,18 @@ export default class BlocksHandler extends BaseHandler {
             // Prepend pending blocks 
             let pendingBlocks: Block[] = [];
             if (this.node.mempool && this.node.mempool.pendingBlocks) {
-                for (const [_unusedBId, entry] of this.node.mempool.pendingBlocks.entries()) {
+                for (const [bId, entry] of this.node.mempool.pendingBlocks.entries()) {
                     if (!entry.committed) {
                         if (req.query.own === 'true' && entry.block.publicKey !== this.node.publicKey) continue;
 
                         pendingBlocks.push({
+                            hash: bId,
                             metadata: {
                                 index: -1,
                                 timestamp: entry.originalTimestamp || Date.now(),
                             },
                             type: entry.block.type || BLOCK_TYPES.STORAGE_CONTRACT,
-                            payload: entry.block.payload, // Added specifically to filter during search mapping
+                            payload: entry.block.payload,
                             publicKey: entry.block.publicKey,
                             signature: entry.block.signature,
                         } as Block);

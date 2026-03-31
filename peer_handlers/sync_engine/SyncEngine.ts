@@ -400,7 +400,7 @@ class SyncEngine {
         if (!this.node.roles.includes(NodeRole.STORAGE)) return;
 
         try {
-            const result = await this.node.storageProvider!.getBlockReadStream(msg.contractId);
+            const result = await this.node.storageProvider!.getBlockReadStream(msg.physicalId);
             if (result.status !== 'available' || !result.stream) {
                 return connection.send(new MerkleProofChallengeResponseMessage({
                     contractId: msg.contractId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false

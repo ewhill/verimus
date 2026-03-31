@@ -39,8 +39,13 @@ sleep 5
 echo "3. Starting 5 peer nodes..."
 # Start the first one with --mongo to ensure DB is up if needed
 # The first node builds the UI, the remaining nodes skip it to avoid concurrent build conflicts
-"$(dirname "$0")/spawn_node.sh" --watch --mongo-port 27018 --port ${PORTS[0]} --public-address 127.0.0.1:${PORTS[0]} --force > /dev/null 2>&1 &
-echo "Started Node 1 on port ${PORTS[0]} (Seed Node)"
+if [ 1 -eq 1 ]; then
+    echo "Started Node 1 on port ${PORTS[0]} (Seed Node)"
+    "$(dirname "$0")/spawn_node.sh" --watch --mongo-port 27018 --port ${PORTS[0]} --public-address 127.0.0.1:${PORTS[0]} --force > "node_${PORTS[0]}.log" 2>&1 &
+else
+    echo "Started Node 1 on port ${PORTS[0]}"
+    "$(dirname "$0")/spawn_node.sh" --watch --mongo-port 27018 --port ${PORTS[0]} --public-address 127.0.0.1:${PORTS[0]} --force > /dev/null 2>&1 &
+fi
 # Wait for node startup and UI build completion
 sleep 8
 
@@ -48,7 +53,7 @@ sleep 8
 for i in {1..4}; do
     PORT=${PORTS[$i]}
     DISCOVER="127.0.0.1:${PORTS[0]}"
-    "$(dirname "$0")/spawn_node.sh" --watch --skip-ui --mongo-port 27018 --port $PORT --discover $DISCOVER --public-address 127.0.0.1:$PORT --force > /dev/null 2>&1 &
+    "$(dirname "$0")/spawn_node.sh" --watch --skip-ui --mongo-port 27018 --port $PORT --discover $DISCOVER --public-address 127.0.0.1:$PORT --force > "node_$PORT.log" 2>&1 &
     echo "Started Node $((i+1)) on port $PORT"
     sleep 3
 done
@@ -79,7 +84,17 @@ if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     echo -e "\033[1;33mWarning: Network did not fully converge within the time limit. Seeding might fail.\033[0m"
 fi
 
-echo "4. Seeding 5 blocks..."
+echo "4. Injecting Baseline Escrow Funding via MongoDB..."
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+for port in "${PORTS[@]}"; do
+    PUB_KEY_PATH="$PROJECT_ROOT/keys/peer_${port}.peer.pub"
+    if [ -f "$PUB_KEY_PATH" ]; then
+        mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "const fs = require('fs'); const pub = fs.readFileSync('$PUB_KEY_PATH', 'utf8'); db.balances.updateOne({ publicKey: pub }, { \$set: { balance: 500000 } }, { upsert: true });" > /dev/null 2>&1
+    fi
+done
+echo "✅ Baseline balances physically synchronized to DB natively!"
+
+echo "5. Seeding 5 blocks..."
 for i in {1..5}; do
     FILE="dummy_seed_$i.txt"
     echo "Seed data for block $i - Timestamp: $(date)" > "$FILE"

@@ -546,6 +546,7 @@ class ConsensusEngine {
 
                 const challengeMsg = new MerkleProofChallengeRequestMessage({
                     contractId: contract._id!.toString(), 
+                    physicalId: fragment.physicalId,
                     auditorPublicKey: this.node.publicKey,
                     chunkIndex: targetIndex
                 });
