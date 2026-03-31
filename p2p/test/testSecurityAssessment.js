@@ -199,8 +199,8 @@ test("Security: AES-GCM Dynamic IV Rotation & Message Bounds", async () => {
     let terminated = false;
     mockConnection.terminate = () => { terminated = true; };
 
-    client.onMessage_('HelloMessage{' + Buffer.alloc(6 * 1024 * 1024, 'a').toString('utf8') + '}');
+    client.onMessage_('HelloMessage{' + Buffer.alloc(101 * 1024 * 1024, 'a').toString('utf8') + '}');
 
-    assert.ok(terminated, 'Client preemptively terminated 5MB+ WebSocket payload immediately prior to native JSON executions.');
+    assert.ok(terminated, 'Client preemptively terminated 100MB+ WebSocket payload immediately prior to native JSON executions.');
 
 });

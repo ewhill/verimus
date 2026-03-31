@@ -113,7 +113,7 @@ export default class UploadHandler extends BaseHandler {
                     const timeout = setTimeout(() => {
                         this.node.events.removeAllListeners(`shard_response:${marketReqId}:${i}`);
                         rej(new Error(`P2P Shard transmission to ${bid.peerId.slice(0, 8)} timed out.`));
-                    }, 10000);
+                    }, 60000);
 
                     this.node.events.once(`shard_response:${marketReqId}:${i}`, (responseMsg: any) => {
                         clearTimeout(timeout);
@@ -134,7 +134,7 @@ export default class UploadHandler extends BaseHandler {
                         const verifyTimeout = setTimeout(() => {
                             this.node.events.removeAllListeners(`handoff_response:${marketReqId}:${physicalId}`);
                             rej(new Error(`P2P chunk verification handoff loop timed out isolating limits.`));
-                        }, 10000);
+                        }, 60000);
 
                         this.node.events.once(`handoff_response:${marketReqId}:${physicalId}`, (handoffMsg: any) => {
                             clearTimeout(verifyTimeout);
@@ -170,7 +170,10 @@ export default class UploadHandler extends BaseHandler {
                         });
 
                         try {
-                            bid.connection.send(verifyMsg);
+                            Promise.resolve(bid.connection.send(verifyMsg)).catch((err: any) => {
+                                clearTimeout(verifyTimeout);
+                                rej(err);
+                            });
                         } catch (err: any) {
                             clearTimeout(verifyTimeout);
                             rej(err);
@@ -179,7 +182,10 @@ export default class UploadHandler extends BaseHandler {
 
                     // Stream natively into the underlying WebSocket P2P proxy framework matching limit bindings
                     try {
-                        bid.connection.send(message);
+                        Promise.resolve(bid.connection.send(message)).catch((err: any) => {
+                            clearTimeout(timeout);
+                            rej(err);
+                        });
                     } catch (err: any) {
                         clearTimeout(timeout);
                         rej(err);
@@ -190,8 +196,9 @@ export default class UploadHandler extends BaseHandler {
             try {
                 await Promise.all(shardDispatchPromises);
             } catch (_unusedErr: any) {
+                logger.error(`[Peer ${this.node.port}] Shard Dispatch Promise failed natively! Reason: ${_unusedErr.message || _unusedErr}`);
                 this.node.consensusEngine.walletManager.releaseFunds(marketReqId);
-                return res.status(502).send('Decentralized P2P transmission array sequence fatally failed communicating limits.');
+                return res.status(502).send(`Decentralized P2P transmission array sequence fatally failed communicating limits. Details: ${_unusedErr.message || _unusedErr}`);
             }
 
             this.node.events.emit('upload_telemetry', { status: 'CONSENSUS_INITIATED', message: `Broadcasting Verimus Block payload...` });

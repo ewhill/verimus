@@ -210,7 +210,7 @@ class SyncEngine {
                     finalMarket.resolve(finalMarket.bids);
                     this.activeStorageMarkets.delete(requestId);
                 }
-            }, 10000); // 10 second maximum timeout boundary
+            }, 30000); // 30 second maximum timeout boundary
         });
     }
 
