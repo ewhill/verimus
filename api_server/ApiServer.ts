@@ -28,7 +28,7 @@ export default function setupExpressApp(peerNode: PeerNode) {
     const checkAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
         const ip = req.ip || req.socket.remoteAddress || '';
         
-        if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') {
+        if ((ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') && process.env.NODE_ENV !== 'production') {
             return next();
         }
 
