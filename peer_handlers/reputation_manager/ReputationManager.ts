@@ -20,7 +20,12 @@ export class ReputationManager extends EventEmitter {
         if (!peer) {
             // Implicitly bootstrap new honest peer records tracking 100 mapping baseline bounds
             peer = { publicKey, score: 100, strikeCount: 0, isBanned: false, lastOffense: null };
-            await this.peersCollection.insertOne(peer);
+            try {
+                await this.peersCollection.insertOne(peer);
+            } catch (err: any) {
+                if (err.code !== 11000) throw err; // Ignore duplicate key racing mapping natively 
+                peer = await this.peersCollection.findOne({ publicKey });
+            }
         }
 
         // Apply mathematical score adjustments
