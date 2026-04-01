@@ -12,6 +12,7 @@ export const useStore = create(
     filesSelectedPath: [],
     searchQuery: '',
     filterOwn: true,
+    filterCheckpoints: false,
     currentView: 'grid',
     selectedIndex: -1,
     pagination: { page: 1, limit: 16, pages: 1 },
@@ -47,6 +48,7 @@ export const useStore = create(
             case 'SET_FILES_SEARCH': return { filesSearchQuery: action.payload };
             case 'SET_SEARCH': return { searchQuery: action.payload };
             case 'SET_FILTER_OWN': return { filterOwn: action.payload, pagination: { ...state.pagination, page: 1 } };
+            case 'SET_FILTER_CHECKPOINTS': return { filterCheckpoints: action.payload, pagination: { ...state.pagination, page: 1 } };
             case 'SET_CURRENT_VIEW': return { currentView: action.payload };
             case 'SET_SELECTED_INDEX': return { selectedIndex: action.payload };
             case 'SET_PAGINATION': return { pagination: action.payload };
@@ -63,6 +65,7 @@ export const useStore = create(
         filesLocationFilter: state.filesLocationFilter,
         searchQuery: state.searchQuery,
         filterOwn: state.filterOwn,
+        filterCheckpoints: state.filterCheckpoints,
         currentView: state.currentView,
         ledgerSortMode: state.ledgerSortMode
     })

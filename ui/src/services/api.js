@@ -5,7 +5,8 @@ const getBaseQueryParams = (state) => {
     const query = encodeURIComponent(state.searchQuery || '');
     const filterOwn = state.filterOwn ? 'true' : 'false';
     const sort = state.ledgerSortMode || 'desc';
-    return `?page=${page}&limit=${limit}&q=${query}&own=${filterOwn}&sort=${sort}`;
+    const filterCheckpoints = state.filterCheckpoints ? '&type=checkpoint' : '';
+    return `?page=${page}&limit=${limit}&q=${query}&own=${filterOwn}&sort=${sort}${filterCheckpoints}`;
 };
 
 export const ApiService = {

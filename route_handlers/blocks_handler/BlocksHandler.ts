@@ -20,6 +20,28 @@ export default class BlocksHandler extends BaseHandler {
                 query.publicKey = this.node.publicKey;
             }
 
+            if (req.query.type) {
+                switch (req.query.type) {
+                    case 'storage_contract':
+                        query.type = BLOCK_TYPES.STORAGE_CONTRACT;
+                        break;
+                    case 'checkpoint':
+                        query.type = BLOCK_TYPES.CHECKPOINT;
+                        break;
+                    case 'slashing_transaction':
+                        query.type = BLOCK_TYPES.SLASHING_TRANSACTION;
+                        break;
+                    case 'staking_contract':
+                        query.type = BLOCK_TYPES.STAKING_CONTRACT;
+                        break;
+                    case 'transaction':
+                        query.type = BLOCK_TYPES.TRANSACTION;
+                        break;
+                    default:
+                        throw new Error(`Invalid block type: ${req.query.type}`);
+                }
+            }
+
             const searchQuery = req.query.q ? (req.query.q as string).toLowerCase() : null;
 
             // Fetch all matching blocks to memory so we can decrypt and filter
@@ -33,6 +55,7 @@ export default class BlocksHandler extends BaseHandler {
                 for (const [bId, entry] of this.node.mempool.pendingBlocks.entries()) {
                     if (!entry.committed) {
                         if (req.query.own === 'true' && entry.block.publicKey !== this.node.publicKey) continue;
+                        if (req.query.type && entry.block.type !== req.query.type) continue;
 
                         pendingBlocks.push({
                             hash: bId,

@@ -22,16 +22,11 @@ async function startDaemon() {
             const pubFile = `keys/peer_${port}.peer.pub`;
             if (fs.existsSync(pubFile)) {
                 const pubKey = fs.readFileSync(pubFile, 'utf8');
-                await db.collection('blocks').insertOne({
-                    metadata: { index: -1, timestamp: Date.now() },
-                    type: 'TRANSACTION',
-                    previousHash: 'mock_genesis_bypass',
-                    hash: `mock_funds_alloc_${port}`,
-                    payload: { senderId: 'SYSTEM', recipientId: pubKey, amount: 50000.0, senderSignature: 'SYSTEM_MINT' },
-                    publicKey: 'SYSTEM',
-                    signature: 'SYSTEM_MINT'
+                await db.collection('balances').insertOne({
+                    publicKey: pubKey,
+                    balance: 50000.0
                 });
-                console.log(`Successfully injected 50,000 baseline test tokens into node ${port} ledger.`);
+                console.log(`Successfully injected 50,000 baseline test tokens into node ${port} balances collection.`);
             }
         }
         await client.close();

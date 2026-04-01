@@ -116,6 +116,12 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
     });
 
     it('Coordinates adoption across majority segments', async () => {
+        node1.mempool.pendingBlocks.set('valid_block', {
+            block: { type: 'TRANSACTION', metadata: { index: 2, timestamp: 2 }, publicKey: 'pk', signature: 'sig', hash: 'valid_block', payload: { senderSignature: '', senderId: '', recipientId: '', amount: 0 } },
+            verifications: new Set(),
+            eligible: true,
+            originalTimestamp: Date.now()
+        } as any);
         node1.mempool.eligibleForks.set('valid_fork', { blockIds: ['valid_block'], proposals: new Set(['127.0.0.1:31001']), adopted: false, computedBlocks: [] });
         
         // Node 2 votes for Node 1's proposal forming the required majority mapping

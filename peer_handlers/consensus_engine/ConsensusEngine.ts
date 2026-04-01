@@ -184,8 +184,8 @@ class ConsensusEngine {
         }
 
         if (pendingEntry.verifications.has(connection.peerAddress)) return;
+
         pendingEntry.verifications.add(connection.peerAddress);
-        logger.info(`[Peer ${this.node.port}] Verification for ${blockId.slice(0, 8)} from ${connection.peerAddress}. Total: ${pendingEntry.verifications.size}`);
 
         if (this.node.peer && connection.peerAddress !== `127.0.0.1:${this.node.port}`) {
             this.node.peer.broadcast(new VerifyBlockMessage({ blockId, signature })).catch(err => {
@@ -221,8 +221,8 @@ class ConsensusEngine {
         eligibleBlockIds.sort((a, b) => {
             const entryA = this.mempool.pendingBlocks.get(a);
             const entryB = this.mempool.pendingBlocks.get(b);
-            const tsA = new Date(entryA!.originalTimestamp).getTime();
-            const tsB = new Date(entryB!.originalTimestamp).getTime();
+            const tsA = new Date(entryA!.block.metadata.timestamp || entryA!.originalTimestamp).getTime();
+            const tsB = new Date(entryB!.block.metadata.timestamp || entryB!.originalTimestamp).getTime();
             if (tsA !== tsB) return tsA - tsB;
             return a < b ? -1 : 1;
         });
@@ -251,7 +251,6 @@ class ConsensusEngine {
         if (forkEntry!.proposals.has(connection.peerAddress)) return;
         
         forkEntry!.proposals.add(connection.peerAddress);
-        logger.info(`[Peer ${this.node.port}] Proposal for Fork ${forkId.slice(0, 8)} from ${connection.peerAddress}. Total: ${forkEntry!.proposals.size}`);
 
         if (this.node.peer && connection.peerAddress !== `127.0.0.1:${this.node.port}`) {
             this.node.peer.broadcast(new ProposeForkMessage({ forkId, blockIds })).catch(e => {
@@ -272,11 +271,15 @@ class ConsensusEngine {
             forkEntry!.computedBlocks = [];
             for (const bId of blockIds) {
                 const pEntry = this.mempool.pendingBlocks.get(bId);
-                if (!pEntry) continue;
+                if (!pEntry) {
+                    logger.warn(`[Peer ${this.node.port}] Node lacks pending block ${bId.slice(0, 8)} for confirmed fork ${forkId.slice(0, 8)}. Deferred.`);
+                    forkEntry!.adopted = false;
+                    return;
+                }
 
                 index++;
                 const newBlock: Block = {
-                    metadata: { index, timestamp: pEntry.originalTimestamp || Date.now() },
+                    metadata: { index, timestamp: pEntry.block.metadata.timestamp || pEntry.originalTimestamp || Date.now() },
                     type: pEntry.block.type || BLOCK_TYPES.STORAGE_CONTRACT,
                     previousHash,
                     publicKey: pEntry.block.publicKey,
@@ -286,6 +289,8 @@ class ConsensusEngine {
 
                 const blockToHash = { ...newBlock };
                 const strToHash = JSON.stringify(blockToHash);
+                logger.warn(`[Peer ${this.node.port}] blockToHash string length: ${strToHash.length}, previousHash: ${previousHash}, index: ${index}, timestamp: ${blockToHash.metadata.timestamp}`);
+                logger.warn(`[Peer ${this.node.port}] bId: ${bId.slice(0, 8)}, signature length: ${blockToHash.signature.length}, payload length: ${JSON.stringify(blockToHash.payload).length}`);
                 newBlock.hash = crypto.createHash('sha256').update(strToHash).digest('hex');
                 previousHash = newBlock.hash!;
                 finalTipHash = newBlock.hash!;
@@ -325,7 +330,6 @@ class ConsensusEngine {
         if (settledEntry!.adoptions.has(connection.peerAddress)) return;
 
         settledEntry!.adoptions.add(connection.peerAddress);
-        logger.info(`[Peer ${this.node.port}] Adoption for Fork ${forkId.slice(0, 8)} from ${connection.peerAddress}. Total: ${settledEntry!.adoptions.size}`);
 
         if (this.node.peer && connection.peerAddress !== `127.0.0.1:${this.node.port}`) {
             this.node.peer.broadcast(new AdoptForkMessage({ forkId, finalTipHash })).catch(e => {

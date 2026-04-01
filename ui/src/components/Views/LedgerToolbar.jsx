@@ -5,6 +5,7 @@ import { ApiService } from '../../services/api';
 const LedgerToolbar = () => {
     const dispatch = useStore(s => s.dispatch);
     const filterOwn = useStore(s => s.filterOwn);
+    const filterCheckpoints = useStore(s => s.filterCheckpoints);
     const currentView = useStore(s => s.currentView);
     const searchQuery = useStore(s => s.searchQuery);
     const ledgerSortMode = useStore(s => s.ledgerSortMode);
@@ -32,6 +33,11 @@ const LedgerToolbar = () => {
     const toggleFilterOwn = () => {
         dispatch({ type: 'SET_FILTER_OWN', payload: !filterOwn });
         setTimeout(() => ApiService.fetchBlocks({ ...useStore.getState(), filterOwn: !filterOwn }, dispatch), 0);
+    };
+
+    const toggleFilterCheckpoints = () => {
+        dispatch({ type: 'SET_FILTER_CHECKPOINTS', payload: !filterCheckpoints });
+        setTimeout(() => ApiService.fetchBlocks({ ...useStore.getState(), filterCheckpoints: !filterCheckpoints }, dispatch), 0);
     };
 
     const toggleView = (view) => {
@@ -81,6 +87,23 @@ const LedgerToolbar = () => {
                         >
                             <span className="switch-thumb">
                                 {filterOwn && <svg className="check-icon" viewBox="0 0 24 24" fill="currentColor"><path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd" /></svg>}
+                            </span>
+                        </button>
+                    </div>
+
+                    <div 
+                        className="switch-container" 
+                        title="Display Memory Checkpoints Only"
+                        style={{ margin: 0 }}
+                    >
+                        <span className="switch-label" style={{ color: filterCheckpoints ? 'var(--primary)' : 'inherit' }}>Checkpoints</span>
+                        <button 
+                            className={`switch-toggle ${filterCheckpoints ? 'active' : ''}`} 
+                            onClick={toggleFilterCheckpoints}
+                            style={{ cursor: 'pointer' }}
+                        >
+                            <span className="switch-thumb">
+                                {filterCheckpoints && <svg className="check-icon" viewBox="0 0 24 24" fill="currentColor"><path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd" /></svg>}
                             </span>
                         </button>
                     </div>
