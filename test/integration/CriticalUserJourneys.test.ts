@@ -46,8 +46,8 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
                             });
                         }, 5);
                     }
-                    return [];
                 };
+                Object.defineProperty(node.peer, 'trustedPeers', { get: () => ['mock'] });
                 Object.assign(node.peer, { request: async () => ({}) });
             }
             node.consensusEngine.walletManager.verifyFunds = async () => true;

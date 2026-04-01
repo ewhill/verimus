@@ -16,17 +16,14 @@ export class ReputationManager extends EventEmitter {
     private async executePeerUpsert(publicKey: string, scoreDelta: number, offense: string | null = null): Promise<PeerReputation | null> {
         if (!this.peersCollection) return null;
 
+        await this.peersCollection.updateOne(
+            { publicKey },
+            { $setOnInsert: { score: 100, strikeCount: 0, isBanned: false, lastOffense: null } },
+            { upsert: true }
+        );
+
         let peer: any = await this.peersCollection.findOne({ publicKey });
-        if (!peer) {
-            // Implicitly bootstrap new honest peer records tracking 100 mapping baseline bounds
-            peer = { publicKey, score: 100, strikeCount: 0, isBanned: false, lastOffense: null };
-            try {
-                await this.peersCollection.insertOne(peer);
-            } catch (err: any) {
-                if (err.code !== 11000) throw err; // Ignore duplicate key racing mapping natively 
-                peer = await this.peersCollection.findOne({ publicKey });
-            }
-        }
+        if (!peer) return null;
 
         // Apply mathematical score adjustments
         let newScore = peer.score + scoreDelta;
