@@ -21,6 +21,8 @@ echo "==========================================="
 echo "  Spawning 5 Nodes & Seeding 5 Blocks      "
 echo "==========================================="
 
+export VERIMUS_GENESIS_TIMESTAMP=$(date +%s000)
+
 echo "1. Cleaning up existing instances..."
 for port in "${PORTS[@]}"; do
     "$(dirname "$0")/stop.sh" --port $port > /dev/null 2>&1 || true

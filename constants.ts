@@ -3,7 +3,7 @@ import * as crypto from 'crypto';
 import { hashData } from './crypto_utils/CryptoUtils';
 import type { Block } from './types';
 
-export const GENESIS_TIMESTAMP = 1774828800000; // March 30, 2026 00:00:00 UTC
+export const GENESIS_TIMESTAMP = process.env.VERIMUS_GENESIS_TIMESTAMP ? parseInt(process.env.VERIMUS_GENESIS_TIMESTAMP) : 1774828800000; // March 30, 2026 00:00:00 UTC
 
 export const BLOCK_TYPES = {
     TRANSACTION: 'TRANSACTION',

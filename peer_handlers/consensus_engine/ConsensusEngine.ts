@@ -553,6 +553,14 @@ class ConsensusEngine {
                 
                 this.node.events.emit('audit_telemetry', { status: 'CHALLENGE_DISPATCHED', message: `Dispatching Merkle challenge targeting Shard ${fragment.shardIndex} at Chunk Index ${targetIndex}...`, targetPeer: fragment.nodeId });
                 
+                if (this.node.peer) {
+                    try {
+                        await this.node.peer.broadcast(challengeMsg);
+                    } catch (err: any) {
+                        logger.warn(`[Peer ${this.node.port}] Failed to broadcast Merkle challenge: ${err.message}`);
+                    }
+                }
+
                 const executeSlashing = async (nodeId: string, reason: string) => {
                     const slashPayload = {
                         penalizedPublicKey: nodeId,
