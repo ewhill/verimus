@@ -20,6 +20,7 @@ import PrivatePayloadHandler from '../route_handlers/private_payload_handler/Pri
 import UploadEventsHandler from '../route_handlers/upload_events_handler/UploadEventsHandler';
 import UploadHandler from '../route_handlers/upload_handler/UploadHandler';
 import WalletHandler from '../route_handlers/wallet_handler/WalletHandler';
+import { IS_DEV_NETWORK } from '../constants';
 
 export default function setupExpressApp(peerNode: PeerNode) {
     const app = express();
@@ -28,7 +29,7 @@ export default function setupExpressApp(peerNode: PeerNode) {
     const checkAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
         const ip = req.ip || req.socket.remoteAddress || '';
         
-        if ((ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') && process.env.NODE_ENV !== 'production') {
+        if ((ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') && IS_DEV_NETWORK) {
             return next();
         }
 

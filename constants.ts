@@ -5,6 +5,8 @@ import type { Block } from './types';
 
 export const GENESIS_TIMESTAMP = process.env.VERIMUS_GENESIS_TIMESTAMP ? parseInt(process.env.VERIMUS_GENESIS_TIMESTAMP) : 1774828800000; // March 30, 2026 00:00:00 UTC
 
+export const IS_DEV_NETWORK = process.env.NODE_ENV !== 'production';
+
 export const BLOCK_TYPES = {
     TRANSACTION: 'TRANSACTION',
     STORAGE_CONTRACT: 'STORAGE_CONTRACT',
