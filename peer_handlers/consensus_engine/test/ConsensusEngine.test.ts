@@ -390,7 +390,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
         await engine.runGlobalAudit();
 
         // Simulate returning bad forgery bytes breaking mathematical proofs dynamically
-        mockNode.events.emit(`merkle_audit_response:507f1f77bcf86cd799439011`, {
+        mockNode.events.emit(`merkle_audit_response:507f1f77bcf86cd799439011:phys`, {
             computedRootMatch: true,
             chunkDataBase64: Buffer.from('FAKE BAD BYTES TRASH BOUNDARY').toString('base64'),
             merkleSiblings: ['another_hash']

@@ -3,6 +3,7 @@ import { MessageOptions } from '../types/Types';
 
 export interface MerkleProofChallengeResponseOptions {
     contractId: string;
+    physicalId: string;
     chunkDataBase64: string; 
     merkleSiblings: string[];
     computedRootMatch: boolean;
@@ -14,6 +15,9 @@ export class MerkleProofChallengeResponseMessage extends Message {
         
         if (options.contractId !== undefined) this.contractId = options.contractId;
         else if (options.body?.contractId !== undefined) this.contractId = options.body.contractId;
+
+        if (options.physicalId !== undefined) this.physicalId = options.physicalId;
+        else if (options.body?.physicalId !== undefined) this.physicalId = options.body.physicalId;
 
         if (options.chunkDataBase64 !== undefined) this.chunkDataBase64 = options.chunkDataBase64;
         else if (options.body?.chunkDataBase64 !== undefined) this.chunkDataBase64 = options.body.chunkDataBase64;
@@ -27,6 +31,9 @@ export class MerkleProofChallengeResponseMessage extends Message {
 
     get contractId(): string { return this.body.contractId; }
     set contractId(value: string) { this.body = { ...this.body, contractId: value }; }
+
+    get physicalId(): string { return this.body.physicalId; }
+    set physicalId(value: string) { this.body = { ...this.body, physicalId: value }; }
 
     get chunkDataBase64(): string { return this.body.chunkDataBase64; }
     set chunkDataBase64(value: string) { this.body = { ...this.body, chunkDataBase64: value }; }

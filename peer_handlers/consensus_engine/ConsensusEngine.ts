@@ -597,14 +597,14 @@ class ConsensusEngine {
 
                 const auditId = contract._id!.toString();
                 const timeout = setTimeout(async () => {
-                    this.node.events.removeAllListeners(`merkle_audit_response:${auditId}`);
+                    this.node.events.removeAllListeners(`merkle_audit_response:${auditId}:${fragment.physicalId}`);
                     if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(fragment.nodeId, "Audit Timeout Offense");
                     logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof resolving logical blocks! Penalty mapped.`);
                     this.node.events.emit('audit_telemetry', { status: 'SLASHING_EXECUTED', message: `Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof. Executing Slashing...`, targetPeer: fragment.nodeId });
                     await executeSlashing(fragment.nodeId, "TIMEOUT");
                 }, 5000);
 
-                this.node.events.once(`merkle_audit_response:${auditId}`, async (resMsg: any) => {
+                this.node.events.once(`merkle_audit_response:${auditId}:${fragment.physicalId}`, async (resMsg: any) => {
                     clearTimeout(timeout);
                     
                     let isValid = false;
