@@ -402,9 +402,11 @@ class SyncEngine {
         try {
             const result = await this.node.storageProvider!.getBlockReadStream(msg.physicalId);
             if (result.status !== 'available' || !result.stream) {
-                return connection.send(new MerkleProofChallengeResponseMessage({
+                const respMsg = new MerkleProofChallengeResponseMessage({
                     contractId: msg.contractId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
-                }));
+                });
+                if (this.node.peer) this.node.peer.broadcast(respMsg).catch(()=>{});
+                return;
             }
             
             const CHUNK_SIZE = 64 * 1024;
@@ -424,32 +426,37 @@ class SyncEngine {
                 currentChunk = Buffer.alloc(0);
 
                 if (chunks.length === 0 || msg.chunkIndex >= chunks.length) {
-                    return connection.send(new MerkleProofChallengeResponseMessage({
+                    const respMsg = new MerkleProofChallengeResponseMessage({
                         contractId: msg.contractId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
-                    }));
+                    });
+                    if (this.node.peer) this.node.peer.broadcast(respMsg).catch(()=>{});
+                    return;
                 }
 
                 const { tree } = cryptoUtils.buildMerkleTree(chunks);
                 const merkleSiblings = cryptoUtils.getMerkleProof(tree, msg.chunkIndex);
                 const chunkDataBase64 = chunks[msg.chunkIndex].toString('base64');
                 
-                connection.send(new MerkleProofChallengeResponseMessage({
+                const respMsg = new MerkleProofChallengeResponseMessage({
                     contractId: msg.contractId, chunkDataBase64, merkleSiblings, computedRootMatch: true
-                }));
+                });
+                if (this.node.peer) this.node.peer.broadcast(respMsg).catch(()=>{});
             };
 
             result.stream.on('end', flushAndResolve);
 
             result.stream.on('error', () => {
-                connection.send(new MerkleProofChallengeResponseMessage({
+                const respMsg = new MerkleProofChallengeResponseMessage({
                     contractId: msg.contractId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
-                }));
+                });
+                if (this.node.peer) this.node.peer.broadcast(respMsg).catch(()=>{});
             });
         } catch (error: any) {
             logger.error(`[Peer ${this.node.port}] Failed resolving verification handoff physically catching constraints: ${error.message}`);
-            connection.send(new MerkleProofChallengeResponseMessage({
+            const respMsg = new MerkleProofChallengeResponseMessage({
                 contractId: msg.contractId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
-            }));
+            });
+            if (this.node.peer) this.node.peer.broadcast(respMsg).catch(()=>{});
         }
     }
 
