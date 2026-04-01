@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useEffect, useState, useRef } from 'react';
 import { useStore } from '../../store';
 import { ApiService } from '../../services/api';
@@ -58,7 +59,7 @@ const BlockModal = () => {
             const pkg = blocks.find(b => b.hash === selectedBlockHash);
             const isOwner = nodeConfig && nodeConfig.publicKey === pkg?.publicKey;
 
-            if (isOwner && fetchedHashRef.current !== selectedBlockHash) {
+            if (pkg?.type === 'STORAGE_CONTRACT' && isOwner && fetchedHashRef.current !== selectedBlockHash) {
                 fetchedHashRef.current = selectedBlockHash;
                 setIsFetchingPayload(true);
                 setPayloadError(false);
@@ -179,6 +180,81 @@ const BlockModal = () => {
         );
     };
 
+    const renderGenericPayloadHtml = (block) => {
+        if (!block || !block.payload) return <div style={{ color: 'var(--text-muted)' }}>No public payload data available.</div>;
+        
+        switch (block.type) {
+            case 'TRANSACTION':
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>Sender:</span>
+                                <PropertyValue value={block.payload.senderId} />
+                                <span style={{ color: 'var(--text-muted)' }}>Recipient:</span>
+                                <PropertyValue value={block.payload.recipientId} />
+                                <span style={{ color: 'var(--text-muted)' }}>Amount:</span>
+                                <PropertyValue className="success" value={`${block.payload.amount} VERI`} copyable={false} />
+                                <span style={{ color: 'var(--text-muted)' }}>Signature:</span>
+                                <PropertyValue value={block.payload.senderSignature} />
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'CHECKPOINT':
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>Epoch Bound:</span>
+                                <PropertyValue className="highlight" value={`Epoch #${block.payload.epochIndex}`} copyable={false} />
+                                <span style={{ color: 'var(--text-muted)' }}>Start Hash:</span>
+                                <PropertyValue value={block.payload.startHash} />
+                                <span style={{ color: 'var(--text-muted)' }}>End Hash:</span>
+                                <PropertyValue value={block.payload.endHash} />
+                                <span style={{ color: 'var(--text-muted)' }}>State Root:</span>
+                                <PropertyValue value={block.payload.stateMerkleRoot} />
+                                <span style={{ color: 'var(--text-muted)' }}>Contracts Root:</span>
+                                <PropertyValue value={block.payload.activeContractsMerkleRoot} />
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'STAKING_CONTRACT':
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>Collateral:</span>
+                                <PropertyValue className="highlight" value={`${block.payload.collateralAmount} VERI`} copyable={false} />
+                                <span style={{ color: 'var(--text-muted)' }}>Operator Key:</span>
+                                <PropertyValue value={block.payload.operatorPublicKey} />
+                                <span style={{ color: 'var(--text-muted)' }}>Timeline Bound:</span>
+                                <PropertyValue value={`${block.payload.minEpochTimelineDays} Days`} copyable={false} />
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'SLASHING_TRANSACTION':
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>Penalized Entity:</span>
+                                <PropertyValue value={block.payload.penalizedPublicKey} />
+                                <span style={{ color: 'var(--text-muted)' }}>Burnt Ledger:</span>
+                                <PropertyValue value={`-${block.payload.burntAmount} VERI`} copyable={false} style={{ color: '#ef4444' }} />
+                                <span style={{ color: 'var(--text-muted)' }}>Evidence Sign:</span>
+                                <PropertyValue value={block.payload.evidenceSignature} />
+                            </div>
+                        </div>
+                    </div>
+                );
+            default:
+                return <div style={{ color: 'var(--text-muted)' }}>Unrecognized payload type mappings.</div>;
+        }
+    };
+
     const handleDownloadSubmit = async (e) => {
         e.preventDefault();
         const btn = e.target.querySelector('button');
@@ -244,24 +320,28 @@ const BlockModal = () => {
                             <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px', color: 'var(--text-muted)' }}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
                             </svg>
-                            <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 500, color: 'var(--text-main)' }}>Decrypted Private Payload</h4>
+                            <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 500, color: 'var(--text-main)' }}>
+                                {pkg.type === 'STORAGE_CONTRACT' ? 'Decrypted Private Payload' : 'Public Payload Data'}
+                            </h4>
                         </div>
                         <div style={{ width: '100%', boxSizing: 'border-box' }}>
-                            {isOwner ? (
-                                isFetchingPayload ? (
-                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '2rem', textAlign: 'center', border: '1px dashed var(--border-soft)', borderRadius: 'var(--radius-sm)', width: '100%', boxSizing: 'border-box' }}>
-                                        Decrypting network bundle... <div className="spinner" style={{ display: 'inline-block', width: '12px', height: '12px', borderWidth: '2px', marginLeft: '0.5rem' }}></div>
+                            {pkg.type === 'STORAGE_CONTRACT' ? (
+                                isOwner ? (
+                                    isFetchingPayload ? (
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '2rem', textAlign: 'center', border: '1px dashed var(--border-soft)', borderRadius: 'var(--radius-sm)', width: '100%', boxSizing: 'border-box' }}>
+                                            Decrypting network bundle... <div className="spinner" style={{ display: 'inline-block', width: '12px', height: '12px', borderWidth: '2px', marginLeft: '0.5rem' }}></div>
+                                        </div>
+                                    ) : renderPayloadHtml()
+                                ) : (
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '2rem', background: 'rgba(0,0,0,0.2)', border: '1px dashed var(--border-soft)', borderRadius: 'var(--radius-sm)', textAlign: 'center', width: '100%', boxSizing: 'border-box' }}>
+                                        Payload strictly mandates active asymmetric RSA decryption keys securely maintained by the authorized originator directly.
                                     </div>
-                                ) : renderPayloadHtml()
-                            ) : (
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '2rem', background: 'rgba(0,0,0,0.2)', border: '1px dashed var(--border-soft)', borderRadius: 'var(--radius-sm)', textAlign: 'center', width: '100%', boxSizing: 'border-box' }}>
-                                    Payload strictly mandates active asymmetric RSA decryption keys securely maintained by the authorized originator directly.
-                                </div>
-                            )}
+                                )
+                            ) : renderGenericPayloadHtml(pkg)}
                         </div>
                     </div>
 
-                    {isOwner && !isFetchingPayload && payloadData && !payloadError && (
+                    {isOwner && pkg.type === 'STORAGE_CONTRACT' && !isFetchingPayload && payloadData && !payloadError && (
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>
                             <form onSubmit={handleDownloadSubmit} style={{ maxWidth: '220px', width: '100%' }}>
                                 <button type="submit" className="primary-btn" style={{ borderRadius: 'var(--radius-lg)', fontWeight: 600 }}>Decrypt & Download</button>
