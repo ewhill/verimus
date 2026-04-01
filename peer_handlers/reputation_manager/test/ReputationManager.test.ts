@@ -11,7 +11,10 @@ import { ReputationManager } from '../ReputationManager';
 const createMockCollection = (data: Record<string, any> = {}) => createMock<Collection<PeerReputation>>({
     findOne: mock.fn<({ publicKey }: { publicKey: string }) => Promise<PeerReputation | null>>(async ({ publicKey }: { publicKey: string }) => data[publicKey] || null) as any,
     insertOne: mock.fn<(doc: any) => Promise<void>>(async (doc: any) => { data[doc.publicKey] = { ...doc }; }) as any,
-    updateOne: mock.fn<({ publicKey }: { publicKey: string }, { $set }: any) => Promise<void>>(async ({ publicKey }: { publicKey: string }, { $set }: any) => { data[publicKey] = { ...data[publicKey], ...$set }; }) as any
+    updateOne: mock.fn<(filter: { publicKey: string }, updateDoc: any) => Promise<void>>(async ({ publicKey }: { publicKey: string }, updateDoc: any) => { 
+        if (!data[publicKey]) data[publicKey] = { publicKey, ...(updateDoc.$setOnInsert || {}) };
+        if (updateDoc.$set) data[publicKey] = { ...data[publicKey], ...updateDoc.$set };
+    }) as any
 });
 
 describe('Backend: ReputationManager Analytics and Threshold Parsing', () => {

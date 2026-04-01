@@ -37,7 +37,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
 
             if (node.peer) {
                 node.peer.broadcast = async (msg: any) => {
-                    if (msg.name === 'VerifyHandoffRequestMessage') {
+                    if (msg.constructor && msg.constructor.name === 'VerifyHandoffRequestMessage') {
                         setTimeout(async () => {
                             node.events.emit(`handoff_response:${msg.body.marketId}:${msg.body.physicalId}`, {
                                 success: true,
@@ -45,6 +45,25 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
                                 chunkDataBase64: Buffer.from('IntegrationBounds').toString('base64')
                             });
                         }, 5);
+                    } else if (msg.constructor && msg.constructor.name === 'PendingBlockMessage') {
+                        setTimeout(() => {
+                            const blockId = cryptoUtils.hashData(msg.body.block.signature);
+                            // eslint-disable-next-line @typescript-eslint/no-var-requires
+                            const { createMock } = require('../../test/utils/TestUtils');
+                            node.consensusEngine.handleVerifyBlock(blockId, 'mock_sig', createMock({ peerAddress: 'mock' })).catch(console.error);
+                        }, 10);
+                    } else if (msg.constructor && msg.constructor.name === 'ProposeForkMessage') {
+                        setTimeout(() => {
+                            // eslint-disable-next-line @typescript-eslint/no-var-requires
+                            const { createMock } = require('../../test/utils/TestUtils');
+                            node.consensusEngine.handleProposeFork(msg.body.forkId, msg.body.blockIds, createMock({ peerAddress: 'mock' })).catch(console.error);
+                        }, 10);
+                    } else if (msg.constructor && msg.constructor.name === 'AdoptForkMessage') {
+                        setTimeout(() => {
+                            // eslint-disable-next-line @typescript-eslint/no-var-requires
+                            const { createMock } = require('../../test/utils/TestUtils');
+                            node.consensusEngine.handleAdoptFork(msg.body.forkId, msg.body.finalTipHash, createMock({ peerAddress: 'mock' })).catch(console.error);
+                        }, 10);
                     }
                 };
                 Object.defineProperty(node.peer, 'trustedPeers', { get: () => ['mock'] });

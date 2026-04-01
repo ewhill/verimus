@@ -101,7 +101,9 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                 }]
             }),
             peer: createMock<Peer>({
-                broadcast: async () => { }
+                broadcast: async () => { },
+                // @ts-ignore
+                trustedPeers: [{}]
             }),
             reputationManager: createMock<ReputationManager>({
                 penalizeMajor: async () => null
@@ -175,6 +177,10 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                     releaseFunds: mock.fn<() => void>(),
                     commitFunds: mock.fn<() => void>()
                 })
+            }),
+            peer: createMock<Peer>({
+                // @ts-ignore
+                trustedPeers: [{}]
             })
         });
         const request = createMock<Request>({
@@ -251,7 +257,9 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                 }]
             }),
             peer: createMock<Peer>({
-                broadcast: async () => { }
+                broadcast: async () => { },
+                // @ts-ignore
+                trustedPeers: [{}]
             }),
             reputationManager: createMock<ReputationManager>({
                 penalizeMajor: async (_unusedPeerId: string, _unusedReason: string) => null
@@ -356,7 +364,9 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                 }]
             }),
             peer: createMock<Peer>({
-                broadcast: async () => { }
+                broadcast: async () => { },
+                // @ts-ignore
+                trustedPeers: [{}]
             }),
             reputationManager: createMock<ReputationManager>({
                 penalizeMajor: async (_unusedPeerId: string, _unusedReason: string) => null
@@ -462,7 +472,9 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                 }
             }),
             peer: createMock<Peer>({
-                broadcast: async () => { }
+                broadcast: async () => { },
+                // @ts-ignore
+                trustedPeers: [{}]
             }),
             events: createMock<EventEmitter>({
                 once: (evt: string | symbol, cb: (..._unusedArgs: unknown[]) => void): EventEmitter => {

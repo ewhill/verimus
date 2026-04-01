@@ -2,50 +2,34 @@
 
 The goal of this phase is to bring structural transparency to the physical storage stability of the Verimus network natively via the React UI. We will build an Audit Terminal for real-time `Proof of Spacetime` sortition telemetry and a Reputations Leaderboard mapping native node slashing records.
 
+### Status Update
+The core backend parity mechanisms (sortition math audits, `SLASHING_TRANSACTION` blocks, and SSE `/api/audit/events`) are already fully operational within `ConsensusEngine` and `ApiServer.ts`. Additionally, the frontend React components (`AuditTerminal.jsx` and `ReputationLadder.jsx`) have been successfully drafted.
+
+**Remaining Task Focus:** Resolving Phase 5 requires restructuring the frontend display so these components function as dedicated, scalable diagnostic feeds embedded natively as toggleable sub-tabs within the Network overview.
+
 ## Proposed Changes
 
-### Backend Stream Architecture
-
-#### [NEW] `route_handlers/audit_events_handler/AuditEventsHandler.ts`
-- Implement a Server-Sent Event (SSE) endpoint specifically for global audits (`/api/audit/events`), mirroring the event-loop detachment logic defined in `UploadEventsHandler.ts`.
-- Subscribes natively to `this.node.events.on('audit_telemetry')`.
-
-#### [MODIFY] `apis_server/APIServer.ts`
-- Ensure the new `AuditEventsHandler` is registered logically natively across the Express routing middleware.
-
-#### [MODIFY] `peer_handlers/consensus_engine/ConsensusEngine.ts`
-- In `runGlobalAudit()`, continuously `emit('audit_telemetry', { status, message, targetPeer })` indicating:
-    - Node election loops (`ELECTION_INITIATED`)
-    - Dispatching mathematical challenges to storage peers (`CHALLENGE_DISPATCHED`)
-    - Resolving correct Merkle sibling hashes (`AUDIT_SUCCESS`)
-    - Formal slashing for timed-out or invalid execution proofs (`SLASHING_EXECUTED`)
-
----
-
-### React UI Cryptographic Subsystems
+### UI & Architecture Structuring
 
 #### [MODIFY] `ui/src/components/Views/PeersView.jsx`
-- Refactor the simple radial network view to accommodate native tabular metrics. 
-- Stand up both the `ReputationLadder` and `AuditTerminal` directly within this page bounding continuous UI updates seamlessly.
+- Introduce a segmented control (sub-tab) architecture directly inside the `PeersView` leveraging local React state. This neatly breaks the monolithic layout into three distinct rendering modes seamlessly toggled by the user:
+    1. **Network Mesh**: Renders the `<canvas>` Epidemic Visualizer and `GossipStatsPanel`.
+    2. **Global Reputation**: Exclusively renders the `ReputationLadder` in a full-width layout securely highlighting Slashed/Banned nodes natively.
+    3. **Sortition Audits**: Exclusively renders the `AuditTerminal` to comfortably map real-time proof-of-spacetime WebSocket pipelines horizontally.
 
-#### [NEW] `ui/src/components/Views/Network/ReputationLadder.jsx`
-- Construct a formal leaderboard sorting the continuous `api/peers` endpoint structurally by `score`.
-- Map UI constraints applying aggressive red indicators exclusively to `SLASHED` / `BANNED` peers reliably preventing confusion.
-
-#### [NEW] `ui/src/components/Views/Network/AuditTerminal.jsx`
-- Build a dedicated `EventSource('/api/audit/events')` terminal window cleanly intercepting backend algorithmic validation routines natively.
-- Force aggressive `useRef` auto-scrolling hooks pinning to the absolute bottom bounds natively matching Phase 4 implementations gracefully.
+#### [MODIFY] `ui/src/components/Views/Network/ReputationLadder.jsx`
+- **Grid Optimization**: Adjust internal CSS/grid constraints so that when the component is governed by the new tabs and natively assigned full page width, tracking cards naturally expand and gracefully align to fill the newly divested space without defaulting to narrow minimal columns.
 
 ---
 
 ## Verification Plan
 
 ### Automated Tests
-- Validate `npm test` verifying that the injection of global SSE strings into the ConsensusEngine does not interrupt critical deterministic sync executions natively reliably. 
-- Verify strict boundaries executing `npx tsc --noEmit && npx eslint --fix` on modified backend sources perfectly natively.
+- Run the complete test suite utilizing `npm test` natively to ensure no backend structural dependencies or telemetry interfaces have regressed.
+- Specifically ensure the test runner passes (`0` coverage errors or bounds breaks) confirming that UI file modifications didn't trip static TypeScript constraints (`npx tsc --noEmit && npx eslint --fix`).
 
 ### Manual Verification
 - Deploy the cluster locally via `./scripts/spawn_nodes.sh --mongo`.
-- Load the UI (`npm run dev`) navigating natively to the `Peers` overview explicitly.
-- Confirm the `AuditTerminal` connects cleanly dynamically.
-- To trace active telemetry, wait precisely for the standard exponential audit intervals to fire automatically, OR artificially accelerate epochs by injecting mock timestamps cleanly observing the matrix execution natively flawlessly!
+- Load the UI (`npm run dev`) navigating to the `Peers` overview explicitly.
+- Validate the new segmented tabs inside the browser UI Network tab.
+- Toggle between the "Sortition terminal" and "Mesh" confirming that WebSocket telemetry channels dynamically map and scroll correctly without overlapping the canvas render.

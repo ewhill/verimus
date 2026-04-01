@@ -10,6 +10,8 @@ const PeersView = () => {
     const canvasRef = useRef(null);
     const particlesRef = useRef([]);
 
+    const [activeTab, setActiveTab] = useState('mesh');
+
     const fetchPeers = async () => {
         try {
             const response = await fetch('/api/peers');
@@ -137,38 +139,73 @@ const PeersView = () => {
         let animationFrameId;
         
         const renderLoop = () => {
-            drawNetwork();
+            if (activeTab === 'mesh') {
+                drawNetwork();
+            }
             animationFrameId = window.requestAnimationFrame(renderLoop);
         };
         renderLoop();
 
         return () => window.cancelAnimationFrame(animationFrameId);
-    }, [peers]);
+    }, [peers, activeTab]);
 
     const otherPeers = peers.filter(p => p.status !== 'self');
     const connectedPeers = otherPeers.filter(p => p.status === 'connected');
 
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
-            <GossipStatsPanel telemetry={gossipTelemetry} />
-
-            <section className="glass-panel stagger-1">
-                <div className="section-header">
-                    <h2>Network Diagnostics</h2>
-                </div>
-                <div id="canvas-container" className="canvas-grid-bg" style={{ width: '100%', height: '400px', position: 'relative', overflow: 'hidden' }}>
-                    <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }}></canvas>
-                </div>
-            </section>
-            
-            <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-                <div style={{ flex: '1 1 450px', minWidth: 0 }}>
-                    <ReputationLadder peers={peers} error={error} otherPeers={otherPeers} connectedPeers={connectedPeers} />
-                </div>
-                <div style={{ flex: '1 1 450px', minWidth: 0 }}>
-                    <AuditTerminal />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
+            {/* Segmented Tab Control */}
+            <div className="section-header glass-panel" style={{ display: 'flex', justifyContent: 'center', padding: '1.25rem 2rem', borderRadius: 'var(--radius-lg)', margin: '0 0 1rem 0', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.3)' }}>
+                <div className="segmented-control" style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: 'var(--radius-md)' }}>
+                    <button 
+                        className={`segmented-btn ${activeTab === 'mesh' ? 'active' : ''}`} 
+                        onClick={() => setActiveTab('mesh')}
+                        style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', width: 'auto' }}
+                    >
+                        Network Mesh
+                    </button>
+                    <button 
+                        className={`segmented-btn ${activeTab === 'reputation' ? 'active' : ''}`} 
+                        onClick={() => setActiveTab('reputation')}
+                        style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', width: 'auto' }}
+                    >
+                        Global Reputation
+                    </button>
+                    <button 
+                        className={`segmented-btn ${activeTab === 'audit' ? 'active' : ''}`} 
+                        onClick={() => setActiveTab('audit')}
+                        style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', width: 'auto' }}
+                    >
+                        Sortition Audits
+                    </button>
                 </div>
             </div>
+
+            {activeTab === 'mesh' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
+                    <GossipStatsPanel telemetry={gossipTelemetry} />
+                    <section className="glass-panel stagger-1">
+                        <div className="section-header">
+                            <h2>Network Diagnostics</h2>
+                        </div>
+                        <div id="canvas-container" className="canvas-grid-bg" style={{ width: '100%', height: '400px', position: 'relative', overflow: 'hidden' }}>
+                            <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }}></canvas>
+                        </div>
+                    </section>
+                </div>
+            )}
+
+            {activeTab === 'reputation' && (
+                <div style={{ width: '100%' }} className="stagger-1">
+                    <ReputationLadder peers={peers} error={error} otherPeers={otherPeers} connectedPeers={connectedPeers} />
+                </div>
+            )}
+
+            {activeTab === 'audit' && (
+                <div style={{ width: '100%' }} className="stagger-1">
+                    <AuditTerminal />
+                </div>
+            )}
         </div>
     );
 };
