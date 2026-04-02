@@ -4,13 +4,18 @@ import { ApiService } from '../../services/api';
 import EpochTelemetryWidget from './Ledger/EpochTelemetryWidget';
 import LedgerToolbar from './LedgerToolbar';
 import LedgerGrid from './LedgerGrid';
+import AuditTerminal from './Network/AuditTerminal';
+import ConsensusView from './ConsensusView';
+import ContractsView from './ContractsView';
 
 const LedgerView = () => {
     const dispatch = useStore(s => s.dispatch);
     const blocks = useStore(s => s.blocks);
     const selectedIndex = useStore(s => s.selectedIndex);
     const isModalOpen = useStore(s => s.isModalOpen);
+    const nodeConfig = useStore(s => s.nodeConfig);
     const [showCallout, setShowCallout] = useState(false);
+    const [activeTab, setActiveTab] = useState('global');
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -78,13 +83,72 @@ const LedgerView = () => {
             )}
             
             <section className="ledger-section">
-                <EpochTelemetryWidget />
-                <div className="stagger-1">
-                    <LedgerToolbar />
+                <div className="section-header glass-panel stagger-1" style={{ display: 'flex', justifyContent: 'center', padding: '1.25rem 2rem', borderRadius: 'var(--radius-lg)', margin: '0 auto 1.5rem auto', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.3)', width: 'fit-content' }}>
+                    <div className="segmented-control" style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: 'var(--radius-md)' }}>
+                        <button 
+                            className={`segmented-btn ${activeTab === 'global' ? 'active' : ''}`} 
+                            onClick={() => setActiveTab('global')}
+                            style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', width: 'auto' }}
+                        >
+                            Global Ledger
+                        </button>
+                        <button 
+                            className={`segmented-btn ${activeTab === 'audit' ? 'active' : ''}`} 
+                            onClick={() => setActiveTab('audit')}
+                            style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', width: 'auto' }}
+                        >
+                            Sortition Audits
+                        </button>
+                        {nodeConfig?.roles?.includes('VALIDATOR') && (
+                            <button 
+                                className={`segmented-btn ${activeTab === 'consensus' ? 'active' : ''}`} 
+                                onClick={() => setActiveTab('consensus')}
+                                style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', width: 'auto' }}
+                            >
+                                Mempool Monitor
+                            </button>
+                        )}
+                        {nodeConfig?.roles?.includes('STORAGE') && (
+                            <button 
+                                className={`segmented-btn ${activeTab === 'contracts' ? 'active' : ''}`} 
+                                onClick={() => setActiveTab('contracts')}
+                                style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', width: 'auto' }}
+                            >
+                                Active Contracts
+                            </button>
+                        )}
+                    </div>
                 </div>
-                <div className="stagger-2">
-                    <LedgerGrid />
-                </div>
+
+                {activeTab === 'global' && (
+                    <>
+                        <EpochTelemetryWidget />
+                        <div className="stagger-1">
+                            <LedgerToolbar />
+                        </div>
+                        <div className="stagger-2">
+                            <LedgerGrid />
+                        </div>
+                    </>
+                )}
+
+                {activeTab === 'audit' && (
+                    <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }} className="stagger-1">
+                        <AuditTerminal />
+                    </div>
+                )}
+
+                {activeTab === 'consensus' && nodeConfig?.roles?.includes('VALIDATOR') && (
+                    <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }} className="stagger-1">
+                        <ConsensusView />
+                    </div>
+                )}
+
+                {activeTab === 'contracts' && nodeConfig?.roles?.includes('STORAGE') && (
+                    <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }} className="stagger-1">
+                        <ContractsView />
+                    </div>
+                )}
             </section>
         </>
     );

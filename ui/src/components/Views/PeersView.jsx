@@ -1,10 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import GossipStatsPanel from './Network/GossipStatsPanel';
 import ReputationLadder from './Network/ReputationLadder';
-import AuditTerminal from './Network/AuditTerminal';
-import ConsensusView from './ConsensusView';
-import ContractsView from './ContractsView';
-import { useStore } from '../../store';
+import LogsView from './LogsView';
 
 const PeersView = () => {
     const [peers, setPeers] = useState([]);
@@ -176,30 +173,12 @@ const PeersView = () => {
                         Global Reputation
                     </button>
                     <button 
-                        className={`segmented-btn ${activeTab === 'audit' ? 'active' : ''}`} 
-                        onClick={() => setActiveTab('audit')}
+                        className={`segmented-btn ${activeTab === 'logs' ? 'active' : ''}`} 
+                        onClick={() => setActiveTab('logs')}
                         style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', width: 'auto' }}
                     >
-                        Sortition Audits
+                        System Logs
                     </button>
-                    {nodeConfig?.roles?.includes('VALIDATOR') && (
-                        <button 
-                            className={`segmented-btn ${activeTab === 'consensus' ? 'active' : ''}`} 
-                            onClick={() => setActiveTab('consensus')}
-                            style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', width: 'auto' }}
-                        >
-                            Mempool Monitor
-                        </button>
-                    )}
-                    {nodeConfig?.roles?.includes('STORAGE') && (
-                        <button 
-                            className={`segmented-btn ${activeTab === 'contracts' ? 'active' : ''}`} 
-                            onClick={() => setActiveTab('contracts')}
-                            style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', width: 'auto' }}
-                        >
-                            Active Contracts
-                        </button>
-                    )}
                 </div>
             </div>
 
@@ -223,21 +202,9 @@ const PeersView = () => {
                 </div>
             )}
 
-            {activeTab === 'audit' && (
-                <div style={{ width: '100%' }} className="stagger-1">
-                    <AuditTerminal />
-                </div>
-            )}
-
-            {activeTab === 'consensus' && nodeConfig?.roles?.includes('VALIDATOR') && (
-                <div style={{ width: '100%' }} className="stagger-1">
-                    <ConsensusView />
-                </div>
-            )}
-
-            {activeTab === 'contracts' && nodeConfig?.roles?.includes('STORAGE') && (
-                <div style={{ width: '100%' }} className="stagger-1">
-                    <ContractsView />
+            {activeTab === 'logs' && (
+                <div style={{ width: '100%', height: 'calc(100vh - 200px)' }} className="stagger-1">
+                    <LogsView />
                 </div>
             )}
         </div>

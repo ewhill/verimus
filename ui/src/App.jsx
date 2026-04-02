@@ -3,9 +3,7 @@ import { useStore } from './store';
 import { ApiService } from './services/api';
 import ErrorBoundary from './components/Layout/ErrorBoundary';
 import Header from './components/Layout/Header';
-import FilesView from './components/Views/FilesView/FilesView';
 import PeersView from './components/Views/PeersView';
-import LogsView from './components/Views/LogsView';
 import LedgerView from './components/Views/LedgerView';
 import WalletView from './components/Views/WalletView';
 import BlockModal from './components/Modals/BlockModal';
@@ -27,10 +25,10 @@ function App() {
         const params = new URLSearchParams(window.location.search);
         const q = params.get('q');
         const block = params.get('block');
-        const path = window.location.pathname.replace('/', '') || 'files';
+        const path = window.location.pathname.replace('/', '') || 'wallet';
 
         if (q) {
-            if (path === 'files') {
+            if (path === 'wallet') {
                 dispatch({ type: 'SET_FILES_SEARCH', payload: q });
             } else if (path === 'ledger') {
                 dispatch({ type: 'SET_SEARCH', payload: q });
@@ -45,7 +43,7 @@ function App() {
         ApiService.resumePendingDownloads();
 
         const handlePopState = () => {
-            const r = window.location.pathname.replace('/', '') || 'files';
+            const r = window.location.pathname.replace('/', '') || 'wallet';
             dispatch({ type: 'SET_ROUTE', payload: r });
         };
         
@@ -62,7 +60,7 @@ function App() {
         searchParams.delete('q');
         searchParams.delete('block');
 
-        if (currentRoute === 'files' && filesSearchQuery) {
+        if (currentRoute === 'wallet' && filesSearchQuery) {
             searchParams.set('q', filesSearchQuery);
         } else if (currentRoute === 'ledger') {
             if (searchQuery) searchParams.set('q', searchQuery);
@@ -80,11 +78,9 @@ function App() {
     const renderActiveView = () => {
         switch (currentRoute) {
             case 'peers':  return <PeersView />;
-            case 'logs':   return <LogsView />;
             case 'ledger': return <LedgerView />;
-            case 'wallet': return <WalletView />;
-            case 'files':
-            default:       return <FilesView />;
+            case 'wallet':
+            default:       return <WalletView />;
         }
     };
 

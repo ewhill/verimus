@@ -23,7 +23,7 @@ export const useStore = create(
     selectedBlockHash: null,
     isLoading: false,
     error: null,
-    currentRoute: window.location.pathname.replace('/', '') || 'files',
+    currentRoute: window.location.pathname.replace('/', '') || 'wallet',
     ledgerSortMode: 'index_desc',
     toasts: [],
 

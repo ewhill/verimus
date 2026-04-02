@@ -66,12 +66,9 @@ const Header = () => {
                 </button>
             </div>
             <nav className={`main-nav ${isNavOpen ? 'active' : ''}`}>
-                <a href="#" className={`nav-link ${activeRoute === 'files' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'files')}>Files</a>
-                <a href="#" className={`nav-link ${activeRoute === 'ledger' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'ledger')}>Ledger</a>
                 <a href="#" className={`nav-link ${activeRoute === 'wallet' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'wallet')}>Wallet</a>
-                
+                <a href="#" className={`nav-link ${activeRoute === 'ledger' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'ledger')}>Ledger</a>
                 <a href="#" className={`nav-link ${activeRoute === 'peers' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'peers')}>Network</a>
-                <a href="#" className={`nav-link ${activeRoute === 'logs' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'logs')}>Logs</a>
 
                 {(nodeConfig?.roles?.includes('ORIGINATOR')) && (
                     <button 
