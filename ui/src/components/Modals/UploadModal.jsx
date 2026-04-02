@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../store';
+import { bundleAndEncryptFiles } from '../../utils/bundler';
 
 const UploadModal = () => {
     const dispatch = useStore(s => s.dispatch);
@@ -94,16 +95,37 @@ const UploadModal = () => {
         }
 
         const formData = new FormData();
-        selectedFiles.forEach(f => {
-            formData.append('files', f);
-            formData.append('paths', f.webkitRelativePath || f.name);
-        });
-
-        // Triage Mapping Constraints natively bound organically
-        formData.append('redundancy', String(redundancy));
-        formData.append('maxCost', String(maxCost));
 
         try {
+            // Intercept standard streams extracting Native Web Crypto boundaries structurally
+            setCryptoLogs(prev => [...prev, { status: 'DECOUPLED_ENCRYPTION', message: 'Executing zero-knowledge client-side AES-256-GCM symmetric block cipher natively...' }]);
+            
+            const cryptoResult = await bundleAndEncryptFiles(selectedFiles);
+            const { encryptedBlob, aesKeyBase64, aesIvBase64, authTagHex, fileMetadata } = cryptoResult;
+
+            setCryptoLogs(prev => [...prev, { status: 'ENCRYPTION_COMPLETE', message: 'Symmetric Block Locked. Isolating Key Array...' }]);
+
+            // Force native browser download guaranteeing absolute user ownership sequentially
+            const keyJson = JSON.stringify({ type: 'VERIMUS_AES_KEY', key: aesKeyBase64 }, null, 2);
+            const blobUrl = URL.createObjectURL(new Blob([keyJson], { type: 'application/json' }));
+            const anchor = document.createElement('a');
+            anchor.href = blobUrl;
+            anchor.download = `verimus_payload_${Date.now()}.key`;
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            URL.revokeObjectURL(blobUrl);
+
+            // Mount mathematically opaque structures into standard boundary forms
+            formData.append('files', encryptedBlob, 'encrypted_payload.bin');
+            formData.append('aesIv', aesIvBase64);
+            formData.append('authTag', authTagHex);
+            formData.append('fileMetadata', JSON.stringify(fileMetadata));
+            
+            // Triage Mapping Constraints natively bound organically
+            formData.append('redundancy', String(redundancy));
+            formData.append('maxCost', String(maxCost));
+
             const res = await fetch('/api/upload', {
                 method: 'POST',
                 body: formData

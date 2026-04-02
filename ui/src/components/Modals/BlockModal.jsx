@@ -1,7 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import React, { useEffect, useState, useRef } from 'react';
 import { useStore } from '../../store';
 import { ApiService } from '../../services/api';
+import { decryptAndUnzip } from '../../utils/bundler';
+import * as fflate from 'fflate';
 
 const PropertyValue = ({ value, className = '', copyable = true, style = {} }) => {
     const [copied, setCopied] = useState(false);
@@ -166,7 +167,7 @@ const BlockModal = () => {
                                         <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.path}</span>
                                         <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.contentHash || 'Unknown'}</span>
                                     </div>
-                                    <button onClick={(e) => { e.preventDefault(); ApiService.downloadFile(`/api/download/${selectedBlockHash}/file/${encodeURIComponent(f.path || '')}`, f.path?.split('/').pop()); }} className="download-icon-hover" style={{ cursor: 'pointer', padding: '0.3rem', flexShrink: 0, marginLeft: '1rem', background: 'transparent', border: 'none', color: 'inherit' }} title="Download Decrypted File">
+                                    <button onClick={(e) => handleSingleFileDownload(e, f.path)} className="download-icon-hover" style={{ cursor: 'pointer', padding: '0.3rem', flexShrink: 0, marginLeft: '1rem', background: 'transparent', border: 'none', color: 'inherit' }} title="Decrypt and Download Native Extract">
                                         <svg fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" style={{ width: '16px', height: '16px' }}>
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                                         </svg>
@@ -255,14 +256,67 @@ const BlockModal = () => {
         }
     };
 
+    const executeDecryption = async (targetFileName = null) => {
+        if (!payloadData || !payloadData.iv) return alert("Payload metrics missing. Cannot map decryption matrices.");
+
+        const keyJsonStr = prompt("Zero-Knowledge Security Context:\n\nPlease provide your symmetric AES key file string to perform this execution natively:");
+        if (!keyJsonStr) return false;
+
+        let keyRaw = keyJsonStr;
+        try { const parsed = JSON.parse(keyJsonStr); if (parsed.key) keyRaw = parsed.key; } catch(err) {}
+
+        try {
+            const response = await fetch(`/api/download/${selectedBlockHash}`);
+            if (!response.ok) throw new Error("Backend block extraction bounded natively.");
+            const encryptedBuffer = await response.arrayBuffer();
+
+            const unzipped = await decryptAndUnzip(encryptedBuffer, keyRaw, payloadData.iv);
+
+            if (targetFileName) {
+                const normalizedFilename = targetFileName.replace(/^\/+/, '');
+                const fileBuf = unzipped[targetFileName] || unzipped[normalizedFilename];
+                if (!fileBuf) throw new Error("File omitted systematically from extracted array.");
+
+                const blob = new Blob([fileBuf], { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = targetFileName.split('/').pop();
+                document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+            } else {
+                // Buffer the entire array implicitly back into a logical Zip without encryption locally
+                const rawZip = fflate.zipSync(unzipped);
+                const blob = new Blob([rawZip], { type: 'application/zip' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = `verimus_block_${selectedBlockHash}.zip`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+            }
+            return true;
+        } catch (err) {
+            alert(`Decryption Boundary Exception: ${err.message}`);
+            return false;
+        }
+    };
+
+    const handleSingleFileDownload = async (e, path) => {
+        e.preventDefault();
+        const currentTarget = e.currentTarget;
+        const originalHtml = currentTarget.innerHTML;
+        currentTarget.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;"></div>';
+        currentTarget.disabled = true;
+
+        await executeDecryption(path);
+
+        currentTarget.innerHTML = originalHtml;
+        currentTarget.disabled = false;
+    };
+
     const handleDownloadSubmit = async (e) => {
         e.preventDefault();
         const btn = e.target.querySelector('button');
         const originalHTML = btn.innerHTML;
-        btn.innerHTML = 'Decrypting... <div class="spinner" style="display: inline-block; width: 12px; height: 12px; border-width: 2px; margin-left: 0.5rem;"></div>';
+        btn.innerHTML = 'Decrypting Native AES Array... <div class="spinner" style="display: inline-block; width: 12px; height: 12px; border-width: 2px; margin-left: 0.5rem;"></div>';
         btn.disabled = true;
 
-        await ApiService.downloadFile(`/api/download/${selectedBlockHash}`, `block_${selectedBlockHash}.zip`);
+        await executeDecryption(null);
 
         btn.innerHTML = originalHTML;
         btn.disabled = false;

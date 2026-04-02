@@ -133,7 +133,7 @@ export type StorageLocation =
     | GenericStorageLocation;
 
 export interface BlockPrivate {
-    key: string;
+    key?: string;
     iv: string;
     authTag?: string;
     location: StorageLocation;

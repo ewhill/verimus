@@ -143,10 +143,8 @@ export default class DownloadHandler extends BaseHandler {
                 readStream = Readable.from(reconstructed.subarray(0, payload.erasureParams.originalSize));
             }
 
-            const decipher = createAESDecryptStream(privatePayload.key, privatePayload.iv, privatePayload.authTag);
-
-            res.setHeader('Content-disposition', `attachment; filename=block_${hash}.zip`);
-            res.setHeader('Content-type', 'application/zip');
+            res.setHeader('Content-disposition', `attachment; filename=block_${hash}.enc`);
+            res.setHeader('Content-type', 'application/octet-stream');
 
             const egressCostPerGB = this.node.storageProvider!.getEgressCostPerGB() ?? 0;
             let accumulatedCost = 0;
@@ -171,11 +169,6 @@ export default class DownloadHandler extends BaseHandler {
                 if (!res.headersSent) res.status(500).send('Error reading block.');
             });
 
-            decipher.on('error', (err: any) => {
-                logger.error('Decipher Error:', err);
-                if (!res.headersSent) res.status(500).send('Decryption failed, check your keys.');
-            });
-
             byteSpooler.on('error', (err: any) => {
                 logger.warn(`Egress cutoff triggered: ${err.message}`);
                 if (!res.headersSent) res.status(402).send(err.message);
@@ -193,8 +186,8 @@ export default class DownloadHandler extends BaseHandler {
                 }
             });
 
-            // Pipe storage -> bill tracking -> decrypt -> response
-            readStream.pipe(byteSpooler).pipe(decipher).pipe(res);
+            // Pipe storage -> bill tracking -> response natively (Client-Side decrypts)
+            readStream.pipe(byteSpooler).pipe(res);
 
         } catch (error) {
             logger.error(error as Error);

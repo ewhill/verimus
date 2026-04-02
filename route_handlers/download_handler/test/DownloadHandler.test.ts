@@ -173,7 +173,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
             });
         });
 
-        assert.strictEqual(mockSetHeader.mock.calls.find((c: any) => c.arguments[0] === 'Content-type')?.arguments[1], 'application/zip');
+        assert.strictEqual(mockSetHeader.mock.calls.find((c: any) => c.arguments[0] === 'Content-type')?.arguments[1], 'application/octet-stream');
         assert.ok(bodyPayload.length > 20); // successfully decrypted zip binary map bounds
     });
 
@@ -234,7 +234,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
         // Wait for unzipping stream to pipe all data out
         await new Promise((r) => setTimeout(() => r(undefined), 100));
 
-        assert.strictEqual(mockSetHeader.mock.calls.find((c: any) => c.arguments[0] === 'Content-type')?.arguments[1], 'application/zip');
+        assert.strictEqual(mockSetHeader.mock.calls.find((c: any) => c.arguments[0] === 'Content-type')?.arguments[1], 'application/octet-stream');
         // bodyPayload should contain compressed deflated bytes
         assert.ok(bodyPayload.length > 20);
     });
@@ -319,52 +319,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
         assert.strictEqual(mockSend.mock.calls[0].arguments[0], 'Block not found.');
     });
 
-    it('Returns HTTP 500 capturing storage layer instantiation errors', async () => {
-        const { publicKey, privateKey } = generateRSAKeyPair();
 
-        const priv = {
-            key: crypto.randomBytes(32).toString('hex'),
-            iv: crypto.randomBytes(16).toString('hex'),
-            files: [], physicalId: 'pid', location: { type: 'local' }
-        };
-        const encPriv = encryptPrivatePayload(publicKey, priv);
-        const sig = signData(JSON.stringify(encPriv), privateKey);
-
-        const mockNode = createMock<PeerNode>({ 
-            roles: [NodeRole.STORAGE], 
-            privateKey: privateKey, 
-            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
-        });
-        mockNode.storageProvider = createMock<BaseProvider>({
-            getEgressCostPerGB: () => 0.0,
-            getBlockReadStream: async (_unusedId: string) => {
-                const rs = new PassThrough();
-                rs.end(Buffer.from('corrupt_aes_stream'));
-                return { status: 'available', stream: rs };
-            }
-        });
-        const handler = new DownloadHandler(mockNode);
-
-        const req = createMock<Request>({ params: { hash: 'validh' } });
-        const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSetHeader = mock.fn<(_name: string, _value: string) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        // @ts-ignore
-        const res = createMock<Response>(Object.assign(new PassThrough(), {
-            status: mockStatus,
-            send: mockSend,
-            json: mockJson,
-            setHeader: mockSetHeader
-        }));
-
-        await new Promise<void>((resolve) => {
-            handler.handle(req, res).then(() => setTimeout(resolve, 100));
-        });
-
-        // When decipher errors, it should fire the 'error' handler and send 500
-        assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 500);
-    });
 
     it('Returns HTTP 500 on payload parsing logic failures', async () => {
         const mockNode = createMock<PeerNode>({ roles: [NodeRole.STORAGE], privateKey: 'PRIV' });

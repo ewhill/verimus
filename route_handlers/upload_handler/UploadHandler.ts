@@ -89,7 +89,14 @@ export default class UploadHandler extends BaseHandler {
             const K = Math.max(1, Math.ceil(redundancy / 2));
             const N = redundancy;
 
-            const bundleResult = await this.node.bundler!.streamErasureBundle(files, K, N, paths, (status, message, bytes) => {
+            const aesIv = req.body.aesIv || '';
+            const authTag = req.body.authTag || '';
+            let fileMetadataArray = [];
+            try { fileMetadataArray = JSON.parse(req.body.fileMetadata || '[]'); } catch(e) {}
+
+            const encryptedBuffer = Buffer.isBuffer(files[0].buffer) ? files[0].buffer : require('fs').readFileSync(files[0].path);
+
+            const bundleResult = await this.node.bundler!.streamPreEncryptedErasureBundle(encryptedBuffer, K, N, (status, message, bytes) => {
                 this.node.events.emit('upload_telemetry', { status, message, bytes });
             });
             if (!bundleResult) {
@@ -210,12 +217,11 @@ export default class UploadHandler extends BaseHandler {
 
             // 7. Generate Pending Block and initiate consensus
             const privatePayload: BlockPrivate = {
-                key: bundleResult.aesKey,
-                iv: bundleResult.aesIv,
-                authTag: bundleResult.authTag,
+                iv: aesIv,
+                authTag: authTag,
                 location: { type: 'local' }, // Mocking local storage references temporarily parsing structural arrays
                 physicalId: 'DECENTRALIZED_SHARD_MATRIX',
-                files: bundleResult.files
+                files: fileMetadataArray
             };
 
             const encryptedPrivate = encryptPrivatePayload(publicKey, privatePayload);
@@ -285,8 +291,7 @@ export default class UploadHandler extends BaseHandler {
                 message: "Block successfully uploaded and is pending consensus.",
                 blockIndex: "Pending",
                 hash: blockId,
-                aesKey: bundleResult.aesKey,
-                aesIv: bundleResult.aesIv,
+                aesIv: aesIv,
                 fragmentMap: fragmentMap,
                 activeHosts: payloadResult.activeHosts
             });

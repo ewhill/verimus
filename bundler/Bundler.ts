@@ -284,6 +284,44 @@ class Bundler {
             archive.finalize();
         });
     }
+
+    /**
+     * Bypasses internal streaming, accepting a zero-knowledge strictly pre-encrypted buffer structure natively,
+     * directly slicing parity matrices executing structural matching purely for routing.
+     */
+    async streamPreEncryptedErasureBundle(encryptedBuffer: Buffer, K: number, N: number, onProgress?: (status: string, message: string, bytes?: number) => void) {
+        if (!encryptedBuffer || encryptedBuffer.length === 0) return null;
+
+        const originalSize = encryptedBuffer.length;
+        if (onProgress) {
+            onProgress('ERASURE_ABSORPTION', `Erasure Stream Absorb: ${originalSize} bytes natively bypassed AES bounds.`, originalSize);
+        }
+
+        try {
+            // Bypass splitting when matrices compute static 1:1 mirroring
+            const shards = (K === 1 && N === 1) ? [encryptedBuffer] : await Bundler.encodeErasureShards(encryptedBuffer, K, N);
+            
+            const merkleRoots: string[] = [];
+            const CHUNK_SIZE = 64 * 1024; // 64KB Merkle tree boundaries
+
+            for (const shard of shards) {
+                const chunkBuffers: Buffer[] = [];
+                for (let offset = 0; offset < shard.length; offset += CHUNK_SIZE) {
+                    chunkBuffers.push(shard.subarray(offset, Math.min(offset + CHUNK_SIZE, shard.length)));
+                }
+                const { root } = buildMerkleTree(chunkBuffers);
+                merkleRoots.push(root);
+            }
+            
+            return {
+                shards,
+                originalSize,
+                merkleRoots
+            };
+        } catch(e) { 
+            throw e; 
+        }
+    }
 }
 
 export default Bundler;

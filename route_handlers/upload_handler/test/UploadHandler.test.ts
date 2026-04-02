@@ -70,12 +70,8 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                 }
             }),
             bundler: createMock<Bundler>({
-                streamErasureBundle: async () => ({
-                    aesKey: 'KEY',
-                    aesIv: 'IV',
-                    files: [],
+                streamPreEncryptedErasureBundle: async () => ({
                     shards: [buffer],
-                    authTag: '',
                     originalSize: 0,
                     merkleRoots: [root]
                 })
@@ -138,10 +134,12 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         const handler = new UploadHandler(mockNode);
         const request = createMock<Request>({
             files: [
-                createMock<Express.Multer.File>({ originalname: 'test' })
+                createMock<Express.Multer.File>({ originalname: 'test.enc', buffer: Buffer.from('mockPayload') })
             ],
             body: {
-                paths: JSON.stringify(['test'])
+                aesIv: 'mockIv',
+                authTag: 'mockAuthTag',
+                fileMetadata: JSON.stringify([{ path: 'test', contentHash: 'mock' }])
             }
         });
         let response: Response;
@@ -228,12 +226,8 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                 })
             }),
             bundler: createMock<Bundler>({
-                streamErasureBundle: async () => ({
-                    files: [],
-                    aesKey: 'k',
-                    aesIv: 'iv',
+                streamPreEncryptedErasureBundle: async () => ({
                     shards: [buffer],
-                    authTag: '',
                     originalSize: 0,
                     merkleRoots: [root]
                 })
@@ -289,10 +283,12 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         const handler = new UploadHandler(mockNode);
         const request = createMock<Request>({
             files: [
-                createMock<Express.Multer.File>({ originalname: 'test' })
+                createMock<Express.Multer.File>({ originalname: 'test.enc', buffer: Buffer.from('mockPayload') })
             ],
             body: {
-                paths: 'a/b/c'
+                aesIv: 'mockIv',
+                authTag: 'mockAuthTag',
+                fileMetadata: JSON.stringify([{ path: 'test', contentHash: 'mock' }])
             }
         });
         let response: Response;
@@ -333,12 +329,8 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                 })
             }),
             bundler: createMock<Bundler>({
-                streamErasureBundle: async () => ({
-                    files: [],
-                    aesKey: 'k',
-                    aesIv: 'iv',
+                streamPreEncryptedErasureBundle: async () => ({
                     shards: [buffer],
-                    authTag: '',
                     originalSize: 0,
                     merkleRoots: [root]
                 })
@@ -396,9 +388,13 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         const handler = new UploadHandler(mockNode);
         const request = createMock<Request>({
             files: [
-                createMock<Express.Multer.File>({ originalname: 'test' })
+                createMock<Express.Multer.File>({ originalname: 'test.enc', buffer: Buffer.from('mockPayload') })
             ],
-            body: {}
+            body: {
+                aesIv: 'mockIv',
+                authTag: 'mockAuthTag',
+                fileMetadata: JSON.stringify([{ path: 'test', contentHash: 'mock' }])
+            }
         });
         let response: any;
         const mockResponseStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
@@ -437,12 +433,8 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                 })
             }),
             bundler: createMock<Bundler>({
-                streamErasureBundle: async () => ({
-                    files: [],
-                    aesKey: 'k',
-                    aesIv: 'iv',
+                streamPreEncryptedErasureBundle: async () => ({
                     shards: [Buffer.from('mock')],
-                    authTag: '',
                     originalSize: 0,
                     merkleRoots: ['realRoot123']
                 })
@@ -501,9 +493,13 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         const handler = new UploadHandler(mockNode);
         const request = createMock<Request>({
             files: [
-                createMock<Express.Multer.File>({ originalname: 'test' })
+                createMock<Express.Multer.File>({ originalname: 'test.enc', buffer: Buffer.from('mockPayload') })
             ],
-            body: {}
+            body: {
+                aesIv: 'mockIv',
+                authTag: 'mockAuthTag',
+                fileMetadata: JSON.stringify([{ path: 'test', contentHash: 'mock' }])
+            }
         });
         let response: Response;
         const mockResponseStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);

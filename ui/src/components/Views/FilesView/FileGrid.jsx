@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../../../store';
 import { ApiService } from '../../../services/api';
 import ShardGraph from './ShardGraph';
+import { decryptAndUnzip } from '../../../utils/bundler';
 
 const FileGrid = ({ displayItems }) => {
     const dispatch = useStore(s => s.dispatch);
@@ -13,7 +14,40 @@ const FileGrid = ({ displayItems }) => {
 
     const handleDownload = async (hash, filename, e) => {
         if (e) e.stopPropagation();
-        await ApiService.downloadFile(`/api/download/${hash}/file/${encodeURIComponent(filename)}`, filename.split('/').pop() || 'download');
+        
+        try {
+            const privateRes = await ApiService.fetchPrivatePayload(hash);
+            if (!privateRes.success) throw new Error("Unauthorized: Cannot fetch private cryptographic metadata limits.");
+            
+            const payloadMeta = privateRes.privatePayload || privateRes.payload;
+            if (!payloadMeta || !payloadMeta.iv) throw new Error("Malformed Payload: Encryption IV physically missing.");
+
+            const keyJsonStr = prompt(`Zero-Knowledge Download:\n\nPlease paste your 'verimus_payload.key' JSON contents to decrypt ${filename.split('/').pop()} locally:`);
+            if (!keyJsonStr) return;
+
+            let keyRaw = keyJsonStr;
+            try { const parsed = JSON.parse(keyJsonStr); if (parsed.key) keyRaw = parsed.key; } catch(err) {}
+
+            const req = await fetch(`/api/download/${hash}`);
+            if (!req.ok) throw new Error("Backend retrieval bounded dynamically natively.");
+            const encryptedBuffer = await req.arrayBuffer();
+
+            const unzipped = await decryptAndUnzip(encryptedBuffer, keyRaw, payloadMeta.iv);
+            
+            const normalizedFilename = filename.replace(/^\/+/, '');
+            const targetBuffer = unzipped[filename] || unzipped[normalizedFilename];
+
+            if (!targetBuffer) throw new Error("Target file matrix omitted systematically from extracted zip boundaries.");
+
+            const blob = new Blob([targetBuffer], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = filename.split('/').pop() || 'download';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+
+        } catch (err) {
+            console.error(err);
+            alert(`Decryption Boundary Exception: ${err.message}`);
+        }
     };
 
     const toggleDropdown = (i, e) => {
@@ -90,7 +124,7 @@ const FileGrid = ({ displayItems }) => {
                                 <div className="versions-panel show" style={{ width: '400px', right: '0', pointerEvents: 'auto', background: '#0f172a', padding: '1.25rem', border: '1px solid rgba(255,255,255,0.1)' }} onClick={(e) => e.stopPropagation()}>
                                     <div className="versions-panel-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                                         <span style={{ color: '#f8fafc', fontSize: '0.85rem' }}>Cryptographic Inspection</span>
-                                        <button className="btn-download" onClick={(e) => handleDownload(latestBlock.blockHash, f.path, e)} style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Extract ZIP</button>
+                                        <button className="btn-download" onClick={(e) => handleDownload(latestBlock.blockHash, f.path, e)} style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Decrypt File</button>
                                     </div>
                                     
                                     {latestBlock.fragmentMap && latestBlock.fragmentMap.length > 0 ? (

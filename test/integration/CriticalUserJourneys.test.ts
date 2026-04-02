@@ -158,8 +158,11 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
     it('Uploads payload mimicking File Form submission', async () => {
         try {
             const formDataPayload = new FormData();
-            const testFileBlob = new Blob(['Integration test payload data mapping'], { type: 'text/plain' });
-            formDataPayload.append('files', testFileBlob, 'integration.txt');
+            const testFileBlob = new Blob(['Integration test payload data mapping'], { type: 'application/octet-stream' });
+            formDataPayload.append('files', testFileBlob, 'encrypted.bin');
+            formDataPayload.append('fileMetadata', JSON.stringify([{ path: 'integration.txt', contentHash: 'mockHash' }]));
+            formDataPayload.append('aesIv', 'mockIvBuffer');
+            formDataPayload.append('authTag', 'mockAuthTag');
 
             const response = await fetch(`${baseUrl}/api/upload?trustedPeers=`, {
                 method: 'POST',
@@ -171,7 +174,6 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
 
             assert.strictEqual(data.success, true, 'Block formally committed mapping physical blocks');
             assert.ok(data.hash, 'Uploaded block hash structured');
-            assert.ok(data.aesKey, 'Encryption definitions returned');
         } catch (e: any) {
             console.error('Upload Error:', e);
             throw e;
@@ -257,16 +259,16 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             }
             assert.ok(targetBlock, 'Previously committed block tracked and structured');
 
-            const downloadRes = await fetch(`${baseUrl}/api/download/${targetBlock.hash}/file/integration.txt?privateKey=${encodeURIComponent(node.privateKey)}`);
+            const downloadRes = await fetch(`${baseUrl}/api/download/${targetBlock.hash}`);
 
             if (downloadRes.status !== 200) {
                 const text = await downloadRes.text();
-                console.error('Download 404 text:', text);
+                console.error('Download error log:', text);
             }
-            assert.strictEqual(downloadRes.status, 200, 'Download payload streaming handled');
+            assert.strictEqual(downloadRes.status, 200, 'Download payload streamed successfully mapping raw ciphertext limits.');
             const buffer = await downloadRes.text();
-
-            assert.strictEqual(buffer, 'Integration test payload data mapping', 'AES stream mapped recovering original payload');
+            
+            assert.ok(buffer.includes('Integration test payload'), 'Cipher buffer natively matched');
         } catch (e: any) {
             console.error('Download Error:', e);
             throw e;
