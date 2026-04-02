@@ -271,16 +271,20 @@ class ConsensusEngine {
             return a < b ? -1 : 1;
         });
 
-        const forkId = crypto.createHash('sha256').update(eligibleBlockIds.join(',')).digest('hex');
+        // CRITICAL FIX: Decouple blocks into independent forks to prevent combinatorial fragmentation deadlocks
+        // where nodes drop individual blocks resulting in zero overlapping consensus majorities!
+        for (const bId of eligibleBlockIds) {
+            const tempBlockIds = [bId];
+            const forkId = crypto.createHash('sha256').update(tempBlockIds.join(',')).digest('hex');
 
-        const forkEntry = this.mempool.eligibleForks.get(forkId);
-        if (!forkEntry || !forkEntry.adopted) {
-            logger.info(`[Peer ${this.node.port}] Proposing Fork ${forkId.slice(0, 8)} with ${eligibleBlockIds.length} blocks`);
-            this.handleProposeFork(forkId, eligibleBlockIds, { peerAddress: `127.0.0.1:${this.node.port}` } as PeerConnection);
-            if (this.node.peer) {
-                this.node.peer.broadcast(new ProposeForkMessage({ forkId, blockIds: eligibleBlockIds })).catch(err => {
-                    logger.warn(`[Peer ${this.node.port}] Suppressed ProposeFork broadcast exception: ${err.message}`);
-                });
+            const forkEntry = this.mempool.eligibleForks.get(forkId);
+            if (!forkEntry || !forkEntry.adopted) {
+                this.handleProposeFork(forkId, tempBlockIds, { peerAddress: `127.0.0.1:${this.node.port}` } as PeerConnection);
+                if (this.node.peer) {
+                    this.node.peer.broadcast(new ProposeForkMessage({ forkId, blockIds: tempBlockIds })).catch(err => {
+                        logger.warn(`[Peer ${this.node.port}] Failed to broadcast fork proposal: ${err.message}`);
+                    });
+                }
             }
         }
     }
