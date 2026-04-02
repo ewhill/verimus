@@ -24,6 +24,9 @@ export const useStore = create(
     isLoading: false,
     error: null,
     currentRoute: window.location.pathname.replace('/', '') || 'wallet',
+    activeWalletTab: 'dashboard',
+    activeLedgerTab: 'global',
+    activePeersTab: 'mesh',
     ledgerSortMode: 'index_desc',
     toasts: [],
 
@@ -39,6 +42,9 @@ export const useStore = create(
             case 'REMOVE_TOAST':
                 return { toasts: state.toasts.filter(t => t.id !== action.payload) };
             case 'SET_ROUTE': return { currentRoute: action.payload };
+            case 'SET_WALLET_TAB': return { activeWalletTab: action.payload };
+            case 'SET_LEDGER_TAB': return { activeLedgerTab: action.payload };
+            case 'SET_PEERS_TAB': return { activePeersTab: action.payload };
             case 'SET_BLOCKS': return { blocks: action.payload.blocks, pagination: action.payload.pagination };
             case 'SET_FILES_MAP': return { filesMap: action.payload };
             case 'SET_NODE_CONFIG': return { nodeConfig: action.payload };

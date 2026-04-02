@@ -15,7 +15,7 @@ const LedgerView = () => {
     const isModalOpen = useStore(s => s.isModalOpen);
     const nodeConfig = useStore(s => s.nodeConfig);
     const [showCallout, setShowCallout] = useState(false);
-    const [activeTab, setActiveTab] = useState('global');
+    const activeTab = useStore(s => s.activeLedgerTab);
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -83,42 +83,6 @@ const LedgerView = () => {
             )}
             
             <section className="ledger-section" style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
-                <div className="section-header glass-panel stagger-1" style={{ display: 'flex', justifyContent: 'center', padding: '1.25rem 2rem', borderRadius: 'var(--radius-lg)', margin: '0 0 1.5rem 0', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.3)', width: '100%' }}>
-                    <div className="segmented-control" style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: 'var(--radius-md)', width: '100%' }}>
-                        <button 
-                            className={`segmented-btn ${activeTab === 'global' ? 'active' : ''}`} 
-                            onClick={() => setActiveTab('global')}
-                            style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', flex: 1 }}
-                        >
-                            Global Ledger
-                        </button>
-                        <button 
-                            className={`segmented-btn ${activeTab === 'audit' ? 'active' : ''}`} 
-                            onClick={() => setActiveTab('audit')}
-                            style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', flex: 1 }}
-                        >
-                            Sortition Audits
-                        </button>
-                        {nodeConfig?.roles?.includes('VALIDATOR') && (
-                            <button 
-                                className={`segmented-btn ${activeTab === 'consensus' ? 'active' : ''}`} 
-                                onClick={() => setActiveTab('consensus')}
-                                style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', flex: 1 }}
-                            >
-                                Mempool Monitor
-                            </button>
-                        )}
-                        {nodeConfig?.roles?.includes('STORAGE') && (
-                            <button 
-                                className={`segmented-btn ${activeTab === 'contracts' ? 'active' : ''}`} 
-                                onClick={() => setActiveTab('contracts')}
-                                style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', flex: 1 }}
-                            >
-                                Active Contracts
-                            </button>
-                        )}
-                    </div>
-                </div>
 
                 {activeTab === 'global' && (
                     <>
