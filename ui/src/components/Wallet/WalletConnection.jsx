@@ -6,6 +6,7 @@ const WalletConnection = () => {
     const dispatch = useStore(s => s.dispatch);
     const web3Account = useStore(s => s.web3Account);
     const [isConnecting, setIsConnecting] = useState(false);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     useEffect(() => {
         if (!hasWeb3Provider()) return;
@@ -63,15 +64,39 @@ const WalletConnection = () => {
 
     if (web3Account) {
         return (
-            <div className="wallet-pill" style={{
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                background: 'rgba(129, 140, 248, 0.1)', border: '1px solid rgba(129, 140, 248, 0.3)',
-                padding: '0.3rem 0.8rem', borderRadius: '100px', cursor: 'pointer', transition: 'background 0.2s'
-            }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(129, 140, 248, 0.2)'} onMouseOut={(e) => e.currentTarget.style.background = 'rgba(129, 140, 248, 0.1)'} title={web3Account}>
-                <div style={{ width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%', boxShadow: '0 0 8px rgba(74,222,128,0.6)' }}></div>
-                <span style={{ color: '#818cf8', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.9rem' }}>
-                    {web3Account.substring(0, 6)}...{web3Account.substring(web3Account.length - 4)}
-                </span>
+            <div style={{ position: 'relative' }}>
+                <div className="wallet-pill" onClick={() => setIsDropdownOpen(!isDropdownOpen)} style={{
+                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    background: 'rgba(129, 140, 248, 0.1)', border: '1px solid rgba(129, 140, 248, 0.3)',
+                    padding: '0.3rem 0.8rem', borderRadius: '100px', cursor: 'pointer', transition: 'background 0.2s'
+                }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(129, 140, 248, 0.2)'} onMouseOut={(e) => e.currentTarget.style.background = 'rgba(129, 140, 248, 0.1)'} title={web3Account}>
+                    <div style={{ width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%', boxShadow: '0 0 8px rgba(74,222,128,0.6)' }}></div>
+                    <span style={{ color: '#818cf8', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.9rem' }}>
+                        {web3Account.substring(0, 6)}...{web3Account.substring(web3Account.length - 4)}
+                    </span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                
+                {isDropdownOpen && (
+                    <div style={{
+                        position: 'absolute', top: 'calc(100% + 0.5rem)', right: '0', background: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '0.5rem', zIndex: 100, boxShadow: '0 4px 20px rgba(0,0,0,0.5)', minWidth: '180px'
+                    }}>
+                        <button onClick={() => {
+                            dispatch({ type: 'SET_WEB3_ACCOUNT', payload: null });
+                            setIsDropdownOpen(false);
+                            // If user is inside a protected route, we route them back to ledger
+                            const currentPath = window.location.pathname;
+                            if (currentPath === '/wallet' || currentPath === '/files') {
+                                window.history.pushState({}, '', '/ledger');
+                                dispatch({ type: 'SET_ROUTE', payload: 'ledger' });
+                            }
+                            dispatch({ type: 'ADD_TOAST', payload: { id: Date.now(), title: 'Wallet Disconnected', message: 'You have been unmapped successfully', type: 'success' } });
+                        }} style={{ width: '100%', padding: '0.6rem 0.5rem', background: 'transparent', border: 'none', color: '#f87171', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(248, 113, 113, 0.1)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                            Disconnect Wallet
+                        </button>
+                    </div>
+                )}
             </div>
         );
     }

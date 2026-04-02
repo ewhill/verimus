@@ -11,6 +11,7 @@ import { WebSocket } from 'ws';
 
 import setupExpressApp from '../api_server/ApiServer';
 import Bundler from '../bundler/Bundler';
+import { generateRSAKeyPair, signData } from '../crypto_utils/CryptoUtils';
 import { GENESIS_SEED_DATA, IS_DEV_NETWORK } from '../constants';
 import { PeerCredentials } from '../credential_provider/CredentialProvider';
 import Ledger from '../ledger/Ledger';

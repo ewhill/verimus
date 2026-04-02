@@ -17,6 +17,14 @@ cleanup() {
 # Trap Ctrl-C (SIGINT)
 trap cleanup SIGINT
 
+SEED_WALLET=""
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --seed-wallet) SEED_WALLET="$2"; shift 2 ;;
+        *) shift ;;
+    esac
+done
+
 echo "==========================================="
 echo "  Spawning 5 Nodes & Seeding 5 Blocks      "
 echo "==========================================="
@@ -93,27 +101,14 @@ for port in "${PORTS[@]}"; do
     if [ -f "$PUB_KEY_PATH" ]; then
         mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "const fs = require('fs'); const pub = fs.readFileSync('$PUB_KEY_PATH', 'utf8'); db.balances.updateOne({ publicKey: pub }, { \$set: { balance: 500000 } }, { upsert: true });" > /dev/null 2>&1
     fi
+    if [ -n "$SEED_WALLET" ]; then
+        mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ publicKey: '$SEED_WALLET' }, { \$set: { balance: 50000 } }, { upsert: true });" > /dev/null 2>&1
+    fi
 done
 echo "✅ Baseline balances physically synchronized to DB natively!"
 
 echo "5. Seeding 5 blocks..."
-for i in {1..5}; do
-    FILE="dummy_seed_$i.txt"
-    echo "Seed data for block $i - Timestamp: $(date)" > "$FILE"
-    # Rotate target nodes for uploads
-    TARGET_PORT=${PORTS[$(( (i-1) % 5 ))]}
-    
-    ABS_PATH="$PWD/$FILE"
-    RESPONSE=$(curl -s -k -X POST -F "files=@$FILE" -F "paths=[\"$ABS_PATH\"]" "https://127.0.0.1:$TARGET_PORT/api/upload")
-    
-    if [[ $RESPONSE == *"success\":true"* ]]; then
-        echo "✅ Seeded block $i via node on port $TARGET_PORT"
-    else
-        echo "❌ Failed to seed block $i via node on port $TARGET_PORT"
-        echo "Response: $RESPONSE"
-    fi
-    rm "$FILE"
-done
+npx tsx "$(dirname "$0")/SeedBlocks.ts"
 
 echo -e '\n\033[1;32m==========================================='
 echo "  Nodes are running and active!            "
