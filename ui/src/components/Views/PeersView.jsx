@@ -155,26 +155,26 @@ const PeersView = () => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
             {/* Segmented Tab Control */}
-            <div className="section-header glass-panel" style={{ display: 'flex', justifyContent: 'center', padding: '1.25rem 2rem', borderRadius: 'var(--radius-lg)', margin: '0 0 1rem 0', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.3)' }}>
-                <div className="segmented-control" style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: 'var(--radius-md)' }}>
+            <div className="section-header glass-panel" style={{ display: 'flex', justifyContent: 'center', padding: '1.25rem 2rem', borderRadius: 'var(--radius-lg)', margin: '0 0 1rem 0', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.3)', width: '100%' }}>
+                <div className="segmented-control" style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: 'var(--radius-md)', width: '100%' }}>
                     <button 
                         className={`segmented-btn ${activeTab === 'mesh' ? 'active' : ''}`} 
                         onClick={() => setActiveTab('mesh')}
-                        style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', width: 'auto' }}
+                        style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', flex: 1 }}
                     >
                         Network Mesh
                     </button>
                     <button 
                         className={`segmented-btn ${activeTab === 'reputation' ? 'active' : ''}`} 
                         onClick={() => setActiveTab('reputation')}
-                        style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', width: 'auto' }}
+                        style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', flex: 1 }}
                     >
                         Global Reputation
                     </button>
                     <button 
                         className={`segmented-btn ${activeTab === 'logs' ? 'active' : ''}`} 
                         onClick={() => setActiveTab('logs')}
-                        style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', width: 'auto' }}
+                        style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', flex: 1 }}
                     >
                         System Logs
                     </button>

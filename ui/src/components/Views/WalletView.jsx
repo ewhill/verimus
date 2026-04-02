@@ -45,20 +45,20 @@ const WalletView = () => {
     const formatDate = (ts) => new Date(ts).toLocaleString();
 
     return (
-        <div style={{ padding: '0', maxWidth: 'none', margin: '0 auto', color: '#f8fafc', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div className="section-header glass-panel" style={{ display: 'flex', justifyContent: 'center', padding: '1.25rem 2rem', borderRadius: 'var(--radius-lg)', margin: '0 auto 1rem auto', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.3)', width: 'fit-content' }}>
-                <div className="segmented-control" style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: 'var(--radius-md)' }}>
+        <div style={{ padding: '0', maxWidth: '1400px', margin: '0 auto', color: '#f8fafc', height: '100%', display: 'flex', flexDirection: 'column', width: '100%' }}>
+            <div className="section-header glass-panel" style={{ display: 'flex', justifyContent: 'center', padding: '1.25rem 2rem', borderRadius: 'var(--radius-lg)', margin: '0 0 1rem 0', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.3)', width: '100%' }}>
+                <div className="segmented-control" style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: 'var(--radius-md)', width: '100%' }}>
                     <button 
                         className={`segmented-btn ${activeTab === 'dashboard' ? 'active' : ''}`} 
                         onClick={() => setActiveTab('dashboard')}
-                        style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', width: 'auto' }}
+                        style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', flex: 1 }}
                     >
                         Wallet Dashboard
                     </button>
                     <button 
                         className={`segmented-btn ${activeTab === 'files' ? 'active' : ''}`} 
                         onClick={() => setActiveTab('files')}
-                        style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', width: 'auto' }}
+                        style={{ padding: '0.75rem 1.5rem', fontWeight: 600, fontSize: '0.9rem', flex: 1 }}
                     >
                         Asset Files
                     </button>
