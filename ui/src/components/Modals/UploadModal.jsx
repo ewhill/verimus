@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../store';
 import { bundleAndEncryptFiles } from '../../utils/bundler';
+import { getEncryptionPublicKey, encryptAESKeyBoundaries, signOriginatorProxyMessage } from '../../utils/web3';
 
 const UploadModal = () => {
     const dispatch = useStore(s => s.dispatch);
     const isUploadModalOpen = useStore(s => s.isUploadModalOpen);
+    const web3Account = useStore(s => s.web3Account);
 
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
@@ -103,21 +105,25 @@ const UploadModal = () => {
             const cryptoResult = await bundleAndEncryptFiles(selectedFiles);
             const { encryptedBlob, aesKeyBase64, aesIvBase64, authTagHex, fileMetadata } = cryptoResult;
 
-            setCryptoLogs(prev => [...prev, { status: 'ENCRYPTION_COMPLETE', message: 'Symmetric Block Locked. Isolating Key Array...' }]);
+            setCryptoLogs(prev => [...prev, { status: 'ENCRYPTION_COMPLETE', message: 'Symmetric Block Locked. Isolating Key Array organically...' }]);
 
-            // Force native browser download guaranteeing absolute user ownership sequentially
-            const keyJson = JSON.stringify({ type: 'VERIMUS_AES_KEY', key: aesKeyBase64 }, null, 2);
-            const blobUrl = URL.createObjectURL(new Blob([keyJson], { type: 'application/json' }));
-            const anchor = document.createElement('a');
-            anchor.href = blobUrl;
-            anchor.download = `verimus_payload_${Date.now()}.key`;
-            document.body.appendChild(anchor);
-            anchor.click();
-            document.body.removeChild(anchor);
-            URL.revokeObjectURL(blobUrl);
+            if (!web3Account) {
+                throw new Error("Web3 EVM Constraints are uninitialized. Connect your Metamask Wallet to execute asymmetric AES proxying locally.");
+            }
+
+            const pubKeyInfo = await getEncryptionPublicKey(web3Account);
+            const encKeyPayload = encryptAESKeyBoundaries(aesKeyBase64, pubKeyInfo);
+
+            setCryptoLogs(prev => [...prev, { status: 'PROXY_AUTH', message: 'Generating Originator Limits requesting active verification bounds natively...' }]);
+
+            const executionTime = Date.now();
+            const signature = await signOriginatorProxyMessage(executionTime, authTagHex, web3Account);
 
             // Mount mathematically opaque structures into standard boundary forms
             formData.append('files', encryptedBlob, 'encrypted_payload.bin');
+            formData.append('ownerAddress', web3Account);
+            formData.append('ownerSignature', signature);
+            formData.append('encryptedAesKey', encKeyPayload);
             formData.append('aesIv', aesIvBase64);
             formData.append('authTag', authTagHex);
             formData.append('fileMetadata', JSON.stringify(fileMetadata));

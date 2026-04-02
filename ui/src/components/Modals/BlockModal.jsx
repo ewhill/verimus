@@ -2,6 +2,7 @@
 import { useStore } from '../../store';
 import { ApiService } from '../../services/api';
 import { decryptAndUnzip } from '../../utils/bundler';
+import { decryptAESCore } from '../../utils/web3';
 import * as fflate from 'fflate';
 
 const PropertyValue = ({ value, className = '', copyable = true, style = {} }) => {
@@ -49,6 +50,7 @@ const BlockModal = () => {
     const selectedBlockHash = useStore(s => s.selectedBlockHash);
     const blocks = useStore(s => s.blocks);
     const nodeConfig = useStore(s => s.nodeConfig);
+    const web3Account = useStore(s => s.web3Account);
 
     const [isFetchingPayload, setIsFetchingPayload] = useState(false);
     const [payloadData, setPayloadData] = useState(null);
@@ -259,11 +261,23 @@ const BlockModal = () => {
     const executeDecryption = async (targetFileName = null) => {
         if (!payloadData || !payloadData.iv) return alert("Payload metrics missing. Cannot map decryption matrices.");
 
-        const keyJsonStr = prompt("Zero-Knowledge Security Context:\n\nPlease provide your symmetric AES key file string to perform this execution natively:");
-        if (!keyJsonStr) return false;
+        if (!web3Account) {
+            alert("No Web3 Identity connected globally. Connect Metamask dynamically.");
+            return false;
+        }
 
-        let keyRaw = keyJsonStr;
-        try { const parsed = JSON.parse(keyJsonStr); if (parsed.key) keyRaw = parsed.key; } catch(err) {}
+        if (!payloadData.encryptedAesKey) {
+            alert("Missing embedded asymmetric hexadecimal limits natively.");
+            return false;
+        }
+
+        let keyRaw;
+        try {
+            keyRaw = await decryptAESCore(payloadData.encryptedAesKey, web3Account);
+        } catch (err) {
+            alert(`Web3 Boundary Decryption Failed: ${err.message}`);
+            return false;
+        }
 
         try {
             const response = await fetch(`/api/download/${selectedBlockHash}`);

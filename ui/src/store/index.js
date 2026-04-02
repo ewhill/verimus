@@ -23,6 +23,7 @@ export const useStore = create(
     selectedBlockHash: null,
     isLoading: false,
     error: null,
+    web3Account: null,
     currentRoute: window.location.pathname.replace('/', '') || 'wallet',
     activeWalletTab: 'dashboard',
     activeLedgerTab: 'global',
@@ -57,6 +58,7 @@ export const useStore = create(
             case 'SET_SEARCH': return { searchQuery: action.payload };
             case 'SET_FILTER_OWN': return { filterOwn: action.payload, pagination: { ...state.pagination, page: 1 } };
             case 'SET_FILTER_CHECKPOINTS': return { filterCheckpoints: action.payload, pagination: { ...state.pagination, page: 1 } };
+            case 'SET_WEB3_ACCOUNT': return { web3Account: action.payload };
             case 'SET_CURRENT_VIEW': return { currentView: action.payload };
             case 'SET_SELECTED_INDEX': return { selectedIndex: action.payload };
             case 'SET_PAGINATION': return { pagination: action.payload };
@@ -75,6 +77,7 @@ export const useStore = create(
         filterOwn: state.filterOwn,
         filterCheckpoints: state.filterCheckpoints,
         currentView: state.currentView,
-        ledgerSortMode: state.ledgerSortMode
+        ledgerSortMode: state.ledgerSortMode,
+        web3Account: state.web3Account
     })
 }));

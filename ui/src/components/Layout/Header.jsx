@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store';
+import WalletConnection from '../Wallet/WalletConnection';
 
 const Header = () => {
     const dispatch = useStore(s => s.dispatch);
@@ -74,16 +75,20 @@ const Header = () => {
                     <a href="#" className={`nav-link ${activeRoute === 'ledger' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'ledger')}>Ledger</a>
                     <a href="#" className={`nav-link ${activeRoute === 'peers' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'peers')}>Network</a>
 
-                    {(nodeConfig?.roles?.includes('ORIGINATOR')) && (
-                        <button 
-                            onClick={() => dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true })}
+                    <div style={{ marginLeft: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <WalletConnection />
+
+                        {(nodeConfig?.roles?.includes('ORIGINATOR')) && (
+                            <button 
+                                onClick={() => dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true })}
                             style={{ marginLeft: '1rem', padding: '0.4rem 1rem', background: '#4ade80', color: '#000000', border: 'none', borderRadius: '100px', fontWeight: '600', cursor: 'pointer', transition: 'transform 0.2s, background 0.2s', boxShadow: '0 4px 10px rgba(74, 222, 128, 0.3)' }}
                             onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
                             onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
                         >
-                            Upload File
-                        </button>
-                    )}
+                                Upload File
+                            </button>
+                        )}
+                    </div>
                 </nav>
             </div>
 

@@ -3,9 +3,11 @@ import { useStore } from '../../../store';
 import { ApiService } from '../../../services/api';
 import ShardGraph from './ShardGraph';
 import { decryptAndUnzip } from '../../../utils/bundler';
+import { decryptAESCore } from '../../../utils/web3';
 
 const FileGrid = ({ displayItems }) => {
     const dispatch = useStore(s => s.dispatch);
+    const web3Account = useStore(s => s.web3Account);
     const [openDropdown, setOpenDropdown] = useState(null);
 
     const handleFolderClick = (path) => {
@@ -22,11 +24,10 @@ const FileGrid = ({ displayItems }) => {
             const payloadMeta = privateRes.privatePayload || privateRes.payload;
             if (!payloadMeta || !payloadMeta.iv) throw new Error("Malformed Payload: Encryption IV physically missing.");
 
-            const keyJsonStr = prompt(`Zero-Knowledge Download:\n\nPlease paste your 'verimus_payload.key' JSON contents to decrypt ${filename.split('/').pop()} locally:`);
-            if (!keyJsonStr) return;
+            if (!web3Account) throw new Error("Web3 EVM Constraints uninitialized. Connect your Wallet contextually.");
+            if (!payloadMeta.encryptedAesKey) throw new Error("Payload missing asymmetric encrypted bounds.");
 
-            let keyRaw = keyJsonStr;
-            try { const parsed = JSON.parse(keyJsonStr); if (parsed.key) keyRaw = parsed.key; } catch(err) {}
+            const keyRaw = await decryptAESCore(payloadMeta.encryptedAesKey, web3Account);
 
             const req = await fetch(`/api/download/${hash}`);
             if (!req.ok) throw new Error("Backend retrieval bounded dynamically natively.");
