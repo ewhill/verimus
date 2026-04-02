@@ -4,6 +4,23 @@ import { Writable } from 'node:stream';
 import { describe, it, mock } from 'node:test';
 
 import type { Request, Response } from 'express';
+import { ethers } from 'ethers';
+
+async function generateMockProxyPayload(authTag: string = 'mockAuthTag') {
+    const wallet = ethers.Wallet.createRandom();
+    const timestamp = Date.now().toString();
+    const proxyMessage = `Approve Verimus Originator proxy for data struct ${authTag}\nTimestamp: ${timestamp}`;
+    const signature = await wallet.signMessage(proxyMessage);
+    return {
+        ownerAddress: wallet.address,
+        ownerSignature: signature,
+        timestamp: timestamp,
+        encryptedAesKey: 'mockEncryptedHex',
+        aesIv: 'mockIv',
+        authTag: authTag,
+        fileMetadata: JSON.stringify([{ path: 'test', contentHash: 'mock' }])
+    };
+}
 
 import type Bundler from '../../../bundler/Bundler';
 import { generateRSAKeyPair, buildMerkleTree, getMerkleProof } from '../../../crypto_utils/CryptoUtils';
@@ -132,15 +149,12 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         });
 
         const handler = new UploadHandler(mockNode);
+        const proxyBody = await generateMockProxyPayload();
         const request = createMock<Request>({
             files: [
                 createMock<Express.Multer.File>({ originalname: 'test.enc', buffer: Buffer.from('mockPayload') })
             ],
-            body: {
-                aesIv: 'mockIv',
-                authTag: 'mockAuthTag',
-                fileMetadata: JSON.stringify([{ path: 'test', contentHash: 'mock' }])
-            }
+            body: proxyBody
         });
         let response: Response;
         const mockResponseStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
@@ -181,13 +195,12 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                 trustedPeers: [{}]
             })
         });
+        const proxyBody = await generateMockProxyPayload('batch');
         const request = createMock<Request>({
             files: [
                 createMock<Express.Multer.File>({ originalname: 'throws' })
             ],
-            body: {
-                paths: JSON.stringify(['throws'])
-            }
+            body: { ...proxyBody, paths: JSON.stringify(['throws']) }
         });
         let response: Response;
         const mockResponseStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
@@ -281,15 +294,12 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             })
         });
         const handler = new UploadHandler(mockNode);
+        const proxyBody = await generateMockProxyPayload();
         const request = createMock<Request>({
             files: [
                 createMock<Express.Multer.File>({ originalname: 'test.enc', buffer: Buffer.from('mockPayload') })
             ],
-            body: {
-                aesIv: 'mockIv',
-                authTag: 'mockAuthTag',
-                fileMetadata: JSON.stringify([{ path: 'test', contentHash: 'mock' }])
-            }
+            body: proxyBody
         });
         let response: Response;
         const mockResponseStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
@@ -386,15 +396,12 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             })
         });
         const handler = new UploadHandler(mockNode);
+        const proxyBody = await generateMockProxyPayload();
         const request = createMock<Request>({
             files: [
                 createMock<Express.Multer.File>({ originalname: 'test.enc', buffer: Buffer.from('mockPayload') })
             ],
-            body: {
-                aesIv: 'mockIv',
-                authTag: 'mockAuthTag',
-                fileMetadata: JSON.stringify([{ path: 'test', contentHash: 'mock' }])
-            }
+            body: proxyBody
         });
         let response: any;
         const mockResponseStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
@@ -491,15 +498,12 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             })
         });
         const handler = new UploadHandler(mockNode);
+        const proxyBody = await generateMockProxyPayload();
         const request = createMock<Request>({
             files: [
                 createMock<Express.Multer.File>({ originalname: 'test.enc', buffer: Buffer.from('mockPayload') })
             ],
-            body: {
-                aesIv: 'mockIv',
-                authTag: 'mockAuthTag',
-                fileMetadata: JSON.stringify([{ path: 'test', contentHash: 'mock' }])
-            }
+            body: proxyBody
         });
         let response: Response;
         const mockResponseStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);

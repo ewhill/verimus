@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import { ethers } from 'ethers';
 
 import { Request, Response } from 'express';
 
@@ -23,6 +24,24 @@ export default class UploadHandler extends BaseHandler {
             return res.status(400).send('No files uploaded.');
         }
 
+        const { ownerAddress, ownerSignature, timestamp, encryptedAesKey } = req.body;
+        if (!ownerAddress || !ownerSignature || !timestamp) {
+            return res.status(400).send('Web3 Proxy Identity missing natively.');
+        }
+
+        const authTag = req.body.authTag || ''; // Evaluated linearly below!
+        const proxyMessage = `Approve Verimus Originator proxy for data struct ${authTag || 'batch'}\nTimestamp: ${timestamp}`;
+
+        let recoveredAddress: string;
+        try {
+            recoveredAddress = ethers.verifyMessage(proxyMessage, ownerSignature);
+            if (recoveredAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
+                throw new Error("Mismatch strictly bypassing EIP-191 structural bounds.");
+            }
+        } catch (err: any) {
+            return res.status(401).send(`Cryptography Check Rejected: Asymmetric Mismatch bounds natively failing EIP-191 payload. Details: ${err.message}`);
+        }
+
         try {
             const publicKey = this.node.publicKey;
             const privateKey = this.node.privateKey;
@@ -45,7 +64,7 @@ export default class UploadHandler extends BaseHandler {
             }
             const absoluteMax = Math.min(5, activePeers);
             if (redundancy > absoluteMax) redundancy = absoluteMax;
-            
+
             let paths: string[] = [];
             try {
                 paths = JSON.parse(req.body.paths || '[]');
@@ -90,9 +109,8 @@ export default class UploadHandler extends BaseHandler {
             const N = redundancy;
 
             const aesIv = req.body.aesIv || '';
-            const authTag = req.body.authTag || '';
             let fileMetadataArray = [];
-            try { fileMetadataArray = JSON.parse(req.body.fileMetadata || '[]'); } catch(e) {}
+            try { fileMetadataArray = JSON.parse(req.body.fileMetadata || '[]'); } catch (e) { }
 
             const encryptedBuffer = Buffer.isBuffer(files[0].buffer) ? files[0].buffer : require('fs').readFileSync(files[0].path);
 
@@ -174,7 +192,7 @@ export default class UploadHandler extends BaseHandler {
                                     physicalId: physicalId
                                 });
                                 shardsDispatchedCount++;
-                                this.node.events.emit('upload_telemetry', { status: 'SHARD_DISPATCHED', progress: shardsDispatchedCount, total: bundleResult.shards.length, message: `Dispatched Shard ${i+1}/${bundleResult.shards.length} -> 0x${bid.peerId.slice(0, 8)}` });
+                                this.node.events.emit('upload_telemetry', { status: 'SHARD_DISPATCHED', progress: shardsDispatchedCount, total: bundleResult.shards.length, message: `Dispatched Shard ${i + 1}/${bundleResult.shards.length} -> 0x${bid.peerId.slice(0, 8)}` });
                                 res();
                             } catch (e) {
                                 rej(e);
@@ -219,6 +237,7 @@ export default class UploadHandler extends BaseHandler {
             const privatePayload: BlockPrivate = {
                 iv: aesIv,
                 authTag: authTag,
+                encryptedAesKey: encryptedAesKey, // Retained physical bounds mapping!
                 location: { type: 'local' }, // Mocking local storage references temporarily parsing structural arrays
                 physicalId: 'DECENTRALIZED_SHARD_MATRIX',
                 files: fileMetadataArray
@@ -234,7 +253,9 @@ export default class UploadHandler extends BaseHandler {
                 remainingEgressEscrow: theoreticalMaxCost,
                 erasureParams: { k: K, n: N, originalSize: bundleResult.originalSize! },
                 fragmentMap: fragmentMap,
-                merkleRoots: bundleResult.merkleRoots
+                merkleRoots: bundleResult.merkleRoots,
+                ownerAddress: recoveredAddress,
+                ownerSignature: ownerSignature
             };
 
             const signatureStr = signData(JSON.stringify(payloadResult), privateKey);

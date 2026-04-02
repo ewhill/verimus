@@ -1,7 +1,11 @@
 import assert from 'node:assert';
 import type { AddressInfo } from 'node:net';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { describe, it, before, after } from 'node:test';
 
+import { ethers } from 'ethers';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import Bundler from '../../bundler/Bundler';
@@ -163,6 +167,15 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             formDataPayload.append('fileMetadata', JSON.stringify([{ path: 'integration.txt', contentHash: 'mockHash' }]));
             formDataPayload.append('aesIv', 'mockIvBuffer');
             formDataPayload.append('authTag', 'mockAuthTag');
+            
+            const wallet = ethers.Wallet.createRandom();
+            const timestamp = Date.now().toString();
+            const proxyMessage = `Approve Verimus Originator proxy for data struct mockAuthTag\nTimestamp: ${timestamp}`;
+            const signature = await wallet.signMessage(proxyMessage);
+            formDataPayload.append('encryptedAesKey', 'mockEncryptedHex');
+            formDataPayload.append('ownerAddress', wallet.address);
+            formDataPayload.append('ownerSignature', signature);
+            formDataPayload.append('timestamp', timestamp);
 
             const response = await fetch(`${baseUrl}/api/upload?trustedPeers=`, {
                 method: 'POST',

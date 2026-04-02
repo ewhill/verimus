@@ -123,6 +123,7 @@ const UploadModal = () => {
             formData.append('files', encryptedBlob, 'encrypted_payload.bin');
             formData.append('ownerAddress', web3Account);
             formData.append('ownerSignature', signature);
+            formData.append('timestamp', String(executionTime));
             formData.append('encryptedAesKey', encKeyPayload);
             formData.append('aesIv', aesIvBase64);
             formData.append('authTag', authTagHex);

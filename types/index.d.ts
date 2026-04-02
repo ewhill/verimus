@@ -58,6 +58,8 @@ export interface StorageContractPayload {
     erasureParams?: ErasureParameters;
     fragmentMap?: NodeShardMapping[];
     merkleRoots?: string[]; // Phase 4b - Constant size 64-character hash resolving entire physical matrix dynamically
+    ownerAddress?: string;
+    ownerSignature?: string;
 }
 
 export interface StakingContractPayload {
@@ -134,6 +136,7 @@ export type StorageLocation =
 
 export interface BlockPrivate {
     key?: string;
+    encryptedAesKey?: string;
     iv: string;
     authTag?: string;
     location: StorageLocation;

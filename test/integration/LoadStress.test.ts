@@ -9,6 +9,7 @@ import { Readable } from 'stream';
 import stream from 'stream';
 
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { ethers } from 'ethers';
 
 import setupExpressApp from '../../api_server/ApiServer';
 import Bundler from '../../bundler/Bundler';
@@ -178,7 +179,21 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
 
         // We build a manual multipart-form POST for the extreme stream mapping
         const boundary = '--------------------------extremeBoundary123';
-        const postDataStart = Buffer.from(
+
+        const wallet = ethers.Wallet.createRandom();
+        const timestamp = Date.now().toString();
+        const authTagStr = 'batch';
+        const proxyMessage = `Approve Verimus Originator proxy for data struct ${authTagStr}\nTimestamp: ${timestamp}`;
+        const signature = await wallet.signMessage(proxyMessage);
+        
+        const extraFields = 
+            `--${boundary}\r\nContent-Disposition: form-data; name="ownerAddress"\r\n\r\n${wallet.address}\r\n` +
+            `--${boundary}\r\nContent-Disposition: form-data; name="ownerSignature"\r\n\r\n${signature}\r\n` +
+            `--${boundary}\r\nContent-Disposition: form-data; name="timestamp"\r\n\r\n${timestamp}\r\n` +
+            `--${boundary}\r\nContent-Disposition: form-data; name="encryptedAesKey"\r\n\r\nmockHex\r\n` +
+            `--${boundary}\r\nContent-Disposition: form-data; name="authTag"\r\n\r\n${authTagStr}\r\n`;
+
+        const postDataStart = Buffer.from(extraFields + 
             `--${boundary}\r\n` +
             `Content-Disposition: form-data; name="files"; filename="massive_payload.bin"\r\n` +
             `Content-Type: application/octet-stream\r\n\r\n`
