@@ -21,19 +21,19 @@ export interface PeerReputation {
 }
 
 export interface StoragePricingConfig {
-    restCostPerGBHour: number; 
-    egressCostPerGB: number;  
+    restCostPerGBHour: number;
+    egressCostPerGB: number;
 }
 
 export interface TransactionPayload {
-    senderSignature: string; 
-    senderId: string;        
-    recipientId: string;     
-    amount: number;         
+    senderSignature: string;
+    senderId: string;
+    recipientId: string;
+    amount: number;
 }
 
 export interface ErasureParameters {
-    n: number; 
+    n: number;
     k: number;
     originalSize: number;
 }
@@ -41,14 +41,14 @@ export interface ErasureParameters {
 export interface NodeShardMapping {
     nodeId: string;
     shardIndex: number;
-    shardHash: string; 
+    shardHash: string;
     physicalId?: string;
 }
 
 export interface StorageContractPayload {
     encryptedPayloadBase64: string;
-    encryptedKeyBase64: string;
-    encryptedIvBase64: string;
+    encryptedKeyBase64?: string;
+    encryptedIvBase64?: string;
     encryptedAuthTagBase64?: string;
     allocatedRestToll?: number;
     allocatedEgressEscrow?: number;
@@ -60,6 +60,7 @@ export interface StorageContractPayload {
     merkleRoots?: string[]; // Phase 4b - Constant size 64-character hash resolving entire physical matrix dynamically
     ownerAddress?: string;
     ownerSignature?: string;
+    brokerFeePercentage?: number;
 }
 
 export interface StakingContractPayload {
@@ -125,7 +126,7 @@ export interface GenericStorageLocation {
     [key: string]: any;
 }
 
-export type StorageLocation = 
+export type StorageLocation =
     | LocalStorageLocation
     | S3StorageLocation
     | SambaStorageLocation

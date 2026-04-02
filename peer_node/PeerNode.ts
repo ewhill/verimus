@@ -11,7 +11,7 @@ import { WebSocket } from 'ws';
 
 import setupExpressApp from '../api_server/ApiServer';
 import Bundler from '../bundler/Bundler';
-import { GENESIS_SEED_DATA } from '../constants';
+import { GENESIS_SEED_DATA, IS_DEV_NETWORK } from '../constants';
 import { PeerCredentials } from '../credential_provider/CredentialProvider';
 import Ledger from '../ledger/Ledger';
 import logger from '../logger/Logger';
@@ -50,7 +50,8 @@ class PeerNode {
     httpServer?: https.Server;
     isHeadless: boolean;
     roles: NodeRole[];
-    constructor(port: number, discoverAddresses: string[] = [], storageProvider: BaseProvider | null = null, bundler: Bundler | null = null, mongoUri: string | null = null, publicAddress: string | null = null, keyPaths: PeerCredentials, dataDir: string | null = null, isHeadless: boolean = false, roles: NodeRole[] = [NodeRole.ORIGINATOR, NodeRole.VALIDATOR, NodeRole.STORAGE]) {
+    proxyBrokerFee: number;
+    constructor(port: number, discoverAddresses: string[] = [], storageProvider: BaseProvider | null = null, bundler: Bundler | null = null, mongoUri: string | null = null, publicAddress: string | null = null, keyPaths: PeerCredentials, dataDir: string | null = null, isHeadless: boolean = false, roles: NodeRole[] = [NodeRole.ORIGINATOR, NodeRole.VALIDATOR, NodeRole.STORAGE], proxyBrokerFee: number = 0.01) {
         this.port = port;
         this.discoverAddresses = discoverAddresses;
         this.publicAddress = publicAddress;
@@ -58,6 +59,7 @@ class PeerNode {
         this.peer = null;
         this.isHeadless = isHeadless;
         this.roles = roles;
+        this.proxyBrokerFee = proxyBrokerFee;
         this.storageProvider = storageProvider;
         this.bundler = bundler;
         this.keyPaths = {
@@ -196,6 +198,24 @@ class PeerNode {
                             await this.storageProvider.storeShard(physicalId, GENESIS_SEED_DATA);
 
                             logger.info(`[Peer ${this.port}] Synchronized and physicalized Genesis seed mapping ${physicalId.slice(0, 8)} natively!`);
+                        }
+                    }
+
+                    // --- Phase 6: Originator Staking Boot Sequence ---
+                    if (this.roles.includes(NodeRole.ORIGINATOR) && !IS_DEV_NETWORK) {
+                        try {
+                            const stakeStr = JSON.stringify({ operatorPublicKey: this.publicKey, collateralAmount: 50000, minEpochTimelineDays: 30 });
+                            const sigStr = signData(stakeStr, this.privateKey) as string;
+                            const stakingBlock: Block = {
+                                metadata: { index: -1, timestamp: Date.now() },
+                                type: 'STAKING_CONTRACT',
+                                payload: { operatorPublicKey: this.publicKey, collateralAmount: 50000, minEpochTimelineDays: 30 },
+                                publicKey: this.publicKey,
+                                signature: sigStr
+                            };
+                            await this.consensusEngine.handlePendingBlock(stakingBlock, { peerAddress: `127.0.0.1:${this.port}` } as any, Date.now());
+                        } catch (err: any) {
+                            logger.warn(`[Peer ${this.port}] Failed to emit initial Proof-of-Stake STAKING_CONTRACT dynamically: ${err.message}`);
                         }
                     }
                 } catch (_unusedE: any) {

@@ -10,6 +10,7 @@ const Header = () => {
     const activePeersTab = useStore(s => s.activePeersTab);
     const nodeConfig = useStore(s => s.nodeConfig);
     const error = useStore(s => s.error);
+    const web3Account = useStore(s => s.web3Account);
     const [isNavOpen, setIsNavOpen] = useState(false);
 
     const activeRoute = currentRoute || 'files';
@@ -71,7 +72,9 @@ const Header = () => {
                     </button>
                 </div>
                 <nav className={`main-nav ${isNavOpen ? 'active' : ''}`}>
-                    <a href="#" className={`nav-link ${activeRoute === 'wallet' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'wallet')}>Wallet</a>
+                    {web3Account && (
+                        <a href="#" className={`nav-link ${activeRoute === 'wallet' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'wallet')}>Wallet</a>
+                    )}
                     <a href="#" className={`nav-link ${activeRoute === 'ledger' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'ledger')}>Ledger</a>
                     <a href="#" className={`nav-link ${activeRoute === 'peers' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'peers')}>Network</a>
 

@@ -15,9 +15,13 @@ export default class BlocksHandler extends BaseHandler {
             const skip = (page - 1) * limit;
             const sortOrder = req.query.sort === 'asc' ? 1 : -1;
 
-            const query: Filter<Block> = { "metadata.index": { $gt: 0 } };
+            const query: any = { "metadata.index": { $gt: 0 } };
             if (req.query.own === 'true') {
-                query.publicKey = this.node.publicKey;
+                if (req.query.address) {
+                    query["payload.ownerAddress"] = { $regex: new RegExp(`^${req.query.address as string}$`, 'i') };
+                } else {
+                    query.publicKey = this.node.publicKey;
+                }
             }
 
             if (req.query.type) {
@@ -54,7 +58,13 @@ export default class BlocksHandler extends BaseHandler {
             if (this.node.mempool && this.node.mempool.pendingBlocks) {
                 for (const [bId, entry] of this.node.mempool.pendingBlocks.entries()) {
                     if (!entry.committed) {
-                        if (req.query.own === 'true' && entry.block.publicKey !== this.node.publicKey) continue;
+                        if (req.query.own === 'true') {
+                            if (req.query.address) {
+                                if (!entry.block.payload || (entry.block.payload as any).ownerAddress?.toLowerCase() !== (req.query.address as string).toLowerCase()) continue;
+                            } else {
+                                if (entry.block.publicKey !== this.node.publicKey) continue;
+                            }
+                        }
                         if (req.query.type && entry.block.type !== req.query.type) continue;
 
                         pendingBlocks.push({
@@ -91,8 +101,8 @@ export default class BlocksHandler extends BaseHandler {
                         let targetBlock: Block | undefined = blocks.find((b: Block) => b.hash === block.hash) as Block;
                         if (!targetBlock) targetBlock = pendingBlocks.find((b: Block) => b.hash === block.hash);
 
-                        if (targetBlock && targetBlock.payload) {
-                            const decodedObj = decryptPrivatePayload(privateKey, targetBlock.payload as StorageContractPayload);
+                        if (targetBlock && targetBlock.payload && (targetBlock.payload as StorageContractPayload).encryptedPayloadBase64) {
+                            const decodedObj = decryptPrivatePayload(privateKey, targetBlock.payload as any);
                             if (decodedObj && decodedObj.files) {
                                 const matchFound = decodedObj.files.some((file: { path: string }) =>
                                     file.path && file.path.toLowerCase().includes(searchQuery)

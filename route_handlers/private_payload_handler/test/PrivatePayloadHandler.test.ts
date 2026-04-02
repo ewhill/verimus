@@ -85,7 +85,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const mockNode: PeerNode = createMock<PeerNode>({ ledger: createMock<Ledger>({ collection: mockCollection }) });
         const handler = new PrivatePayloadHandler(mockNode);
 
-        const req = createMock<Request>({ headers: { 'x-web3-address': wallet ? wallet.address : 'other', 'x-web3-timestamp': timestamp, 'x-web3-signature': web3Sig }, params: { hash: 'exists' } });
+        const req = createMock<Request>({ headers: { 'x-web3-address': 'other', 'x-web3-timestamp': '12345', 'x-web3-signature': 'sig' }, params: { hash: 'exists' } });
         let response: Response;
         const mockStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
         const mockJson = mock.fn<(_unusedBody?: any) => Response>();

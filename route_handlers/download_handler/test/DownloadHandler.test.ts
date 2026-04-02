@@ -9,7 +9,7 @@ import { Request, Response } from 'express';
 import { Collection, FindCursor, ObjectId, WithId } from 'mongodb';
 
 import Bundler from '../../../bundler/Bundler';
-import { generateRSAKeyPair, signData, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
+import { generateRSAKeyPair, signData } from '../../../crypto_utils/CryptoUtils';
 import type Ledger from '../../../ledger/Ledger';
 import type { Peer } from '../../../p2p';
 import type PeerNode from '../../../peer_node/PeerNode';
@@ -20,16 +20,18 @@ import { NodeRole } from '../../../types/NodeRole';
 import DownloadHandler from '../DownloadHandler';
 
 describe('Backend: downloadHandler Unit Tests', () => {
+    const globalWallet = ethers.Wallet.createRandom();
 
     it('Returns HTTP 404 when requesting missing block hashes', async () => {
-        const mockNode = createMock<PeerNode>({ 
+        const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
             privateKey: 'PRIVKEY', 
             ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [] })) as any }) }) 
-        });
+         });
+        (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
         const handler = new DownloadHandler(mockNode);
 
-        const wallet = ethers.Wallet.createRandom();
+        const wallet = globalWallet;
         const timestamp = Date.now().toString();
         const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'nonexistent', timestamp }));
         const req = createMock<Request>({ 
@@ -56,15 +58,16 @@ describe('Backend: downloadHandler Unit Tests', () => {
     it('Rejects HTTP 403 on invalid remote signature validations restricting downloads', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
 
-        const validHPayload = encryptPrivatePayload(publicKey, { physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] });
-        const mockNode = createMock<PeerNode>({ 
+        const validHPayload = { encryptedPayloadBase64: Buffer.from(JSON.stringify({ physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] })).toString('base64'), encryptedKeyBase64: 'DEPRECATED_PHASE5', encryptedIvBase64: 'DEPRECATED_PHASE5', encryptedAuthTagBase64: 'DEPRECATED_PHASE5', ownerAddress: globalWallet.address };
+        const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
             ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: validHPayload, publicKey: publicKey, signature: 'bad_sig', type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
-        });
+         });
+        (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
         const handler = new DownloadHandler(mockNode);
 
-        const wallet = ethers.Wallet.createRandom();
+        const wallet = globalWallet;
         const timestamp = Date.now().toString();
         const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
         const req = createMock<Request>({ 
@@ -102,7 +105,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const bundleRes = (await bundleP)!;
 
         const priv = { key: bundleRes.aesKey, iv: bundleRes.aesIv, authTag: bundleRes.authTag, files: bundleRes.files, physicalId: 'pid', location: { type: 'local' } };
-        const encPriv = encryptPrivatePayload(publicKey, priv);
+        const encPriv = { encryptedPayloadBase64: Buffer.from(JSON.stringify(priv)).toString('base64'), encryptedKeyBase64: 'DEPRECATED_PHASE5', encryptedIvBase64: 'DEPRECATED_PHASE5', encryptedAuthTagBase64: 'DEPRECATED_PHASE5', ownerAddress: globalWallet.address };
 
         const payload = {
             ...encPriv,
@@ -118,7 +121,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
         
         const realEvents = new EventEmitter();
 
-        const mockNode = createMock<PeerNode>({ 
+        const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
             publicKey: publicKey,
@@ -144,7 +147,8 @@ describe('Backend: downloadHandler Unit Tests', () => {
                 ]
             }),
             ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: payload, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
-        });
+         });
+        (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
 
         mockNode.storageProvider = createMock<BaseProvider>({
             getEgressCostPerGB: () => 0.0,
@@ -159,7 +163,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
         });
         const handler = new DownloadHandler(mockNode);
 
-        const wallet = ethers.Wallet.createRandom();
+        const wallet = globalWallet;
         const timestamp = Date.now().toString();
         const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
         const req = createMock<Request>({ 
@@ -211,14 +215,15 @@ describe('Backend: downloadHandler Unit Tests', () => {
 
         // 2. Setup block private and encrypt
         const priv = { key: aesKey, iv: aesIv, files, physicalId: 'pid', location: { type: 'local' } };
-        const encPriv = encryptPrivatePayload(publicKey, priv);
+        const encPriv = { encryptedPayloadBase64: Buffer.from(JSON.stringify(priv)).toString('base64'), encryptedKeyBase64: 'DEPRECATED_PHASE5', encryptedIvBase64: 'DEPRECATED_PHASE5', encryptedAuthTagBase64: 'DEPRECATED_PHASE5', ownerAddress: globalWallet.address };
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const mockNode = createMock<PeerNode>({ 
+        const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
             ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
-        });
+         });
+        (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
         mockNode.storageProvider = createMock<BaseProvider>({
             getEgressCostPerGB: () => 0.0,
             getBlockReadStream: async (_unusedId: string) => {
@@ -229,7 +234,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
         });
         const handler = new DownloadHandler(mockNode);
 
-        const wallet = ethers.Wallet.createRandom();
+        const wallet = globalWallet;
         const timestamp = Date.now().toString();
         const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
         const req = createMock<Request>({ 
@@ -269,15 +274,16 @@ describe('Backend: downloadHandler Unit Tests', () => {
 
         // const _pt = new PassThrough();
         const priv = { key: 'a'.repeat(64), iv: 'b'.repeat(32), files: [], physicalId: 'pid', location: { type: 'local' } };
-        const encPriv = encryptPrivatePayload(publicKey, priv);
+        const encPriv = { encryptedPayloadBase64: Buffer.from(JSON.stringify(priv)).toString('base64'), encryptedKeyBase64: 'DEPRECATED_PHASE5', encryptedIvBase64: 'DEPRECATED_PHASE5', encryptedAuthTagBase64: 'DEPRECATED_PHASE5', ownerAddress: globalWallet.address };
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
         let streamDestroyed = false;
-        const mockNode = createMock<PeerNode>({ 
+        const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
             ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
-        });
+         });
+        (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
         mockNode.storageProvider = createMock<BaseProvider>({
             getEgressCostPerGB: () => 0.0,
             getBlockReadStream: async (_unusedId: string) => {
@@ -289,7 +295,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
         });
         const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' }, query: { statusOnly: 'true' } });
+        const req = createMock<Request>({ headers: { 'x-web3-address': globalWallet.address, 'x-web3-timestamp': Date.now().toString(), 'x-web3-signature': await globalWallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp: Date.now().toString() })) }, params: { hash: 'validh' }, query: { statusOnly: 'true' } });
         const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
@@ -312,21 +318,22 @@ describe('Backend: downloadHandler Unit Tests', () => {
     it('Returns HTTP 404 on remote storage stream failures', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
         const priv = { key: 'GARBAGEKEY1234GARBAGEKEY1234GARB', iv: 'GARBAGEIV1234567', files: [], physicalId: 'pid', location: { type: 'local' } };
-        const encPriv = encryptPrivatePayload(publicKey, priv);
+        const encPriv = { encryptedPayloadBase64: Buffer.from(JSON.stringify(priv)).toString('base64'), encryptedKeyBase64: 'DEPRECATED_PHASE5', encryptedIvBase64: 'DEPRECATED_PHASE5', encryptedAuthTagBase64: 'DEPRECATED_PHASE5', ownerAddress: globalWallet.address };
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const mockNode = createMock<PeerNode>({ 
+        const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
             ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
-        });
+         });
+        (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
         mockNode.storageProvider = createMock<BaseProvider>({
             getEgressCostPerGB: () => 0.0,
             getBlockReadStream: async () => ({ status: 'not_found' })
         });
         const handler = new DownloadHandler(mockNode);
 
-        const wallet = ethers.Wallet.createRandom();
+        const wallet = globalWallet;
         const timestamp = Date.now().toString();
         const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
         const req = createMock<Request>({ 
@@ -353,11 +360,12 @@ describe('Backend: downloadHandler Unit Tests', () => {
 
 
     it('Returns HTTP 500 on payload parsing logic failures', async () => {
-        const mockNode = createMock<PeerNode>({ roles: [NodeRole.STORAGE], privateKey: 'PRIV' });
+        const mockNode = createMock<PeerNode>({  roles: [NodeRole.STORAGE], privateKey: 'PRIV'  });
+        (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
         Object.defineProperty(mockNode, 'ledger', { get: () => { throw new Error('Simulated null reference'); } });
         const handler = new DownloadHandler(mockNode);
 
-        const wallet = ethers.Wallet.createRandom();
+        const wallet = globalWallet;
         const timestamp = Date.now().toString();
         const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
         const req = createMock<Request>({ 
@@ -380,42 +388,6 @@ describe('Backend: downloadHandler Unit Tests', () => {
         assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 500);
     });
 
-    it('Returns HTTP 401 catching invalid RSA signature parameter decryption keys', async () => {
-        const { publicKey, privateKey } = generateRSAKeyPair();
-        const encPriv = encryptPrivatePayload(publicKey, { physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] }); // Wrong structure bypasses decryption
-        const sig = signData(JSON.stringify(encPriv), privateKey);
-
-        const mockNode = createMock<PeerNode>({ 
-            roles: [NodeRole.STORAGE], 
-            privateKey: generateRSAKeyPair().privateKey, 
-            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
-        });
-        const handler = new DownloadHandler(mockNode);
-
-        const wallet = ethers.Wallet.createRandom();
-        const timestamp = Date.now().toString();
-        const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
-        const req = createMock<Request>({ 
-            headers: { 'x-web3-address': wallet.address, 'x-web3-timestamp': timestamp, 'x-web3-signature': web3Sig },
-            params: { hash: 'validh' } 
-        });
-        const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        const mockSetHeader = mock.fn<(_name: string, _value: string) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
-        // @ts-ignore
-        const res = createMock<Response>(Object.assign(new PassThrough(), {
-            status: mockStatus,
-            send: mockSend,
-            json: mockJson,
-            setHeader: mockSetHeader
-        }));
-
-        await handler.handle(req, res);
-        assert.strictEqual(mockStatus.mock.calls[0].arguments[0], 401);
-        assert.strictEqual(mockSend.mock.calls[0].arguments[0], 'Failed to decrypt private payload.');
-    });
-
     it('Intercepts node ReadStream exceptions emitting HTTP 500', async () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
 
@@ -424,14 +396,15 @@ describe('Backend: downloadHandler Unit Tests', () => {
             iv: crypto.randomBytes(16).toString('hex'),
             files: [], physicalId: 'pid', location: { type: 'local' }
         };
-        const encPriv = encryptPrivatePayload(publicKey, priv);
+        const encPriv = { encryptedPayloadBase64: Buffer.from(JSON.stringify(priv)).toString('base64'), encryptedKeyBase64: 'DEPRECATED_PHASE5', encryptedIvBase64: 'DEPRECATED_PHASE5', encryptedAuthTagBase64: 'DEPRECATED_PHASE5', ownerAddress: globalWallet.address };
         const sig = signData(JSON.stringify(encPriv), privateKey);
 
-        const mockNode = createMock<PeerNode>({ 
+        const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
             ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: encPriv, publicKey: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
-        });
+         });
+        (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
         mockNode.storageProvider = createMock<BaseProvider>({
             getEgressCostPerGB: () => 0.0,
             getBlockReadStream: async (_unusedId: string) => {
@@ -445,7 +418,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
         });
         const handler = new DownloadHandler(mockNode);
 
-        const wallet = ethers.Wallet.createRandom();
+        const wallet = globalWallet;
         const timestamp = Date.now().toString();
         const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
         const req = createMock<Request>({ 

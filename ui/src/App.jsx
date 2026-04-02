@@ -13,6 +13,7 @@ import ToastContainer from './components/Layout/ToastContainer';
 
 function App() {
     const dispatch = useStore(s => s.dispatch);
+    const web3Account = useStore(s => s.web3Account);
     const currentRoute = useStore(s => s.currentRoute);
     const filesSearchQuery = useStore(s => s.filesSearchQuery);
     const searchQuery = useStore(s => s.searchQuery);
@@ -25,7 +26,7 @@ function App() {
         const params = new URLSearchParams(window.location.search);
         const q = params.get('q');
         const block = params.get('block');
-        const path = window.location.pathname.replace('/', '') || 'wallet';
+        const path = window.location.pathname.replace('/', '') || 'ledger';
 
         if (q) {
             if (path === 'wallet') {
@@ -38,18 +39,27 @@ function App() {
             dispatch({ type: 'SET_MODAL_OPEN', payload: { isOpen: true, hash: block } });
         }
 
-        // Run once on mount
-        ApiService.fetchNodeConfig(dispatch);
-        ApiService.resumePendingDownloads();
+        // Run once on mount explicitly fetching dynamic multi-tier originator topologies securely logically mapping optimally!
+        ApiService.discoverOptimalProxy(dispatch).then(() => {
+            ApiService.fetchNodeConfig(dispatch);
+            ApiService.resumePendingDownloads();
+        });
 
         const handlePopState = () => {
-            const r = window.location.pathname.replace('/', '') || 'wallet';
+            const r = window.location.pathname.replace('/', '') || 'ledger';
             dispatch({ type: 'SET_ROUTE', payload: r });
         };
         
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
     }, [dispatch]);
+
+    useEffect(() => {
+        if (!web3Account && (currentRoute === 'wallet' || currentRoute === 'files')) {
+            dispatch({ type: 'SET_ROUTE', payload: 'ledger' });
+            window.history.replaceState({}, '', '/ledger');
+        }
+    }, [web3Account, currentRoute, dispatch]);
 
     useEffect(() => {
         // Sync functional UI state directly into native browser History API dynamically
@@ -76,11 +86,14 @@ function App() {
     }, [currentRoute, filesSearchQuery, searchQuery, isModalOpen, selectedBlockHash]);
 
     const renderActiveView = () => {
+        if ((currentRoute === 'wallet' || currentRoute === 'files') && !web3Account) {
+            return <LedgerView />;
+        }
         switch (currentRoute) {
             case 'peers':  return <PeersView />;
-            case 'ledger': return <LedgerView />;
-            case 'wallet':
-            default:       return <WalletView />;
+            case 'wallet': return <WalletView />;
+            case 'ledger':
+            default:       return <LedgerView />;
         }
     };
 

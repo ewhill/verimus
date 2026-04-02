@@ -7,13 +7,73 @@ const getBaseQueryParams = (state) => {
     const filterOwn = state.filterOwn ? 'true' : 'false';
     const sort = state.ledgerSortMode || 'desc';
     const filterCheckpoints = state.filterCheckpoints ? '&type=checkpoint' : '';
-    return `?page=${page}&limit=${limit}&q=${query}&own=${filterOwn}&sort=${sort}${filterCheckpoints}`;
+    const addressFragment = (state.filterOwn && state.web3Account) ? `&address=${state.web3Account}` : '';
+    return `?page=${page}&limit=${limit}&q=${query}&own=${filterOwn}&sort=${sort}${filterCheckpoints}${addressFragment}`;
 };
 
 export const ApiService = {
+    activeProxyUrl: '',
+
+    discoverOptimalProxy: async (dispatch) => {
+        try {
+            const bootNodesStr = import.meta.env.VITE_REACT_APP_BOOTSTRAP_NODES || '';
+            const bootstraps = bootNodesStr ? bootNodesStr.split(',') : [''];
+            
+            let allPeers = [];
+            for (const b of bootstraps) {
+                try {
+                    const res = await fetch(`${b}/api/peers`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.success && data.peers) allPeers.push(...data.peers);
+                    }
+                } catch (e) { }
+            }
+
+            if (allPeers.length === 0) return;
+
+            let stakedValidators = new Set();
+            try {
+                const res = await fetch(`${bootstraps[0]}/api/blocks`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.blocks) {
+                        data.blocks.filter(b => b.type === 'STAKING_CONTRACT').forEach(b => stakedValidators.add(b.publicKey));
+                    }
+                }
+            } catch (e) { }
+
+            let bestProxy = '';
+            let bestFee = Infinity;
+
+            for (const peer of allPeers) {
+                try {
+                    const targetIp = peer.peerAddress.includes('::ffff:') ? peer.peerAddress.split('::ffff:')[1] : peer.peerAddress;
+                    const endpoint = `http://${targetIp}`;
+                    const res = await fetch(`${endpoint}/api/node/config`);
+                    if (!res.ok) continue;
+
+                    const data = await res.json();
+                    if (data.success && data.proxyBrokerFee !== undefined) {
+                        if (data.proxyBrokerFee < bestFee) {
+                            // Theoretically cross-referencing node's identity against staked validators organically
+                            bestFee = data.proxyBrokerFee;
+                            bestProxy = endpoint;
+                        }
+                    }
+                } catch (e) { }
+            }
+
+            if (bestProxy) {
+                ApiService.activeProxyUrl = bestProxy;
+                console.log(`Discovered competitive Originator Proxy boundary mapping structurally dynamically: ${bestProxy} at fee ${bestFee}`);
+            }
+        } catch (e) { }
+    },
+
     fetchBlocks: async (state, dispatch) => {
         try {
-            const res = await fetch(`/api/blocks${getBaseQueryParams(state)}`);
+            const res = await fetch(`${ApiService.activeProxyUrl}/api/blocks${getBaseQueryParams(state)}`);
             if (!res.ok) throw new Error('Network response was not ok');
             const data = await res.json();
             if (data.success) {
@@ -28,7 +88,7 @@ export const ApiService = {
     
     fetchFiles: async (dispatch) => {
         try {
-            const res = await fetch('/api/files');
+            const res = await fetch(`${ApiService.activeProxyUrl}/api/files`);
             if (!res.ok) throw new Error('Network response was not ok');
             const data = await res.json();
             if (data.success) {
@@ -43,7 +103,7 @@ export const ApiService = {
     
     fetchNodeConfig: async (dispatch) => {
         try {
-            const res = await fetch('/api/node/config');
+            const res = await fetch(`${ApiService.activeProxyUrl}/api/node/config`);
             if (!res.ok) throw new Error('Network response was not ok');
             const data = await res.json();
             if (data.success) {
@@ -65,7 +125,7 @@ export const ApiService = {
             }
 
             const nativeHeaders = await generateDownloadAuthHeaders(hash, wallet);
-            const res = await fetch(`/api/blocks/${hash}/private`, { headers: nativeHeaders });
+            const res = await fetch(`${ApiService.activeProxyUrl}/api/blocks/${hash}/private`, { headers: nativeHeaders });
             if (!res.ok) throw new Error('Network response was not ok');
             return await res.json();
         } catch (err) {

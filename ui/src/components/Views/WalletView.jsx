@@ -4,6 +4,7 @@ import FilesView from './FilesView/FilesView';
 
 const WalletView = () => {
     const activeTab = useStore(s => s.activeWalletTab);
+    const web3Account = useStore(s => s.web3Account);
     const [walletData, setWalletData] = useState({ balance: 0, emissionRate: 0, transactions: [] });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -12,8 +13,9 @@ const WalletView = () => {
     useEffect(() => {
         let isMounted = true;
         const fetchWalletStats = async () => {
+            if (!web3Account) return;
             try {
-                const res = await fetch('/api/wallet');
+                const res = await fetch(`/api/wallet?address=${web3Account}`);
                 const data = await res.json();
                 if (data.success && isMounted) {
                     setWalletData({
@@ -39,7 +41,7 @@ const WalletView = () => {
              isMounted = false;
              clearInterval(intervalId);
         };
-    }, []);
+    }, [web3Account]);
 
     // Format helpers mapping raw blockchain precision
     const formatVeri = (num) => parseFloat(num).toFixed(6) + ' $VERI';
@@ -69,7 +71,7 @@ const WalletView = () => {
                             {/* Top Row: Analytical Float Arrays */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                                 <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px' }}>
-                                    <h3 style={{ color: '#818cf8', fontSize: '1rem', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1rem' }}>Active Node Balance</h3>
+                                    <h3 style={{ color: '#818cf8', fontSize: '1rem', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1rem' }}>Web3 Wallet Balance</h3>
                                     <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#fff', textShadow: '0 0 15px rgba(255,255,255,0.2)' }}>
                                         {formatVeri(walletData.balance)}
                                     </div>

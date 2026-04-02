@@ -7,6 +7,7 @@ const UploadModal = () => {
     const dispatch = useStore(s => s.dispatch);
     const isUploadModalOpen = useStore(s => s.isUploadModalOpen);
     const web3Account = useStore(s => s.web3Account);
+    const nodeConfig = useStore(s => s.nodeConfig);
 
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
@@ -133,7 +134,8 @@ const UploadModal = () => {
             formData.append('redundancy', String(redundancy));
             formData.append('maxCost', String(maxCost));
 
-            const res = await fetch('/api/upload', {
+            const { ApiService } = await import('../../services/api');
+            const res = await fetch(`${ApiService.activeProxyUrl}/api/upload`, {
                 method: 'POST',
                 body: formData
             });
@@ -251,6 +253,14 @@ const UploadModal = () => {
                                     }}
                                 />
                             </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', fontSize: '0.8rem', marginTop: '-0.5rem', marginBottom: '1.5rem', padding: '0.5rem 1rem', background: 'rgba(6, 182, 212, 0.05)', borderRadius: '0.25rem', border: '1px solid rgba(6, 182, 212, 0.1)' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 8px #4ade80' }}></span>
+                                <span>Active Originator Node Topology Validated</span>
+                            </span>
+                            <span style={{ color: '#06b6d4', fontWeight: 600 }}>Dynamic Proxy Fee Ceiling: {nodeConfig?.proxyBrokerFee !== undefined ? (nodeConfig.proxyBrokerFee * 100).toFixed(1) + '%' : '1.0%'}</span>
                         </div>
 
                         <button type="button" id="devInjectBtn" onClick={() => {

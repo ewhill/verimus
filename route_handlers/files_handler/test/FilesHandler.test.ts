@@ -85,10 +85,15 @@ describe('Backend: filesHandler Coverage', () => {
                         hash: 'hashABC',
                         previousHash: 'prev',
                         publicKey: 'testPubKey',
-                        payload: encryptPrivatePayload(keys.publicKey, {
-                            location: { type: 's3', bucket: 'test-bucket' },
-                            files: [{ path: 'doc1.pdf', size: 1000, hash: 'fileHash123' }]
-                        }),
+                        payload: {
+                            encryptedPayloadBase64: Buffer.from(JSON.stringify({
+                                location: { type: 's3', bucket: 'test-bucket' },
+                                files: [{ path: 'doc1.pdf', size: 1000, hash: 'fileHash123' }]
+                            })).toString('base64'),
+                            encryptedKeyBase64: 'DEPRECATED_PHASE5',
+                            encryptedIvBase64: 'DEPRECATED_PHASE5',
+                            encryptedAuthTagBase64: 'DEPRECATED_PHASE5'
+                        },
                         type: 'STORAGE_CONTRACT',
                         signature: 'sig'
                     })
@@ -118,13 +123,18 @@ describe('Backend: filesHandler Coverage', () => {
                 'pending-sig',
                 'testPubKey',
                 'pendingHash',
-                encryptPrivatePayload(keys.publicKey, {
-                    files: [{
-                        path: 'pendingDoc.txt',
-                        size: 1000,
-                        hash: 'fileHash123'
-                    }]
-                }),
+                {
+                    encryptedPayloadBase64: Buffer.from(JSON.stringify({
+                        files: [{
+                            path: 'pendingDoc.txt',
+                            size: 1000,
+                            hash: 'fileHash123'
+                        }]
+                    })).toString('base64'),
+                    encryptedKeyBase64: 'DEPRECATED_PHASE5',
+                    encryptedIvBase64: 'DEPRECATED_PHASE5',
+                    encryptedAuthTagBase64: 'DEPRECATED_PHASE5'
+                },
                 100
             )
         );
@@ -173,10 +183,15 @@ describe('Backend: filesHandler Coverage', () => {
                         hash: 'b1',
                         previousHash: 'prev',
                         publicKey: 'testPubKey',
-                        payload: encryptPrivatePayload(keys.publicKey, {
-                            location: { type: 'local', storageDir: '/tmp' },
-                            files: [{ path: 'doc1.pdf', size: 1000, hash: 'hash1' }]
-                        }),
+                        payload: {
+                            encryptedPayloadBase64: Buffer.from(JSON.stringify({
+                                location: { type: 'local', storageDir: '/tmp' },
+                                files: [{ path: 'doc1.pdf', size: 1000, hash: 'hash1' }]
+                            })).toString('base64'),
+                            encryptedKeyBase64: 'DEPRECATED_PHASE5',
+                            encryptedIvBase64: 'DEPRECATED_PHASE5',
+                            encryptedAuthTagBase64: 'DEPRECATED_PHASE5'
+                        },
                         type: 'STORAGE_CONTRACT',
                         signature: 'sig'
                     }),
@@ -186,10 +201,15 @@ describe('Backend: filesHandler Coverage', () => {
                         hash: 'b2',
                         previousHash: 'prev',
                         publicKey: 'testPubKey',
-                        payload: encryptPrivatePayload(keys.publicKey, {
-                            location: { type: 'local', storageDir: '/tmp' },
-                            files: [{ path: 'doc1.pdf', size: 1200, hash: 'hash2' }]
-                        }),
+                        payload: {
+                            encryptedPayloadBase64: Buffer.from(JSON.stringify({
+                                location: { type: 'local', storageDir: '/tmp' },
+                                files: [{ path: 'doc1.pdf', size: 1200, hash: 'hash2' }]
+                            })).toString('base64'),
+                            encryptedKeyBase64: 'DEPRECATED_PHASE5',
+                            encryptedIvBase64: 'DEPRECATED_PHASE5',
+                            encryptedAuthTagBase64: 'DEPRECATED_PHASE5'
+                        },
                         type: 'STORAGE_CONTRACT',
                         signature: 'sig'
                     })
@@ -221,13 +241,18 @@ describe('Backend: filesHandler Coverage', () => {
                         hash: 'badBlock',
                         previousHash: 'prev',
                         publicKey: 'testPubKey',
-                        payload: encryptPrivatePayload(generateRSAKeyPair().publicKey, {
-                            physicalId: 'pid',
-                            location: { type: 'local' },
-                            aesKey: '',
-                            aesIv: '',
-                            files: []
-                        }),
+                        payload: {
+                            encryptedPayloadBase64: Buffer.from(JSON.stringify({
+                                physicalId: 'pid',
+                                location: { type: 'local' },
+                                aesKey: '',
+                                aesIv: '',
+                                files: []
+                            })).toString('base64'),
+                            encryptedKeyBase64: 'DEPRECATED_PHASE5',
+                            encryptedIvBase64: 'DEPRECATED_PHASE5',
+                            encryptedAuthTagBase64: 'DEPRECATED_PHASE5'
+                        },
                         type: 'STORAGE_CONTRACT',
                         signature: 'sig'
                     })
@@ -252,9 +277,14 @@ describe('Backend: filesHandler Coverage', () => {
                 'pending1',
                 'testPubKey',
                 'loc1',
-                encryptPrivatePayload(keys.publicKey, {
-                    files: [{ path: 'no-loc.txt' }]
-                }),
+                {
+                    encryptedPayloadBase64: Buffer.from(JSON.stringify({
+                        files: [{ path: 'no-loc.txt' }]
+                    })).toString('base64'),
+                    encryptedKeyBase64: 'DEPRECATED_PHASE5',
+                    encryptedIvBase64: 'DEPRECATED_PHASE5',
+                    encryptedAuthTagBase64: 'DEPRECATED_PHASE5'
+                },
                 1
             )
         );
@@ -264,10 +294,15 @@ describe('Backend: filesHandler Coverage', () => {
                 'pending2',
                 'testPubKey',
                 'loc2',
-                encryptPrivatePayload(keys.publicKey, {
-                    location: { type: 'samba', share: '\\\\share' },
-                    files: [{ path: 'samba.txt' }]
-                }),
+                {
+                    encryptedPayloadBase64: Buffer.from(JSON.stringify({
+                        location: { type: 'samba', share: '\\\\share' },
+                        files: [{ path: 'samba.txt' }]
+                    })).toString('base64'),
+                    encryptedKeyBase64: 'DEPRECATED_PHASE5',
+                    encryptedIvBase64: 'DEPRECATED_PHASE5',
+                    encryptedAuthTagBase64: 'DEPRECATED_PHASE5'
+                },
                 2
             )
         );
@@ -277,20 +312,30 @@ describe('Backend: filesHandler Coverage', () => {
                 'pending3',
                 'testPubKey',
                 'loc3',
-                encryptPrivatePayload(keys.publicKey, {
-                    location: { type: 'remote-fs', host: 'test-host', dir: '/test-dir' },
-                    files: [{ path: 'remote.txt' }]
-                }), 3));
+                {
+                    encryptedPayloadBase64: Buffer.from(JSON.stringify({
+                        location: { type: 'remote-fs', host: 'test-host', dir: '/test-dir' },
+                        files: [{ path: 'remote.txt' }]
+                    })).toString('base64'),
+                    encryptedKeyBase64: 'DEPRECATED_PHASE5',
+                    encryptedIvBase64: 'DEPRECATED_PHASE5',
+                    encryptedAuthTagBase64: 'DEPRECATED_PHASE5'
+                }, 3));
         mockNode.mempool.pendingBlocks.set(
             'pending4',
             createValidPendingBlock(
                 'pending4',
                 'testPubKey',
                 'loc4',
-                encryptPrivatePayload(keys.publicKey, {
-                    location: { type: 'glacier', vault: 'my-vault' },
-                    files: [{ path: 'glacier.txt' }]
-                }), 4));
+                {
+                    encryptedPayloadBase64: Buffer.from(JSON.stringify({
+                        location: { type: 'glacier', vault: 'my-vault' },
+                        files: [{ path: 'glacier.txt' }]
+                    })).toString('base64'),
+                    encryptedKeyBase64: 'DEPRECATED_PHASE5',
+                    encryptedIvBase64: 'DEPRECATED_PHASE5',
+                    encryptedAuthTagBase64: 'DEPRECATED_PHASE5'
+                }, 4));
 
         const handler = new FilesHandler(mockNode);
         await handler.handle(req, res);

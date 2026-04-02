@@ -10,11 +10,11 @@ export default class WalletHandler extends BaseHandler {
         this.handle = this.handle.bind(this);
     }
 
-    async handle(_unusedReq: Request, res: Response) {
+    async handle(req: Request, res: Response) {
         try {
-            const publicKey = this.node.publicKey;
+            const publicKey = (req.query.address as string) || this.node.publicKey;
             if (!publicKey) {
-                return res.json({ success: false, message: 'Node public key not initialized' });
+                return res.json({ success: false, message: 'Identity not initialized' });
             }
 
             // 1. Calculate continuous VERI balance

@@ -124,6 +124,22 @@ class ConsensusEngine {
                     }
                 }
             }
+
+            if (scPayload.brokerFeePercentage !== undefined && scPayload.brokerFeePercentage > 0.15) {
+                logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: brokerFeePercentage exceeded 0.15 ceiling from ${block.publicKey}`);
+                return;
+            }
+
+            if (!IS_DEV_NETWORK) {
+                const activeContractsCollection = this.node.ledger.activeContractsCollection;
+                if (activeContractsCollection) {
+                    const stakingLog = await this.node.ledger.collection!.findOne({ type: BLOCK_TYPES.STAKING_CONTRACT, 'payload.operatorPublicKey': block.publicKey });
+                    if (!stakingLog) {
+                        logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Originator ${block.publicKey.slice(0, 8)} possesses NO valid Proof-of-Stake STAKING_CONTRACT collateral!`);
+                        return;
+                    }
+                }
+            }
         }
 
         if (block.type === BLOCK_TYPES.SLASHING_TRANSACTION) {

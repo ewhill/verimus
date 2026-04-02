@@ -16,7 +16,7 @@ export default class WalletManager {
         this.ledger.events.on('blockAdded', (_unusedBlock: Block) => {
             // (Keep for other non-async listeners or legacy integrations if any, but we ignore updating state here)
         });
-        
+
         // Map deterministic async subscriber explicitly
         this.ledger.blockAddedSubscribers.push(async (block: Block) => {
             await this.updateIncrementalState(block);
@@ -43,12 +43,13 @@ export default class WalletManager {
             }
             const escrowToDeduct = p.remainingEgressEscrow ?? p.allocatedEgressEscrow ?? 0;
             if (escrowToDeduct > 0 && p.ownerAddress) {
-                const findersFee = Math.max(0.000001, escrowToDeduct * 0.05); // 5% finder's fee mechanically
+                const feeRate = p.brokerFeePercentage ?? 0.01;
+                const findersFee = Math.max(0.000001, escrowToDeduct * feeRate);
                 const totalCost = escrowToDeduct + findersFee;
-                
+
                 await balances.updateOne({ publicKey: p.ownerAddress }, { $inc: { balance: -totalCost } }, { upsert: true });
                 await balances.updateOne({ publicKey: block.publicKey }, { $inc: { balance: findersFee } }, { upsert: true });
-                
+
                 if (p.fragmentMap && p.fragmentMap.length > 0) {
                     const nodeShare = escrowToDeduct / p.fragmentMap.length;
                     for (const frag of p.fragmentMap) {
@@ -198,7 +199,7 @@ export default class WalletManager {
         if (!this.ledger.balancesCollection || !this.ledger.activeContractsCollection) {
             return { stateMerkleRoot: '', activeContractsMerkleRoot: '' };
         }
-        
+
         // Exclude system accounts or Mongo IDs explicitly during mapping
         const stateStream = await this.ledger.balancesCollection.find({}, { projection: { _id: 0 } }).sort({ publicKey: 1 }).toArray();
         const stateStr = JSON.stringify(stateStream);

@@ -267,7 +267,8 @@ export default class UploadHandler extends BaseHandler {
                 fragmentMap: fragmentMap,
                 merkleRoots: bundleResult.merkleRoots,
                 ownerAddress: recoveredAddress,
-                ownerSignature: ownerSignature
+                ownerSignature: ownerSignature,
+                brokerFeePercentage: this.node.proxyBrokerFee
             };
 
             const signatureStr = signData(JSON.stringify(payloadResult), privateKey);

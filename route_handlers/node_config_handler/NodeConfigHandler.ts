@@ -12,6 +12,7 @@ export default class NodeConfigHandler extends BaseHandler {
             signature: this.node.signature,
             port: this.node.port,
             roles: this.node.roles,
+            proxyBrokerFee: this.node.proxyBrokerFee,
             storageConfig: this.node.storageProvider ? {
                 ...this.node.storageProvider.getLocation(),
                 costPerGB: this.node.storageProvider.getCostPerGB(),
