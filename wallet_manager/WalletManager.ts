@@ -8,7 +8,7 @@ import type { TransactionPayload, StorageContractBlock, StorageContractPayload, 
 
 export default class WalletManager {
     private ledger: Ledger;
-    private frozenEscrows: Map<string, { peerId: string; amount: number }> = new Map();
+    private frozenEscrows: Map<string, { peerId: string; amount: number }[]> = new Map();
 
     constructor(ledger: Ledger) {
         this.ledger = ledger;
@@ -42,8 +42,19 @@ export default class WalletManager {
                 await activeContracts.updateOne({ contractId: block.hash }, { $set: { payload: p, publicKey: block.publicKey } }, { upsert: true });
             }
             const escrowToDeduct = p.remainingEgressEscrow ?? p.allocatedEgressEscrow ?? 0;
-            if (escrowToDeduct > 0) {
-                await balances.updateOne({ publicKey: block.publicKey }, { $inc: { balance: -escrowToDeduct } }, { upsert: true });
+            if (escrowToDeduct > 0 && p.ownerAddress) {
+                const findersFee = Math.max(0.000001, escrowToDeduct * 0.05); // 5% finder's fee mechanically
+                const totalCost = escrowToDeduct + findersFee;
+                
+                await balances.updateOne({ publicKey: p.ownerAddress }, { $inc: { balance: -totalCost } }, { upsert: true });
+                await balances.updateOne({ publicKey: block.publicKey }, { $inc: { balance: findersFee } }, { upsert: true });
+                
+                if (p.fragmentMap && p.fragmentMap.length > 0) {
+                    const nodeShare = escrowToDeduct / p.fragmentMap.length;
+                    for (const frag of p.fragmentMap) {
+                        await balances.updateOne({ publicKey: frag.nodeId }, { $inc: { balance: -nodeShare } }, { upsert: true });
+                    }
+                }
             }
         } else if (block.type === BLOCK_TYPES.STAKING_CONTRACT) {
             const p = block.payload as StakingContractPayload;
@@ -77,9 +88,11 @@ export default class WalletManager {
         }
 
         // Deduct locally frozen escrows executing limit order bounds
-        for (const escrow of this.frozenEscrows.values()) {
-            if (escrow.peerId === peerId) {
-                balance -= escrow.amount;
+        for (const escrows of this.frozenEscrows.values()) {
+            for (const escrow of escrows) {
+                if (escrow.peerId === peerId) {
+                    balance -= escrow.amount;
+                }
             }
         }
 
@@ -207,7 +220,10 @@ export default class WalletManager {
      */
     freezeFunds(peerId: string, amount: number, requestId: string): void {
         if (peerId === 'SYSTEM') return;
-        this.frozenEscrows.set(requestId, { peerId, amount });
+        if (!this.frozenEscrows.has(requestId)) {
+            this.frozenEscrows.set(requestId, []);
+        }
+        this.frozenEscrows.get(requestId)!.push({ peerId, amount });
     }
 
     /**

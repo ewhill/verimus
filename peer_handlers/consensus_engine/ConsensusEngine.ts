@@ -103,6 +103,29 @@ class ConsensusEngine {
             }
         }
 
+        if (block.type === BLOCK_TYPES.STORAGE_CONTRACT) {
+            const scPayload = block.payload as StorageContractPayload;
+            if (scPayload.ownerAddress && scPayload.allocatedEgressEscrow) {
+                const totalCost = scPayload.allocatedEgressEscrow * 1.05;
+                const hasUserFunds = await this.walletManager.verifyFunds(scPayload.ownerAddress, totalCost);
+                if (!hasUserFunds) {
+                    logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Insufficient EIP-191 Funds for ${scPayload.ownerAddress}`);
+                    return;
+                }
+
+                if (scPayload.fragmentMap && scPayload.fragmentMap.length > 0) {
+                    const nodeShare = scPayload.allocatedEgressEscrow / scPayload.fragmentMap.length;
+                    for (const frag of scPayload.fragmentMap) {
+                        const hasNodeFunds = await this.walletManager.verifyFunds(frag.nodeId, nodeShare);
+                        if (!hasNodeFunds) {
+                            logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Insufficient Storage Collateral for Node ${frag.nodeId}`);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
         if (block.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
             const slashPayload = block.payload as SlashingPayload;
             if (!slashPayload.evidenceSignature || !slashPayload.penalizedPublicKey || !slashPayload.burntAmount) {
