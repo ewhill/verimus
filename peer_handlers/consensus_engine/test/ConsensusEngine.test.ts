@@ -189,9 +189,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
         });
 
         await engine.handleVerifyBlock('block123', 'sig1', { peerAddress: '127.0.0.1:3001', send: () => { } });
-        assert.strictEqual(engine.mempool.pendingBlocks.get('block123')?.eligible, false); // needs majority 2
-
-        await engine.handleVerifyBlock('block123', 'sig2', { peerAddress: '127.0.0.1:3002', send: () => { } });
+        // Since myAddress is automatically added (self-vote), the count reaches 2 (majority) immediately
         assert.strictEqual(engine.mempool.pendingBlocks.get('block123')?.eligible, true);
 
         // Timeout cleanup
@@ -215,9 +213,10 @@ describe('Backend: ConsensusEngine Integrity', () => {
         await engine.handleProposeFork('fork1', ['block1'], mockConn1);
         const fork = engine.mempool.eligibleForks.get('fork1');
         assert.ok(fork !== undefined);
-        assert.strictEqual(fork.proposals.size, 1);
-
-        await engine.handleProposeFork('fork1', ['block1'], { peerAddress: '127.0.0.1:3002', send: () => { } });
+        // Note: myAddress (self-vote) is automatically added if we agree, making the size 2.
+        assert.strictEqual(fork.proposals.size, 2);
+        
+        // Because majority is 2, it is adopted immediately
         assert.strictEqual(fork.adopted, true);
     });
 

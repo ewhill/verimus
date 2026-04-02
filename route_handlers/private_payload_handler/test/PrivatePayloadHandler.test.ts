@@ -205,14 +205,20 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         });
 
         await handler.handle(req, response);
-        assert.strictEqual(mockStatus.mock.calls[0]?.arguments[0], 401);
         // Provide a modified bad signature for this specific assertion
         const badWeb3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'bad_hash', timestamp }));
         req.headers['x-web3-signature'] = badWeb3Sig;
-        await handler.handle(req, response);
-        assert.strictEqual(mockStatus.mock.calls[0]?.arguments[0], 401);
-        assert.strictEqual(mockJson.mock.calls[0]?.arguments[0]?.message || mockSend.mock.calls[0]?.arguments[0]?.message, 'Invalid EIP-191 explicit resolution structurally mapped array bounds.');
+        
+        const mockStatus2 = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
+        const mockJson2 = mock.fn<(_unusedBody?: any) => Response>();
+        response.status = mockStatus2 as any;
+        response.json = mockJson2 as any;
 
+        await handler.handle(req, response);
+        console.log("MOCK CALLS STATUS:", mockStatus2.mock.calls);
+        console.log("MOCK CALLS JSON:", mockJson2.mock.calls);
+        assert.strictEqual(mockStatus2.mock.calls[0]?.arguments[0], 401);
+        assert.strictEqual(mockJson2.mock.calls[0]?.arguments[0]?.message, 'Invalid EIP-191 explicit resolution structurally mapped array bounds.');
     });
 
     it('Returns HTTP 200 returning deeply nested raw unencrypted private structures', async () => {

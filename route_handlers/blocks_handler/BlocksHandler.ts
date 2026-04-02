@@ -49,7 +49,7 @@ export default class BlocksHandler extends BaseHandler {
             const searchQuery = req.query.q ? (req.query.q as string).toLowerCase() : null;
 
             // Fetch all matching blocks to memory so we can decrypt and filter
-            let blocks = await this.node.ledger.collection!.find(query)
+            logger.info("MongoDB Query Triggered: " + JSON.stringify(query)); let blocks = await this.node.ledger.collection!.find(query)
                 .sort({ "metadata.index": sortOrder })
                 .toArray();
 

@@ -226,10 +226,15 @@ class ConsensusEngine {
 
         pendingEntry.verifications.add(connection.peerAddress);
 
-        if (this.node.peer && connection.peerAddress !== `127.0.0.1:${this.node.port}`) {
-            this.node.peer.broadcast(new VerifyBlockMessage({ blockId, signature })).catch(err => {
-                logger.warn(`[Peer ${this.node.port}] Suppressed VerifyBlock relay exception: ${err.message}`);
-            });
+        const myAddress = `127.0.0.1:${this.node.port}`;
+        // Automatically vote for blocks we have received and successfully verified, if not already voted
+        if (!pendingEntry.verifications.has(myAddress)) {
+            const privateKey = this.node.privateKey;
+            const myVerificationSig = signData(blockId, privateKey);
+            pendingEntry.verifications.add(myAddress);
+            if (this.node.peer) {
+                this.node.peer.broadcast(new VerifyBlockMessage({ blockId, signature: myVerificationSig as string })).catch(() => {});
+            }
         }
 
         const majority = this.node.getMajorityCount();
@@ -291,10 +296,22 @@ class ConsensusEngine {
         
         forkEntry!.proposals.add(connection.peerAddress);
 
-        if (this.node.peer && connection.peerAddress !== `127.0.0.1:${this.node.port}`) {
-            this.node.peer.broadcast(new ProposeForkMessage({ forkId, blockIds })).catch(e => {
-                logger.warn(`[Peer ${this.node.port}] Suppressed ProposeFork relay exception: ${e.message}`);
-            });
+        const myAddress = `127.0.0.1:${this.node.port}`;
+        if (!forkEntry!.proposals.has(myAddress)) {
+            // Verify we actually agree with the fork intrinsically
+            let agree = true;
+            for (const bId of blockIds) {
+                if (!this.mempool.pendingBlocks.has(bId)) {
+                    agree = false;
+                    break;
+                }
+            }
+            if (agree) {
+                forkEntry!.proposals.add(myAddress);
+                if (this.node.peer) {
+                    this.node.peer.broadcast(new ProposeForkMessage({ forkId, blockIds })).catch(() => {});
+                }
+            }
         }
 
         const majority = this.node.getMajorityCount();
