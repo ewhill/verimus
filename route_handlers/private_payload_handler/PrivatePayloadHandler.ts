@@ -1,6 +1,7 @@
+import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
-import { verifySignature, decryptPrivatePayload } from '../../crypto_utils/CryptoUtils';
+import { verifySignature } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
 import type { StorageContractPayload } from '../../types';
 import BaseHandler from '../base_handler/BaseHandler';
@@ -14,7 +15,6 @@ export default class PrivatePayloadHandler extends BaseHandler {
     }
 
     try {
-        const privateKey = this.node.privateKey;
 
         // Find block by hash
         const blocks = await this.node.ledger.collection!.find({ hash: hash }).toArray();
@@ -35,9 +35,33 @@ export default class PrivatePayloadHandler extends BaseHandler {
             return res.status(404).json({ success: false, message: 'Block not found.' });
         }
 
-        // Must be owned block (or at least valid signature under target public key)
-        if (targetBlock.publicKey !== this.node.publicKey) {
-            return res.status(403).json({ success: false, message: 'Not an owned block.' });
+        // Web3 Identity Decoupling (Phase 5)
+        const web3Address = req.headers['x-web3-address'] as string;
+        const web3Timestamp = req.headers['x-web3-timestamp'] as string;
+        const web3Signature = req.headers['x-web3-signature'] as string;
+
+        if (!web3Address || !web3Timestamp || !web3Signature) {
+            return res.status(401).json({ success: false, message: 'Missing EIP-191 Web3 Identity mapping explicitly.' });
+        }
+
+        const now = Date.now();
+        if (now - parseInt(web3Timestamp) > 5 * 60 * 1000) {
+            return res.status(401).json({ success: false, message: 'Web3 EIP-191 Signature expired structurally.' });
+        }
+
+        const payload = targetBlock.payload as StorageContractPayload;
+        if (payload.ownerAddress !== web3Address) {
+            return res.status(403).json({ success: false, message: 'Web3 Identity mismatch natively against Storage Matrix logic.' });
+        }
+
+        try {
+            const expectedMessage = JSON.stringify({ action: 'download', blockHash: hash, timestamp: web3Timestamp });
+            const recoveredAddress = ethers.verifyMessage(expectedMessage, web3Signature);
+            if (recoveredAddress.toLowerCase() !== web3Address.toLowerCase()) {
+                return res.status(401).json({ success: false, message: 'Invalid EIP-191 explicit resolution structurally mapped array bounds.' });
+            }
+        } catch (_unusedE) {
+            return res.status(401).json({ success: false, message: 'Cryptographic signature explicitly invalid mechanically.' });
         }
 
         const isSignatureValid = verifySignature(JSON.stringify(targetBlock.payload), targetBlock.signature, targetBlock.publicKey);
@@ -45,12 +69,12 @@ export default class PrivatePayloadHandler extends BaseHandler {
             return res.status(401).json({ success: false, message: 'Invalid block signature.' });
         }
 
-        // Decrypt private payload
+        // Return base64 decoupled transparent arrays securely implicitly
         let privatePayload;
         try {
-            privatePayload = decryptPrivatePayload(privateKey, targetBlock.payload as StorageContractPayload);
+            privatePayload = JSON.parse(Buffer.from(payload.encryptedPayloadBase64, 'base64').toString('utf8'));
         } catch (_unusedE) {
-            return res.status(401).json({ success: false, message: 'Failed to decrypt private payload.' });
+            return res.status(500).json({ success: false, message: 'Failed parsing decoupled base64 matrix statically' });
         }
 
         // format standard outputs mapping native logic mapping

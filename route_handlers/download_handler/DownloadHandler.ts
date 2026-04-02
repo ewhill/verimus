@@ -2,10 +2,11 @@ import crypto from 'crypto';
 import { Transform } from 'stream';
 import { Readable } from 'stream';
 
+import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
 import Bundler from '../../bundler/Bundler';
-import { verifySignature, decryptPrivatePayload, createAESDecryptStream } from '../../crypto_utils/CryptoUtils';
+import { verifySignature } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
 import { StorageShardRetrieveRequestMessage } from '../../messages/storage_shard_retrieve_request_message/StorageShardRetrieveRequestMessage';
 import type { StorageContractPayload } from '../../types';
@@ -21,7 +22,6 @@ export default class DownloadHandler extends BaseHandler {
         const { hash } = req.params;
 
         try {
-            const privateKey = this.node.privateKey;
 
             // Find block by hash
             const blocks = await this.node.ledger.collection!.find({ hash: hash }).toArray();
@@ -36,16 +36,43 @@ export default class DownloadHandler extends BaseHandler {
                 return res.status(401).send('Invalid block signature.');
             }
 
-            // Decrypt private payload
-            let privatePayload;
-            try {
-                privatePayload = decryptPrivatePayload(privateKey, block.payload as StorageContractPayload);
-            } catch (_unusedE) {
-                return res.status(401).send('Failed to decrypt private payload.');
-            }
+        // Web3 Identity Decoupling (Phase 5)
+        const web3Address = req.headers['x-web3-address'] as string;
+        const web3Timestamp = req.headers['x-web3-timestamp'] as string;
+        const web3Signature = req.headers['x-web3-signature'] as string;
 
-            let readStream: any;
-            const payload = block.payload as StorageContractPayload;
+        if (!web3Address || !web3Timestamp || !web3Signature) {
+            return res.status(401).send('Missing EIP-191 Web3 Identity mapping explicitly.');
+        }
+
+        const now = Date.now();
+        if (now - parseInt(web3Timestamp) > 5 * 60 * 1000) {
+            return res.status(401).send('Web3 EIP-191 Signature expired structurally.');
+        }
+
+        const payload = block.payload as StorageContractPayload;
+        if (payload.ownerAddress !== web3Address) {
+            return res.status(403).send('Web3 Identity mismatch natively against Storage Matrix logic.');
+        }
+
+        try {
+            const expectedMessage = JSON.stringify({ action: 'download', blockHash: hash, timestamp: web3Timestamp });
+            const recoveredAddress = ethers.verifyMessage(expectedMessage, web3Signature);
+            if (recoveredAddress.toLowerCase() !== web3Address.toLowerCase()) {
+                return res.status(401).send('Invalid EIP-191 explicit resolution structurally mapped array bounds.');
+            }
+        } catch (_unusedE) {
+            return res.status(401).send('Cryptographic signature explicitly invalid mechanically.');
+        }
+
+        let privatePayload;
+        try {
+            privatePayload = JSON.parse(Buffer.from(payload.encryptedPayloadBase64, 'base64').toString('utf8'));
+        } catch (_unusedE) {
+            return res.status(500).send('Failed parsing decoupled base64 matrix statically');
+        }
+
+        let readStream: any;
 
             if (!payload.erasureParams) {
                 const readStreamResult = await this.node.storageProvider!.getBlockReadStream(privatePayload.physicalId);

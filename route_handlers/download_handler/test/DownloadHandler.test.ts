@@ -4,6 +4,7 @@ import { EventEmitter } from 'node:events';
 import { describe, it, mock } from 'node:test';
 import { PassThrough, Readable } from 'stream';
 
+import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 import { Collection, FindCursor, ObjectId, WithId } from 'mongodb';
 
@@ -28,7 +29,13 @@ describe('Backend: downloadHandler Unit Tests', () => {
         });
         const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'nonexistent' } });
+        const wallet = ethers.Wallet.createRandom();
+        const timestamp = Date.now().toString();
+        const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'nonexistent', timestamp }));
+        const req = createMock<Request>({ 
+            headers: { 'x-web3-address': wallet.address, 'x-web3-timestamp': timestamp, 'x-web3-signature': web3Sig },
+            params: { hash: 'nonexistent' } 
+        });
         const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
@@ -57,7 +64,13 @@ describe('Backend: downloadHandler Unit Tests', () => {
         });
         const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const wallet = ethers.Wallet.createRandom();
+        const timestamp = Date.now().toString();
+        const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
+        const req = createMock<Request>({ 
+            headers: { 'x-web3-address': wallet.address, 'x-web3-timestamp': timestamp, 'x-web3-signature': web3Sig },
+            params: { hash: 'validh' } 
+        });
         const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
@@ -146,7 +159,13 @@ describe('Backend: downloadHandler Unit Tests', () => {
         });
         const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const wallet = ethers.Wallet.createRandom();
+        const timestamp = Date.now().toString();
+        const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
+        const req = createMock<Request>({ 
+            headers: { 'x-web3-address': wallet.address, 'x-web3-timestamp': timestamp, 'x-web3-signature': web3Sig },
+            params: { hash: 'validh' } 
+        });
         const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
@@ -210,7 +229,13 @@ describe('Backend: downloadHandler Unit Tests', () => {
         });
         const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const wallet = ethers.Wallet.createRandom();
+        const timestamp = Date.now().toString();
+        const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
+        const req = createMock<Request>({ 
+            headers: { 'x-web3-address': wallet.address, 'x-web3-timestamp': timestamp, 'x-web3-signature': web3Sig },
+            params: { hash: 'validh' } 
+        });
         const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
@@ -301,7 +326,13 @@ describe('Backend: downloadHandler Unit Tests', () => {
         });
         const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const wallet = ethers.Wallet.createRandom();
+        const timestamp = Date.now().toString();
+        const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
+        const req = createMock<Request>({ 
+            headers: { 'x-web3-address': wallet.address, 'x-web3-timestamp': timestamp, 'x-web3-signature': web3Sig },
+            params: { hash: 'validh' } 
+        });
         const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
@@ -326,7 +357,13 @@ describe('Backend: downloadHandler Unit Tests', () => {
         Object.defineProperty(mockNode, 'ledger', { get: () => { throw new Error('Simulated null reference'); } });
         const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const wallet = ethers.Wallet.createRandom();
+        const timestamp = Date.now().toString();
+        const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
+        const req = createMock<Request>({ 
+            headers: { 'x-web3-address': wallet.address, 'x-web3-timestamp': timestamp, 'x-web3-signature': web3Sig },
+            params: { hash: 'validh' } 
+        });
         const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
@@ -355,7 +392,13 @@ describe('Backend: downloadHandler Unit Tests', () => {
         });
         const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const wallet = ethers.Wallet.createRandom();
+        const timestamp = Date.now().toString();
+        const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
+        const req = createMock<Request>({ 
+            headers: { 'x-web3-address': wallet.address, 'x-web3-timestamp': timestamp, 'x-web3-signature': web3Sig },
+            params: { hash: 'validh' } 
+        });
         const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
@@ -402,7 +445,13 @@ describe('Backend: downloadHandler Unit Tests', () => {
         });
         const handler = new DownloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const wallet = ethers.Wallet.createRandom();
+        const timestamp = Date.now().toString();
+        const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
+        const req = createMock<Request>({ 
+            headers: { 'x-web3-address': wallet.address, 'x-web3-timestamp': timestamp, 'x-web3-signature': web3Sig },
+            params: { hash: 'validh' } 
+        });
         const mockStatus = mock.fn<(_unusedCode: number) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockSend = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;
         const mockJson = mock.fn<(_unusedBody?: any) => Response>(function(this: any) { return this; }) as import('node:test').Mock<any>;

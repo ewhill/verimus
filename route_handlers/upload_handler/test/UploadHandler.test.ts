@@ -3,8 +3,8 @@ import assert from 'node:assert';
 import { Writable } from 'node:stream';
 import { describe, it, mock } from 'node:test';
 
-import type { Request, Response } from 'express';
 import { ethers } from 'ethers';
+import type { Request, Response } from 'express';
 
 async function generateMockProxyPayload(authTag: string = 'mockAuthTag') {
     const wallet = ethers.Wallet.createRandom();

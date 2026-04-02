@@ -1,10 +1,10 @@
 import * as crypto from 'crypto';
-import { ethers } from 'ethers';
 
+import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
 import { BLOCK_TYPES } from '../../constants';
-import { encryptPrivatePayload, signData, verifyMerkleProof } from '../../crypto_utils/CryptoUtils';
+import { verifyMerkleProof, signData } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
 import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
 import { StorageShardTransferMessage } from '../../messages/storage_shard_transfer_message/StorageShardTransferMessage';
@@ -117,9 +117,9 @@ export default class UploadHandler extends BaseHandler {
 
             const aesIv = req.body.aesIv || '';
             let fileMetadataArray = [];
-            try { fileMetadataArray = JSON.parse(req.body.fileMetadata || '[]'); } catch (e) { }
+            try { fileMetadataArray = JSON.parse(req.body.fileMetadata || '[]'); } catch (_unusedE) { }
 
-            const encryptedBuffer = Buffer.isBuffer(files[0].buffer) ? files[0].buffer : require('fs').readFileSync(files[0].path);
+            const encryptedBuffer = Buffer.isBuffer(files[0].buffer) ? files[0].buffer : await import('fs').then(fs => fs.readFileSync(files[0].path));
 
             const bundleResult = await this.node.bundler!.streamPreEncryptedErasureBundle(encryptedBuffer, K, N, (status, message, bytes) => {
                 this.node.events.emit('upload_telemetry', { status, message, bytes });
@@ -250,7 +250,12 @@ export default class UploadHandler extends BaseHandler {
                 files: fileMetadataArray
             };
 
-            const encryptedPrivate = encryptPrivatePayload(publicKey, privatePayload);
+            const encryptedPrivate = {
+                encryptedPayloadBase64: Buffer.from(JSON.stringify(privatePayload)).toString('base64'),
+                encryptedKeyBase64: 'DEPRECATED_PHASE5',
+                encryptedIvBase64: 'DEPRECATED_PHASE5',
+                encryptedAuthTagBase64: 'DEPRECATED_PHASE5'
+            };
 
             const payloadResult: StorageContractPayload = {
                 ...encryptedPrivate,

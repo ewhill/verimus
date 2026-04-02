@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+
 import BaseHandler from '../base_handler/BaseHandler';
 
 export default class DownloadFileHandler extends BaseHandler {

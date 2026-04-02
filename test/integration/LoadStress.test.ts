@@ -8,8 +8,8 @@ import path from 'path';
 import { Readable } from 'stream';
 import stream from 'stream';
 
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import { ethers } from 'ethers';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import setupExpressApp from '../../api_server/ApiServer';
 import Bundler from '../../bundler/Bundler';

@@ -69,3 +69,20 @@ export const signOriginatorProxyMessage = async (timestamp, hash, account) => {
     const message = `Approve Verimus Originator proxy for data struct ${hash || 'batch'}\nTimestamp: ${timestamp}`;
     return await signer.signMessage(message);
 };
+
+/**
+ * Prompts user for a Web3 download limit auth naturally creating Axios mappings logically seamlessly.
+ */
+export const generateDownloadAuthHeaders = async (hash, account) => {
+    if (!hasWeb3Provider()) throw new Error("Metamask missing structurally.");
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner(account);
+    const timestamp = Date.now().toString();
+    const payload = JSON.stringify({ action: 'download', blockHash: hash, timestamp: timestamp });
+    const signature = await signer.signMessage(payload);
+    return {
+        'x-web3-address': account,
+        'x-web3-timestamp': timestamp,
+        'x-web3-signature': signature
+    };
+};

@@ -1,8 +1,5 @@
 import assert from 'node:assert';
 import type { AddressInfo } from 'node:net';
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
 import { describe, it, before, after } from 'node:test';
 
 import { ethers } from 'ethers';
@@ -21,6 +18,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
     let node: PeerNode;
     let baseUrl: string;
     let mongod: MongoMemoryServer;
+    let globalWallet: ethers.HDNodeWallet;
 
     const mockDataDir = ''; // unused by bundler
 
@@ -168,7 +166,8 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             formDataPayload.append('aesIv', 'mockIvBuffer');
             formDataPayload.append('authTag', 'mockAuthTag');
             
-            const wallet = ethers.Wallet.createRandom();
+            globalWallet = ethers.Wallet.createRandom();
+            const wallet = globalWallet;
             const timestamp = Date.now().toString();
             const proxyMessage = `Approve Verimus Originator proxy for data struct mockAuthTag\nTimestamp: ${timestamp}`;
             const signature = await wallet.signMessage(proxyMessage);
@@ -248,7 +247,17 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             }
             assert.ok(targetBlock, 'Previously committed block accessible locally');
 
-            const decryptRes = await fetch(`${baseUrl}/api/blocks/${targetBlock.hash}/private?privateKey=${encodeURIComponent(node.privateKey)}`);
+            const timestamp = Date.now().toString();
+            const message = JSON.stringify({ action: 'download', blockHash: targetBlock.hash, timestamp });
+            const signature = await globalWallet.signMessage(message);
+
+            const headers = { 
+                'x-web3-address': globalWallet.address,
+                'x-web3-timestamp': timestamp,
+                'x-web3-signature': signature
+            };
+
+            const decryptRes = await fetch(`${baseUrl}/api/blocks/${targetBlock.hash}/private`, { headers });
             assert.strictEqual(decryptRes.status, 200, 'Private payload decryption mapping completed');
 
             const decryptedPayload: any = await decryptRes.json();
@@ -272,7 +281,17 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             }
             assert.ok(targetBlock, 'Previously committed block tracked and structured');
 
-            const downloadRes = await fetch(`${baseUrl}/api/download/${targetBlock.hash}`);
+            const timestamp = Date.now().toString();
+            const message = JSON.stringify({ action: 'download', blockHash: targetBlock.hash, timestamp });
+            const signature = await globalWallet.signMessage(message);
+
+            const headers = { 
+                'x-web3-address': globalWallet.address,
+                'x-web3-timestamp': timestamp,
+                'x-web3-signature': signature
+            };
+
+            const downloadRes = await fetch(`${baseUrl}/api/download/${targetBlock.hash}`, { headers });
 
             if (downloadRes.status !== 200) {
                 const text = await downloadRes.text();

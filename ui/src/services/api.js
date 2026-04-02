@@ -1,4 +1,5 @@
 import { useStore } from '../store';
+import { generateDownloadAuthHeaders } from '../utils/web3';
 
 const getBaseQueryParams = (state) => {
     const { page, limit } = state.pagination || { page: 1, limit: 16 };
@@ -57,7 +58,14 @@ export const ApiService = {
 
     fetchPrivatePayload: async (hash) => {
         try {
-            const res = await fetch(`/api/blocks/${hash}/private`);
+            const wallet = useStore.getState().walletAddress;
+            if (!wallet) {
+                alert("Metamask Wallet organically required locally mapping private payload limits.");
+                return { success: false };
+            }
+
+            const nativeHeaders = await generateDownloadAuthHeaders(hash, wallet);
+            const res = await fetch(`/api/blocks/${hash}/private`, { headers: nativeHeaders });
             if (!res.ok) throw new Error('Network response was not ok');
             return await res.json();
         } catch (err) {
@@ -133,7 +141,19 @@ export const ApiService = {
 
     downloadFile: async (url, fallbackFilename = 'download') => {
         try {
-            const res = await fetch(url);
+            // Reconstruct exact hash dynamically extracting bounds correctly mapping cleanly.
+            const urlParts = url.split('/');
+            const hashIndex = urlParts.indexOf('download');
+            const targetHash = (hashIndex !== -1 && urlParts.length > hashIndex + 1) ? urlParts[hashIndex+1] : 'batch';
+
+            const wallet = useStore.getState().walletAddress;
+            if (!wallet) {
+                alert("Metamask organically required decrypting payload bounds safely!");
+                return;
+            }
+
+            const web3Headers = await generateDownloadAuthHeaders(targetHash, wallet);
+            const res = await fetch(url, { headers: web3Headers });
             if (res.status === 202) {
                 const msg = await res.text();
                 useStore.getState().dispatch({ 

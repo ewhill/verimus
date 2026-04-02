@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import { describe, it, mock } from 'node:test';
 
 
+import { ethers } from 'ethers';
 import type { Request, Response } from 'express';
 import { Collection, FindCursor, ObjectId, WithId } from 'mongodb';
 
@@ -44,7 +45,10 @@ describe('Backend: privatePayloadHandler Coverage', () => {
 
     it('Returns 403 when public key mismatches authorization', async () => {
         const { publicKey: otherPubKey } = cryptoUtils.generateRSAKeyPair();
-        const payload = cryptoUtils.encryptPrivatePayload(otherPubKey, { physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] });
+        const wallet = ethers.Wallet.createRandom();
+        const timestamp = Date.now().toString();
+        const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'exists', timestamp }));
+        const payload = { encryptedPayloadBase64: Buffer.from(JSON.stringify({ physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] })).toString('base64'), ownerAddress: 'different_wallet_address' };
         const mockCollectionFind = mock.fn<() => FindCursor<WithId<Block>>>();
         mockCollectionFind.mock.mockImplementation(() => createMock<FindCursor<WithId<Block>>>({
             toArray: async () => [createMock<WithId<Block>>({
@@ -59,7 +63,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         });
         const handler = new PrivatePayloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'exists' } });
+        const req = createMock<Request>({ headers: { 'x-web3-address': wallet ? wallet.address : 'other', 'x-web3-timestamp': timestamp, 'x-web3-signature': web3Sig }, params: { hash: 'exists' } });
         let response: Response;
         const mockStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
         const mockJson = mock.fn<(_unusedBody?: any) => Response>();
@@ -81,7 +85,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const mockNode: PeerNode = createMock<PeerNode>({ ledger: createMock<Ledger>({ collection: mockCollection }) });
         const handler = new PrivatePayloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'exists' } });
+        const req = createMock<Request>({ headers: { 'x-web3-address': wallet ? wallet.address : 'other', 'x-web3-timestamp': timestamp, 'x-web3-signature': web3Sig }, params: { hash: 'exists' } });
         let response: Response;
         const mockStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
         const mockJson = mock.fn<(_unusedBody?: any) => Response>();
@@ -98,7 +102,10 @@ describe('Backend: privatePayloadHandler Coverage', () => {
 
     it('Gets block from mempool when missing in ledger', async () => {
         const { publicKey } = cryptoUtils.generateRSAKeyPair();
-        const mockBlock = { hash: 'memhash', publicKey: publicKey, payload: cryptoUtils.encryptPrivatePayload(publicKey, { physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] }), signature: 'bad_sig', type: 'STORAGE_CONTRACT' as const, previousHash: 'prev', metadata: { index: -1, timestamp: 12345 } };
+        const wallet = ethers.Wallet.createRandom();
+        const timestamp = Date.now().toString();
+        const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'memhash', timestamp }));
+        const mockBlock = { hash: 'memhash', publicKey: publicKey, payload: { encryptedPayloadBase64: Buffer.from(JSON.stringify({ physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] })).toString('base64'), ownerAddress: wallet ? wallet.address : 'other' }, signature: 'bad_sig', type: 'STORAGE_CONTRACT' as const, previousHash: 'prev', metadata: { index: -1, timestamp: 12345 } };
         
         const mockCollectionFind = mock.fn<() => FindCursor<WithId<Block>>>();
         mockCollectionFind.mock.mockImplementation(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [] }));
@@ -110,7 +117,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         });
         const handler = new PrivatePayloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'memhash' } });
+        const req = createMock<Request>({ headers: { 'x-web3-address': wallet.address, 'x-web3-timestamp': timestamp, 'x-web3-signature': web3Sig }, params: { hash: 'memhash' } });
         let response: Response;
         const mockStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
         const mockJson = mock.fn<(_unusedBody?: any) => Response>();
@@ -128,7 +135,10 @@ describe('Backend: privatePayloadHandler Coverage', () => {
 
     it('Returns 401 when signature is invalid', async () => {
         const { publicKey, privateKey } = cryptoUtils.generateRSAKeyPair();
-        const payload = cryptoUtils.encryptPrivatePayload(publicKey, { physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] });
+        const wallet = ethers.Wallet.createRandom();
+        const timestamp = Date.now().toString();
+        const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
+        const payload = { encryptedPayloadBase64: Buffer.from(JSON.stringify({ physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] })).toString('base64'), ownerAddress: wallet ? wallet.address : 'other' };
         
         const mockCollectionFind = mock.fn<() => FindCursor<WithId<Block>>>();
         mockCollectionFind.mock.mockImplementation(() => createMock<FindCursor<WithId<Block>>>({
@@ -144,7 +154,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         });
         const handler = new PrivatePayloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const req = createMock<Request>({ headers: { 'x-web3-address': wallet.address, 'x-web3-timestamp': timestamp, 'x-web3-signature': web3Sig }, params: { hash: 'validh' } });
         let response: Response;
         const mockStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
         const mockJson = mock.fn<(_unusedBody?: any) => Response>();
@@ -160,11 +170,13 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         assert.strictEqual(mockJson.mock.calls[0]?.arguments[0]?.message || mockSend.mock.calls[0]?.arguments[0]?.message, 'Invalid block signature.');
     });
 
-    it('Returns 401 on invalid decryption validation', async () => {
+    it('Returns 401 on invalid Web3 signature mapping', async () => {
         const { publicKey, privateKey } = cryptoUtils.generateRSAKeyPair();
-        
+        const wallet = ethers.Wallet.createRandom();
+        const timestamp = Date.now().toString();
+        const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
         const priv = { physicalId: 'pid', key: 'key', iv: 'iv', location: { type: 'local'}, files: [] };
-        const encPriv = cryptoUtils.encryptPrivatePayload(publicKey, priv);
+        const encPriv = { encryptedPayloadBase64: Buffer.from(JSON.stringify(priv)).toString('base64'), encryptedKeyBase64: '', encryptedIvBase64: '', ownerAddress: wallet.address };
         const sig = cryptoUtils.signData(JSON.stringify(encPriv), privateKey);
 
         const mockCollectionFind = mock.fn<() => FindCursor<WithId<Block>>>();
@@ -176,12 +188,12 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const mockCollection = createMock<Collection<Block>>({ find: mockCollectionFind as any });
         const mockNode: PeerNode = createMock<PeerNode>({ 
             publicKey, 
-            privateKey: 'wrong_private_key_to_force_failure',
+            
             ledger: createMock<Ledger>({ collection: mockCollection })
         });
         const handler = new PrivatePayloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const req = createMock<Request>({ headers: { 'x-web3-address': wallet.address, 'x-web3-timestamp': timestamp, 'x-web3-signature': web3Sig }, params: { hash: 'validh' } });
         let response: Response;
         const mockStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
         const mockJson = mock.fn<(_unusedBody?: any) => Response>();
@@ -194,14 +206,22 @@ describe('Backend: privatePayloadHandler Coverage', () => {
 
         await handler.handle(req, response);
         assert.strictEqual(mockStatus.mock.calls[0]?.arguments[0], 401);
-        assert.strictEqual(mockJson.mock.calls[0]?.arguments[0]?.message || mockSend.mock.calls[0]?.arguments[0]?.message, 'Failed to decrypt private payload.');
+        // Provide a modified bad signature for this specific assertion
+        const badWeb3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'bad_hash', timestamp }));
+        req.headers['x-web3-signature'] = badWeb3Sig;
+        await handler.handle(req, response);
+        assert.strictEqual(mockStatus.mock.calls[0]?.arguments[0], 401);
+        assert.strictEqual(mockJson.mock.calls[0]?.arguments[0]?.message || mockSend.mock.calls[0]?.arguments[0]?.message, 'Invalid EIP-191 explicit resolution structurally mapped array bounds.');
+
     });
 
     it('Returns HTTP 200 returning deeply nested raw unencrypted private structures', async () => {
         const { publicKey, privateKey } = cryptoUtils.generateRSAKeyPair();
-        
+        const wallet = ethers.Wallet.createRandom();
+        const timestamp = Date.now().toString();
+        const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
         const priv = { physicalId: 'pid', key: 'key', iv: 'iv', location: { type: 'local' }, files: [] };
-        const encPriv = cryptoUtils.encryptPrivatePayload(publicKey, priv);
+        const encPriv = { encryptedPayloadBase64: Buffer.from(JSON.stringify(priv)).toString('base64'), encryptedKeyBase64: '', encryptedIvBase64: '', ownerAddress: wallet.address };
         const sig = cryptoUtils.signData(JSON.stringify(encPriv), privateKey);
 
         const mockCollectionFind = mock.fn<() => FindCursor<WithId<Block>>>();
@@ -218,7 +238,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         });
         const handler = new PrivatePayloadHandler(mockNode);
 
-        const req = createMock<Request>({ params: { hash: 'validh' } });
+        const req = createMock<Request>({ headers: { 'x-web3-address': wallet.address, 'x-web3-timestamp': timestamp, 'x-web3-signature': web3Sig }, params: { hash: 'validh' } });
         let response: Response;
         const mockStatus = mock.fn<(_unusedCode: number) => Response>((_unusedCode: number) => response);
         const mockJson = mock.fn<(_unusedBody?: any) => Response>();

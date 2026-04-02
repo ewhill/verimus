@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 
-import { decryptPrivatePayload } from '../../crypto_utils/CryptoUtils';
+// Web3 Explicit Decoupling hook
 import logger from '../../logger/Logger';
 import type { StorageContractPayload, Block } from '../../types';
 import BaseHandler from '../base_handler/BaseHandler';
@@ -26,13 +26,16 @@ export default class FilesHandler extends BaseHandler {
             // Fetch those blocks
             const blocks = ownedHashes.length > 0 ? await this.node.ledger.collection!.find({ hash: { $in: ownedHashes } }).toArray() : [];
             const allBlocks = [...blocks, ...pendingBlocks];
-            const privateKey = this.node.privateKey;
             const filesMap = new Map<string, FilesMapEntry>(); // key: "location::name" value: array of versions
 
             for (const block of allBlocks) {
                 try {
                     if (block.payload) {
-                        const decodedObj = decryptPrivatePayload(privateKey, block.payload as StorageContractPayload);
+                        let decodedObj;
+                        try {
+                            const storagePayload = block.payload as StorageContractPayload;
+                            decodedObj = JSON.parse(Buffer.from(storagePayload.encryptedPayloadBase64, 'base64').toString('utf8'));
+                        } catch(_unusedE) { }
                         if (decodedObj && decodedObj.files) {
                             for (const file of decodedObj.files) {
                                 if (file.path) {
