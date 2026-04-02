@@ -106,7 +106,8 @@ for port in "${PORTS[@]}"; do
         mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "const fs = require('fs'); const pub = fs.readFileSync('$PUB_KEY_PATH', 'utf8'); db.balances.updateOne({ publicKey: pub }, { \$set: { balance: 500000 } }, { upsert: true });" > /dev/null 2>&1
     fi
     if [ -n "$SEED_WALLET" ]; then
-        mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ publicKey: '$SEED_WALLET' }, { \$set: { balance: 50000 } }, { upsert: true });" > /dev/null 2>&1
+        SEED_WALLET_LOWER=$(echo "$SEED_WALLET" | tr '[:upper:]' '[:lower:]')
+        mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ publicKey: '$SEED_WALLET_LOWER' }, { \$set: { balance: 50000 } }, { upsert: true });" > /dev/null 2>&1
     fi
     mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ publicKey: '$DUMMY_WALLET' }, { \$set: { balance: 500000 } }, { upsert: true });" > /dev/null 2>&1
 done

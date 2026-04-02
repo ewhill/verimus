@@ -12,7 +12,10 @@ export default class WalletHandler extends BaseHandler {
 
     async handle(req: Request, res: Response) {
         try {
-            const publicKey = (req.query.address as string) || this.node.publicKey;
+            let publicKey = (req.query.address as string) || this.node.publicKey;
+            if (publicKey && publicKey.startsWith('0x')) {
+                publicKey = publicKey.toLowerCase();
+            }
             if (!publicKey) {
                 return res.json({ success: false, message: 'Identity not initialized' });
             }
