@@ -367,8 +367,16 @@ class ConsensusEngine {
 
             if (forkEntry.computedBlocks[0].previousHash !== lastHash) {
                 logger.info(`[Peer ${this.node.port}] Fork ${forkId.slice(0, 8)} is stale (tip mismatch). Discarding commit.`);
-                forkEntry.adopted = false;
+                
+                // CRITICAL FIX: To prevent blocks getting stuck perpetually, clear the cache.
+                // Otherwise `handleAdoptFork` will reject new tip hashes for the same block combinations.
+                this.mempool.eligibleForks.delete(forkId);
+                this.mempool.settledForks.delete(forkId);
+                
                 this.committing = false;
+                
+                // Immediately attempt to formulate a clean fork with the correct tip
+                this._checkAndProposeFork().catch(err => logger.warn(`[Peer ${this.node.port}] Retry fork exception: ${err.message}`));
                 return;
             }
 
@@ -507,8 +515,13 @@ class ConsensusEngine {
         
         const genesisBlock = await this.node.ledger.getBlockByIndex(0);
         const genesisTimestamp = genesisBlock?.metadata?.timestamp || Date.now();
-        const intervalBucketMs = calculateAuditDecayInterval(genesisTimestamp);
-        const intervalBucket = Math.floor(Date.now() / intervalBucketMs);
+        const timeSinceGenesis = Math.max(0, Date.now() - genesisTimestamp);
+        
+        // Stabilize absolute bucket rounding by clamping the fractional float calculation discretely
+        const discretizedNow = Math.floor(Date.now() / (15 * 60 * 1000)) * (15 * 60 * 1000);
+        const intervalBucketMs = calculateAuditDecayInterval(genesisTimestamp, discretizedNow);
+        
+        const intervalBucket = Math.floor(timeSinceGenesis / intervalBucketMs);
 
         const contracts = await this.node.ledger.collection!.find({ type: BLOCK_TYPES.STORAGE_CONTRACT }).sort({ 'metadata.timestamp': -1 }).limit(10).toArray();
         if (!contracts.length) return;
@@ -558,14 +571,6 @@ class ConsensusEngine {
                 
                 this.node.events.emit('audit_telemetry', { status: 'CHALLENGE_DISPATCHED', message: `Dispatching Merkle challenge targeting Shard ${fragment.shardIndex} at Chunk Index ${targetIndex}...`, targetPeer: fragment.nodeId });
                 
-                if (this.node.peer) {
-                    try {
-                        await this.node.peer.broadcast(challengeMsg);
-                    } catch (err: any) {
-                        logger.warn(`[Peer ${this.node.port}] Failed to broadcast Merkle challenge: ${err.message}`);
-                    }
-                }
-
                 const executeSlashing = async (nodeId: string, reason: string) => {
                     const slashPayload = {
                         penalizedPublicKey: nodeId,
@@ -602,7 +607,7 @@ class ConsensusEngine {
                     logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof resolving logical blocks! Penalty mapped.`);
                     this.node.events.emit('audit_telemetry', { status: 'SLASHING_EXECUTED', message: `Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof. Executing Slashing...`, targetPeer: fragment.nodeId });
                     await executeSlashing(fragment.nodeId, "TIMEOUT");
-                }, 5000);
+                }, 15000);
 
                 this.node.events.once(`merkle_audit_response:${auditId}:${fragment.physicalId}`, async (resMsg: any) => {
                     clearTimeout(timeout);
@@ -638,6 +643,7 @@ class ConsensusEngine {
                             
                             const mintTxBlock = async (txPayload: any) => {
                                 if (!txPayload) return;
+                                
                                 const sig = signData(JSON.stringify(txPayload), this.node.privateKey) as string;
                                 const b: Block = {
                                     metadata: { index: -1, timestamp: Date.now() },
@@ -649,14 +655,10 @@ class ConsensusEngine {
                                 await this.handlePendingBlock(b, { peerAddress: `127.0.0.1:${this.node.port}` } as any, Date.now());
                                 if (this.node.peer) {
                                     const p2pMsg = new PendingBlockMessage({ block: b });
-                                    try {
-                                        await this.node.peer.broadcast(p2pMsg);
-                                    } catch (err: any) {
-                                        logger.warn(`[Peer ${this.node.port}] Broadcast error for audit reward block: ${err.message}`);
-                                    }
+                                    this.node.peer.broadcast(p2pMsg).catch(()=>{});
                                 }
                             };
-
+                            
                             await mintTxBlock(hostTx);
                             await mintTxBlock(auditorTx);
                         } catch (e: any) {
