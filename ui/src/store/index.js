@@ -19,6 +19,7 @@ export const useStore = create(
     nodeConfig: { publicKey: null, signature: null },
     isModalOpen: false,
     isNodeConfigModalOpen: false,
+    isUploadModalOpen: false,
     selectedBlockHash: null,
     isLoading: false,
     error: null,
@@ -43,6 +44,7 @@ export const useStore = create(
             case 'SET_NODE_CONFIG': return { nodeConfig: action.payload };
             case 'SET_MODAL_OPEN': return { isModalOpen: action.payload.isOpen, selectedBlockHash: action.payload.hash || null };
             case 'SET_NODE_CONFIG_MODAL_OPEN': return { isNodeConfigModalOpen: action.payload };
+            case 'SET_UPLOAD_MODAL_OPEN': return { isUploadModalOpen: action.payload };
             case 'SET_FILES_FILTER': return { filesLocationFilter: action.payload };
             case 'SET_FILES_PATH': return { filesSelectedPath: action.payload };
             case 'SET_FILES_SEARCH': return { filesSearchQuery: action.payload };

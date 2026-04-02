@@ -70,20 +70,19 @@ const Header = () => {
                 <a href="#" className={`nav-link ${activeRoute === 'ledger' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'ledger')}>Ledger</a>
                 <a href="#" className={`nav-link ${activeRoute === 'wallet' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'wallet')}>Wallet</a>
                 
-                {(nodeConfig?.roles?.includes('ORIGINATOR')) && (
-                    <a href="#" className={`nav-link ${activeRoute === 'upload' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'upload')}>Upload</a>
-                )}
-                
-                {nodeConfig?.roles?.includes('VALIDATOR') && (
-                    <a href="#" className={`nav-link ${activeRoute === 'consensus' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'consensus')}>Consensus</a>
-                )}
-                
-                {nodeConfig?.roles?.includes('STORAGE') && (
-                    <a href="#" className={`nav-link ${activeRoute === 'contracts' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'contracts')}>Contracts</a>
-                )}
-                
                 <a href="#" className={`nav-link ${activeRoute === 'peers' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'peers')}>Network</a>
                 <a href="#" className={`nav-link ${activeRoute === 'logs' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'logs')}>Logs</a>
+
+                {(nodeConfig?.roles?.includes('ORIGINATOR')) && (
+                    <button 
+                        onClick={() => dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true })}
+                        style={{ marginLeft: '1rem', padding: '0.4rem 1rem', background: '#4ade80', color: '#000000', border: 'none', borderRadius: '100px', fontWeight: '600', cursor: 'pointer', transition: 'transform 0.2s, background 0.2s', boxShadow: '0 4px 10px rgba(74, 222, 128, 0.3)' }}
+                        onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                        onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                        Upload File
+                    </button>
+                )}
             </nav>
         </header>
     );

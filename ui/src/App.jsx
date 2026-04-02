@@ -6,13 +6,11 @@ import Header from './components/Layout/Header';
 import FilesView from './components/Views/FilesView/FilesView';
 import PeersView from './components/Views/PeersView';
 import LogsView from './components/Views/LogsView';
-import UploadView from './components/Views/UploadView';
 import LedgerView from './components/Views/LedgerView';
 import WalletView from './components/Views/WalletView';
 import BlockModal from './components/Modals/BlockModal';
 import NodeConfigModal from './components/Modals/NodeConfigModal';
-import ConsensusView from './components/Views/ConsensusView';
-import ContractsView from './components/Views/ContractsView';
+import UploadModal from './components/Modals/UploadModal';
 import ToastContainer from './components/Layout/ToastContainer';
 
 function App() {
@@ -81,12 +79,6 @@ function App() {
 
     const renderActiveView = () => {
         switch (currentRoute) {
-            case 'consensus':
-                return nodeConfig?.roles?.includes('VALIDATOR') ? <ConsensusView /> : <FilesView />;
-            case 'contracts':
-                return nodeConfig?.roles?.includes('STORAGE') ? <ContractsView /> : <FilesView />;
-            case 'upload': 
-                return nodeConfig?.roles?.includes('ORIGINATOR') ? <UploadView /> : <FilesView />;
             case 'peers':  return <PeersView />;
             case 'logs':   return <LogsView />;
             case 'ledger': return <LedgerView />;
@@ -106,6 +98,7 @@ function App() {
             </main>
             <BlockModal />
             <NodeConfigModal />
+            <UploadModal />
             <ToastContainer />
         </div>
     );
