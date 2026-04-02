@@ -94,6 +94,10 @@ if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     echo -e "\033[1;33mWarning: Network did not fully converge within the time limit. Seeding might fail.\033[0m"
 fi
 
+DUMMY_WALLET="0x9A9801CA2e2B9A4B015E8Aa23ff6D904880D2e55"
+DUMMY_TIMESTAMP="1775149343208"
+DUMMY_SIG="0x74623c7151b597f166ded8e06ef59af0b432ed7cb589fd0af17c58e27f70ac4972751959e879db529c490b8f916a1fcf3e47da9c0d31b1c794d23af861d02e6b1b"
+
 echo "4. Injecting Baseline Escrow Funding via MongoDB..."
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 for port in "${PORTS[@]}"; do
@@ -104,11 +108,28 @@ for port in "${PORTS[@]}"; do
     if [ -n "$SEED_WALLET" ]; then
         mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ publicKey: '$SEED_WALLET' }, { \$set: { balance: 50000 } }, { upsert: true });" > /dev/null 2>&1
     fi
+    mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ publicKey: '$DUMMY_WALLET' }, { \$set: { balance: 500000 } }, { upsert: true });" > /dev/null 2>&1
 done
 echo "✅ Baseline balances physically synchronized to DB natively!"
 
 echo "5. Seeding 5 blocks..."
-npx tsx "$(dirname "$0")/SeedBlocks.ts"
+for i in {1..5}; do
+    FILE="dummy_seed_$i.txt"
+    echo "Seed data for block $i - Timestamp: $(date)" > "$FILE"
+    # Rotate target nodes for uploads
+    TARGET_PORT=${PORTS[$(( (i-1) % 5 ))]}
+    
+    ABS_PATH="$PWD/$FILE"
+    RESPONSE=$(curl -s -k -X POST -F "files=@$FILE" -F "paths=[\"$ABS_PATH\"]" -F "ownerAddress=$DUMMY_WALLET" -F "ownerSignature=$DUMMY_SIG" -F "timestamp=$DUMMY_TIMESTAMP" "https://127.0.0.1:$TARGET_PORT/api/upload")
+    
+    if [[ $RESPONSE == *"success\":true"* ]]; then
+        echo "✅ Seeded block $i via node on port $TARGET_PORT"
+    else
+        echo "❌ Failed to seed block $i via node on port $TARGET_PORT"
+        echo "Response: $RESPONSE"
+    fi
+    rm "$FILE"
+done
 
 echo -e '\n\033[1;32m==========================================='
 echo "  Nodes are running and active!            "
