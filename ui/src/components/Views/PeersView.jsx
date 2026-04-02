@@ -11,7 +11,6 @@ const PeersView = () => {
     const particlesRef = useRef([]);
 
     const [activeTab, setActiveTab] = useState('mesh');
-    const nodeConfig = useStore(s => s.nodeConfig);
 
     const fetchPeers = async () => {
         try {
