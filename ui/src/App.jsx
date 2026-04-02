@@ -11,6 +11,8 @@ import LedgerView from './components/Views/LedgerView';
 import WalletView from './components/Views/WalletView';
 import BlockModal from './components/Modals/BlockModal';
 import NodeConfigModal from './components/Modals/NodeConfigModal';
+import ConsensusView from './components/Views/ConsensusView';
+import ContractsView from './components/Views/ContractsView';
 import ToastContainer from './components/Layout/ToastContainer';
 
 function App() {
@@ -80,19 +82,9 @@ function App() {
     const renderActiveView = () => {
         switch (currentRoute) {
             case 'consensus':
-                return nodeConfig?.roles?.includes('VALIDATOR') ? (
-                    <div style={{padding: '3rem', textAlign: 'center', color: '#8b9bb4'}}>
-                        <h1 style={{fontSize: '2rem', marginBottom: '1rem', color: '#c084fc'}}>Consensus Monitor</h1>
-                        <p>Mempool Diagnostics mapping (Incoming integration)</p>
-                    </div>
-                ) : <FilesView />;
+                return nodeConfig?.roles?.includes('VALIDATOR') ? <ConsensusView /> : <FilesView />;
             case 'contracts':
-                return nodeConfig?.roles?.includes('STORAGE') ? (
-                    <div style={{padding: '3rem', textAlign: 'center', color: '#8b9bb4'}}>
-                        <h1 style={{fontSize: '2rem', marginBottom: '1rem', color: '#c084fc'}}>Active Contracts</h1>
-                        <p>Physical Block Allocation and hosting bounds visualizer (Incoming integration)</p>
-                    </div>
-                ) : <FilesView />;
+                return nodeConfig?.roles?.includes('STORAGE') ? <ContractsView /> : <FilesView />;
             case 'upload': 
                 return nodeConfig?.roles?.includes('ORIGINATOR') ? <UploadView /> : <FilesView />;
             case 'peers':  return <PeersView />;

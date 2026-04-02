@@ -4,9 +4,12 @@ import path from 'path';
 import express from 'express';
 import multer from 'multer';
 
+import { IS_DEV_NETWORK } from '../constants';
 import PeerNode from '../peer_node/PeerNode';
 import AuditEventsHandler from '../route_handlers/audit_events_handler/AuditEventsHandler';
 import BlocksHandler from '../route_handlers/blocks_handler/BlocksHandler';
+import ConsensusHandler from '../route_handlers/consensus_handler/ConsensusHandler';
+import ContractsHandler from '../route_handlers/contracts_handler/ContractsHandler';
 import DefaultHandler from '../route_handlers/default_handler/DefaultHandler';
 import DownloadFileHandler from '../route_handlers/download_file_handler/DownloadFileHandler';
 import DownloadHandler from '../route_handlers/download_handler/DownloadHandler';
@@ -20,7 +23,6 @@ import PrivatePayloadHandler from '../route_handlers/private_payload_handler/Pri
 import UploadEventsHandler from '../route_handlers/upload_events_handler/UploadEventsHandler';
 import UploadHandler from '../route_handlers/upload_handler/UploadHandler';
 import WalletHandler from '../route_handlers/wallet_handler/WalletHandler';
-import { IS_DEV_NETWORK } from '../constants';
 
 export default function setupExpressApp(peerNode: PeerNode) {
     const app = express();
@@ -64,6 +66,8 @@ export default function setupExpressApp(peerNode: PeerNode) {
     app.get('/api/audit/events', new AuditEventsHandler(peerNode).handle);
     app.get('/api/ledger/metrics', new LedgerMetricsHandler(peerNode).handle);
     app.get('/api/blocks', new BlocksHandler(peerNode).handle);
+    app.get('/api/consensus', new ConsensusHandler(peerNode).handle);
+    app.get('/api/contracts', new ContractsHandler(peerNode).handle);
     app.get('/api/peers', new PeersHandler(peerNode).handle);
     app.post('/api/upload', upload.array('files'), new UploadHandler(peerNode).handle);
     app.get('/api/download/:hash', new DownloadHandler(peerNode).handle);
