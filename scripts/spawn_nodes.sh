@@ -101,10 +101,12 @@ DUMMY_SIG="0x74623c7151b597f166ded8e06ef59af0b432ed7cb589fd0af17c58e27f70ac49727
 echo "4. Injecting Baseline Escrow Funding via MongoDB..."
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 for port in "${PORTS[@]}"; do
-    PUB_KEY_PATH="$PROJECT_ROOT/keys/peer_${port}.peer.pub"
-    if [ -f "$PUB_KEY_PATH" ]; then
-        mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "const fs = require('fs'); const pub = fs.readFileSync('$PUB_KEY_PATH', 'utf8'); db.balances.updateOne({ publicKey: pub }, { \$set: { balance: 500000 } }, { upsert: true });" > /dev/null 2>&1
-    fi
+    for target_port in "${PORTS[@]}"; do
+        PUB_KEY_PATH="$PROJECT_ROOT/keys/peer_${target_port}.peer.pub"
+        if [ -f "$PUB_KEY_PATH" ]; then
+            mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "const fs = require('fs'); const pub = fs.readFileSync('$PUB_KEY_PATH', 'utf8'); db.balances.updateOne({ publicKey: pub }, { \$set: { balance: 500000 } }, { upsert: true });" > /dev/null 2>&1
+        fi
+    done
     if [ -n "$SEED_WALLET" ]; then
         SEED_WALLET_LOWER=$(echo "$SEED_WALLET" | tr '[:upper:]' '[:lower:]')
         mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ publicKey: '$SEED_WALLET_LOWER' }, { \$set: { balance: 50000 } }, { upsert: true });" > /dev/null 2>&1
