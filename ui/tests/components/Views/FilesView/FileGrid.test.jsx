@@ -11,7 +11,7 @@ vi.mock('../../../../src/store', () => ({
 
 vi.mock('../../../../src/services/api', () => ({
     ApiService: {
-        downloadFile: vi.fn().mockResolvedValue()
+        fetchPrivatePayload: vi.fn().mockResolvedValue({ success: false })
     }
 }));
 
@@ -43,7 +43,7 @@ describe('Frontend: FileGrid', () => {
         expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_FILES_PATH', payload: ['myFolder'] });
     });
 
-    it('Validates individual files map API download endpoints smoothly', () => {
+    it('Validates individual files map API download endpoints smoothly', async () => {
         const items = [
             { type: 'file', displayName: 'img.png', file: { path: 'img.png', versions: [{ blockHash: '123' }] } },
             { type: 'file', displayName: 'vid.mp4', file: { path: 'vid.mp4', versions: [{ blockHash: '2' }] } },
@@ -53,13 +53,18 @@ describe('Frontend: FileGrid', () => {
 
         render(<FileGrid displayItems={items} />);
         
-        const doc = screen.getByText('doc.txt').parentElement.querySelector('.click-to-download');
-        fireEvent.click(doc); // Downloads
+        const docIcon = screen.getByText('doc.txt').parentElement.querySelector('.click-to-download');
+        fireEvent.click(docIcon); // Open Dropdown
         
-        expect(ApiService.downloadFile).toHaveBeenCalledWith('/api/download/4/file/doc.txt', 'doc.txt');
+        const decryptBtn = screen.getByText('Decrypt File');
+        fireEvent.click(decryptBtn); // Call fetchPrivatePayload
+        
+        await waitFor(() => {
+            expect(ApiService.fetchPrivatePayload).toHaveBeenCalledWith('4');
+        });
     });
 
-    it('Highlights selection of individual file rows upon user click', () => {
+    it('Highlights selection of individual file rows upon user click', async () => {
         const items = [
             { type: 'file', displayName: 'multi.txt', file: { path: 'f.txt', versions: [
                 { blockHash: 'v1', timestamp: 0, index: 1 },
@@ -69,19 +74,22 @@ describe('Frontend: FileGrid', () => {
 
         const { container } = render(<FileGrid displayItems={items} />);
         
-        const btn = screen.getByText('2'); // Version badge
-        fireEvent.click(btn); // Open Dropdown
+        const itemName = screen.getByText('multi.txt'); 
+        fireEvent.click(itemName); // Open Dropdown
         
-        expect(screen.getByText('Previous Versions')).toBeInTheDocument();
+        expect(screen.getByText('Previous Revisions')).toBeInTheDocument();
 
         // Click download from dropdown
         const getBtns = screen.getAllByText('Get');
         fireEvent.click(getBtns[0]);
-        expect(ApiService.downloadFile).toHaveBeenCalledWith('/api/download/v1/file/f.txt', 'f.txt');
+        
+        await waitFor(() => {
+            expect(ApiService.fetchPrivatePayload).toHaveBeenCalledWith('v2');
+        });
         
         // global grid click removes open
         const wrap = container.querySelector('.files-grid-wrap');
         fireEvent.click(wrap);
-        expect(screen.queryByText('Previous Versions')).not.toBeInTheDocument();
+        expect(screen.queryByText('Previous Revisions')).not.toBeInTheDocument();
     });
 });

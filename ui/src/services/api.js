@@ -118,7 +118,7 @@ export const ApiService = {
 
     fetchPrivatePayload: async (hash) => {
         try {
-            const wallet = useStore.getState().walletAddress;
+            const wallet = useStore.getState().web3Account;
             if (!wallet) {
                 alert("Metamask Wallet organically required locally mapping private payload limits.");
                 return { success: false };
@@ -206,7 +206,7 @@ export const ApiService = {
             const hashIndex = urlParts.indexOf('download');
             const targetHash = (hashIndex !== -1 && urlParts.length > hashIndex + 1) ? urlParts[hashIndex+1] : 'batch';
 
-            const wallet = useStore.getState().walletAddress;
+            const wallet = useStore.getState().web3Account;
             if (!wallet) {
                 alert("Metamask organically required decrypting payload bounds safely!");
                 return;
