@@ -3,7 +3,7 @@ import { useStore } from '../../../store';
 import { ApiService } from '../../../services/api';
 import ShardGraph from './ShardGraph';
 import { decryptAndUnzip } from '../../../utils/bundler';
-import { decryptAESCore } from '../../../utils/web3';
+import { decryptAESCore, generateDownloadAuthHeaders } from '../../../utils/web3';
 
 const FileGrid = ({ displayItems }) => {
     const dispatch = useStore(s => s.dispatch);
@@ -18,18 +18,20 @@ const FileGrid = ({ displayItems }) => {
         if (e) e.stopPropagation();
         
         try {
-            const privateRes = await ApiService.fetchPrivatePayload(hash);
+            if (!web3Account) throw new Error("Web3 EVM Constraints uninitialized. Connect your Wallet contextually.");
+            const nativeHeaders = await generateDownloadAuthHeaders(hash, web3Account);
+
+            const privateRes = await ApiService.fetchPrivatePayload(hash, nativeHeaders);
             if (!privateRes.success) throw new Error("Unauthorized: Cannot fetch private cryptographic metadata limits.");
             
             const payloadMeta = privateRes.privatePayload || privateRes.payload;
             if (!payloadMeta || !payloadMeta.iv) throw new Error("Malformed Payload: Encryption IV physically missing.");
 
-            if (!web3Account) throw new Error("Web3 EVM Constraints uninitialized. Connect your Wallet contextually.");
             if (!payloadMeta.encryptedAesKey) throw new Error("Payload missing asymmetric encrypted bounds.");
 
             const keyRaw = await decryptAESCore(payloadMeta.encryptedAesKey, web3Account);
 
-            const req = await fetch(`/api/download/${hash}`);
+            const req = await fetch(`/api/download/${hash}`, { headers: nativeHeaders });
             if (!req.ok) throw new Error("Backend retrieval bounded dynamically natively.");
             const encryptedBuffer = await req.arrayBuffer();
 

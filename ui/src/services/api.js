@@ -116,7 +116,7 @@ export const ApiService = {
         }
     },
 
-    fetchPrivatePayload: async (hash) => {
+    fetchPrivatePayload: async (hash, optionalHeaders = null) => {
         try {
             const wallet = useStore.getState().web3Account;
             if (!wallet) {
@@ -124,7 +124,7 @@ export const ApiService = {
                 return { success: false };
             }
 
-            const nativeHeaders = await generateDownloadAuthHeaders(hash, wallet);
+            const nativeHeaders = optionalHeaders || await generateDownloadAuthHeaders(hash, wallet);
             const res = await fetch(`${ApiService.activeProxyUrl}/api/blocks/${hash}/private`, { headers: nativeHeaders });
             if (!res.ok) throw new Error('Network response was not ok');
             return await res.json();

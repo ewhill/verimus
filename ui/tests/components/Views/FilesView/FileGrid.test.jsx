@@ -15,6 +15,11 @@ vi.mock('../../../../src/services/api', () => ({
     }
 }));
 
+vi.mock('../../../../src/utils/web3', () => ({
+    generateDownloadAuthHeaders: vi.fn().mockResolvedValue({ 'x-web3-address': '0x123' }),
+    decryptAESCore: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3]))
+}));
+
 import { useStore } from '../../../../src/store';
 import { ApiService } from '../../../../src/services/api';
 
@@ -23,7 +28,7 @@ describe('Frontend: FileGrid', () => {
 
         beforeEach(() => {
         mockDispatch = vi.fn();
-        useStore.mockImplementation(selector => selector({ dispatch: mockDispatch }));
+        useStore.mockImplementation(selector => selector({ dispatch: mockDispatch, web3Account: '0x32A8eE04236f56d2c48223Ce4742F3A1DC6936BD' }));
         vi.clearAllMocks();
     });
 
@@ -60,7 +65,7 @@ describe('Frontend: FileGrid', () => {
         fireEvent.click(decryptBtn); // Call fetchPrivatePayload
         
         await waitFor(() => {
-            expect(ApiService.fetchPrivatePayload).toHaveBeenCalledWith('4');
+            expect(ApiService.fetchPrivatePayload).toHaveBeenCalledWith('4', {"x-web3-address": "0x123"});
         });
     });
 
@@ -84,7 +89,7 @@ describe('Frontend: FileGrid', () => {
         fireEvent.click(getBtns[0]);
         
         await waitFor(() => {
-            expect(ApiService.fetchPrivatePayload).toHaveBeenCalledWith('v2');
+            expect(ApiService.fetchPrivatePayload).toHaveBeenCalledWith('v2', {"x-web3-address": "0x123"});
         });
         
         // global grid click removes open
