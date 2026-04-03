@@ -295,7 +295,7 @@ const BlockModal = () => {
                 const blob = new Blob([fileBuf], { type: 'application/octet-stream' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a'); a.href = url; a.download = targetFileName.split('/').pop();
-                document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => URL.revokeObjectURL(url), 100);
             } else {
                 const keys = Object.keys(unzipped);
                 if (keys.length === 1) {
@@ -303,7 +303,7 @@ const BlockModal = () => {
                     const blob = new Blob([unzipped[singleName]], { type: 'application/octet-stream' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a'); a.href = url; a.download = singleName.split('/').pop();
-                    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => URL.revokeObjectURL(url), 100);
                 } else {
                     // Buffer the entire array implicitly back into a logical Zip without encryption locally
                     const rawZip = fflate.zipSync(unzipped);
@@ -314,7 +314,7 @@ const BlockModal = () => {
                     const rootName = keys.length > 0 ? keys[0].split('/').pop() : 'data';
                     a.download = `verimus_package_${rootName}.zip`;
                     
-                    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => URL.revokeObjectURL(url), 100);
                 }
             }
             return true;
@@ -381,7 +381,7 @@ const BlockModal = () => {
                             a.href = url;
                             a.download = `public_key_${pkg.hash.substring(0, 8)}.pub`;
                             a.click();
-                            URL.revokeObjectURL(url);
+                            setTimeout(() => URL.revokeObjectURL(url), 100);
                         }} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-main)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', width: 'fit-content', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
                             <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '16px', height: '16px' }}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
