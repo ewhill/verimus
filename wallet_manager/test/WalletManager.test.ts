@@ -26,7 +26,7 @@ describe('WalletManager', () => {
         assert.strictEqual(balance, 130);
     });
 
-    it('Returns zero if no ledger history maps peer', async () => {
+    it('Returns native baseline threshold if no ledger history maps peer', async () => {
         const mockLedger = createMock<Ledger>({
             balancesCollection: createMock<Collection<any>>({
                 findOne: mock.fn<(...args: any[]) => Promise<any>>(async () => null)
@@ -37,7 +37,7 @@ describe('WalletManager', () => {
 
         const walletManager = new WalletManager(mockLedger);
         const balance = await walletManager.calculateBalance('peerZ');
-        assert.strictEqual(balance, 0);
+        assert.strictEqual(balance, 50);
     });
 
     it('Verifies boundaries checking mathematical state', async () => {

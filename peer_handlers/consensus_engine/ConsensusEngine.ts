@@ -27,6 +27,21 @@ class ConsensusEngine {
     walletManager: WalletManager;
     private auditedIntervals: Map<string, number> = new Map();
 
+    // CRITICAL FIX: Utilize explicit promise chain as a structural mutex, universally preventing all database overlap race conditions mathematically organically.
+    private taskQueue: Promise<void> = Promise.resolve();
+
+    private async enqueueTask<T>(task: () => Promise<T>): Promise<T> {
+        return new Promise((resolve, reject) => {
+            this.taskQueue = this.taskQueue.then(async () => {
+                try {
+                    resolve(await task());
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        });
+    }
+
     constructor(peerNode: PeerNode) {
         this.node = peerNode;
         this.mempool = peerNode.mempool;
@@ -52,202 +67,206 @@ class ConsensusEngine {
     }
 
     async handlePendingBlock(block: Block, connection: PeerConnection, headerTimestamp: number) {
-        if (this.node.syncEngine && this.node.syncEngine.isSyncing) {
-            this.node.syncEngine.syncBuffer.push({ type: 'PendingBlock', block, connection, timestamp: headerTimestamp });
-            return;
-        }
-
-        if (!block || !block.publicKey || !block.signature || !block.payload || !block.metadata) {
-            logger.info(`[Peer ${this.node.port}] Rejected malformed block from ${connection.peerAddress}`);
-            if (block && block.publicKey) {
-                await this.node.reputationManager.penalizeMajor(block.publicKey, "Structural Failure");
-            }
-            return;
-        }
-
-        const latestBlock = await this.node.ledger.getLatestBlock();
-        if (block.metadata.index !== -1 && latestBlock && block.metadata.index < (latestBlock.metadata.index - 5)) {
-            logger.info(`[Peer ${this.node.port}] Rejected Excessively Stale Block from ${connection.peerAddress}`);
-            await this.node.reputationManager.penalizeMinor(block.publicKey, "Stale Block or Fork Deviation");
-            return;
-        }
-
-        const blockToHash = { ...block };
-        delete blockToHash.hash;
-        // @ts-ignore
-        delete blockToHash._id;
-        const recalculatedHash = hashData(JSON.stringify(blockToHash));
-
-        if (block.hash && block.hash !== recalculatedHash) {
-            logger.info(`[Peer ${this.node.port}] Rejected Hash Mismatch from ${connection.peerAddress}`);
-            await this.node.reputationManager.penalizeMajor(block.publicKey, "Hash Mismatch");
-            return;
-        }
-
-        const blockId = crypto.createHash('sha256').update(block.signature).digest('hex');
-
-        const isSignatureValid = verifySignature(JSON.stringify(block.payload), block.signature, block.publicKey);
-        if (!isSignatureValid) {
-            logger.info(`[Peer ${this.node.port}] Rejected Invalid Pending Block from ${connection.peerAddress}`);
-            await this.node.reputationManager.penalizeCritical(block.publicKey, "Signature Forgery");
-            return;
-        }
-
-        if (block.type === BLOCK_TYPES.TRANSACTION) {
-            const txPayload = block.payload as TransactionPayload;
-            const hasFunds = await this.walletManager.verifyFunds(txPayload.senderId, txPayload.amount);
-            if (!hasFunds && txPayload.senderId !== 'SYSTEM') {
-                logger.warn(`[Peer ${this.node.port}] Rejected Transaction: Insufficient Funds from ${txPayload.senderId}`);
-                if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(block.publicKey, "Insufficient Funds Double Spend");
+        return this.enqueueTask(async () => {
+            if (this.node.syncEngine && this.node.syncEngine.isSyncing) {
+                this.node.syncEngine.syncBuffer.push({ type: 'PendingBlock', block, connection, timestamp: headerTimestamp });
                 return;
             }
-        }
 
-        if (block.type === BLOCK_TYPES.STORAGE_CONTRACT) {
-            const scPayload = block.payload as StorageContractPayload;
-            if (scPayload.ownerAddress && scPayload.allocatedEgressEscrow) {
-                const totalCost = scPayload.allocatedEgressEscrow * 1.05;
-                const hasUserFunds = await this.walletManager.verifyFunds(scPayload.ownerAddress, totalCost);
-                if (!hasUserFunds) {
-                    logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Insufficient EIP-191 Funds for ${scPayload.ownerAddress}`);
+            if (!block || !block.publicKey || !block.signature || !block.payload || !block.metadata) {
+                logger.info(`[Peer ${this.node.port}] Rejected malformed block from ${connection.peerAddress}`);
+                if (block && block.publicKey) {
+                    await this.node.reputationManager.penalizeMajor(block.publicKey, "Structural Failure");
+                }
+                return;
+            }
+
+            const latestBlock = await this.node.ledger.getLatestBlock();
+            if (block.metadata.index !== -1 && latestBlock && block.metadata.index < (latestBlock.metadata.index - 5)) {
+                logger.info(`[Peer ${this.node.port}] Rejected Excessively Stale Block from ${connection.peerAddress}`);
+                await this.node.reputationManager.penalizeMinor(block.publicKey, "Stale Block or Fork Deviation");
+                return;
+            }
+
+            const blockToHash = { ...block };
+            delete blockToHash.hash;
+            // @ts-ignore
+            delete blockToHash._id;
+            const recalculatedHash = hashData(JSON.stringify(blockToHash));
+
+            if (block.hash && block.hash !== recalculatedHash) {
+                logger.info(`[Peer ${this.node.port}] Rejected Hash Mismatch from ${connection.peerAddress}`);
+                await this.node.reputationManager.penalizeMajor(block.publicKey, "Hash Mismatch");
+                return;
+            }
+
+            const blockId = crypto.createHash('sha256').update(block.signature).digest('hex');
+
+            const isSignatureValid = verifySignature(JSON.stringify(block.payload), block.signature, block.publicKey);
+            if (!isSignatureValid) {
+                logger.info(`[Peer ${this.node.port}] Rejected Invalid Pending Block from ${connection.peerAddress}`);
+                await this.node.reputationManager.penalizeCritical(block.publicKey, "Signature Forgery");
+                return;
+            }
+
+            if (block.type === BLOCK_TYPES.TRANSACTION) {
+                const txPayload = block.payload as TransactionPayload;
+                const hasFunds = await this.walletManager.verifyFunds(txPayload.senderId, txPayload.amount);
+                if (!hasFunds && txPayload.senderId !== 'SYSTEM') {
+                    logger.warn(`[Peer ${this.node.port}] Rejected Transaction: Insufficient Funds from ${txPayload.senderId}`);
+                    if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(block.publicKey, "Insufficient Funds Double Spend");
+                    return;
+                }
+            }
+
+            if (block.type === BLOCK_TYPES.STORAGE_CONTRACT) {
+                const scPayload = block.payload as StorageContractPayload;
+                if (scPayload.ownerAddress && scPayload.allocatedEgressEscrow) {
+                    const totalCost = scPayload.allocatedEgressEscrow * 1.05;
+                    const hasUserFunds = await this.walletManager.verifyFunds(scPayload.ownerAddress, totalCost);
+                    if (!hasUserFunds) {
+                        logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Insufficient EIP-191 Funds for ${scPayload.ownerAddress}`);
+                        return;
+                    }
+
+                    if (scPayload.fragmentMap && scPayload.fragmentMap.length > 0) {
+                        const nodeShare = scPayload.allocatedEgressEscrow / scPayload.fragmentMap.length;
+                        for (const frag of scPayload.fragmentMap) {
+                            const hasNodeFunds = await this.walletManager.verifyFunds(frag.nodeId, nodeShare);
+                            if (!hasNodeFunds) {
+                                logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Insufficient Storage Collateral for Node ${frag.nodeId}`);
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                if (scPayload.brokerFeePercentage !== undefined && scPayload.brokerFeePercentage > 0.15) {
+                    logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: brokerFeePercentage exceeded 0.15 ceiling from ${block.publicKey}`);
                     return;
                 }
 
-                if (scPayload.fragmentMap && scPayload.fragmentMap.length > 0) {
-                    const nodeShare = scPayload.allocatedEgressEscrow / scPayload.fragmentMap.length;
-                    for (const frag of scPayload.fragmentMap) {
-                        const hasNodeFunds = await this.walletManager.verifyFunds(frag.nodeId, nodeShare);
-                        if (!hasNodeFunds) {
-                            logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Insufficient Storage Collateral for Node ${frag.nodeId}`);
+                if (!IS_DEV_NETWORK) {
+                    const activeContractsCollection = this.node.ledger.activeContractsCollection;
+                    if (activeContractsCollection) {
+                        const stakingLog = await this.node.ledger.collection!.findOne({ type: BLOCK_TYPES.STAKING_CONTRACT, 'payload.operatorPublicKey': block.publicKey });
+                        if (!stakingLog) {
+                            logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Originator ${block.publicKey.slice(0, 8)} possesses NO valid Proof-of-Stake STAKING_CONTRACT collateral!`);
                             return;
                         }
                     }
                 }
             }
 
-            if (scPayload.brokerFeePercentage !== undefined && scPayload.brokerFeePercentage > 0.15) {
-                logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: brokerFeePercentage exceeded 0.15 ceiling from ${block.publicKey}`);
-                return;
-            }
-
-            if (!IS_DEV_NETWORK) {
-                const activeContractsCollection = this.node.ledger.activeContractsCollection;
-                if (activeContractsCollection) {
-                    const stakingLog = await this.node.ledger.collection!.findOne({ type: BLOCK_TYPES.STAKING_CONTRACT, 'payload.operatorPublicKey': block.publicKey });
-                    if (!stakingLog) {
-                        logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Originator ${block.publicKey.slice(0, 8)} possesses NO valid Proof-of-Stake STAKING_CONTRACT collateral!`);
-                        return;
-                    }
+            if (block.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
+                const slashPayload = block.payload as SlashingPayload;
+                if (!slashPayload.evidenceSignature || !slashPayload.penalizedPublicKey || !slashPayload.burntAmount) {
+                    logger.warn(`[Peer ${this.node.port}] Rejected Slashing: Forgery of evidence signature bounds`);
+                    if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.publicKey, "Slashing Forgery");
+                    return;
+                }
+                if (!this.verifySlashingEvidence(slashPayload, block.publicKey)) {
+                    logger.warn(`[Peer ${this.node.port}] Rejected Slashing: Invalid evidence signature format/proof`);
+                    if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.publicKey, "Slashing Forgery");
+                    return;
                 }
             }
-        }
 
-        if (block.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
-            const slashPayload = block.payload as SlashingPayload;
-            if (!slashPayload.evidenceSignature || !slashPayload.penalizedPublicKey || !slashPayload.burntAmount) {
-                logger.warn(`[Peer ${this.node.port}] Rejected Slashing: Forgery of evidence signature bounds`);
-                if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.publicKey, "Slashing Forgery");
-                return;
+            if (block.type === BLOCK_TYPES.CHECKPOINT) {
+                const chkPayload = block.payload as CheckpointStatePayload;
+                const expectedRoots = await this.walletManager.buildStateRoot();
+                
+                if (chkPayload.stateMerkleRoot !== expectedRoots.stateMerkleRoot || chkPayload.activeContractsMerkleRoot !== expectedRoots.activeContractsMerkleRoot) {
+                    logger.warn(`[Peer ${this.node.port}] Rejected CHECKPOINT: State Root mismatch! Forgery detected. Expected SR: ${expectedRoots.stateMerkleRoot.slice(0,8)} vs Got SR: ${chkPayload.stateMerkleRoot.slice(0,8)}`);
+                    if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.publicKey, "Checkpoint State Forgery");
+                    return;
+                }
+                logger.info(`[Peer ${this.node.port}] Verified CHECKPOINT Block successfully matching local physical Merkle roots.`);
             }
-            if (!this.verifySlashingEvidence(slashPayload, block.publicKey)) {
-                logger.warn(`[Peer ${this.node.port}] Rejected Slashing: Invalid evidence signature format/proof`);
-                if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.publicKey, "Slashing Forgery");
-                return;
+
+            if (this.node.reputationManager) await this.node.reputationManager.rewardHonestProposal(block.publicKey);
+
+            if (!this.mempool.pendingBlocks.has(blockId)) {
+                this.mempool.pendingBlocks.set(blockId, {
+                    block: block,
+                    verifications: new Set(),
+                    originalTimestamp: headerTimestamp ? new Date(headerTimestamp).getTime() : Date.now()
+                });
+                // Successfully verified as novel and valid, relay to external peers!
+                if (this.node.peer && connection.peerAddress !== `127.0.0.1:${this.node.port}`) {
+                    this.node.peer.broadcast(new PendingBlockMessage({ block })).catch(err => {
+                        logger.warn(`[Peer ${this.node.port}] Suppressed relayed PendingBlock broadcast exception: ${err.message}`);
+                    });
+                }
             }
-        }
 
-        if (block.type === BLOCK_TYPES.CHECKPOINT) {
-            const chkPayload = block.payload as CheckpointStatePayload;
-            const expectedRoots = await this.walletManager.buildStateRoot();
-            
-            if (chkPayload.stateMerkleRoot !== expectedRoots.stateMerkleRoot || chkPayload.activeContractsMerkleRoot !== expectedRoots.activeContractsMerkleRoot) {
-                logger.warn(`[Peer ${this.node.port}] Rejected CHECKPOINT: State Root mismatch! Forgery detected. Expected SR: ${expectedRoots.stateMerkleRoot.slice(0,8)} vs Got SR: ${chkPayload.stateMerkleRoot.slice(0,8)}`);
-                if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.publicKey, "Checkpoint State Forgery");
-                return;
+            logger.info(`[Peer ${this.node.port}] Verified Pending Block ${blockId.slice(0, 8)} from ${connection.peerAddress}`);
+
+            const privateKey = this.node.privateKey;
+            const myVerificationSig = signData(blockId, privateKey);
+
+            this.handleVerifyBlock(blockId, myVerificationSig as string, { peerAddress: `127.0.0.1:${this.node.port}` } as PeerConnection);
+
+            if (this.mempool.orphanedVerifications.has(blockId)) {
+                const orphans = this.mempool.orphanedVerifications.get(blockId);
+                this.mempool.orphanedVerifications.delete(blockId);
+                for (const orphan of orphans!) {
+                    this.handleVerifyBlock(blockId, orphan.signature, orphan.connection);
+                }
             }
-            logger.info(`[Peer ${this.node.port}] Verified CHECKPOINT Block successfully matching local physical Merkle roots.`);
-        }
 
-        if (this.node.reputationManager) await this.node.reputationManager.rewardHonestProposal(block.publicKey);
-
-        if (!this.mempool.pendingBlocks.has(blockId)) {
-            this.mempool.pendingBlocks.set(blockId, {
-                block: block,
-                verifications: new Set(),
-                originalTimestamp: headerTimestamp ? new Date(headerTimestamp).getTime() : Date.now()
-            });
-            // Successfully verified as novel and valid, relay to external peers!
-            if (this.node.peer && connection.peerAddress !== `127.0.0.1:${this.node.port}`) {
-                this.node.peer.broadcast(new PendingBlockMessage({ block })).catch(err => {
-                    logger.warn(`[Peer ${this.node.port}] Suppressed relayed PendingBlock broadcast exception: ${err.message}`);
+            if (this.node.peer) {
+                this.node.peer.broadcast(new VerifyBlockMessage({ blockId, signature: myVerificationSig as string })).catch(err => {
+                    logger.warn(`[Peer ${this.node.port}] Suppressed VerifyBlock broadcast exception: ${err.message}`);
                 });
             }
-        }
-
-        logger.info(`[Peer ${this.node.port}] Verified Pending Block ${blockId.slice(0, 8)} from ${connection.peerAddress}`);
-
-        const privateKey = this.node.privateKey;
-        const myVerificationSig = signData(blockId, privateKey);
-
-        this.handleVerifyBlock(blockId, myVerificationSig, { peerAddress: `127.0.0.1:${this.node.port}` } as PeerConnection);
-
-        if (this.mempool.orphanedVerifications.has(blockId)) {
-            const orphans = this.mempool.orphanedVerifications.get(blockId);
-            this.mempool.orphanedVerifications.delete(blockId);
-            for (const orphan of orphans!) {
-                this.handleVerifyBlock(blockId, orphan.signature, orphan.connection);
-            }
-        }
-
-        if (this.node.peer) {
-            this.node.peer.broadcast(new VerifyBlockMessage({ blockId, signature: myVerificationSig as string })).catch(err => {
-                logger.warn(`[Peer ${this.node.port}] Suppressed VerifyBlock broadcast exception: ${err.message}`);
-            });
-        }
+        });
     }
 
     async handleVerifyBlock(blockId: string, signature: string, connection: PeerConnection) {
-        if (!blockId) {
-            logger.warn(`[Peer ${this.node.port}] Discarding malformed VerifyBlockMessage with undefined blockId.`);
-            return;
-        }
-        logger.info(`[Peer ${this.node.port}] handleVerifyBlock invoked: blockId=${blockId.slice(0, 8)}, peer=${connection.peerAddress}`);
-        const pendingEntry = this.mempool.pendingBlocks.get(blockId);
-        if (!pendingEntry) {
-            logger.info(`[Peer ${this.node.port}] Buffering orphaned verification for blockId: ${blockId.slice(0, 8)} from ${connection.peerAddress}`);
-            if (!this.mempool.orphanedVerifications.has(blockId)) {
-                this.mempool.orphanedVerifications.set(blockId, []);
+        return this.enqueueTask(async () => {
+            if (!blockId) {
+                logger.warn(`[Peer ${this.node.port}] Discarding malformed VerifyBlockMessage with undefined blockId.`);
+                return;
             }
-            this.mempool.orphanedVerifications.get(blockId)!.push({ signature, connection });
-            return;
-        }
-
-        if (pendingEntry.verifications.has(connection.peerAddress)) return;
-
-        pendingEntry.verifications.add(connection.peerAddress);
-
-        const myAddress = `127.0.0.1:${this.node.port}`;
-        // Automatically vote for blocks we have received and successfully verified, if not already voted
-        if (!pendingEntry.verifications.has(myAddress)) {
-            const privateKey = this.node.privateKey;
-            const myVerificationSig = signData(blockId, privateKey);
-            pendingEntry.verifications.add(myAddress);
-            if (this.node.peer) {
-                this.node.peer.broadcast(new VerifyBlockMessage({ blockId, signature: myVerificationSig as string })).catch(() => {});
+            logger.info(`[Peer ${this.node.port}] handleVerifyBlock invoked: blockId=${blockId.slice(0, 8)}, peer=${connection.peerAddress}`);
+            const pendingEntry = this.mempool.pendingBlocks.get(blockId);
+            if (!pendingEntry) {
+                logger.info(`[Peer ${this.node.port}] Buffering orphaned verification for blockId: ${blockId.slice(0, 8)} from ${connection.peerAddress}`);
+                if (!this.mempool.orphanedVerifications.has(blockId)) {
+                    this.mempool.orphanedVerifications.set(blockId, []);
+                }
+                this.mempool.orphanedVerifications.get(blockId)!.push({ signature, connection });
+                return;
             }
-        }
 
-        const majority = this.node.getMajorityCount();
-        if (pendingEntry.verifications.size >= majority && !pendingEntry.eligible) {
-            pendingEntry.eligible = true;
-            logger.info(`[Peer ${this.node.port}] Block ${blockId.slice(0, 8)} is ELIGIBLE. Scheduling fork proposal...`);
+            if (pendingEntry.verifications.has(connection.peerAddress)) return;
 
-            if (this.proposalTimeout) clearTimeout(this.proposalTimeout);
-            this.proposalTimeout = setTimeout(() => {
-                this._checkAndProposeFork().catch(err => logger.warn(`[Peer ${this.node.port}] Fork proposal timer error: ${err.message}`));
-                this.proposalTimeout = null;
-            }, 500);
-        }
+            pendingEntry.verifications.add(connection.peerAddress);
+
+            const myAddress = `127.0.0.1:${this.node.port}`;
+            // Automatically vote for blocks we have received and successfully verified, if not already voted
+            if (!pendingEntry.verifications.has(myAddress)) {
+                const privateKey = this.node.privateKey;
+                const myVerificationSig = signData(blockId, privateKey);
+                pendingEntry.verifications.add(myAddress);
+                if (this.node.peer) {
+                    this.node.peer.broadcast(new VerifyBlockMessage({ blockId, signature: myVerificationSig as string })).catch(() => {});
+                }
+            }
+
+            const majority = this.node.getMajorityCount();
+            if (pendingEntry.verifications.size >= majority && !pendingEntry.eligible) {
+                pendingEntry.eligible = true;
+                logger.info(`[Peer ${this.node.port}] Block ${blockId.slice(0, 8)} is ELIGIBLE. Scheduling fork proposal...`);
+
+                if (this.proposalTimeout) clearTimeout(this.proposalTimeout);
+                this.proposalTimeout = setTimeout(() => {
+                    this._checkAndProposeFork().catch(err => logger.warn(`[Peer ${this.node.port}] Fork proposal timer error: ${err.message}`));
+                    this.proposalTimeout = null;
+                }, 500);
+            }
+        });
     }
 
     async _checkAndProposeFork() {
@@ -260,8 +279,6 @@ class ConsensusEngine {
 
         if (eligibleBlockIds.length === 0) return;
 
-        if (eligibleBlockIds.length === 0) return;
-
         eligibleBlockIds.sort((a, b) => {
             const entryA = this.mempool.pendingBlocks.get(a);
             const entryB = this.mempool.pendingBlocks.get(b);
@@ -271,151 +288,175 @@ class ConsensusEngine {
             return a < b ? -1 : 1;
         });
 
-        // CRITICAL FIX: Decouple blocks into independent forks to prevent combinatorial fragmentation deadlocks
-        // where nodes drop individual blocks resulting in zero overlapping consensus majorities!
-        for (const bId of eligibleBlockIds) {
-            const tempBlockIds = [bId];
-            const forkId = crypto.createHash('sha256').update(tempBlockIds.join(',')).digest('hex');
+        // CRITICAL FIX: To prevent concurrent overlapping fork proposals branching from the exact same tip,
+        // strictly propose ONLY the oldest single deterministic block.
+        const latestBlock = await this.node.ledger.getLatestBlock();
+        const previousHash = latestBlock && latestBlock.hash ? latestBlock.hash : '0'.repeat(64);
 
-            const forkEntry = this.mempool.eligibleForks.get(forkId);
-            if (!forkEntry || !forkEntry.adopted) {
-                this.handleProposeFork(forkId, tempBlockIds, { peerAddress: `127.0.0.1:${this.node.port}` } as PeerConnection);
-                if (this.node.peer) {
-                    this.node.peer.broadcast(new ProposeForkMessage({ forkId, blockIds: tempBlockIds })).catch(err => {
-                        logger.warn(`[Peer ${this.node.port}] Failed to broadcast fork proposal: ${err.message}`);
-                    });
-                }
+        const targetBlockId = eligibleBlockIds[0];
+        const tempBlockIds = [targetBlockId];
+        
+        // Append previousHash directly into the forkId to natively isolate collisions structurally mapped physically
+        const hashBase = crypto.createHash('sha256').update(tempBlockIds.join(',')).digest('hex').slice(0, 32);
+        const forkId = `${hashBase}_${previousHash.slice(0, 16)}`;
+
+        const forkEntry = this.mempool.eligibleForks.get(forkId);
+        if (!forkEntry || !forkEntry.adopted) {
+            this.handleProposeFork(forkId, tempBlockIds, { peerAddress: `127.0.0.1:${this.node.port}` } as PeerConnection);
+            if (this.node.peer) {
+                this.node.peer.broadcast(new ProposeForkMessage({ forkId, blockIds: tempBlockIds })).catch(err => {
+                    logger.warn(`[Peer ${this.node.port}] Failed to broadcast fork proposal: ${err.message}`);
+                });
             }
         }
     }
 
     async handleProposeFork(forkId: string, blockIds: string[], connection: PeerConnection) {
-        logger.info(`[Peer ${this.node.port}] handleProposeFork invoked: forkId=${forkId ? forkId.slice(0, 8) : 'undefined'}, peer=${connection.peerAddress}`);
-        if (!this.mempool.eligibleForks.has(forkId)) {
-            this.mempool.eligibleForks.set(forkId, { blockIds, proposals: new Set() });
-        }
-
-        const forkEntry = this.mempool.eligibleForks.get(forkId);
-        if (forkEntry!.proposals.has(connection.peerAddress)) return;
-        
-        forkEntry!.proposals.add(connection.peerAddress);
-
-        const myAddress = `127.0.0.1:${this.node.port}`;
-        if (!forkEntry!.proposals.has(myAddress)) {
-            // Verify we actually agree with the fork intrinsically
-            let agree = true;
-            for (const bId of blockIds) {
-                if (!this.mempool.pendingBlocks.has(bId)) {
-                    agree = false;
-                    break;
-                }
-            }
-            if (agree) {
-                forkEntry!.proposals.add(myAddress);
-                if (this.node.peer) {
-                    this.node.peer.broadcast(new ProposeForkMessage({ forkId, blockIds })).catch(() => {});
-                }
-            }
-        }
-
-        const majority = this.node.getMajorityCount();
-        if (forkEntry!.proposals.size >= majority && !forkEntry!.adopted) {
-            forkEntry!.adopted = true;
-            logger.info(`[Peer ${this.node.port}] Fork ${forkId.slice(0, 8)} is CONFIRMED. Computing final blocks...`);
-
-            const latestBlock = await this.node.ledger.getLatestBlock();
-            let previousHash = latestBlock ? latestBlock.hash : '0'.repeat(64);
-            let index = latestBlock && latestBlock.metadata ? latestBlock.metadata.index : -1;
-            let finalTipHash = '';
-
-            forkEntry!.computedBlocks = [];
-            for (const bId of blockIds) {
-                const pEntry = this.mempool.pendingBlocks.get(bId);
-                if (!pEntry) {
-                    logger.warn(`[Peer ${this.node.port}] Node lacks pending block ${bId.slice(0, 8)} for confirmed fork ${forkId.slice(0, 8)}. Deferred.`);
-                    forkEntry!.adopted = false;
+        return this.enqueueTask(async () => {
+            const tipConstraint = forkId && forkId.includes('_') ? forkId.split('_')[1] : null;
+            if (tipConstraint) {
+                const latestBlock = await this.node.ledger.getLatestBlock();
+                const currentTip = latestBlock && latestBlock.hash ? latestBlock.hash.slice(0, 16) : '0'.repeat(16);
+                if (currentTip !== tipConstraint) {
+                    if (this.node.syncEngine) {
+                        this.node.syncEngine.syncBuffer.push({ type: 'ProposeFork', forkId, blockIds, connection });
+                        this.node.syncEngine.performInitialSync().catch(() => {});
+                    }
                     return;
                 }
-
-                index++;
-                const newBlock: Block = {
-                    metadata: { index, timestamp: pEntry.block.metadata.timestamp || pEntry.originalTimestamp || Date.now() },
-                    type: pEntry.block.type || BLOCK_TYPES.STORAGE_CONTRACT,
-                    previousHash,
-                    publicKey: pEntry.block.publicKey,
-                    payload: pEntry.block.payload,
-                    signature: pEntry.block.signature
-                } as Block;
-
-                const blockToHash = { ...newBlock };
-                const strToHash = JSON.stringify(blockToHash);
-                logger.warn(`[Peer ${this.node.port}] blockToHash string length: ${strToHash.length}, previousHash: ${previousHash}, index: ${index}, timestamp: ${blockToHash.metadata.timestamp}`);
-                logger.warn(`[Peer ${this.node.port}] bId: ${bId.slice(0, 8)}, signature length: ${blockToHash.signature.length}, payload length: ${JSON.stringify(blockToHash.payload).length}`);
-                newBlock.hash = crypto.createHash('sha256').update(strToHash).digest('hex');
-                previousHash = newBlock.hash!;
-                finalTipHash = newBlock.hash!;
-
-                forkEntry!.computedBlocks.push(newBlock);
+            }
+            
+            logger.info(`[Peer ${this.node.port}] handleProposeFork invoked: forkId=${forkId ? forkId.slice(0, 8) : 'undefined'}, peer=${connection.peerAddress}`);
+            if (!this.mempool.eligibleForks.has(forkId)) {
+                this.mempool.eligibleForks.set(forkId, { blockIds, proposals: new Set() });
             }
 
-            this.handleAdoptFork(forkId, finalTipHash, { peerAddress: `127.0.0.1:${this.node.port}` } as PeerConnection);
+            const forkEntry = this.mempool.eligibleForks.get(forkId);
+            if (forkEntry!.proposals.has(connection.peerAddress)) return;
+            
+            forkEntry!.proposals.add(connection.peerAddress);
 
-            const msg = new AdoptForkMessage({ forkId, finalTipHash });
-            if (this.node.peer && this.node.peer.trustedPeers.length > 0) {
-                this.node.peer.broadcast(msg).catch(err => {
-                    logger.warn(`[Peer ${this.node.port}] Suppressed consensus adoption broadcast exception: ${err.message}`);
-                });
+            const myAddress = `127.0.0.1:${this.node.port}`;
+            if (!forkEntry!.proposals.has(myAddress)) {
+                // Verify we actually agree with the fork intrinsically
+                let agree = true;
+                for (const bId of blockIds) {
+                    if (!this.mempool.pendingBlocks.has(bId)) {
+                        agree = false;
+                        break;
+                    }
+                }
+                if (agree) {
+                    forkEntry!.proposals.add(myAddress);
+                    if (this.node.peer) {
+                        this.node.peer.broadcast(new ProposeForkMessage({ forkId, blockIds })).catch(() => {});
+                    }
+                }
             }
 
-            const settledEntry = this.mempool.settledForks.get(forkId);
-            if (settledEntry && settledEntry.pendingCommit && !settledEntry.committed) {
-                await this._commitFork(forkId);
+            const majority = this.node.getMajorityCount();
+            if (forkEntry!.proposals.size >= majority && !forkEntry!.adopted) {
+                forkEntry!.adopted = true;
+                logger.info(`[Peer ${this.node.port}] Fork ${forkId.slice(0, 8)} is CONFIRMED. Computing final blocks...`);
+
+                const latestBlock = await this.node.ledger.getLatestBlock();
+                let previousHash = latestBlock ? latestBlock.hash : '0'.repeat(64);
+                let index = latestBlock && latestBlock.metadata ? latestBlock.metadata.index : -1;
+                let finalTipHash = '';
+
+                forkEntry!.computedBlocks = [];
+                for (const bId of blockIds) {
+                    const pEntry = this.mempool.pendingBlocks.get(bId);
+                    if (!pEntry) {
+                        logger.warn(`[Peer ${this.node.port}] Node lacks pending block ${bId.slice(0, 8)} for confirmed fork ${forkId.slice(0, 8)}. Deferred.`);
+                        forkEntry!.adopted = false;
+                        return;
+                    }
+
+                    index++;
+                    const newBlock: Block = {
+                        metadata: { index, timestamp: pEntry.block.metadata.timestamp || pEntry.originalTimestamp || Date.now() },
+                        type: pEntry.block.type || BLOCK_TYPES.STORAGE_CONTRACT,
+                        previousHash,
+                        publicKey: pEntry.block.publicKey,
+                        payload: pEntry.block.payload,
+                        signature: pEntry.block.signature
+                    } as Block;
+
+                    const blockToHash = { ...newBlock };
+                    const strToHash = JSON.stringify(blockToHash);
+                    logger.warn(`[Peer ${this.node.port}] blockToHash string length: ${strToHash.length}, previousHash: ${previousHash}, index: ${index}, timestamp: ${blockToHash.metadata.timestamp}`);
+                    logger.warn(`[Peer ${this.node.port}] bId: ${bId.slice(0, 8)}, signature length: ${blockToHash.signature.length}, payload length: ${JSON.stringify(blockToHash.payload).length}`);
+                    newBlock.hash = crypto.createHash('sha256').update(strToHash).digest('hex');
+                    previousHash = newBlock.hash!;
+                    finalTipHash = newBlock.hash!;
+
+                    forkEntry!.computedBlocks.push(newBlock);
+                }
+
+                this.handleAdoptFork(forkId, finalTipHash, { peerAddress: `127.0.0.1:${this.node.port}` } as PeerConnection);
+
+                const msg = new AdoptForkMessage({ forkId, finalTipHash });
+                if (this.node.peer && this.node.peer.trustedPeers.length > 0) {
+                    this.node.peer.broadcast(msg).catch(err => {
+                        logger.warn(`[Peer ${this.node.port}] Suppressed consensus adoption broadcast exception: ${err.message}`);
+                    });
+                }
+
+                const settledEntry = this.mempool.settledForks.get(forkId);
+                if (settledEntry && settledEntry.pendingCommit && !settledEntry.committed) {
+                    await this._commitFork(forkId);
+                }
             }
-        }
+        });
     }
 
     async handleAdoptFork(forkId: string, finalTipHash: string, connection: PeerConnection) {
-        if (this.node.syncEngine && this.node.syncEngine.isSyncing) {
-            this.node.syncEngine.syncBuffer.push({ type: 'AdoptFork', forkId, finalTipHash, connection });
-            return;
-        }
-
-        logger.info(`[Peer ${this.node.port}] handleAdoptFork invoked: forkId=${forkId ? forkId.slice(0, 8) : 'undefined'}, peer=${connection.peerAddress}`);
-        if (!this.mempool.settledForks.has(forkId)) {
-            this.mempool.settledForks.set(forkId, { finalTipHash, adoptions: new Set() });
-        }
-
-        const settledEntry = this.mempool.settledForks.get(forkId);
-        if (settledEntry!.finalTipHash !== finalTipHash) return;
-        if (settledEntry!.adoptions.has(connection.peerAddress)) return;
-
-        settledEntry!.adoptions.add(connection.peerAddress);
-
-        if (this.node.peer && connection.peerAddress !== `127.0.0.1:${this.node.port}`) {
-            this.node.peer.broadcast(new AdoptForkMessage({ forkId, finalTipHash })).catch(e => {
-                logger.warn(`[Peer ${this.node.port}] Suppressed consensus adoption relay exception: ${e.message}`);
-            });
-        }
-
-        const majority = this.node.getMajorityCount();
-        if (settledEntry!.adoptions.size >= majority && !settledEntry!.committed) {
-            const forkEntry = this.mempool.eligibleForks.get(forkId);
-            if (forkEntry && forkEntry.computedBlocks) {
-                await this._commitFork(forkId);
-            } else {
-                settledEntry!.pendingCommit = true;
-                logger.info(`[Peer ${this.node.port}] Fork ${forkId.slice(0, 8)} has majority adoptions, but blocks not yet computed locally. Waiting...`);
+        return this.enqueueTask(async () => {
+            const tipConstraint = forkId && forkId.includes('_') ? forkId.split('_')[1] : null;
+            if (tipConstraint) {
+                const latestBlock = await this.node.ledger.getLatestBlock();
+                const currentTip = latestBlock && latestBlock.hash ? latestBlock.hash.slice(0, 16) : '0'.repeat(16);
+                if (currentTip !== tipConstraint) {
+                    if (this.node.syncEngine) {
+                        this.node.syncEngine.syncBuffer.push({ type: 'AdoptFork', forkId, finalTipHash, connection });
+                        this.node.syncEngine.performInitialSync().catch(() => {});
+                    }
+                    return;
+                }
             }
-        }
+
+            logger.info(`[Peer ${this.node.port}] handleAdoptFork invoked: forkId=${forkId ? forkId.slice(0, 8) : 'undefined'}, peer=${connection.peerAddress}`);
+            if (!this.mempool.settledForks.has(forkId)) {
+                this.mempool.settledForks.set(forkId, { finalTipHash, adoptions: new Set() });
+            }
+
+            const settledEntry = this.mempool.settledForks.get(forkId);
+            if (settledEntry!.finalTipHash !== finalTipHash) return;
+            if (settledEntry!.adoptions.has(connection.peerAddress)) return;
+
+            settledEntry!.adoptions.add(connection.peerAddress);
+
+            if (this.node.peer && connection.peerAddress !== `127.0.0.1:${this.node.port}`) {
+                this.node.peer.broadcast(new AdoptForkMessage({ forkId, finalTipHash })).catch(e => {
+                    logger.warn(`[Peer ${this.node.port}] Suppressed consensus adoption relay exception: ${e.message}`);
+                });
+            }
+
+            const majority = this.node.getMajorityCount();
+            if (settledEntry!.adoptions.size >= majority && !settledEntry!.committed) {
+                const forkEntry = this.mempool.eligibleForks.get(forkId);
+                if (forkEntry && forkEntry.computedBlocks) {
+                    await this._commitFork(forkId);
+                } else {
+                    settledEntry!.pendingCommit = true;
+                    logger.info(`[Peer ${this.node.port}] Fork ${forkId.slice(0, 8)} has majority adoptions, but blocks not yet computed locally. Waiting...`);
+                }
+            }
+        });
     }
 
     async _commitFork(forkId: string) {
-        if (this.committing) {
-            logger.info(`[Peer ${this.node.port}] Already committing another fork. Deferring...`);
-            setTimeout(() => this._commitFork(forkId), 500);
-            return;
-        }
-
         const settledEntry = this.mempool.settledForks.get(forkId);
         const forkEntry = this.mempool.eligibleForks.get(forkId);
         if (!settledEntry || !forkEntry || !forkEntry.computedBlocks) return;
@@ -450,6 +491,8 @@ class ConsensusEngine {
                     const sigHash = crypto.createHash('sha256').update(block.signature).digest('hex');
                     const pEntry = this.mempool.pendingBlocks.get(sigHash);
                     if (pEntry) pEntry.committed = true;
+                    
+                    this.mempool.pendingBlocks.delete(sigHash);
 
                     continue;
                 }
@@ -499,6 +542,9 @@ class ConsensusEngine {
                         break;
                     }
                 }
+                
+                // CRITICAL FIX: To prevent endless 6 pending blocks anomaly, natively cleanse the queue natively mapped explicitly preventing lingering memory references.
+                this.mempool.pendingBlocks.delete(sigHash);
 
                 this.node.events.emit(`settled:${sigHash}`, block);
             }
@@ -508,9 +554,8 @@ class ConsensusEngine {
             this.runGlobalAudit().catch(err => logger.warn(`[Peer ${this.node.port}] Global audit loop trace failed natively: ${err.message}`));
         } catch (error) {
             logger.error(`[Peer ${this.node.port}] Error committing fork ${forkId.slice(0, 8)}:`, error);
-        } finally {
-            this.committing = false;
         }
+        this.committing = false;
     }
     private computeXORDistance(hashA: string, hashB: string): string {
         let result = '';
