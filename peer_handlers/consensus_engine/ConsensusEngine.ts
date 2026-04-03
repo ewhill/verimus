@@ -318,6 +318,12 @@ class ConsensusEngine {
                 this.activeForkTimeouts.delete(forkId);
                 logger.warn(`[Peer ${this.node.port}] P2P BFT Timeout Triggered for ${forkId.slice(0, 8)}. Dropping stalled proposal bounds implicitly to mathematically unlock chain.`);
                 this.mempool.eligibleForks.delete(forkId);
+                
+                for (const bId of tempBlockIds) {
+                    const pb = this.mempool.pendingBlocks.get(bId);
+                    if (pb) pb.eligible = false;
+                }
+                
                 this._checkAndProposeFork().catch(() => { });
             }, 10000).unref();
 
