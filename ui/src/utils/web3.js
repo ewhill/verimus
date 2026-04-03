@@ -17,16 +17,22 @@ export const requestAccounts = async () => {
     return accounts[0] || null;
 };
 
+const _derivedKeyCache = new Map();
+
 /**
  * Deterministically generates a secure offline 32-byte private key mapping securely via a standard EIP-191 Personal Sign organically.
  */
 export const derivePrivateKey = async (account) => {
+    const norm = account.toLowerCase();
+    if (_derivedKeyCache.has(norm)) return _derivedKeyCache.get(norm);
     if (!hasWeb3Provider()) throw new Error("Web3 boundary failed globally.");
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner(account);
     const message = `Approve Verimus Originator proxy... Derive Encryption Key`;
     const signature = await signer.signMessage(message);
-    return ethers.id(signature).slice(2);
+    const derived = ethers.id(signature).slice(2);
+    _derivedKeyCache.set(norm, derived);
+    return derived;
 };
 
 /**
