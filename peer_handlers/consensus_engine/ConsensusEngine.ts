@@ -176,9 +176,9 @@ class ConsensusEngine {
             if (block.type === BLOCK_TYPES.CHECKPOINT) {
                 const chkPayload = block.payload as CheckpointStatePayload;
                 const expectedRoots = await this.walletManager.buildStateRoot();
-                
+
                 if (chkPayload.stateMerkleRoot !== expectedRoots.stateMerkleRoot || chkPayload.activeContractsMerkleRoot !== expectedRoots.activeContractsMerkleRoot) {
-                    logger.warn(`[Peer ${this.node.port}] Rejected CHECKPOINT: State Root mismatch! Forgery detected. Expected SR: ${expectedRoots.stateMerkleRoot.slice(0,8)} vs Got SR: ${chkPayload.stateMerkleRoot.slice(0,8)}`);
+                    logger.warn(`[Peer ${this.node.port}] Rejected CHECKPOINT: State Root mismatch! Forgery detected. Expected SR: ${expectedRoots.stateMerkleRoot.slice(0, 8)} vs Got SR: ${chkPayload.stateMerkleRoot.slice(0, 8)}`);
                     if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.publicKey, "Checkpoint State Forgery");
                     return;
                 }
@@ -252,7 +252,7 @@ class ConsensusEngine {
                 const myVerificationSig = signData(blockId, privateKey);
                 pendingEntry.verifications.add(myAddress);
                 if (this.node.peer) {
-                    this.node.peer.broadcast(new VerifyBlockMessage({ blockId, signature: myVerificationSig as string })).catch(() => {});
+                    this.node.peer.broadcast(new VerifyBlockMessage({ blockId, signature: myVerificationSig as string })).catch(() => { });
                 }
             }
 
@@ -296,7 +296,7 @@ class ConsensusEngine {
 
         const targetBlockId = eligibleBlockIds[0];
         const tempBlockIds = [targetBlockId];
-        
+
         // Append previousHash directly into the forkId to natively isolate collisions structurally mapped physically
         const hashBase = crypto.createHash('sha256').update(tempBlockIds.join(',')).digest('hex').slice(0, 32);
         const forkId = `${hashBase}_${previousHash.slice(0, 16)}`;
@@ -309,18 +309,18 @@ class ConsensusEngine {
                     logger.warn(`[Peer ${this.node.port}] Failed to broadcast fork proposal: ${err.message}`);
                 });
             }
-            
+
             if (this.activeForkTimeouts.has(forkId)) {
                 clearTimeout(this.activeForkTimeouts.get(forkId)!);
             }
-            
+
             const timeout = setTimeout(() => {
                 this.activeForkTimeouts.delete(forkId);
                 logger.warn(`[Peer ${this.node.port}] P2P BFT Timeout Triggered for ${forkId.slice(0, 8)}. Dropping stalled proposal bounds implicitly to mathematically unlock chain.`);
                 this.mempool.eligibleForks.delete(forkId);
-                this._checkAndProposeFork().catch(()=>{});
+                this._checkAndProposeFork().catch(() => { });
             }, 10000).unref();
-            
+
             this.activeForkTimeouts.set(forkId, timeout);
         }
     }
@@ -334,12 +334,12 @@ class ConsensusEngine {
                 if (currentTip !== tipConstraint) {
                     if (this.node.syncEngine) {
                         this.node.syncEngine.syncBuffer.push({ type: 'ProposeFork', forkId, blockIds, connection });
-                        this.node.syncEngine.performInitialSync().catch(() => {});
+                        this.node.syncEngine.performInitialSync().catch(() => { });
                     }
                     return;
                 }
             }
-            
+
             logger.info(`[Peer ${this.node.port}] handleProposeFork invoked: forkId=${forkId ? forkId.slice(0, 8) : 'undefined'}, peer=${connection.peerAddress}`);
             if (!this.mempool.eligibleForks.has(forkId)) {
                 this.mempool.eligibleForks.set(forkId, { blockIds, proposals: new Set() });
@@ -347,7 +347,7 @@ class ConsensusEngine {
 
             const forkEntry = this.mempool.eligibleForks.get(forkId);
             if (forkEntry!.proposals.has(connection.peerAddress)) return;
-            
+
             forkEntry!.proposals.add(connection.peerAddress);
 
             const myAddress = `127.0.0.1:${this.node.port}`;
@@ -363,7 +363,7 @@ class ConsensusEngine {
                 if (agree) {
                     forkEntry!.proposals.add(myAddress);
                     if (this.node.peer) {
-                        this.node.peer.broadcast(new ProposeForkMessage({ forkId, blockIds })).catch(() => {});
+                        this.node.peer.broadcast(new ProposeForkMessage({ forkId, blockIds })).catch(() => { });
                     }
                 }
             }
@@ -434,7 +434,7 @@ class ConsensusEngine {
                 if (currentTip !== tipConstraint) {
                     if (this.node.syncEngine) {
                         this.node.syncEngine.syncBuffer.push({ type: 'AdoptFork', forkId, finalTipHash, connection });
-                        this.node.syncEngine.performInitialSync().catch(() => {});
+                        this.node.syncEngine.performInitialSync().catch(() => { });
                     }
                     return;
                 }
@@ -474,7 +474,7 @@ class ConsensusEngine {
         const settledEntry = this.mempool.settledForks.get(forkId);
         const forkEntry = this.mempool.eligibleForks.get(forkId);
         if (!settledEntry || !forkEntry || !forkEntry.computedBlocks) return;
-        
+
         if (this.activeForkTimeouts.has(forkId)) {
             clearTimeout(this.activeForkTimeouts.get(forkId)!);
             this.activeForkTimeouts.delete(forkId);
@@ -487,14 +487,14 @@ class ConsensusEngine {
 
             if (forkEntry.computedBlocks[0].previousHash !== lastHash) {
                 logger.info(`[Peer ${this.node.port}] Fork ${forkId.slice(0, 8)} is stale (tip mismatch). Discarding commit.`);
-                
+
                 // CRITICAL FIX: To prevent blocks getting stuck perpetually, clear the cache.
                 // Otherwise `handleAdoptFork` will reject new tip hashes for the same block combinations.
                 this.mempool.eligibleForks.delete(forkId);
                 this.mempool.settledForks.delete(forkId);
-                
+
                 this.committing = false;
-                
+
                 // Immediately attempt to formulate a clean fork with the correct tip
                 this._checkAndProposeFork().catch(err => logger.warn(`[Peer ${this.node.port}] Retry fork exception: ${err.message}`));
                 return;
@@ -510,7 +510,7 @@ class ConsensusEngine {
                     const sigHash = crypto.createHash('sha256').update(block.signature).digest('hex');
                     const pEntry = this.mempool.pendingBlocks.get(sigHash);
                     if (pEntry) pEntry.committed = true;
-                    
+
                     this.mempool.pendingBlocks.delete(sigHash);
 
                     continue;
@@ -538,7 +538,7 @@ class ConsensusEngine {
                                 stateMerkleRoot: stateRoots.stateMerkleRoot,
                                 activeContractsMerkleRoot: stateRoots.activeContractsMerkleRoot
                             };
-                            
+
                             const sigStr = signData(JSON.stringify(checkpointPayload), this.node.privateKey);
                             const checkpointBlock: Block = {
                                 metadata: { index: block.metadata.index + 1, timestamp: Date.now() },
@@ -548,8 +548,8 @@ class ConsensusEngine {
                                 previousHash: block.hash!,
                                 signature: sigStr as string
                             };
-                            
-                            this.handlePendingBlock(checkpointBlock, { peerAddress: '0.0.0.0', send: () => {} } as any, Date.now()).catch((e: any) => logger.warn(`[Peer ${this.node.port}] Suppressed Checkpoint execution wrap exception: ${e.message}`));
+
+                            this.handlePendingBlock(checkpointBlock, { peerAddress: '0.0.0.0', send: () => { } } as any, Date.now()).catch((e: any) => logger.warn(`[Peer ${this.node.port}] Suppressed Checkpoint execution wrap exception: ${e.message}`));
                         }
                     }
                 }
@@ -561,7 +561,7 @@ class ConsensusEngine {
                         break;
                     }
                 }
-                
+
                 // CRITICAL FIX: To prevent endless 6 pending blocks anomaly, natively cleanse the queue natively mapped explicitly preventing lingering memory references.
                 this.mempool.pendingBlocks.delete(sigHash);
 
@@ -569,7 +569,7 @@ class ConsensusEngine {
             }
 
             await this._checkAndProposeFork();
-            
+
             this.runGlobalAudit().catch(err => logger.warn(`[Peer ${this.node.port}] Global audit loop trace failed natively: ${err.message}`));
         } catch (error) {
             logger.error(`[Peer ${this.node.port}] Error committing fork ${forkId.slice(0, 8)}:`, error);
@@ -609,7 +609,7 @@ class ConsensusEngine {
     computeDeterministicAuditor(contractId: string, latestBlockHash: string, intervalBucket: number): boolean {
         const challengeString = `${contractId}-${latestBlockHash}-${intervalBucket}`;
         const challengeHashHex = crypto.createHash('sha256').update(challengeString).digest('hex');
-        
+
         let closestId = this.node.publicKey;
         const selfHashHex = crypto.createHash('sha256').update(this.node.publicKey).digest('hex');
         let minDistance = this.computeXORDistance(challengeHashHex, selfHashHex);
@@ -633,18 +633,18 @@ class ConsensusEngine {
 
     async runGlobalAudit() {
         if (this.node.syncEngine && this.node.syncEngine.isSyncing) return;
-        
+
         const latestBlock = await this.node.ledger.getLatestBlock();
         const latestBlockHash = latestBlock ? latestBlock.hash! : 'genesis_hash';
-        
+
         const genesisBlock = await this.node.ledger.getBlockByIndex(0);
         const genesisTimestamp = genesisBlock?.metadata?.timestamp || Date.now();
         const timeSinceGenesis = Math.max(0, Date.now() - genesisTimestamp);
-        
+
         // Stabilize absolute bucket rounding by clamping the fractional float calculation discretely
         const discretizedNow = Math.floor(Date.now() / (15 * 60 * 1000)) * (15 * 60 * 1000);
         const intervalBucketMs = calculateAuditDecayInterval(genesisTimestamp, discretizedNow);
-        
+
         const intervalBucket = Math.floor(timeSinceGenesis / intervalBucketMs);
 
         const contracts = await this.node.ledger.collection!.find({ type: BLOCK_TYPES.STORAGE_CONTRACT }).sort({ 'metadata.timestamp': -1 }).limit(10).toArray();
@@ -660,7 +660,7 @@ class ConsensusEngine {
             if (!isElected) continue;
 
             this.auditedIntervals.set(trackKey, intervalBucket);
-            
+
             if (!hasAudited) {
                 logger.info(`[Peer ${this.node.port}] Node deterministically elected as Auditor. Initiating mathematical Proof of Spacetime intervals...`);
                 this.node.events.emit('audit_telemetry', { status: 'ELECTION_INITIATED', message: 'Node deterministically elected as Auditor. Initiating mathematical Proof of Spacetime intervals...' });
@@ -673,28 +673,28 @@ class ConsensusEngine {
             for (const fragment of contractPayload.fragmentMap) {
                 if (fragment.nodeId === this.node.publicKey) continue; // Skip auditing self logically
                 if (fragment.nodeId === 'GENESIS_NODE' && IS_DEV_NETWORK) continue; // Immutable system seed nodes cannot be mathematically audited over standard P2P Pings in development/test networks natively.
-                
+
                 const merkleRoot = contractPayload.merkleRoots[fragment.shardIndex];
-                
+
                 const CHUNK_SIZE = 64 * 1024;
                 const K = contractPayload.erasureParams!.k;
                 const paddedSize = Math.ceil(contractPayload.erasureParams!.originalSize / K) * K;
                 const shardSize = paddedSize / K;
                 const totalChunks = Math.ceil(shardSize / CHUNK_SIZE);
-                
+
                 const challengeHashHex = crypto.createHash('sha256').update(`${contract._id!.toString()}-${latestBlockHash}-${intervalBucket}`).digest('hex');
                 const numericHash = parseInt(challengeHashHex.slice(0, 8), 16);
                 const targetIndex = totalChunks > 0 ? numericHash % totalChunks : 0;
 
                 const challengeMsg = new MerkleProofChallengeRequestMessage({
-                    contractId: contract._id!.toString(), 
+                    contractId: contract._id!.toString(),
                     physicalId: fragment.physicalId,
                     auditorPublicKey: this.node.publicKey,
                     chunkIndex: targetIndex
                 });
-                
+
                 this.node.events.emit('audit_telemetry', { status: 'CHALLENGE_DISPATCHED', message: `Dispatching Merkle challenge targeting Shard ${fragment.shardIndex} at Chunk Index ${targetIndex}...`, targetPeer: fragment.nodeId });
-                
+
                 const executeSlashing = async (nodeId: string, reason: string) => {
                     const slashPayload = {
                         penalizedPublicKey: nodeId,
@@ -735,7 +735,7 @@ class ConsensusEngine {
 
                 this.node.events.once(`merkle_audit_response:${auditId}:${fragment.physicalId}`, async (resMsg: any) => {
                     clearTimeout(timeout);
-                    
+
                     let isValid = false;
                     if (resMsg.computedRootMatch && resMsg.chunkDataBase64 && resMsg.merkleSiblings) {
                         try {
@@ -743,7 +743,7 @@ class ConsensusEngine {
                             isValid = verifyMerkleProof(buffer, resMsg.merkleSiblings, merkleRoot, targetIndex);
                         } catch (_unusedE) { isValid = false; }
                     }
-                    
+
                     if (!isValid) {
                         if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(fragment.nodeId, "Proof of Spacetime Forgery");
                         logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} explicitly failed mathematical audit! Banned!`);
@@ -753,21 +753,21 @@ class ConsensusEngine {
                         if (this.node.reputationManager) await this.node.reputationManager.rewardHonestProposal(fragment.nodeId);
                         logger.info(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} perfectly mapped rigorous spacetime boundaries!`);
                         this.node.events.emit('audit_telemetry', { status: 'AUDIT_SUCCESS', message: `Host ${fragment.nodeId.slice(0, 8)} perfectly mapped rigorous spacetime boundaries!`, targetPeer: fragment.nodeId });
-                        
+
                         // Phase 5 Financial Execution 
                         const reward = WalletManager.calculateSystemReward(Date.now(), GENESIS_TIMESTAMP);
                         const hostReward = reward * 0.9;
                         const auditorReward = reward * 0.1;
-                        
+
                         try {
                             const [hostTx, auditorTx] = await Promise.all([
                                 this.walletManager.allocateFunds('SYSTEM', fragment.nodeId, hostReward, 'SYSTEM_SIG'),
                                 this.walletManager.allocateFunds('SYSTEM', this.node.publicKey, auditorReward, 'SYSTEM_SIG')
                             ]);
-                            
+
                             const mintTxBlock = async (txPayload: any) => {
                                 if (!txPayload) return;
-                                
+
                                 const sig = signData(JSON.stringify(txPayload), this.node.privateKey) as string;
                                 const b: Block = {
                                     metadata: { index: -1, timestamp: Date.now() },
@@ -779,10 +779,10 @@ class ConsensusEngine {
                                 await this.handlePendingBlock(b, { peerAddress: `127.0.0.1:${this.node.port}` } as any, Date.now());
                                 if (this.node.peer) {
                                     const p2pMsg = new PendingBlockMessage({ block: b });
-                                    this.node.peer.broadcast(p2pMsg).catch(()=>{});
+                                    this.node.peer.broadcast(p2pMsg).catch(() => { });
                                 }
                             };
-                            
+
                             await mintTxBlock(hostTx);
                             await mintTxBlock(auditorTx);
                         } catch (e: any) {
