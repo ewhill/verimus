@@ -20,11 +20,12 @@ import type { Block, PeerConnection } from '../../types';
 import { NodeRole } from '../../types/NodeRole';
 
 export interface SyncBufferEvent {
-    type: 'PendingBlock' | 'AdoptFork';
+    type: 'PendingBlock' | 'AdoptFork' | 'ProposeFork';
     block?: Block;
     connection: PeerConnection;
     timestamp?: number;
     forkId?: string;
+    blockIds?: string[];
     finalTipHash?: string;
 }
 
@@ -586,6 +587,8 @@ class SyncEngine {
                 await this.node.consensusEngine.handlePendingBlock(evt.block!, evt.connection, evt.timestamp!);
             } else if (evt.type === 'AdoptFork') {
                 await this.node.consensusEngine.handleAdoptFork(evt.forkId!, evt.finalTipHash!, evt.connection);
+            } else if (evt.type === 'ProposeFork') {
+                await this.node.consensusEngine.handleProposeFork(evt.forkId!, evt.blockIds!, evt.connection);
             }
         }
     }

@@ -285,22 +285,12 @@ describe('Backend: ConsensusEngine Integrity', () => {
         engine.committing = true;
         await engine.handleAdoptFork('forkAdopt', 'hash3', { peerAddress: 'peer3', send: () => { } });
 
-        // Test deferred commit timeout loop natively
-        engine.committing = false;
+        // Await the task queue to natively drain the executing bounds implicitly securely
+        await (engine as any).taskQueue;
 
-        await new Promise((r, reject) => {
-            const t0 = Date.now();
-            const check = () => {
-                if ((mockSettledEntry.pendingCommit || mockSettledEntry.committed) && !engine.committing) return r(null);
-                if (Date.now() - t0 > 2500) return reject(new Error('Test timeout waiting for pendingCommit'));
-                setTimeout(check, 50);
-            };
-            setTimeout(check, 100);
-        });
         assert.ok(mockSettledEntry.pendingCommit || mockSettledEntry.committed);
 
-        // Test _commitFork loops over mempool pending blocks to set committed true conceptually powerfully beautifully flexibly implicitly realistically impressively successfully inherently correctly creatively smartly
-        engine.committing = false;
+        // Setup variables for mock block execution tests mapping explicitly natively
         engine.mempool.eligibleForks.set('forkCommit', { computedBlocks: [{ ...createMockBlock('sigCom', 'pk', 'hsh'), previousHash: 'lastHash', metadata: { index: 1, timestamp: Date.now() } }], adopted: true, proposals: new Set<string>(), blockIds: [] });
         engine.mempool.settledForks.set('forkCommit', { finalTipHash: 'hash', adoptions: new Set<string>(), committed: false, pendingCommit: false });
 
@@ -315,7 +305,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
 
         await engine._commitFork('forkCommit');
         assert.ok(addedCount > 0);
-        assert.ok(engine.mempool.pendingBlocks.get(hashStr)?.committed);
+        assert.strictEqual(engine.mempool.pendingBlocks.get(hashStr), undefined, 'Pending block MUST be purged post-commit');
     });
 
     it('Validates exception mappings during p2p error broadcast', async () => {

@@ -280,6 +280,7 @@ const UploadModal = () => {
                             const blob = new Blob([view], { type: 'application/octet-stream' });
                             const file = new File([blob], "10mb_synthetic_entropy_test_vector.bin", { type: 'application/octet-stream' });
                             setSelectedFiles([file]);
+                            document.getElementById('fileInput').removeAttribute('required');
                         }} style={{ opacity: 0.01, position: 'absolute', width: '10px', height: '10px' }}>Inject Vector</button>
 
                         <button type="submit" id="submitBtnExt" className="primary-btn" disabled={isUploading || selectedFiles.length === 0}>

@@ -81,6 +81,10 @@ export default class UploadHandler extends BaseHandler {
             // Escrow phase tracking theoretical spend limits mapping against double-spends
             const hasFunds = await this.node.consensusEngine.walletManager.verifyFunds(publicKey, theoreticalMaxCost);
             const totalUserCost = theoreticalMaxCost * 1.05;
+            
+            const currentBalance = await this.node.consensusEngine.walletManager.calculateBalance(ownerAddress);
+            logger.error(`[UploadHandler] DEBUG: ownerAddress: ${ownerAddress}, totalUserCost: ${totalUserCost}, currentBalance: ${currentBalance}, redundancy: ${redundancy}, maxCost: ${maxCost}, totalSize: ${totalSize}`);
+            
             const hasUserFunds = await this.node.consensusEngine.walletManager.verifyFunds(ownerAddress, totalUserCost);
             
             if (!hasFunds && publicKey !== 'SYSTEM') {

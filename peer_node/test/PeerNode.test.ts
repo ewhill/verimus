@@ -199,7 +199,8 @@ describe('Backend: PeerNode Logical Verification Check', () => {
             payload: { senderSignature: '', senderId: '', recipientId: '', amount: 0 }
         };
         const mockConn = { peerAddress: '127.0.0.1:1234', send: () => { } };
-        mockNode.mempool.pendingBlocks.set('hash3', { block: dummyBlock3, connection: mockConn, timestamp: 12345 });
+        const sigHashTest = require('crypto').createHash('sha256').update(dummyBlock3.signature).digest('hex');
+        mockNode.mempool.pendingBlocks.set(sigHashTest, { block: dummyBlock3, connection: mockConn, timestamp: 12345 });
 
         mockNode.ledger = createMock<Ledger>({
             ownedBlocksCollection: createMock<Collection<any>>({
@@ -209,7 +210,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
 
         await mockNode.addOwnedBlockToCache(dummyBlock3);
 
-        assert.ok(!mockNode.mempool.pendingBlocks.has('hash3'));
+        assert.ok(!mockNode.mempool.pendingBlocks.has(sigHashTest));
         assert.ok(mockNode.ownedBlocksCache.includes('hash3'));
 
         // Test getMajorityCount

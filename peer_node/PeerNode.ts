@@ -263,12 +263,17 @@ class PeerNode {
     }
 
     async addOwnedBlockToCache(block: Block) {
-        // Verify no pending blocks conflict
-        const blockExistsInMempool = this.mempool.pendingBlocks.has(block.hash!);
-        if (blockExistsInMempool) {
-            // If a pending block with the same hash exists, it means this block was just processed
-            // and is now being added to the ledger. We should remove it from pending.
-            this.mempool.pendingBlocks.delete(block.hash!);
+        // Verify no pending blocks conflict correctly hashing mapped boundaries physically!
+        if (block.signature) {
+            const sigHash = require('crypto').createHash('sha256').update(block.signature).digest('hex');
+            const blockExistsInMempool = this.mempool.pendingBlocks.has(sigHash);
+            if (blockExistsInMempool) {
+                // If a pending block with the same hash exists, it means this block was just processed
+                // and is now being added to the ledger via SyncEngine natively. We must remove it explicitly.
+                const pEntry = this.mempool.pendingBlocks.get(sigHash);
+                if (pEntry) pEntry.committed = true;
+                this.mempool.pendingBlocks.delete(sigHash);
+            }
         }
 
         if (block.publicKey === this.publicKey && !this.ownedBlocksCache.includes(block.hash!)) {

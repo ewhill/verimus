@@ -169,7 +169,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             globalWallet = ethers.Wallet.createRandom();
             const wallet = globalWallet;
             const timestamp = Date.now().toString();
-            const proxyMessage = `Approve Verimus Originator proxy for data struct mockAuthTag\nTimestamp: ${timestamp}`;
+            const proxyMessage = `Approve Verimus Originator proxy for data struct batch\nTimestamp: ${timestamp}`;
             const signature = await wallet.signMessage(proxyMessage);
             formDataPayload.append('encryptedAesKey', 'mockEncryptedHex');
             formDataPayload.append('ownerAddress', wallet.address);

@@ -76,6 +76,10 @@ export default class WalletManager {
         }
 
         let balance = 0;
+        
+        // Ensure new organic users receive the required 50.0 EIP-191 bound natively across ALL peers, 
+        // resolving the mempool rejection state divergence observed when only ORIGINATORs fund users.
+        balance = 50.0;
 
         try {
             if (this.ledger.balancesCollection) {

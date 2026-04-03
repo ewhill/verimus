@@ -9,7 +9,7 @@ import type { Request, Response } from 'express';
 async function generateMockProxyPayload(authTag: string = 'mockAuthTag') {
     const wallet = ethers.Wallet.createRandom();
     const timestamp = Date.now().toString();
-    const proxyMessage = `Approve Verimus Originator proxy for data struct ${authTag}\nTimestamp: ${timestamp}`;
+    const proxyMessage = `Approve Verimus Originator proxy for data struct batch\nTimestamp: ${timestamp}`;
     const signature = await wallet.signMessage(proxyMessage);
     return {
         ownerAddress: wallet.address,

@@ -106,12 +106,12 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
             eligible: true,
             originalTimestamp: Date.now()
         });
-        node3.mempool.eligibleForks.set('rogue_fork', { blockIds: ['rogue_block'], proposals: new Set(['127.0.0.1:31003']), adopted: false, computedBlocks: [] });
+        node3.mempool.eligibleForks.set('rogueFork', { blockIds: ['rogue_block'], proposals: new Set(['127.0.0.1:31003']), adopted: false, computedBlocks: [] });
         
-        await node3.consensusEngine.handleProposeFork('rogue_fork', ['rogue_block'], { peerAddress: '127.0.0.1:31003', send: () => {} });
+        await node3.consensusEngine.handleProposeFork('rogueFork', ['rogue_block'], { peerAddress: '127.0.0.1:31003', send: () => {} });
         
         // Assert the fork is NOT adopted because it didn't cross the threshold
-        const fork = node3.mempool.eligibleForks.get('rogue_fork');
+        const fork = node3.mempool.eligibleForks.get('rogueFork');
         assert.ok(!fork?.adopted, 'Partitioned node legitimately stalled preventing anomalous fork inclusion!');
     });
 
@@ -122,12 +122,12 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
             eligible: true,
             originalTimestamp: Date.now()
         } as any);
-        node1.mempool.eligibleForks.set('valid_fork', { blockIds: ['valid_block'], proposals: new Set(['127.0.0.1:31001']), adopted: false, computedBlocks: [] });
+        node1.mempool.eligibleForks.set('validFork', { blockIds: ['valid_block'], proposals: new Set(['127.0.0.1:31001']), adopted: false, computedBlocks: [] });
         
         // Node 2 votes for Node 1's proposal forming the required majority mapping
-        await node1.consensusEngine.handleProposeFork('valid_fork', ['valid_block'], { peerAddress: '127.0.0.1:31002', send: () => {} });
+        await node1.consensusEngine.handleProposeFork('validFork', ['valid_block'], { peerAddress: '127.0.0.1:31002', send: () => {} });
         
-        const fork = node1.mempool.eligibleForks.get('valid_fork');
+        const fork = node1.mempool.eligibleForks.get('validFork');
         assert.ok(fork?.adopted, 'Primary partition scaled and mathematically executed the fork adoption over majority boundaries.');
     });
 });
