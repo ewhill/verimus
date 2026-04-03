@@ -32,7 +32,8 @@ describe('Frontend: BlockModal Component Render Validity', () => {
                 metadata: { index: 1, timestamp: 1000000 }, 
                 previousHash: 'hash000', 
                 publicKey: 'PUBKEY_OWNER', 
-                signature: 'SIG_XYZ' 
+                signature: 'SIG_XYZ',
+                type: 'STORAGE_CONTRACT'
             }
         ];
         const mockNodeConfig = { publicKey: 'PUBKEY_OWNER' };
@@ -74,7 +75,8 @@ describe('Frontend: BlockModal Component Render Validity', () => {
             { 
                 hash: 'hash123', 
                 metadata: { index: 1, timestamp: 1000000 }, 
-                publicKey: 'PUBKEY_OTHER' 
+                publicKey: 'PUBKEY_OTHER',
+                type: 'STORAGE_CONTRACT'
             }
         ];
         const otherConfig = { publicKey: 'PUBKEY_OWNER' };
@@ -165,7 +167,8 @@ describe('Frontend: BlockModal Component Render Validity', () => {
                     { 
                         hash: 'hash123', 
                         metadata: { index: 1, timestamp: 1000000 }, 
-                        publicKey: 'PUBKEY_OWNER' 
+                        publicKey: 'PUBKEY_OWNER',
+                        type: 'STORAGE_CONTRACT'
                     }
                 ],
                 nodeConfig: { publicKey: 'PUBKEY_OWNER' }

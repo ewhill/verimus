@@ -1,5 +1,5 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+ 
+import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../store';
 import { ApiService } from '../../services/api';
 import { decryptAndUnzip } from '../../utils/bundler';
@@ -297,12 +297,25 @@ const BlockModal = () => {
                 const a = document.createElement('a'); a.href = url; a.download = targetFileName.split('/').pop();
                 document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
             } else {
-                // Buffer the entire array implicitly back into a logical Zip without encryption locally
-                const rawZip = fflate.zipSync(unzipped);
-                const blob = new Blob([rawZip], { type: 'application/zip' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = `verimus_block_${selectedBlockHash}.zip`;
-                document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                const keys = Object.keys(unzipped);
+                if (keys.length === 1) {
+                    const singleName = keys[0];
+                    const blob = new Blob([unzipped[singleName]], { type: 'application/octet-stream' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a'); a.href = url; a.download = singleName.split('/').pop();
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                } else {
+                    // Buffer the entire array implicitly back into a logical Zip without encryption locally
+                    const rawZip = fflate.zipSync(unzipped);
+                    const blob = new Blob([rawZip], { type: 'application/zip' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a'); a.href = url;
+                    
+                    const rootName = keys.length > 0 ? keys[0].split('/').pop() : 'data';
+                    a.download = `verimus_package_${rootName}.zip`;
+                    
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                }
             }
             return true;
         } catch (err) {
