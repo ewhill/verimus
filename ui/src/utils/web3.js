@@ -1,6 +1,5 @@
 import { ethers } from 'ethers';
 import { encrypt, decrypt, getEncryptionPublicKey as getEthSigPubKey } from '@metamask/eth-sig-util';
-import { Buffer } from 'buffer';
 
 /**
  * Validates window provider presence globally.
@@ -48,9 +47,13 @@ export const encryptAESKeyBoundaries = (aesKeyAsText, publicKeyBase64) => {
         data: aesKeyAsText,
         version: 'x25519-xsalsa20-poly1305'
     });
-    
-    // Convert to hex wrapper safely mimicking the RPC formatting natively required mathematically.
-    return Buffer.from(JSON.stringify(encJSON), 'utf8').toString('hex');
+    // Convert to hex wrapper safely natively required mathematically.
+    const str = JSON.stringify(encJSON);
+    let hex = '';
+    for (let i = 0; i < str.length; i++) {
+        hex += str.charCodeAt(i).toString(16).padStart(2, '0');
+    }
+    return hex;
 };
 
 /**
@@ -61,7 +64,11 @@ export const decryptAESCore = async (hexString, account) => {
     
     // Normalize format removing the hex prefix naturally securely natively
     const cleanHex = hexString.startsWith('0x') ? hexString.slice(2) : hexString;
-    const encData = JSON.parse(Buffer.from(cleanHex, 'hex').toString('utf8'));
+    let jsonStr = '';
+    for (let i = 0; i < cleanHex.length; i += 2) {
+        jsonStr += String.fromCharCode(parseInt(cleanHex.substring(i, i + 2), 16));
+    }
+    const encData = JSON.parse(jsonStr);
     
     const derivedPrivKey = await derivePrivateKey(account);
     return decrypt({ encryptedData: encData, privateKey: derivedPrivKey });
