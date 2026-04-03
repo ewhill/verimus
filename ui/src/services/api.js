@@ -245,8 +245,7 @@ export const ApiService = {
             a.download = filename;
             document.body.appendChild(a);
             a.click();
-            a.remove();
-            setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 100);
+            setTimeout(() => { a.remove(); window.URL.revokeObjectURL(downloadUrl); }, 100);
         } catch (err) {
             console.error("Download failed:", err);
             alert("Download failed due to a network error.");

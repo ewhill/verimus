@@ -295,7 +295,7 @@ const BlockModal = () => {
                 const blob = new Blob([fileBuf], { type: 'application/octet-stream' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a'); a.href = url; a.download = targetFileName.split('/').pop();
-                document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => URL.revokeObjectURL(url), 100);
+                document.body.appendChild(a); a.click(); setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
             } else {
                 const keys = Object.keys(unzipped);
                 if (keys.length === 1) {
@@ -303,7 +303,7 @@ const BlockModal = () => {
                     const blob = new Blob([unzipped[singleName]], { type: 'application/octet-stream' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a'); a.href = url; a.download = singleName.split('/').pop();
-                    document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => URL.revokeObjectURL(url), 100);
+                    document.body.appendChild(a); a.click(); setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
                 } else {
                     // Buffer the entire array implicitly back into a logical Zip without encryption locally
                     const rawZip = fflate.zipSync(unzipped);
@@ -314,7 +314,7 @@ const BlockModal = () => {
                     const rootName = keys.length > 0 ? keys[0].split('/').pop() : 'data';
                     a.download = `verimus_package_${rootName}.zip`;
                     
-                    document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => URL.revokeObjectURL(url), 100);
+                    document.body.appendChild(a); a.click(); setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
                 }
             }
             return true;
