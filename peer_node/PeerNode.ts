@@ -25,6 +25,7 @@ import SyncEngine from '../peer_handlers/sync_engine/SyncEngine';
 import BaseProvider from '../storage_providers/base_provider/BaseProvider';
 import { Block } from '../types';
 import { NodeRole } from '../types/NodeRole';
+import { createHash } from 'crypto';
 
 
 
@@ -265,7 +266,7 @@ class PeerNode {
     async addOwnedBlockToCache(block: Block) {
         // Verify no pending blocks conflict correctly hashing mapped boundaries physically!
         if (block.signature) {
-            const sigHash = require('crypto').createHash('sha256').update(block.signature).digest('hex');
+            const sigHash = createHash('sha256').update(block.signature).digest('hex');
             const blockExistsInMempool = this.mempool.pendingBlocks.has(sigHash);
             if (blockExistsInMempool) {
                 // If a pending block with the same hash exists, it means this block was just processed
