@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { encrypt } from '@metamask/eth-sig-util';
+import { encrypt, decrypt, getEncryptionPublicKey as getEthSigPubKey } from '@metamask/eth-sig-util';
 import { Buffer } from 'buffer';
 
 /**
@@ -19,14 +19,23 @@ export const requestAccounts = async () => {
 };
 
 /**
+ * Deterministically generates a secure offline 32-byte private key mapping securely via a standard EIP-191 Personal Sign organically.
+ */
+export const derivePrivateKey = async (account) => {
+    if (!hasWeb3Provider()) throw new Error("Web3 boundary failed globally.");
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner(account);
+    const message = `Approve Verimus Originator proxy... Derive Encryption Key`;
+    const signature = await signer.signMessage(message);
+    return ethers.id(signature).slice(2);
+};
+
+/**
  * Retrieves the base public key string formatting structurally executing the underlying x25519 standard natively.
  */
 export const getEncryptionPublicKey = async (account) => {
-    if (!hasWeb3Provider()) throw new Error("Web3 boundary failed globally.");
-    return await window.ethereum.request({
-        method: 'eth_getEncryptionPublicKey',
-        params: [account]
-    });
+    const privKey = await derivePrivateKey(account);
+    return getEthSigPubKey(privKey);
 };
 
 /**
@@ -45,18 +54,17 @@ export const encryptAESKeyBoundaries = (aesKeyAsText, publicKeyBase64) => {
 };
 
 /**
- * Executes a pure asymmetric Metamask decryption RPC natively dropping local manual entries safely parsing hex back into plaintext mathematically.
+ * Executes a pure asymmetric Metamask decryption natively strictly executing offline AES routines via deterministic keys.
  */
 export const decryptAESCore = async (hexString, account) => {
     if (!hasWeb3Provider()) throw new Error("Web3 provider logically omitting extraction capabilities.");
     
-    // Normalize format locally strictly mimicking the 0x mappings dynamically bounds.
-    const normalizedHex = hexString.startsWith('0x') ? hexString : `0x${hexString}`;
+    // Normalize format removing the hex prefix naturally securely natively
+    const cleanHex = hexString.startsWith('0x') ? hexString.slice(2) : hexString;
+    const encData = JSON.parse(Buffer.from(cleanHex, 'hex').toString('utf8'));
     
-    return await window.ethereum.request({
-        method: 'eth_decrypt',
-        params: [normalizedHex, account]
-    });
+    const derivedPrivKey = await derivePrivateKey(account);
+    return decrypt({ encryptedData: encData, privateKey: derivedPrivKey });
 };
 
 /**
