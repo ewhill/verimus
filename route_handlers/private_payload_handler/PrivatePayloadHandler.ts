@@ -50,7 +50,7 @@ export default class PrivatePayloadHandler extends BaseHandler {
         }
 
         const payload = targetBlock.payload as StorageContractPayload;
-        if (payload.ownerAddress !== web3Address) {
+        if (!payload || !payload.ownerAddress || payload.ownerAddress.toLowerCase() !== web3Address.toLowerCase()) {
             return res.status(403).json({ success: false, message: 'Web3 Identity mismatch natively against Storage Matrix logic.' });
         }
 

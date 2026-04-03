@@ -51,7 +51,7 @@ export default class DownloadHandler extends BaseHandler {
         }
 
         const payload = block.payload as StorageContractPayload;
-        if (payload.ownerAddress !== web3Address) {
+        if (!payload || !payload.ownerAddress || payload.ownerAddress.toLowerCase() !== web3Address.toLowerCase()) {
             return res.status(403).send('Web3 Identity mismatch natively against Storage Matrix logic.');
         }
 
