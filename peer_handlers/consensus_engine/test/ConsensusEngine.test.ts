@@ -36,7 +36,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
             privateKey: keys.privateKey,
             publicKey: keys.publicKey,
             mempool,
-            syncEngine: createMock<any>({ isSyncing: false, syncBuffer: [] }),
+            syncEngine: createMock<any>({ isSyncing: false, syncBuffer: [], performInitialSync: mock.fn<() => Promise<void>>(async () => {}) }),
             getMajorityCount: mock.fn<() => number>(() => 2),
             ledger: createMock<any>({
                 collection: createMock<any>({ findOne: mock.fn<(...args: any[]) => Promise<null>>(async () => null) as any }),
@@ -198,7 +198,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
 
     it('Buffers adopt fork requests during sync', async () => {
         mockNode.syncEngine.isSyncing = true;
-        await engine.handleAdoptFork('fork123', 'hashy', { peerAddress: 'addr', send: () => { } });
+        await engine.handleAdoptFork('fork123_mockHashConstraint123', 'hashy', { peerAddress: 'addr', send: () => { } });
         assert.strictEqual(mockNode.syncEngine.syncBuffer.length, 1);
     });
 

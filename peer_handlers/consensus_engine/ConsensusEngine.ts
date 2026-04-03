@@ -26,6 +26,7 @@ class ConsensusEngine {
     proposalTimeout: NodeJS.Timeout | null;
     walletManager: WalletManager;
     private auditedIntervals: Map<string, number> = new Map();
+    private activeForkTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
     // CRITICAL FIX: Utilize explicit promise chain as a structural mutex, universally preventing all database overlap race conditions mathematically organically.
     private taskQueue: Promise<void> = Promise.resolve();
@@ -308,6 +309,19 @@ class ConsensusEngine {
                     logger.warn(`[Peer ${this.node.port}] Failed to broadcast fork proposal: ${err.message}`);
                 });
             }
+            
+            if (this.activeForkTimeouts.has(forkId)) {
+                clearTimeout(this.activeForkTimeouts.get(forkId)!);
+            }
+            
+            const timeout = setTimeout(() => {
+                this.activeForkTimeouts.delete(forkId);
+                logger.warn(`[Peer ${this.node.port}] P2P BFT Timeout Triggered for ${forkId.slice(0, 8)}. Dropping stalled proposal bounds implicitly to mathematically unlock chain.`);
+                this.mempool.eligibleForks.delete(forkId);
+                this._checkAndProposeFork().catch(()=>{});
+            }, 10000).unref();
+            
+            this.activeForkTimeouts.set(forkId, timeout);
         }
     }
 
@@ -460,6 +474,11 @@ class ConsensusEngine {
         const settledEntry = this.mempool.settledForks.get(forkId);
         const forkEntry = this.mempool.eligibleForks.get(forkId);
         if (!settledEntry || !forkEntry || !forkEntry.computedBlocks) return;
+        
+        if (this.activeForkTimeouts.has(forkId)) {
+            clearTimeout(this.activeForkTimeouts.get(forkId)!);
+            this.activeForkTimeouts.delete(forkId);
+        }
 
         this.committing = true;
         try {
@@ -530,7 +549,7 @@ class ConsensusEngine {
                                 signature: sigStr as string
                             };
                             
-                            await this.handlePendingBlock(checkpointBlock, { peerAddress: '0.0.0.0', send: () => {} } as any, Date.now());
+                            this.handlePendingBlock(checkpointBlock, { peerAddress: '0.0.0.0', send: () => {} } as any, Date.now()).catch((e: any) => logger.warn(`[Peer ${this.node.port}] Suppressed Checkpoint execution wrap exception: ${e.message}`));
                         }
                     }
                 }
