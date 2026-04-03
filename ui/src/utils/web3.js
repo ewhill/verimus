@@ -25,7 +25,7 @@ export const getEncryptionPublicKey = async (account) => {
     if (!hasWeb3Provider()) throw new Error("Web3 boundary failed globally.");
     return await window.ethereum.request({
         method: 'eth_getEncryptionPublicKey',
-        params: [account]
+        params: [account.toLowerCase()]
     });
 };
 
@@ -55,7 +55,7 @@ export const decryptAESCore = async (hexString, account) => {
     
     return await window.ethereum.request({
         method: 'eth_decrypt',
-        params: [normalizedHex, account]
+        params: [normalizedHex, account.toLowerCase()]
     });
 };
 
