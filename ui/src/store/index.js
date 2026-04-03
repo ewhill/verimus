@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+const getInitialSegments = () => typeof window !== 'undefined' ? window.location.pathname.split('/').filter(Boolean) : [];
+const initialSegments = getInitialSegments();
+const initialRoute = initialSegments[0] || 'ledger';
+const initialTab = initialSegments[1];
+
 export const useStore = create(
     persist(
         (set) => ({
@@ -24,10 +29,10 @@ export const useStore = create(
     isLoading: false,
     error: null,
     web3Account: null,
-    currentRoute: window.location.pathname.replace('/', '') || 'wallet',
-    activeWalletTab: 'dashboard',
-    activeLedgerTab: 'global',
-    activePeersTab: 'mesh',
+    currentRoute: initialRoute,
+    activeWalletTab: (initialRoute === 'wallet' && initialTab) ? initialTab : 'dashboard',
+    activeLedgerTab: (initialRoute === 'ledger' && initialTab) ? initialTab : 'global',
+    activePeersTab: (initialRoute === 'network' && initialTab) ? initialTab : 'mesh',
     ledgerSortMode: 'index_desc',
     toasts: [],
 

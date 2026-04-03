@@ -19,7 +19,17 @@ const Header = () => {
 
     const routeTo = (e, route) => {
         e.preventDefault();
-        window.history.pushState({}, '', `/${route}`);
+        
+        let tabSegment = '';
+        if (route === 'wallet') tabSegment = activeWalletTab;
+        else if (route === 'ledger') tabSegment = activeLedgerTab;
+        else if (route === 'network') tabSegment = activePeersTab;
+
+        const targetUri = `/${route}${tabSegment ? `/${tabSegment}` : ''}`;
+        if (window.location.pathname !== targetUri) {
+            window.history.pushState({}, '', targetUri);
+        }
+
         dispatch({ type: 'SET_ROUTE', payload: route });
         setIsNavOpen(false);
     };
@@ -76,7 +86,7 @@ const Header = () => {
                         <a href="#" className={`nav-link ${activeRoute === 'wallet' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'wallet')}>Wallet</a>
                     )}
                     <a href="#" className={`nav-link ${activeRoute === 'ledger' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'ledger')}>Ledger</a>
-                    <a href="#" className={`nav-link ${activeRoute === 'peers' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'peers')}>Network</a>
+                    <a href="#" className={`nav-link ${activeRoute === 'network' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'network')}>Network</a>
 
                     <div style={{ marginLeft: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <WalletConnection />
@@ -95,13 +105,13 @@ const Header = () => {
                 </nav>
             </div>
 
-            {['wallet', 'ledger', 'peers'].includes(activeRoute) && (
+            {['wallet', 'ledger', 'network'].includes(activeRoute) && (
                 <div className="header-sub-tier">
                     <div className="segmented-control" style={{ display: 'flex', gap: '0.5rem', width: '100%', maxWidth: '1400px' }}>
                         {activeRoute === 'wallet' && (
                             <>
                                 <button className={`segmented-btn ${activeWalletTab === 'dashboard' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_WALLET_TAB', payload: 'dashboard' })} style={{ flex: 1 }}>Wallet Dashboard</button>
-                                <button className={`segmented-btn ${activeWalletTab === 'files' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_WALLET_TAB', payload: 'files' })} style={{ flex: 1 }}>Asset Files</button>
+                                <button className={`segmented-btn ${activeWalletTab === 'assets' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_WALLET_TAB', payload: 'assets' })} style={{ flex: 1 }}>Asset Files</button>
                             </>
                         )}
                         {activeRoute === 'ledger' && (
@@ -116,7 +126,7 @@ const Header = () => {
                                 )}
                             </>
                         )}
-                        {activeRoute === 'peers' && (
+                        {activeRoute === 'network' && (
                             <>
                                 <button className={`segmented-btn ${activePeersTab === 'mesh' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_PEERS_TAB', payload: 'mesh' })} style={{ flex: 1 }}>Network Mesh</button>
                                 <button className={`segmented-btn ${activePeersTab === 'reputation' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_PEERS_TAB', payload: 'reputation' })} style={{ flex: 1 }}>Global Reputation</button>

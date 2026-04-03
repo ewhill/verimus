@@ -15,6 +15,9 @@ function App() {
     const dispatch = useStore(s => s.dispatch);
     const web3Account = useStore(s => s.web3Account);
     const currentRoute = useStore(s => s.currentRoute);
+    const activeWalletTab = useStore(s => s.activeWalletTab);
+    const activeLedgerTab = useStore(s => s.activeLedgerTab);
+    const activePeersTab = useStore(s => s.activePeersTab);
     const filesSearchQuery = useStore(s => s.filesSearchQuery);
     const searchQuery = useStore(s => s.searchQuery);
     const selectedBlockHash = useStore(s => s.selectedBlockHash);
@@ -26,16 +29,17 @@ function App() {
         const params = new URLSearchParams(window.location.search);
         const q = params.get('q');
         const block = params.get('block');
-        const path = window.location.pathname.replace('/', '') || 'ledger';
+        const segments = window.location.pathname.split('/').filter(Boolean);
+        const route = segments[0] || 'ledger';
 
         if (q) {
-            if (path === 'wallet') {
+            if (route === 'wallet') {
                 dispatch({ type: 'SET_FILES_SEARCH', payload: q });
-            } else if (path === 'ledger') {
+            } else if (route === 'ledger') {
                 dispatch({ type: 'SET_SEARCH', payload: q });
             }
         }
-        if (block && path === 'ledger') {
+        if (block && route === 'ledger') {
             dispatch({ type: 'SET_MODAL_OPEN', payload: { isOpen: true, hash: block } });
         }
 
@@ -46,7 +50,13 @@ function App() {
         });
 
         const handlePopState = () => {
-            const r = window.location.pathname.replace('/', '') || 'ledger';
+            const pathSegments = window.location.pathname.split('/').filter(Boolean);
+            const r = pathSegments[0] || 'ledger';
+            const t = pathSegments[1];
+            if (r === 'wallet' && t) dispatch({ type: 'SET_WALLET_TAB', payload: t });
+            else if (r === 'ledger' && t) dispatch({ type: 'SET_LEDGER_TAB', payload: t });
+            else if (r === 'network' && t) dispatch({ type: 'SET_PEERS_TAB', payload: t });
+            
             dispatch({ type: 'SET_ROUTE', payload: r });
         };
         
@@ -64,7 +74,14 @@ function App() {
     useEffect(() => {
         // Sync functional UI state directly into native browser History API dynamically
         const searchParams = new URLSearchParams(window.location.search);
+        
+        let tabSegment = '';
+        if (currentRoute === 'wallet') tabSegment = activeWalletTab;
+        else if (currentRoute === 'ledger') tabSegment = activeLedgerTab;
+        else if (currentRoute === 'network') tabSegment = activePeersTab;
+
         let routeUri = `/${currentRoute}`;
+        if (tabSegment) routeUri += `/${tabSegment}`;
 
         // Clear query keys systematically mapping current view bounds
         searchParams.delete('q');
@@ -83,14 +100,14 @@ function App() {
         if (window.location.pathname + window.location.search !== fullNewUri) {
             window.history.replaceState({}, '', fullNewUri);
         }
-    }, [currentRoute, filesSearchQuery, searchQuery, isModalOpen, selectedBlockHash]);
+    }, [currentRoute, activeWalletTab, activeLedgerTab, activePeersTab, filesSearchQuery, searchQuery, isModalOpen, selectedBlockHash]);
 
     const renderActiveView = () => {
         if ((currentRoute === 'wallet' || currentRoute === 'files') && !web3Account) {
             return <LedgerView />;
         }
         switch (currentRoute) {
-            case 'peers':  return <PeersView />;
+            case 'network':  return <PeersView />;
             case 'wallet': return <WalletView />;
             case 'ledger':
             default:       return <LedgerView />;
