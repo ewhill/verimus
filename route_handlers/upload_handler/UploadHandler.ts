@@ -30,7 +30,7 @@ export default class UploadHandler extends BaseHandler {
         }
 
         const authTag = req.body.authTag || ''; // Evaluated linearly below!
-        const proxyMessage = `Approve Verimus Originator proxy for data struct ${authTag || 'batch'}\nTimestamp: ${timestamp}`;
+        const proxyMessage = `Approve Verimus Originator proxy for data struct batch\nTimestamp: ${timestamp}`;
 
         let recoveredAddress: string;
         try {

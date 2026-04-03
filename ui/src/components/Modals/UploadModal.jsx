@@ -106,6 +106,13 @@ const UploadModal = () => {
 
             setCryptoLogs(prev => [...prev, { status: 'PROXY_AUTH', message: 'Generating Originator Limits requesting active verification bounds natively...' }]);
             const pubKeyInfo = await getEncryptionPublicKey(web3Account);
+            
+            // CRITICAL FIX: Add artificial delay to prevent MetaMask KeyringController lock race condition
+            // when consecutive UI popups are launched without allowing the extension context to settle natively.
+            await new Promise(resolve => setTimeout(resolve, 600));
+
+            const executionTime = Date.now();
+            const signature = await signOriginatorProxyMessage(executionTime, 'batch', web3Account);
 
             // Intercept standard streams extracting Native Web Crypto boundaries structurally
             setCryptoLogs(prev => [...prev, { status: 'DECOUPLED_ENCRYPTION', message: 'Executing zero-knowledge client-side AES-256-GCM symmetric block cipher natively...' }]);
@@ -116,9 +123,6 @@ const UploadModal = () => {
             setCryptoLogs(prev => [...prev, { status: 'ENCRYPTION_COMPLETE', message: 'Symmetric Block Locked. Isolating Key Array organically...' }]);
 
             const encKeyPayload = encryptAESKeyBoundaries(aesKeyBase64, pubKeyInfo);
-
-            const executionTime = Date.now();
-            const signature = await signOriginatorProxyMessage(executionTime, authTagHex, web3Account);
 
             // Mount mathematically opaque structures into standard boundary forms
             formData.append('files', encryptedBlob, 'encrypted_payload.bin');
