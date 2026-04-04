@@ -731,16 +731,37 @@ class ConsensusEngine {
                 };
 
                 const auditId = contract._id!.toString();
-                const timeout = setTimeout(async () => {
-                    this.node.events.removeAllListeners(`merkle_audit_response:${auditId}:${fragment.physicalId}`);
-                    if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(fragment.nodeId, "Audit Timeout Offense");
-                    logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof resolving logical blocks! Penalty mapped.`);
-                    this.node.events.emit('audit_telemetry', { status: 'SLASHING_EXECUTED', message: `Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof. Executing Slashing...`, targetPeer: fragment.nodeId });
-                    await executeSlashing(fragment.nodeId, "TIMEOUT");
-                }, 15000);
+                const MAX_RETRIES = 2; // attempt 0, attempt 1, attempt 2 (3 strikes)
+                const BASE_TIMEOUT_MS = 5000;
+                let currentAttempt = 0;
+                let currentTimeoutRef: NodeJS.Timeout;
+
+                const attemptChallenge = () => {
+                    if (this.node.peer) {
+                        this.node.peer.broadcast(challengeMsg).catch(e => {
+                            logger.warn(`[Peer ${this.node.port}] Audit broadcast routing latency drop: ${e.message}`);
+                        });
+                    }
+
+                    const backoffTimeout = BASE_TIMEOUT_MS * Math.pow(2, currentAttempt);
+
+                    currentTimeoutRef = setTimeout(async () => {
+                        if (currentAttempt < MAX_RETRIES) {
+                            currentAttempt++;
+                            logger.info(`[Peer ${this.node.port}] P2P Timeout resolving Merkle sequence. Exponential backoff retry ${currentAttempt}/${MAX_RETRIES} for host ${fragment.nodeId.slice(0, 8)}...`);
+                            attemptChallenge();
+                        } else {
+                            this.node.events.removeAllListeners(`merkle_audit_response:${auditId}:${fragment.physicalId}`);
+                            if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(fragment.nodeId, "Audit Timeout Offense");
+                            logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof for physicalId=${fragment.physicalId} auditId=${auditId}! Penalty mapped.`);
+                            this.node.events.emit('audit_telemetry', { status: 'SLASHING_EXECUTED', message: `Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof. Executing Slashing...`, targetPeer: fragment.nodeId });
+                            await executeSlashing(fragment.nodeId, "TIMEOUT");
+                        }
+                    }, backoffTimeout);
+                };
 
                 this.node.events.once(`merkle_audit_response:${auditId}:${fragment.physicalId}`, async (resMsg: any) => {
-                    clearTimeout(timeout);
+                    clearTimeout(currentTimeoutRef);
 
                     let isValid = false;
                     if (resMsg.computedRootMatch && resMsg.chunkDataBase64 && resMsg.merkleSiblings) {
@@ -797,11 +818,7 @@ class ConsensusEngine {
                     }
                 });
 
-                if (this.node.peer) {
-                    await this.node.peer.broadcast(challengeMsg).catch(e => {
-                        logger.warn(`[Peer ${this.node.port}] Audit broadcast routing latency drop: ${e.message}`);
-                    });
-                }
+                attemptChallenge();
             }
         }
     }

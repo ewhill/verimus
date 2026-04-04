@@ -123,11 +123,13 @@ const ContractsView = () => {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '1px solid var(--border-light)', paddingTop: '1rem', marginTop: 'auto' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                                     <span style={{ color: 'var(--text-muted)' }}>Aggregate Bounds</span>
-                                    <span style={{ color: '#cbd5e1' }}>{formatBytes(contract.payload?.boundsMap?.totalSize || 0)}</span>
+                                    <span style={{ color: '#cbd5e1' }}>{formatBytes(contract.payload?.erasureParams?.originalSize || 0)}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                                     <span style={{ color: 'var(--text-muted)' }}>Active Merkle Root</span>
-                                    <span style={{ color: '#cbd5e1', fontFamily: 'monospace' }}>{formatAddress(contract.payload?.dataMerkleRoot)}</span>
+                                    <span style={{ color: '#cbd5e1', fontFamily: 'monospace' }}>
+                                        {contract.payload?.merkleRoots?.length ? formatAddress(contract.payload.merkleRoots[0]) : 'Unknown'}
+                                    </span>
                                 </div>
                             </div>
                         </div>
