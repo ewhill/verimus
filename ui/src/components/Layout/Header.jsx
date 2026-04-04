@@ -11,6 +11,7 @@ const Header = () => {
     const nodeConfig = useStore(s => s.nodeConfig);
     const error = useStore(s => s.error);
     const web3Account = useStore(s => s.web3Account);
+    const web3EncryptionKey = useStore(s => s.web3EncryptionKey);
     const [isNavOpen, setIsNavOpen] = useState(false);
 
     const activeRoute = currentRoute || 'files';
@@ -52,7 +53,7 @@ const Header = () => {
 
     const navActions = (
         <div className="nav-actions">
-            {(nodeConfig?.roles?.includes('ORIGINATOR')) && (
+            {(nodeConfig?.roles?.includes('ORIGINATOR') && web3EncryptionKey) && (
                 <button 
                     className="nav-upload-btn"
                     onClick={() => dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true })}
@@ -232,7 +233,7 @@ const Header = () => {
                 <div className="mobile-drawer-scroll">
                     <div style={{ paddingBottom: '2rem', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', marginBottom: '1.5rem', width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <WalletConnection isMobileDrawer={true} />
-                        {(nodeConfig?.roles?.includes('ORIGINATOR')) && (
+                        {(nodeConfig?.roles?.includes('ORIGINATOR') && web3EncryptionKey) && (
                             <button 
                                 className="nav-upload-btn" style={{ width: '100%', padding: '0.8rem' }}
                                 onClick={() => { setIsNavOpen(false); dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true }); }}

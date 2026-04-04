@@ -79,7 +79,11 @@ const WalletConnection = ({ isMobileDrawer }) => {
                     padding: '0.8rem 1rem', borderRadius: 'var(--radius-md)'
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, minWidth: 0 }}>
-                        <div style={{ width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%', boxShadow: '0 0 8px rgba(74,222,128,0.6)', flexShrink: 0 }}></div>
+                        {isConnecting ? (
+                            <div className="spinner" style={{ width: '12px', height: '12px', flexShrink: 0, borderWidth: '2px', borderColor: 'rgba(74, 222, 128, 0.3)', borderTopColor: '#4ade80' }}></div>
+                        ) : (
+                            <div style={{ width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%', boxShadow: '0 0 8px rgba(74,222,128,0.6)', flexShrink: 0 }}></div>
+                        )}
                         <span style={{ color: '#818cf8', fontWeight: 600, fontFamily: 'monospace', fontSize: '1rem', flex: 1, textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {web3Account}
                         </span>
@@ -106,7 +110,11 @@ const WalletConnection = ({ isMobileDrawer }) => {
                     background: 'rgba(129, 140, 248, 0.1)', border: '1px solid rgba(129, 140, 248, 0.3)',
                     padding: '0.3rem 0.8rem', borderRadius: '100px', cursor: 'pointer', transition: 'background 0.2s'
                 }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(129, 140, 248, 0.2)'} onMouseOut={(e) => e.currentTarget.style.background = 'rgba(129, 140, 248, 0.1)'} title={web3Account}>
-                    <div style={{ width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%', boxShadow: '0 0 8px rgba(74,222,128,0.6)' }}></div>
+                    {isConnecting ? (
+                        <div className="spinner" style={{ width: '12px', height: '12px', flexShrink: 0, borderWidth: '2px', borderColor: 'rgba(74, 222, 128, 0.3)', borderTopColor: '#4ade80' }}></div>
+                    ) : (
+                        <div style={{ width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%', boxShadow: '0 0 8px rgba(74,222,128,0.6)', flexShrink: 0 }}></div>
+                    )}
                     <span style={{ color: '#818cf8', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.9rem' }}>
                         {web3Account.substring(0, 6)}...{web3Account.substring(web3Account.length - 4)}
                     </span>
