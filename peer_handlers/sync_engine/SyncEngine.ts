@@ -406,6 +406,7 @@ class SyncEngine {
         try {
             const result = await this.node.storageProvider!.getBlockReadStream(msg.physicalId);
             if (result.status !== 'available' || !result.stream) {
+                logger.warn(`[SyncEngine DEBUG] Missed challenge block physically missing! File not found in local disk bounds: ${msg.physicalId}`);
                 return;
             }
             
