@@ -7,6 +7,7 @@ const UploadModal = () => {
     const dispatch = useStore(s => s.dispatch);
     const isUploadModalOpen = useStore(s => s.isUploadModalOpen);
     const web3Account = useStore(s => s.web3Account);
+    const web3EncryptionKey = useStore(s => s.web3EncryptionKey);
     const nodeConfig = useStore(s => s.nodeConfig);
 
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -16,7 +17,6 @@ const UploadModal = () => {
     const [maxCost, setMaxCost] = useState(0.05);
     const [marketLogs, setMarketLogs] = useState([]);
     const [cryptoLogs, setCryptoLogs] = useState([]);
-    const [pubKeyInfo, setPubKeyInfo] = useState(null);
 
     const marketEndRef = useRef(null);
     const cryptoEndRef = useRef(null);
@@ -92,7 +92,9 @@ const UploadModal = () => {
                             return [...prev, data];
                         });
                     }
-                } catch (err) { }
+                } catch {
+                    // Suppressed EventSource telemetry trace locally
+                }
             };
         } catch (e) {
             console.warn("EventSource tracking dynamically suppressed:", e);
@@ -105,15 +107,12 @@ const UploadModal = () => {
                 throw new Error("Web3 EVM Constraints are uninitialized. Connect your Metamask Wallet to execute asymmetric AES proxying locally.");
             }
 
-            // CRITICAL FIX: Deterministic State-Driven Execution! Require an explicitly distinct user-gesture
-            // to separate the two native MetaMask popups, completely mitigating the Keyring lock race condition natively.
-            if (!pubKeyInfo) {
+            let currentPubKey = web3EncryptionKey;
+            if (!currentPubKey) {
                 setCryptoLogs([{ status: 'PROXY_AUTH', message: 'Generating Originator Limits requesting active verification bounds natively...' }]);
-                const key = await getEncryptionPublicKey(web3Account);
-                setPubKeyInfo(key);
-                setCryptoLogs(prev => [...prev, { status: 'PROXY_AUTH_COMPLETE', message: 'Encryption constraints granted. Please proceed to Phase 2.' }]);
-                setIsUploading(false);
-                return;
+                currentPubKey = await getEncryptionPublicKey(web3Account);
+                dispatch({ type: 'SET_WEB3_ENCRYPTION_KEY', payload: currentPubKey });
+                setCryptoLogs(prev => [...prev, { status: 'PROXY_AUTH_COMPLETE', message: 'Encryption constraints granted.' }]);
             }
 
             const executionTime = Date.now();
@@ -127,7 +126,7 @@ const UploadModal = () => {
 
             setCryptoLogs(prev => [...prev, { status: 'ENCRYPTION_COMPLETE', message: 'Symmetric Block Locked. Isolating Key Array organically...' }]);
 
-            const encKeyPayload = encryptAESKeyBoundaries(aesKeyBase64, pubKeyInfo);
+            const encKeyPayload = encryptAESKeyBoundaries(aesKeyBase64, currentPubKey);
 
             // Mount mathematically opaque structures into standard boundary forms
             formData.append('files', encryptedBlob, 'encrypted_payload.bin');
@@ -287,7 +286,7 @@ const UploadModal = () => {
                             <span>
                                 {isUploading 
                                     ? 'Processing Order...' 
-                                    : (!pubKeyInfo ? 'Step 1: Exchange Encryption Limits' : 'Step 2: Bundle & Commit Data')}
+                                    : 'Bundle & Commit Data'}
                             </span>
                             {isUploading && <div className="spinner" style={{ display: 'inline-block', width: '16px', height: '16px', borderWidth: '2px', marginLeft: '0.5rem' }}></div>}
                         </button>
