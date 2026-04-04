@@ -94,9 +94,9 @@ if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     echo -e "\033[1;33mWarning: Network did not fully converge within the time limit. Seeding might fail.\033[0m"
 fi
 
-DUMMY_WALLET="0x9A9801CA2e2B9A4B015E8Aa23ff6D904880D2e55"
-DUMMY_TIMESTAMP="1775149343208"
-DUMMY_SIG="0x74623c7151b597f166ded8e06ef59af0b432ed7cb589fd0af17c58e27f70ac4972751959e879db529c490b8f916a1fcf3e47da9c0d31b1c794d23af861d02e6b1b"
+DUMMY_WALLET="0xf29CeF8D4dFaBAa1C2d6813561c9AeaF3f97230f"
+DUMMY_TIMESTAMP="1775344694641"
+DUMMY_SIG="0x5d3b8b5e7b333b6a6e9bb6f93191c2b8428a06ba2459ee2bbc3620294a138e01000c09c47284b918a7da0844e044cea9ae310001108b886922cb500bc07c79e51c"
 
 echo "4. Injecting Baseline Escrow Funding via MongoDB..."
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -123,8 +123,7 @@ for i in {1..5}; do
     TARGET_PORT=${PORTS[$(( (i-1) % 5 ))]}
     
     ABS_PATH="$PWD/$FILE"
-    DUMMY_SIG_ITER="${DUMMY_SIG}${i}"
-    RESPONSE=$(curl -s -k -X POST -F "files=@$FILE" -F "paths=[\"$ABS_PATH\"]" -F "ownerAddress=$DUMMY_WALLET" -F "ownerSignature=$DUMMY_SIG_ITER" -F "timestamp=$DUMMY_TIMESTAMP" "https://127.0.0.1:$TARGET_PORT/api/upload")
+    RESPONSE=$(curl -s -k -X POST -F "files=@$FILE" -F "paths=[\"$ABS_PATH\"]" -F "ownerAddress=$DUMMY_WALLET" -F "ownerSignature=$DUMMY_SIG" -F "timestamp=$DUMMY_TIMESTAMP" "https://127.0.0.1:$TARGET_PORT/api/upload")
     
     if [[ $RESPONSE == *"success\":true"* ]]; then
         echo "✅ Seeded block $i via node on port $TARGET_PORT"
