@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useStore } from '../../store';
 import { hasWeb3Provider, requestAccounts } from '../../utils/web3';
 
-const WalletConnection = () => {
+const WalletConnection = ({ isMobileDrawer }) => {
     const dispatch = useStore(s => s.dispatch);
     const web3Account = useStore(s => s.web3Account);
     const [isConnecting, setIsConnecting] = useState(false);
@@ -63,6 +63,34 @@ const WalletConnection = () => {
     };
 
     if (web3Account) {
+        if (isMobileDrawer) {
+            return (
+                <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    width: '100%', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)',
+                    padding: '0.8rem 1rem', borderRadius: 'var(--radius-md)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, minWidth: 0 }}>
+                        <div style={{ width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%', boxShadow: '0 0 8px rgba(74,222,128,0.6)', flexShrink: 0 }}></div>
+                        <span style={{ color: '#818cf8', fontWeight: 600, fontFamily: 'monospace', fontSize: '1rem', flex: 1, textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {web3Account}
+                        </span>
+                    </div>
+                    <button onClick={() => {
+                        dispatch({ type: 'SET_WEB3_ACCOUNT', payload: null });
+                        const currentPath = window.location.pathname;
+                        if (currentPath === '/wallet' || currentPath === '/files') {
+                            window.history.pushState({}, '', '/ledger');
+                            dispatch({ type: 'SET_ROUTE', payload: 'ledger' });
+                        }
+                        dispatch({ type: 'ADD_TOAST', payload: { id: Date.now(), title: 'Wallet Disconnected', message: 'You have been unmapped successfully', type: 'success' } });
+                    }} style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0', transition: 'opacity 0.2s' }} onMouseOver={(e) => e.currentTarget.style.opacity = '0.7'} onMouseOut={(e) => e.currentTarget.style.opacity = '1'} title="Disconnect Wallet">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    </button>
+                </div>
+            );
+        }
+
         return (
             <div style={{ position: 'relative' }}>
                 <div className="wallet-pill" onClick={() => setIsDropdownOpen(!isDropdownOpen)} style={{
@@ -106,10 +134,10 @@ const WalletConnection = () => {
             onClick={handleConnectClick}
             disabled={isConnecting}
             style={{
-                marginLeft: '0.5rem', padding: '0.4rem 1rem', background: 'transparent',
+                marginLeft: isMobileDrawer ? '0' : '0.5rem', padding: '0.6rem 1rem', background: 'transparent',
                 color: '#818cf8', border: '1px solid #818cf8', borderRadius: '100px', fontWeight: '600',
                 cursor: isConnecting ? 'not-allowed' : 'pointer', transition: 'background 0.2s',
-                opacity: isConnecting ? 0.7 : 1
+                opacity: isConnecting ? 0.7 : 1, width: isMobileDrawer ? '100%' : 'auto'
             }}
             onMouseOver={(e) => !isConnecting && (e.currentTarget.style.background = 'rgba(129, 140, 248, 0.1)')}
             onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}

@@ -51,7 +51,7 @@ const WalletView = () => {
         <div style={{ padding: '0', maxWidth: '1400px', margin: '0 auto', color: '#f8fafc', height: '100%', display: 'flex', flexDirection: 'column', width: '100%' }}>
 
             {activeTab === 'assets' && (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'visible' }}>
                     <FilesView />
                 </div>
             )}

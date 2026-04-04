@@ -107,7 +107,7 @@ const FileGrid = ({ displayItems }) => {
                     const isDropdownOpen = openDropdown === i;
                     
                     return (
-                        <div key={`file-${f.path}-${i}`} className={`file-card redesigned has-versions`} style={{ zIndex: isDropdownOpen ? 10 : 1 }}>
+                        <div key={`file-${f.path}-${i}`} className={`file-card redesigned has-versions`} style={{ zIndex: isDropdownOpen ? 100 : 1 }}>
                             <div 
                                 className="file-icon-wrap click-to-download" 
                                 onClick={(e) => toggleDropdown(i, e)}
@@ -124,7 +124,7 @@ const FileGrid = ({ displayItems }) => {
                             </div>
                             
                             {isDropdownOpen && (
-                                <div className="versions-panel show" style={{ width: '400px', right: '0', pointerEvents: 'auto', background: '#0f172a', padding: '1.25rem', border: '1px solid rgba(255,255,255,0.1)' }} onClick={(e) => e.stopPropagation()}>
+                                <div className="versions-panel show" style={{ width: '400px', pointerEvents: 'auto', background: '#0f172a', padding: '1.25rem', border: '1px solid rgba(255,255,255,0.1)' }} onClick={(e) => e.stopPropagation()}>
                                     <div className="versions-panel-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                                         <span style={{ color: '#f8fafc', fontSize: '0.85rem' }}>Cryptographic Inspection</span>
                                         <button className="btn-download" onClick={(e) => handleDownload(latestBlock.blockHash, f.path, e)} style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Decrypt File</button>
