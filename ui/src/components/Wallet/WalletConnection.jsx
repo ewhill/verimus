@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../../store';
-import { hasWeb3Provider, requestAccounts } from '../../utils/web3';
+import { hasWeb3Provider, requestAccounts, getEncryptionPublicKey } from '../../utils/web3';
 
 const WalletConnection = ({ isMobileDrawer }) => {
     const dispatch = useStore(s => s.dispatch);
@@ -46,6 +46,14 @@ const WalletConnection = ({ isMobileDrawer }) => {
             const account = await requestAccounts();
             if (account) {
                 dispatch({ type: 'SET_WEB3_ACCOUNT', payload: account });
+                
+                try {
+                    const pubKey = await getEncryptionPublicKey(account);
+                    dispatch({ type: 'SET_WEB3_ENCRYPTION_KEY', payload: pubKey });
+                } catch (encErr) {
+                    console.warn("Encryption constraints deferred locally:", encErr);
+                }
+
                 dispatch({
                     type: 'ADD_TOAST',
                     payload: { id: Date.now(), title: 'Wallet Connected', message: `Mapped ${account.substring(0, 6)}... structurally`, type: 'success' }
