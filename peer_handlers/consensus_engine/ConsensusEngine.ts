@@ -101,7 +101,9 @@ class ConsensusEngine {
                 return;
             }
 
-            const blockId = crypto.createHash('sha256').update(block.signature).digest('hex');
+            // CRITICAL FIX: Use the mathematically deterministic recalculation Hash directly
+            // rather than only mapping block.signature uniquely preventing dummy-sig static overlays
+            const blockId = recalculatedHash;
 
             const isSignatureValid = verifySignature(JSON.stringify(block.payload), block.signature, block.publicKey);
             if (!isSignatureValid) {
@@ -394,8 +396,9 @@ class ConsensusEngine {
                     }
 
                     index++;
+                    
                     const newBlock: Block = {
-                        metadata: { index, timestamp: pEntry.block.metadata.timestamp || pEntry.originalTimestamp || Date.now() },
+                        metadata: { index, timestamp: pEntry.block.metadata?.timestamp || pEntry.originalTimestamp || Date.now() },
                         type: pEntry.block.type || BLOCK_TYPES.STORAGE_CONTRACT,
                         previousHash,
                         publicKey: pEntry.block.publicKey,
@@ -405,8 +408,6 @@ class ConsensusEngine {
 
                     const blockToHash = { ...newBlock };
                     const strToHash = JSON.stringify(blockToHash);
-                    logger.warn(`[Peer ${this.node.port}] blockToHash string length: ${strToHash.length}, previousHash: ${previousHash}, index: ${index}, timestamp: ${blockToHash.metadata.timestamp}`);
-                    logger.warn(`[Peer ${this.node.port}] bId: ${bId.slice(0, 8)}, signature length: ${blockToHash.signature.length}, payload length: ${JSON.stringify(blockToHash.payload).length}`);
                     newBlock.hash = crypto.createHash('sha256').update(strToHash).digest('hex');
                     previousHash = newBlock.hash!;
                     finalTipHash = newBlock.hash!;
@@ -559,19 +560,16 @@ class ConsensusEngine {
                         }
                     }
                 }
+            }
 
-                const sigHash = crypto.createHash('sha256').update(block.signature).digest('hex');
-                for (const [bId, pEntry] of this.mempool.pendingBlocks.entries()) {
-                    if (bId === sigHash) {
-                        pEntry.committed = true;
-                        break;
-                    }
+            for (const bId of forkEntry.blockIds) {
+                const pEntry = this.mempool.pendingBlocks.get(bId);
+                if (pEntry) {
+                    pEntry.committed = true;
+                    // CRITICAL FIX: To prevent endless 6 pending blocks anomaly, natively cleanse the queue natively mapped explicitly preventing lingering memory references.
+                    this.mempool.pendingBlocks.delete(bId);
+                    this.node.events.emit(`settled:${bId}`, pEntry.block);
                 }
-
-                // CRITICAL FIX: To prevent endless 6 pending blocks anomaly, natively cleanse the queue natively mapped explicitly preventing lingering memory references.
-                this.mempool.pendingBlocks.delete(sigHash);
-
-                this.node.events.emit(`settled:${sigHash}`, block);
             }
 
             await this._checkAndProposeFork();

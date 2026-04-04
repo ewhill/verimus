@@ -128,7 +128,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
             assert.strictEqual(broadcastCount, 2);
 
             // Orphan verification map test
-            const blockId = crypto.createHash('sha256').update(mockBlock.signature).digest('hex');
+            const blockToHashId = { ...mockBlock }; delete blockToHashId.hash; delete blockToHashId._id; const blockId = proxyCrypto.hashData(JSON.stringify(blockToHashId));
             engine.mempool.orphanedVerifications.set(blockId, [{ signature: 'orphanedSig', connection: { peerAddress: 'peer', send: () => { } } }]);
 
             // delete the pending to re-enter
@@ -221,10 +221,13 @@ describe('Backend: ConsensusEngine Integrity', () => {
     });
 
     it('Commits validated fork chains', async () => {
-        engine.mempool.eligibleForks.set('forkCommit', { adopted: true, proposals: new Set(), blockIds: ['b1'], computedBlocks: [{ ...createMockBlock('sig1', 'pk', 'hsh'), previousHash: 'lastHash123', metadata: { index: 1, timestamp: Date.now() } }] });
+        const b1 = createMockBlock('sig1', 'pk', 'hsh');
+        const b1ToHash = { ...b1 }; delete b1ToHash.hash; delete b1ToHash._id;
+        const b1Id = proxyCrypto.hashData(JSON.stringify(b1ToHash));
+        engine.mempool.eligibleForks.set('forkCommit', { adopted: true, proposals: new Set(), blockIds: [b1Id], computedBlocks: [{ ...b1, previousHash: 'lastHash123', metadata: { index: 1, timestamp: Date.now() } }] });
         engine.mempool.settledForks.set('forkCommit', { finalTipHash: 'hashx', adoptions: new Set(), committed: false, pendingCommit: false });
-        engine.mempool.pendingBlocks.set(crypto.createHash('sha256').update('sig1').digest('hex'), {
-            block: createMockBlock('sig1', 'pk', 'hsh'), verifications: new Set(), eligible: true, originalTimestamp: Date.now(), committed: false
+        engine.mempool.pendingBlocks.set(b1Id, {
+            block: b1, verifications: new Set(), eligible: true, originalTimestamp: Date.now(), committed: false
         });
 
         Object.defineProperty(mockNode.ledger, 'collection', { value: { findOne: async () => null }, writable: true });
@@ -254,15 +257,16 @@ describe('Backend: ConsensusEngine Integrity', () => {
         Object.defineProperty(mockNode.ledger, 'collection', { value: { findOne: async () => ({ ...createMockBlock('', '', ''), hash: 'exists', _id: new ObjectId() }) }, writable: true });
         mockNode.ledger.getLatestBlock = async () => ({ ...createMockBlock('', '', 'lastHash'), metadata: { index: 0, timestamp: 0 }, _id: new ObjectId() });
 
+        const b2 = createMockBlock('sig1', 'pk', 'lastHash');
+        const b2ToHash = { ...createMockBlock('sig1', 'pk', 'hash1') }; delete b2ToHash.hash; delete b2ToHash._id;
+        const mockSigHash = proxyCrypto.hashData(JSON.stringify(b2ToHash));
         const mockForkEntry = {
-            computedBlocks: [{ ...createMockBlock('sig1', 'pk', 'lastHash'), previousHash: 'lastHash', metadata: { index: 1, timestamp: Date.now() } }],
-            adopted: true, proposals: new Set<string>(), blockIds: []
+            computedBlocks: [{ ...b2, previousHash: 'lastHash', metadata: { index: 1, timestamp: Date.now() } }],
+            adopted: true, proposals: new Set<string>(), blockIds: [mockSigHash]
         };
         const mockSettledEntry = { finalTipHash: 'hash1', adoptions: new Set<string>(), committed: false, pendingCommit: false };
         engine.mempool.eligibleForks.set('forkDup', mockForkEntry);
         engine.mempool.settledForks.set('forkDup', mockSettledEntry);
-
-        const mockSigHash = crypto.createHash('sha256').update('sig1').digest('hex');
         const mockPendingEntry = { committed: false, block: createMockBlock('sig1', 'pk', 'hash1'), verifications: new Set<string>(), eligible: true, originalTimestamp: Date.now() };
         engine.mempool.pendingBlocks.set(mockSigHash, mockPendingEntry);
 
@@ -291,12 +295,16 @@ describe('Backend: ConsensusEngine Integrity', () => {
         assert.ok(mockSettledEntry.pendingCommit || mockSettledEntry.committed);
 
         // Setup variables for mock block execution tests mapping explicitly natively
-        engine.mempool.eligibleForks.set('forkCommit', { computedBlocks: [{ ...createMockBlock('sigCom', 'pk', 'hsh'), previousHash: 'lastHash', metadata: { index: 1, timestamp: Date.now() } }], adopted: true, proposals: new Set<string>(), blockIds: [] });
+        
+        const bCom = createMockBlock('sig', 'pk', 'hash');
+        const bComToHash = { ...bCom }; delete bComToHash.hash; delete bComToHash._id;
+        const hashStr = proxyCrypto.hashData(JSON.stringify(bComToHash));
+        engine.mempool.eligibleForks.set('forkCommit', { computedBlocks: [{ ...createMockBlock('sigCom', 'pk', 'hsh'), previousHash: 'lastHash', metadata: { index: 1, timestamp: Date.now() } }], adopted: true, proposals: new Set<string>(), blockIds: [hashStr] });
         engine.mempool.settledForks.set('forkCommit', { finalTipHash: 'hash', adoptions: new Set<string>(), committed: false, pendingCommit: false });
 
         Object.defineProperty(mockNode.ledger, 'collection', { value: { findOne: async () => null }, writable: true });
-        const hashStr = crypto.createHash('sha256').update('sigCom').digest('hex');
-        engine.mempool.pendingBlocks.set(hashStr, { committed: false, block: createMockBlock('sig', 'pk', 'hash'), verifications: new Set<string>(), eligible: true, originalTimestamp: Date.now() });
+        engine.mempool.pendingBlocks.set(hashStr, { committed: false, block: bCom, verifications: new Set<string>(), eligible: true, originalTimestamp: Date.now() });
+    
 
         mockNode.ledger.getLatestBlock = async () => ({ ...createMockBlock('', '', 'lastHash'), metadata: { index: 0, timestamp: 0 }, _id: new ObjectId() });
 
@@ -310,9 +318,13 @@ describe('Backend: ConsensusEngine Integrity', () => {
 
     it('Validates exception mappings during p2p error broadcast', async () => {
         // Test broadcast exception in propose fork
+        
+        const bz = createMockBlock('sigZ', 'pkZ', 'hsh');
+        const bzToHash = { ...bz }; delete bzToHash.hash; delete bzToHash._id;
+        const bzId = proxyCrypto.hashData(JSON.stringify(bzToHash));
         mockNode.peer!.broadcast = async () => { throw new Error('Broadcast Error Propose'); };
-        engine.mempool.pendingBlocks.set('blockZ', {
-            block: createMockBlock('sigZ', 'pkZ', 'hsh'),
+        engine.mempool.pendingBlocks.set(bzId, {
+            block: bz,
             originalTimestamp: 1000,
             verifications: new Set(['a', 'b']),
             eligible: false
@@ -323,22 +335,32 @@ describe('Backend: ConsensusEngine Integrity', () => {
         mockNode.getMajorityCount = () => 1;
 
         // Await the detached verification boundary triggering the 500ms timeout
-        await engine.handleVerifyBlock('blockZ', 'sigZ', { peerAddress: 'peer3', send: () => { } });
+        await engine.handleVerifyBlock(bzId, 'sigZ', { peerAddress: 'peer3', send: () => { } });
 
         // Native real-time wait isolating concurrent thread
         await new Promise(r => setTimeout(r, 650));
 
-        const realForkId = crypto.createHash('sha256').update(['blockZ'].join(',')).digest('hex');
+        const realForkId = crypto.createHash('sha256').update([bzId].join(',')).digest('hex').slice(0, 32) + '_0000abc';
 
         // Test broadcast exception in adopt fork manually to ensure secondary branch mapping
         mockNode.peer!.broadcast = async () => { throw new Error('Broadcast Error Adopt'); };
-        await engine.handleProposeFork(realForkId, ['blockZ'], { peerAddress: 'peer4', send: () => { } });
+        try {
+            await engine.handleProposeFork(realForkId, [bzId], { peerAddress: 'peer4', send: () => { } });
+            await (engine as any).taskQueue;
+        } catch(e) {
+            console.error('PROPOSE FORK ERROR:', e);
+        }
+        
+        console.log('REAL FORK ID EXPECTED:', realForkId);
+        console.log('AVAILABLE SETTLED FORKS:', Array.from(engine.mempool.settledForks.keys()));
+    
 
         const settledEntry = engine.mempool.settledForks.get(realForkId);
         assert.ok(settledEntry !== undefined, 'Settled entry MUST exist post-proposal');
 
         // Test calling adopt fork triggering commit with computed blocks
         await engine.handleAdoptFork(realForkId, settledEntry.finalTipHash, { peerAddress: 'peer4', send: () => { } });
+        await (engine as any).taskQueue;
 
         assert.ok(settledEntry.committed || settledEntry.pendingCommit, 'SettledFork entry must reflect committed bounding state or pendingCommit after handleAdoptFork');
     });

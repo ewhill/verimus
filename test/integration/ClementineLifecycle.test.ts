@@ -103,9 +103,12 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
             type: BLOCK_TYPES.TRANSACTION,
             payload: payload1,
             publicKey: node1.publicKey,
-            signature: sig1 as string,
-            hash: hashData(sig1 as string)
+            signature: sig1 as string
         };
+        const block1ToHash = { ...block1 };
+        // @ts-ignore
+        delete block1ToHash._id;
+        block1.hash = hashData(JSON.stringify(block1ToHash));
         await node1.ledger.addBlockToChain(block1);
         await node2.ledger.addBlockToChain(block1);
 
@@ -117,9 +120,12 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
             type: BLOCK_TYPES.TRANSACTION,
             payload: payload2,
             publicKey: node2.publicKey,
-            signature: sig2 as string,
-            hash: hashData(sig2 as string)
+            signature: sig2 as string
         };
+        const block2ToHash = { ...block2 };
+        // @ts-ignore
+        delete block2ToHash._id;
+        block2.hash = hashData(JSON.stringify(block2ToHash));
         await node1.ledger.addBlockToChain(block2);
         await node2.ledger.addBlockToChain(block2);
 
@@ -146,9 +152,12 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
             type: BLOCK_TYPES.STORAGE_CONTRACT,
             payload,
             publicKey: node3.publicKey,
-            signature: sig as string,
-            hash: hashData(sig as string)
+            signature: sig as string
         };
+        const blockToHash = { ...block };
+        // @ts-ignore
+        delete blockToHash._id;
+        block.hash = hashData(JSON.stringify(blockToHash));
         
         await node1.ledger.addBlockToChain(block);
         await new Promise(r => setTimeout(r, 50));
@@ -174,9 +183,12 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
             type: BLOCK_TYPES.SLASHING_TRANSACTION,
             payload: slashPayload,
             publicKey: node1.publicKey,
-            signature: slashSig as string,
-            hash: hashData(slashSig as string)
+            signature: slashSig as string
         };
+        const slashBlockToHash = { ...slashBlock };
+        // @ts-ignore
+        delete slashBlockToHash._id;
+        slashBlock.hash = hashData(JSON.stringify(slashBlockToHash));
         
         await node1.ledger.addBlockToChain(slashBlock);
         await new Promise(r => setTimeout(r, 50));
@@ -200,9 +212,12 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
             type: BLOCK_TYPES.TRANSACTION,
             payload: payload,
             publicKey: node1.publicKey,
-            signature: sig as string,
-            hash: hashData(sig as string)
+            signature: sig as string
         };
+        const seedBlockToHash = { ...seedBlock };
+        // @ts-ignore
+        delete seedBlockToHash._id;
+        seedBlock.hash = hashData(JSON.stringify(seedBlockToHash));
         await node1.ledger.addBlockToChain(seedBlock);
         await new Promise(r => setTimeout(r, 50));
 
@@ -229,7 +244,10 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         });
 
         await node1.consensusEngine.handlePendingBlock(epochBlock, mockConn, Date.now());
-        const blockId = hashData(epochSig as string);
+        const epochBlockToHash = { ...epochBlock };
+        delete epochBlockToHash.hash;
+        delete (epochBlockToHash as any)._id;
+        const blockId = hashData(JSON.stringify(epochBlockToHash));
         await node1.consensusEngine.handleVerifyBlock(blockId, epochSig as string, mockConn);
 
         await checkpointEvent;

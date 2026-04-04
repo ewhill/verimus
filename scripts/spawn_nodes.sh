@@ -123,7 +123,8 @@ for i in {1..5}; do
     TARGET_PORT=${PORTS[$(( (i-1) % 5 ))]}
     
     ABS_PATH="$PWD/$FILE"
-    RESPONSE=$(curl -s -k -X POST -F "files=@$FILE" -F "paths=[\"$ABS_PATH\"]" -F "ownerAddress=$DUMMY_WALLET" -F "ownerSignature=$DUMMY_SIG" -F "timestamp=$DUMMY_TIMESTAMP" "https://127.0.0.1:$TARGET_PORT/api/upload")
+    DUMMY_SIG_ITER="${DUMMY_SIG}${i}"
+    RESPONSE=$(curl -s -k -X POST -F "files=@$FILE" -F "paths=[\"$ABS_PATH\"]" -F "ownerAddress=$DUMMY_WALLET" -F "ownerSignature=$DUMMY_SIG_ITER" -F "timestamp=$DUMMY_TIMESTAMP" "https://127.0.0.1:$TARGET_PORT/api/upload")
     
     if [[ $RESPONSE == *"success\":true"* ]]; then
         echo "✅ Seeded block $i via node on port $TARGET_PORT"

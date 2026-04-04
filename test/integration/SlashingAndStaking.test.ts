@@ -61,7 +61,10 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
             node!.ledger.events.once('blockAdded', () => res());
         });
 
-        const blockId = hashData(stakingSig);
+        const blockToHash = { ...stakingBlock };
+        delete blockToHash.hash;
+        delete (blockToHash as any)._id;
+        const blockId = hashData(JSON.stringify(blockToHash));
         const pMsg = { blockId: blockId, signature: stakingSig };
         await node.consensusEngine.handleVerifyBlock(pMsg.blockId, pMsg.signature, mockConn);
 
@@ -118,7 +121,10 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
             node!.ledger.events.once('blockAdded', () => res());
         });
 
-        const slashId = hashData(slashSig);
+        const slashBlockToHash = { ...slashBlock };
+        delete slashBlockToHash.hash;
+        delete (slashBlockToHash as any)._id;
+        const slashId = hashData(JSON.stringify(slashBlockToHash));
         await node.consensusEngine.handleVerifyBlock(slashId, slashSig, mockConn);
 
         await slashFork;

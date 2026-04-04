@@ -103,9 +103,13 @@ function decryptWithRSA(privateKey: string, encryptedBase64: string): string {
  * Verify a signature using an RSA public key.
  */
 function verifySignature(data: Buffer | string, signatureHex: string, publicKey: string) {
-    const verifier = crypto.createVerify('RSA-SHA256');
-    verifier.update(data);
-    return verifier.verify(publicKey, signatureHex, 'hex');
+    try {
+        const verifier = crypto.createVerify('RSA-SHA256');
+        verifier.update(data);
+        return verifier.verify(publicKey, signatureHex, 'hex');
+    } catch (_unusedE) {
+        return false;
+    }
 }
 
 /**

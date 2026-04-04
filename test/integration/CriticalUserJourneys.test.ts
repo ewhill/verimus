@@ -52,7 +52,10 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
                         }, 5);
                     } else if (msg.constructor && msg.constructor.name === 'PendingBlockMessage') {
                         setTimeout(() => {
-                            const blockId = cryptoUtils.hashData(msg.body.block.signature);
+                            const blockToHash = { ...msg.body.block };
+                            delete blockToHash.hash;
+                            delete (blockToHash as any)._id;
+                            const blockId = cryptoUtils.hashData(JSON.stringify(blockToHash));
                             node.consensusEngine.handleVerifyBlock(blockId, 'mock_sig', createMock<PeerConnection>({ peerAddress: 'mock' })).catch(console.error);
                         }, 10);
                     } else if (msg.constructor && msg.constructor.name === 'ProposeForkMessage') {

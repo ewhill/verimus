@@ -50,9 +50,12 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
             type: BLOCK_TYPES.TRANSACTION,
             payload: seedPayload,
             publicKey: node.publicKey,
-            signature: seedSig as string,
-            hash: hashData(seedSig as string)
+            signature: seedSig as string
         };
+        const seedBlockToHash = { ...seedBlock };
+        // @ts-ignore
+        delete seedBlockToHash._id;
+        seedBlock.hash = hashData(JSON.stringify(seedBlockToHash));
         
         await node.ledger.addBlockToChain(seedBlock);
         
@@ -92,7 +95,10 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
 
         await node.consensusEngine.handlePendingBlock(epochBlock, mockConn, Date.now());
         
-        const blockId = hashData(epochSig as string);
+        const epochBlockToHash = { ...epochBlock };
+        delete epochBlockToHash.hash;
+        delete (epochBlockToHash as any)._id;
+        const blockId = hashData(JSON.stringify(epochBlockToHash));
         await node.consensusEngine.handleVerifyBlock(blockId, epochSig as string, mockConn);
 
         await checkpointEvent;
