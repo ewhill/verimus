@@ -684,14 +684,15 @@ class ConsensusEngine {
         let hasAudited = false;
 
         for (const contract of contracts) {
-            const trackKey = `${contract._id!.toString()}-${intervalBucket}`;
+            const contractHash = contract.hash!;
+            const trackKey = `${contractHash}-${intervalBucket}`;
             if (this.auditedIntervals.has(trackKey)) continue;
 
             // CRITICAL FIX: Lock the evaluation tracker immediately BEFORE exiting!
             // Prevents BFT block advancing from regenerating infinite exponential transactions mapping identical buckets.
             this.auditedIntervals.set(trackKey, intervalBucket);
 
-            const isElected = this.computeDeterministicAuditor(contract._id!.toString(), latestBlockHash, intervalBucket);
+            const isElected = this.computeDeterministicAuditor(contractHash, latestBlockHash, intervalBucket);
             if (!isElected) continue;
 
             if (!hasAudited) {
@@ -715,12 +716,12 @@ class ConsensusEngine {
                 const shardSize = paddedSize / K;
                 const totalChunks = Math.ceil(shardSize / CHUNK_SIZE);
 
-                const challengeHashHex = crypto.createHash('sha256').update(`${contract._id!.toString()}-${latestBlockHash}-${intervalBucket}`).digest('hex');
+                const challengeHashHex = crypto.createHash('sha256').update(`${contractHash}-${latestBlockHash}-${intervalBucket}`).digest('hex');
                 const numericHash = parseInt(challengeHashHex.slice(0, 8), 16);
                 const targetIndex = totalChunks > 0 ? numericHash % totalChunks : 0;
 
                 const challengeMsg = new MerkleProofChallengeRequestMessage({
-                    contractId: contract._id!.toString(),
+                    contractId: contractHash,
                     physicalId: fragment.physicalId,
                     auditorPublicKey: this.node.publicKey,
                     chunkIndex: targetIndex
@@ -757,7 +758,7 @@ class ConsensusEngine {
                     }
                 };
 
-                const auditId = contract._id!.toString();
+                const auditId = contractHash;
                 const MAX_RETRIES = 2; // attempt 0, attempt 1, attempt 2 (3 strikes)
                 const BASE_TIMEOUT_MS = 5000;
                 let currentAttempt = 0;

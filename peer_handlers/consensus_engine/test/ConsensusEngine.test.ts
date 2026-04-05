@@ -376,6 +376,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
 
         const mockBlock = {
             _id: new ObjectId('507f1f77bcf86cd799439011'),
+            hash: 'mock_contract_hash_12345',
             type: 'STORAGE_CONTRACT',
             payload: mockPayload
         };
@@ -395,7 +396,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
         await engine.runGlobalAudit();
 
         // Simulate returning bad forgery bytes breaking mathematical proofs dynamically
-        mockNode.events.emit(`merkle_audit_response:507f1f77bcf86cd799439011:phys`, {
+        mockNode.events.emit(`merkle_audit_response:mock_contract_hash_12345:phys`, {
             computedRootMatch: true,
             chunkDataBase64: Buffer.from('FAKE BAD BYTES TRASH BOUNDARY').toString('base64'),
             merkleSiblings: ['another_hash']
