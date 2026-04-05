@@ -583,7 +583,7 @@ class ConsensusEngine {
                             
                             const checkpointBlock = valBlock;
 
-                            this.handlePendingBlock(checkpointBlock, { peerAddress: '0.0.0.0', send: () => { } } as any, Date.now()).catch(( _unusedE: any ) => logger.warn(`[Peer ${this.node.port}] Suppressed Checkpoint execution wrap exception: ${e.message}`));
+                            this.handlePendingBlock(checkpointBlock, { peerAddress: '0.0.0.0', send: () => { } } as any, Date.now()).catch(( e: any ) => logger.warn(`[Peer ${this.node.port}] Suppressed Checkpoint execution wrap exception: ${e.message}`));
                         }
                     }
                 }
@@ -752,7 +752,7 @@ class ConsensusEngine {
                                 logger.warn(`[Peer ${this.node.port}] Broadcast error for slashing block: ${err.message}`);
                             }
                         }
-                    } catch ( _unusedE: any ) {
+                    } catch ( e: any ) {
                         logger.warn(`[Peer ${this.node.port}] Failed to execute slashing block: ${e.message}`);
                     }
                 };
@@ -839,7 +839,7 @@ class ConsensusEngine {
 
                             await mintTxBlock(hostTx);
                             await mintTxBlock(auditorTx);
-                        } catch ( _unusedE: any ) {
+                        } catch ( e: any ) {
                             logger.error(`Failed to formulate compensation bounds: ${e.message}`);
                         }
                     }

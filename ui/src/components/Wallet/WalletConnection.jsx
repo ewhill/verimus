@@ -1,54 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../../store';
-import { hasWeb3Provider, requestAccounts, getEncryptionPublicKey } from '../../utils/web3';
+import { requestAccounts, getEncryptionPublicKey } from '../../utils/web3';
 
 const WalletConnection = ({ isMobileDrawer }) => {
     const dispatch = useStore(s => s.dispatch);
     const web3Account = useStore(s => s.web3Account);
+    const activeProvider = useStore(s => s.activeProvider);
+    const discoveredProviders = useStore(s => s.discoveredProviders);
+    
     const [isConnecting, setIsConnecting] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isProviderListOpen, setIsProviderListOpen] = useState(false);
 
-    useEffect(() => {
-        if (!hasWeb3Provider()) return;
-
-        const handleAccountsChanged = (accounts) => {
-            if (accounts.length > 0) {
-                dispatch({ type: 'SET_WEB3_ACCOUNT', payload: accounts[0] });
-            } else {
-                dispatch({ type: 'SET_WEB3_ACCOUNT', payload: null });
-            }
-        };
-
-        const handleChainChanged = () => {
-            // Recommendation from Metamask: reload page on chain change implicitly.
-            window.location.reload();
-        };
-
-        window.ethereum.on('accountsChanged', handleAccountsChanged);
-        window.ethereum.on('chainChanged', handleChainChanged);
-
-        return () => {
-            window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-            window.ethereum.removeListener('chainChanged', handleChainChanged);
-        };
-    }, [dispatch]);
-
-    const handleConnectClick = async () => {
-        if (!hasWeb3Provider()) {
-            return dispatch({
-                type: 'ADD_TOAST',
-                payload: { id: Date.now(), title: 'Metamask Missing', message: 'No Ethereum provider detected physically. Please install Metamask.', type: 'error' }
-            });
-        }
-
+    const executeConnection = async (selectedProvider) => {
         try {
             setIsConnecting(true);
-            const account = await requestAccounts();
+            setIsProviderListOpen(false);
+            const account = await requestAccounts(selectedProvider);
             if (account) {
+                dispatch({ type: 'SET_ACTIVE_PROVIDER', payload: selectedProvider });
                 dispatch({ type: 'SET_WEB3_ACCOUNT', payload: account });
                 
                 try {
-                    const pubKey = await getEncryptionPublicKey(account);
+                    const pubKey = await getEncryptionPublicKey(account, selectedProvider);
                     dispatch({ type: 'SET_WEB3_ENCRYPTION_KEY', payload: pubKey });
                 } catch (encErr) {
                     console.warn("Encryption constraints deferred locally:", encErr);
@@ -70,7 +44,22 @@ const WalletConnection = ({ isMobileDrawer }) => {
         }
     };
 
-    if (web3Account) {
+    const handleConnectClick = async () => {
+        if (discoveredProviders.length === 0) {
+            return dispatch({
+                type: 'ADD_TOAST',
+                payload: { id: Date.now(), title: 'Metamask Missing', message: 'No EIP6963 Ethereum provider detected natively. Please install Metamask.', type: 'error' }
+            });
+        }
+        
+        if (discoveredProviders.length === 1) {
+            await executeConnection(discoveredProviders[0].provider);
+        } else {
+            setIsProviderListOpen(!isProviderListOpen);
+        }
+    };
+
+    if (web3Account && activeProvider) {
         if (isMobileDrawer) {
             return (
                 <div style={{
@@ -89,6 +78,7 @@ const WalletConnection = ({ isMobileDrawer }) => {
                         </span>
                     </div>
                     <button onClick={() => {
+                        dispatch({ type: 'SET_ACTIVE_PROVIDER', payload: null });
                         dispatch({ type: 'SET_WEB3_ACCOUNT', payload: null });
                         const currentPath = window.location.pathname;
                         if (currentPath === '/wallet' || currentPath === '/files') {
@@ -126,6 +116,7 @@ const WalletConnection = ({ isMobileDrawer }) => {
                         position: 'absolute', top: 'calc(100% + 0.5rem)', right: '0', background: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '0.5rem', zIndex: 100, boxShadow: '0 4px 20px rgba(0,0,0,0.5)', minWidth: '180px'
                     }}>
                         <button onClick={() => {
+                            dispatch({ type: 'SET_ACTIVE_PROVIDER', payload: null });
                             dispatch({ type: 'SET_WEB3_ACCOUNT', payload: null });
                             setIsDropdownOpen(false);
                             // If user is inside a protected route, we route them back to ledger
@@ -146,20 +137,35 @@ const WalletConnection = ({ isMobileDrawer }) => {
     }
 
     return (
-        <button
-            onClick={handleConnectClick}
-            disabled={isConnecting}
-            style={{
-                marginLeft: isMobileDrawer ? '0' : '0.5rem', padding: '0.6rem 1rem', background: 'transparent',
-                color: '#818cf8', border: '1px solid #818cf8', borderRadius: '100px', fontWeight: '600',
-                cursor: isConnecting ? 'not-allowed' : 'pointer', transition: 'background 0.2s',
-                opacity: isConnecting ? 0.7 : 1, width: isMobileDrawer ? '100%' : 'auto'
-            }}
-            onMouseOver={(e) => !isConnecting && (e.currentTarget.style.background = 'rgba(129, 140, 248, 0.1)')}
-            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-        >
-            {isConnecting ? 'Connecting...' : 'Connect Wallet'}
-        </button>
+        <div style={{ position: 'relative', width: isMobileDrawer ? '100%' : 'auto' }}>
+            <button
+                onClick={handleConnectClick}
+                disabled={isConnecting}
+                style={{
+                    marginLeft: isMobileDrawer ? '0' : '0.5rem', padding: '0.6rem 1rem', background: 'transparent',
+                    color: '#818cf8', border: '1px solid #818cf8', borderRadius: '100px', fontWeight: '600',
+                    cursor: isConnecting ? 'not-allowed' : 'pointer', transition: 'background 0.2s',
+                    opacity: isConnecting ? 0.7 : 1, width: isMobileDrawer ? '100%' : 'auto'
+                }}
+                onMouseOver={(e) => !isConnecting && (e.currentTarget.style.background = 'rgba(129, 140, 248, 0.1)')}
+                onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+                {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+            </button>
+            {isProviderListOpen && discoveredProviders.length > 1 && (
+                <div style={{
+                    position: 'absolute', top: 'calc(100% + 0.5rem)', right: isMobileDrawer ? 'auto' : '0', left: isMobileDrawer ? '0' : 'auto', background: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '0.5rem', zIndex: 100, boxShadow: '0 4px 20px rgba(0,0,0,0.5)', minWidth: '220px'
+                }}>
+                    <div style={{ padding: '0.5rem', fontSize: '0.8rem', color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '0.5rem' }}>Select Provider</div>
+                    {discoveredProviders.map((p, idx) => (
+                        <button key={idx} onClick={() => executeConnection(p.provider)} style={{ width: '100%', padding: '0.6rem 0.5rem', background: 'transparent', border: 'none', color: '#e2e8f0', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                            <img src={p.info.icon} alt={p.info.name} style={{ width: '20px', height: '20px', borderRadius: '4px' }} />
+                            {p.info.name}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
     );
 };
 

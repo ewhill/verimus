@@ -7,6 +7,7 @@ const UploadModal = () => {
     const dispatch = useStore(s => s.dispatch);
     const isUploadModalOpen = useStore(s => s.isUploadModalOpen);
     const web3Account = useStore(s => s.web3Account);
+    const activeProvider = useStore(s => s.activeProvider);
     const web3EncryptionKey = useStore(s => s.web3EncryptionKey);
     const nodeConfig = useStore(s => s.nodeConfig);
 
@@ -103,20 +104,20 @@ const UploadModal = () => {
         const formData = new FormData();
 
         try {
-            if (!web3Account) {
+            if (!web3Account || !activeProvider) {
                 throw new Error("Web3 EVM Constraints are uninitialized. Connect your Metamask Wallet to execute asymmetric AES proxying locally.");
             }
 
             let currentPubKey = web3EncryptionKey;
             if (!currentPubKey) {
                 setCryptoLogs([{ status: 'PROXY_AUTH', message: 'Generating Originator Limits requesting active verification bounds natively...' }]);
-                currentPubKey = await getEncryptionPublicKey(web3Account);
+                currentPubKey = await getEncryptionPublicKey(web3Account, activeProvider);
                 dispatch({ type: 'SET_WEB3_ENCRYPTION_KEY', payload: currentPubKey });
                 setCryptoLogs(prev => [...prev, { status: 'PROXY_AUTH_COMPLETE', message: 'Encryption constraints granted.' }]);
             }
 
             const executionTime = Date.now();
-            const signature = await signOriginatorProxyMessage(executionTime, 'batch', web3Account);
+            const signature = await signOriginatorProxyMessage(executionTime, 'batch', web3Account, activeProvider);
 
             // Intercept standard streams extracting Native Web Crypto boundaries structurally
             setCryptoLogs(prev => [...prev, { status: 'DECOUPLED_ENCRYPTION', message: 'Executing zero-knowledge client-side AES-256-GCM symmetric block cipher natively...' }]);

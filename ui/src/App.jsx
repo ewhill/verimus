@@ -10,6 +10,7 @@ import BlockModal from './components/Modals/BlockModal';
 import NodeConfigModal from './components/Modals/NodeConfigModal';
 import UploadModal from './components/Modals/UploadModal';
 import ToastContainer from './components/Layout/ToastContainer';
+import { initializeEIP6963Discovery } from './utils/web3';
 
 function App() {
     const dispatch = useStore(s => s.dispatch);
@@ -22,9 +23,10 @@ function App() {
     const searchQuery = useStore(s => s.searchQuery);
     const selectedBlockHash = useStore(s => s.selectedBlockHash);
     const isModalOpen = useStore(s => s.isModalOpen);
-    const nodeConfig = useStore(s => s.nodeConfig);
 
     useEffect(() => {
+        const cleanupWeb3Listeners = initializeEIP6963Discovery(dispatch);
+
         // Evaluate deep-link URL on native mount taking precedence over Zustand persistent cache
         const params = new URLSearchParams(window.location.search);
         const q = params.get('q');
@@ -61,7 +63,10 @@ function App() {
         };
         
         window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+            cleanupWeb3Listeners();
+        };
     }, [dispatch]);
 
     useEffect(() => {

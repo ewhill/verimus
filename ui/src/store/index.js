@@ -30,6 +30,8 @@ export const useStore = create(
     error: null,
     web3Account: null,
     web3EncryptionKey: null,
+    discoveredProviders: [],
+    activeProvider: null,
     currentRoute: initialRoute,
     activeWalletTab: (initialRoute === 'wallet' && initialTab) ? initialTab : 'dashboard',
     activeLedgerTab: (initialRoute === 'ledger' && initialTab) ? initialTab : 'global',
@@ -66,6 +68,12 @@ export const useStore = create(
             case 'SET_FILTER_CHECKPOINTS': return { filterCheckpoints: action.payload, pagination: { ...state.pagination, page: 1 } };
             case 'SET_WEB3_ACCOUNT': return { web3Account: action.payload };
             case 'SET_WEB3_ENCRYPTION_KEY': return { web3EncryptionKey: action.payload };
+            case 'ADD_DISCOVERED_PROVIDER':
+                if (!state.discoveredProviders.find(p => p.info.uuid === action.payload.info.uuid)) {
+                    return { discoveredProviders: [...state.discoveredProviders, action.payload] };
+                }
+                return state;
+            case 'SET_ACTIVE_PROVIDER': return { activeProvider: action.payload };
             case 'SET_CURRENT_VIEW': return { currentView: action.payload };
             case 'SET_SELECTED_INDEX': return { selectedIndex: action.payload };
             case 'SET_PAGINATION': return { pagination: action.payload };
