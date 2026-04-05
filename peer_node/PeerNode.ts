@@ -1,19 +1,20 @@
+import { createHash } from 'crypto';
 import EventEmitter from 'events';
 import * as fs from 'fs';
 import { IncomingMessage } from 'http';
 // import { Http2ServerRequest } from 'http2';
 import * as https from 'https';
 import { Socket } from 'net';
-import * as path from 'path';
+
 
 import { Db } from 'mongodb';
 import { WebSocket } from 'ws';
 
 import setupExpressApp from '../api_server/ApiServer';
 import Bundler from '../bundler/Bundler';
-import { generateRSAKeyPair, signData } from '../crypto_utils/CryptoUtils';
 import { GENESIS_SEED_DATA, IS_DEV_NETWORK } from '../constants';
 import { PeerCredentials } from '../credential_provider/CredentialProvider';
+import { signData } from '../crypto_utils/CryptoUtils';
 import Ledger from '../ledger/Ledger';
 import logger from '../logger/Logger';
 import Mempool from '../models/mempool/Mempool';
@@ -25,7 +26,6 @@ import SyncEngine from '../peer_handlers/sync_engine/SyncEngine';
 import BaseProvider from '../storage_providers/base_provider/BaseProvider';
 import { Block } from '../types';
 import { NodeRole } from '../types/NodeRole';
-import { createHash } from 'crypto';
 
 
 
@@ -266,14 +266,19 @@ class PeerNode {
     async addOwnedBlockToCache(block: Block) {
         // Verify no pending blocks conflict correctly hashing mapped boundaries physically!
         if (block.signature) {
-            const sigHash = createHash('sha256').update(block.signature).digest('hex');
-            const blockExistsInMempool = this.mempool.pendingBlocks.has(sigHash);
+            const blockToHash = { ...block };
+            delete blockToHash.hash;
+            // @ts-ignore
+            delete blockToHash._id;
+            const recalculatedHash = createHash('sha256').update(JSON.stringify(blockToHash)).digest('hex');
+
+            const blockExistsInMempool = this.mempool.pendingBlocks.has(recalculatedHash);
             if (blockExistsInMempool) {
                 // If a pending block with the same hash exists, it means this block was just processed
                 // and is now being added to the ledger via SyncEngine natively. We must remove it explicitly.
-                const pEntry = this.mempool.pendingBlocks.get(sigHash);
+                const pEntry = this.mempool.pendingBlocks.get(recalculatedHash);
                 if (pEntry) pEntry.committed = true;
-                this.mempool.pendingBlocks.delete(sigHash);
+                this.mempool.pendingBlocks.delete(recalculatedHash);
             }
         }
 

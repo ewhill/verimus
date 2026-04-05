@@ -288,7 +288,11 @@ export default class UploadHandler extends BaseHandler {
                 signature: signatureStr
             };
 
-            const blockId = crypto.createHash('sha256').update(signatureStr).digest('hex');
+            const blockToHash = { ...pendingBlock };
+            delete blockToHash.hash;
+            // @ts-ignore
+            delete blockToHash._id;
+            const blockId = crypto.createHash('sha256').update(JSON.stringify(blockToHash)).digest('hex');
 
             logger.info(`[Peer ${this.node.port}] Initiating consensus for block ${blockId}`);
 

@@ -285,8 +285,8 @@ class ConsensusEngine {
         eligibleBlockIds.sort((a, b) => {
             const entryA = this.mempool.pendingBlocks.get(a);
             const entryB = this.mempool.pendingBlocks.get(b);
-            const tsA = new Date(entryA!.block.metadata.timestamp || entryA!.originalTimestamp).getTime();
-            const tsB = new Date(entryB!.block.metadata.timestamp || entryB!.originalTimestamp).getTime();
+            const tsA = new Date((entryA as any).demotedTimestamp || entryA!.block.metadata.timestamp || entryA!.originalTimestamp).getTime();
+            const tsB = new Date((entryB as any).demotedTimestamp || entryB!.block.metadata.timestamp || entryB!.originalTimestamp).getTime();
             if (tsA !== tsB) return tsA - tsB;
             return a < b ? -1 : 1;
         });
@@ -318,12 +318,17 @@ class ConsensusEngine {
 
             const timeout = setTimeout(() => {
                 this.activeForkTimeouts.delete(forkId);
-                logger.warn(`[Peer ${this.node.port}] P2P BFT Timeout Triggered for ${forkId.slice(0, 8)}. Dropping stalled proposal bounds implicitly to mathematically unlock chain.`);
+                logger.warn(`[Peer ${this.node.port}] P2P BFT Timeout Triggered for ${forkId.slice(0, 8)}. Demoting stalled proposal implicitly mathematically unlocking chain bounds.`);
                 this.mempool.eligibleForks.delete(forkId);
+                this.mempool.settledForks.delete(forkId);
                 
                 for (const bId of tempBlockIds) {
                     const pb = this.mempool.pendingBlocks.get(bId);
-                    if (pb) pb.eligible = false;
+                    if (pb) {
+                        // CRITICAL FIX: Explicitly assign a tracking demotion stamp natively replacing 
+                        // rigid rejection routines. Resolves the perpetual 6 "Pending" blocks anomaly flawlessly.
+                        (pb as any).demotedTimestamp = Date.now();
+                    }
                 }
                 
                 this._checkAndProposeFork().catch(() => { });
@@ -514,11 +519,17 @@ class ConsensusEngine {
                 if (existing) {
                     logger.info(`[Peer ${this.node.port}] Block with signature ${block.signature.slice(-16)} already in chain. Skipping.`);
 
-                    const sigHash = crypto.createHash('sha256').update(block.signature).digest('hex');
-                    const pEntry = this.mempool.pendingBlocks.get(sigHash);
+                    const blockToHash = { ...block };
+                    delete blockToHash.hash;
+                    // @ts-ignore
+                    delete blockToHash._id;
+                    const recalculatedHash = hashData(JSON.stringify(blockToHash));
+
+                    const pEntry = this.mempool.pendingBlocks.get(recalculatedHash);
                     if (pEntry) pEntry.committed = true;
 
-                    this.mempool.pendingBlocks.delete(sigHash);
+                    this.mempool.pendingBlocks.delete(recalculatedHash);
+                    this.node.events.emit(`settled:${recalculatedHash}`, block);
 
                     continue;
                 }
@@ -660,10 +671,12 @@ class ConsensusEngine {
             const trackKey = `${contract._id!.toString()}-${intervalBucket}`;
             if (this.auditedIntervals.has(trackKey)) continue;
 
+            // CRITICAL FIX: Lock the evaluation tracker immediately BEFORE exiting!
+            // Prevents BFT block advancing from regenerating infinite exponential transactions mapping identical buckets.
+            this.auditedIntervals.set(trackKey, intervalBucket);
+
             const isElected = this.computeDeterministicAuditor(contract._id!.toString(), latestBlockHash, intervalBucket);
             if (!isElected) continue;
-
-            this.auditedIntervals.set(trackKey, intervalBucket);
 
             if (!hasAudited) {
                 logger.info(`[Peer ${this.node.port}] Node deterministically elected as Auditor. Initiating mathematical Proof of Spacetime intervals...`);
