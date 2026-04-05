@@ -12,7 +12,7 @@ export type BlockType = typeof BLOCK_TYPES[keyof typeof BLOCK_TYPES];
 
 export interface PeerReputation {
     _id?: any;
-    publicKey: string;
+    operatorAddress: string;
     score: number;
     strikeCount: number;
     isBanned: boolean;
@@ -27,8 +27,8 @@ export interface StoragePricingConfig {
 
 export interface TransactionPayload {
     senderSignature: string;
-    senderId: string;
-    recipientId: string;
+    senderAddress: string;
+    recipientAddress: string;
     amount: number;
 }
 
@@ -64,13 +64,13 @@ export interface StorageContractPayload {
 }
 
 export interface StakingContractPayload {
-    operatorPublicKey: string;
+    operatorAddress: string;
     collateralAmount: number;
     minEpochTimelineDays: number;
 }
 
 export interface SlashingPayload {
-    penalizedPublicKey: string;
+    penalizedAddress: string;
     evidenceSignature: string;
     burntAmount: number;
 }
@@ -155,7 +155,7 @@ export interface BaseBlock {
     previousHash?: string;
     hash?: string;
     metadata: BlockMetadata;
-    publicKey: string;
+    signerAddress: string;
     signature: string;
 }
 
