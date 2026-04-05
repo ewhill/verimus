@@ -5,6 +5,7 @@ import { Request, Response } from 'express';
 
 import { BLOCK_TYPES } from '../../constants';
 import { verifyMerkleProof, signData } from '../../crypto_utils/CryptoUtils';
+import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from '../../crypto_utils/EIP712Types';
 import logger from '../../logger/Logger';
 import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
 import { StorageShardTransferMessage } from '../../messages/storage_shard_transfer_message/StorageShardTransferMessage';
@@ -75,19 +76,19 @@ export default class UploadHandler extends BaseHandler {
 
             const totalSize = files.reduce((acc, f) => acc + f.size, 0);
             const chunkSizeBytes = 65536; // 64KB Phase 3 explicit constant
-            const theoreticalMaxCost = maxCost * redundancy * Math.max((totalSize / (1024 * 1024 * 1024)), 0.000001);
+            const theoreticalMaxCost = Math.ceil(maxCost * redundancy * Math.max((totalSize / (1024 * 1024 * 1024)), 0.000001));
             const marketReqId = crypto.randomUUID();
 
             // Escrow phase tracking theoretical spend limits mapping against double-spends
             const hasFunds = await this.node.consensusEngine.walletManager.verifyFunds(signerAddress, theoreticalMaxCost);
-            const totalUserCost = theoreticalMaxCost * 1.05;
+            const totalUserCost = Math.ceil(theoreticalMaxCost * 1.05);
             
             const currentBalance = await this.node.consensusEngine.walletManager.calculateBalance(ownerAddress);
             logger.error(`[UploadHandler] DEBUG: ownerAddress: ${ownerAddress}, totalUserCost: ${totalUserCost}, currentBalance: ${currentBalance}, redundancy: ${redundancy}, maxCost: ${maxCost}, totalSize: ${totalSize}`);
             
             const hasUserFunds = await this.node.consensusEngine.walletManager.verifyFunds(ownerAddress, totalUserCost);
             
-            if (!hasFunds && signerAddress !== 'SYSTEM') {
+            if (!hasFunds && signerAddress !== ethers.ZeroAddress) {
                 return res.status(402).send('Insufficient Wallet Funds allocating constrained P2P limit orders.');
             }
             if (!hasUserFunds) {
@@ -275,9 +276,7 @@ export default class UploadHandler extends BaseHandler {
                 brokerFeePercentage: this.node.proxyBrokerFee
             };
 
-            const signatureStr = signData(JSON.stringify(payloadResult), privateKey);
-
-            const pendingBlock: Block = {
+            const valBlock: Block = {
                 metadata: {
                     index: -1,
                     timestamp: Date.now(),
@@ -285,8 +284,20 @@ export default class UploadHandler extends BaseHandler {
                 type: BLOCK_TYPES.STORAGE_CONTRACT,
                 payload: payloadResult,
                 signerAddress: signerAddress,
-                signature: signatureStr
+                previousHash: '',
+                signature: ''
             };
+            
+            const valueObj = normalizeBlockForSignature(valBlock);
+            const schema = EIP712_SCHEMAS[BLOCK_TYPES.STORAGE_CONTRACT];
+            
+            if (this.node.wallet) {
+                valBlock.signature = await this.node.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
+            } else {
+                valBlock.signature = signData(JSON.stringify(payloadResult), privateKey) as string;
+            }
+            
+            const pendingBlock = valBlock;
 
             const blockToHash = { ...pendingBlock };
             delete blockToHash.hash;
@@ -340,6 +351,7 @@ export default class UploadHandler extends BaseHandler {
 
         } catch (error: any) {
             logger.error(error);
+            console.error("UPLOAD ERROR IN HANDLER:", error);
             if (!res.headersSent) {
                 res.status(500).json({ success: false, message: error.message });
             }

@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
-import { verifySignature } from '../../crypto_utils/CryptoUtils';
+import { verifyEIP712BlockSignature } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
 import type { StorageContractPayload } from '../../types';
 import BaseHandler from '../base_handler/BaseHandler';
@@ -60,12 +60,14 @@ export default class PrivatePayloadHandler extends BaseHandler {
             if (recoveredAddress.toLowerCase() !== web3Address.toLowerCase()) {
                 return res.status(401).json({ success: false, message: 'Invalid EIP-191 explicit resolution structurally mapped array bounds.' });
             }
-        } catch (_unusedE) {
+        } catch (e: any) {
+            logger.warn(`PrivatePayloadHandler: Cryptographic signature explicitly invalid mechanically: ${e.message}`);
             return res.status(401).json({ success: false, message: 'Cryptographic signature explicitly invalid mechanically.' });
         }
 
-        const isSignatureValid = verifySignature(JSON.stringify(targetBlock.payload), targetBlock.signature, targetBlock.signerAddress);
+        const isSignatureValid = verifyEIP712BlockSignature(targetBlock);
         if (!isSignatureValid) {
+            logger.warn('PrivatePayloadHandler: Invalid block signature.');
             return res.status(401).json({ success: false, message: 'Invalid block signature.' });
         }
 

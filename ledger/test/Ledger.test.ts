@@ -1,9 +1,12 @@
+import * as crypto from 'crypto';
 import assert from 'node:assert';
 import { describe, it, before, after } from 'node:test';
 
+import { ethers } from 'ethers';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
-import proxyCrypto = require('../../crypto_utils/CryptoUtils');
+import { BLOCK_TYPES } from '../../constants';
+import { createSignedMockBlock } from '../../test/utils/EIP712Mock';
 import Ledger from '../Ledger';
 
 
@@ -44,12 +47,24 @@ describe('Backend: Ledger Integrity and Tamper Evidence', () => {
     });
 
     it('Appends blocks with sequential index', async () => {
-        const { publicKey, privateKey } = proxyCrypto.generateRSAKeyPair();
+        const wallet = ethers.Wallet.createRandom();
         const dummyPayload = { encryptedPayloadBase64: 'abc', encryptedKeyBase64: 'xyz', encryptedIvBase64: '123' };
-        const sig = proxyCrypto.signData(JSON.stringify(dummyPayload), privateKey) as string;
-        const newBlock = await ledger.addBlock(publicKey, dummyPayload, sig);
+        
+        // Ledger expects index 2 since Genesis is index 1
+        const newBlock = await createSignedMockBlock(wallet, BLOCK_TYPES.STORAGE_CONTRACT, dummyPayload, 2);
+        const previousBlock = await ledger.getLatestBlock();
+        newBlock.previousHash = previousBlock.hash;
+        
+        // Ledger recalculates hashes implicitly when using its native appending sequence organically
+        // Ledger recalculates hashes implicitly when using its native appending sequence organically
+        const blockToHash = { ...newBlock };
+        delete blockToHash.hash;
+        newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(blockToHash)).digest('hex');
+
+        await ledger.addBlockToChain(newBlock);
+        
         assert.strictEqual(newBlock.metadata.index, 2);
-        assert.strictEqual(newBlock.signerAddress, publicKey);
+        assert.strictEqual(newBlock.signerAddress, wallet.address);
 
         const latest = await ledger.getLatestBlock();
         assert.strictEqual(latest.hash, newBlock.hash, 'Appended block must correctly correlate to head ledger pointers');

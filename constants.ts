@@ -1,6 +1,8 @@
 import * as crypto from 'crypto';
 
-import { hashData } from './crypto_utils/CryptoUtils';
+import { ethers } from 'ethers';
+
+
 import type { Block } from './types';
 
 export const GENESIS_TIMESTAMP = process.env.VERIMUS_GENESIS_TIMESTAMP ? parseInt(process.env.VERIMUS_GENESIS_TIMESTAMP) : 1774828800000; // March 30, 2026 00:00:00 UTC
@@ -31,12 +33,12 @@ const fundingBlockBase = {
     type: BLOCK_TYPES.TRANSACTION,
     previousHash: '',
     payload: {
-        senderAddress: 'SYSTEM',
-        recipientAddress: 'SYSTEM',
+        senderAddress: ethers.ZeroAddress,
+        recipientAddress: ethers.ZeroAddress,
         amount: Number.MAX_VALUE,
         senderSignature: ''
     },
-    signerAddress: 'SYSTEM',
+    signerAddress: ethers.ZeroAddress,
     signature: 'sys_sig'
 };
 
@@ -46,7 +48,7 @@ const contractBlockBase = {
         timestamp: GENESIS_TIMESTAMP
     },
     type: BLOCK_TYPES.STORAGE_CONTRACT,
-    previousHash: hashData(JSON.stringify(fundingBlockBase)),
+    previousHash: crypto.createHash('sha256').update(JSON.stringify(fundingBlockBase)).digest('hex'),
     payload: {
         marketId: 'GENESIS_MARKET',
         activeHosts: [],
@@ -64,18 +66,18 @@ const contractBlockBase = {
         encryptedKeyBase64: 'GENESIS_KEY',
         encryptedIvBase64: 'GENESIS_IV'
     },
-    signerAddress: 'SYSTEM',
+    signerAddress: ethers.ZeroAddress,
     signature: 'GENESIS_SIG'
 };
 
 export const GENESIS_FUNDING_BLOCK = {
     ...fundingBlockBase,
-    hash: hashData(JSON.stringify(fundingBlockBase))
+    hash: crypto.createHash('sha256').update(JSON.stringify(fundingBlockBase)).digest('hex')
 } as Block;
 
 export const GENESIS_STORAGE_CONTRACT = {
     ...contractBlockBase,
-    hash: hashData(JSON.stringify(contractBlockBase))
+    hash: crypto.createHash('sha256').update(JSON.stringify(contractBlockBase)).digest('hex')
 } as Block;
 
 export const calculateAuditDecayInterval = (genesisTimestamp: number, currentTimestamp: number = Date.now()): number => {

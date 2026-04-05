@@ -75,7 +75,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             node.consensusEngine.runGlobalAudit = async () => { };
             node.consensusEngine.node.syncEngine.orchestrateStorageMarket = async (marketReqId: string) => {
                 return [{
-                    peerId: node.publicKey, connection: {
+                    peerId: node.walletAddress!, connection: {
                         send: (msg: any) => {
                             if (msg.constructor && msg.constructor.name === 'VerifyHandoffRequestMessage') {
                                 setTimeout(() => {

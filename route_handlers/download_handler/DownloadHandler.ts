@@ -6,7 +6,7 @@ import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
 import Bundler from '../../bundler/Bundler';
-import { verifySignature } from '../../crypto_utils/CryptoUtils';
+import { verifyEIP712BlockSignature } from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
 import { StorageShardRetrieveRequestMessage } from '../../messages/storage_shard_retrieve_request_message/StorageShardRetrieveRequestMessage';
 import type { StorageContractPayload } from '../../types';
@@ -31,8 +31,9 @@ export default class DownloadHandler extends BaseHandler {
             const block = blocks[0];
 
             // Verify signature
-            const isSignatureValid = verifySignature(JSON.stringify(block.payload), block.signature, block.signerAddress);
+            const isSignatureValid = verifyEIP712BlockSignature(block);
             if (!isSignatureValid) {
+                logger.warn('DownloadHandler: Invalid block signature.');
                 return res.status(401).send('Invalid block signature.');
             }
 

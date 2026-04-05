@@ -5,18 +5,22 @@ import test from 'node:test';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
+import { ethers } from 'ethers';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
+
 import { BLOCK_TYPES } from '../../constants';
-import { generateRSAKeyPair, hashData, signData } from '../../crypto_utils/CryptoUtils';
+import { generateRSAKeyPair, hashData } from '../../crypto_utils/CryptoUtils';
 import PeerNode from '../../peer_node/PeerNode';
+import { createSignedMockBlock } from '../../test/utils/EIP712Mock';
 import { createMock } from '../../test/utils/TestUtils';
 
 test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async () => {
 
     const testDir = mkdtempSync(join(tmpdir(), 'verimus-slash-test-'));
     const keys = generateRSAKeyPair();
-    const maliciousHostKeys = generateRSAKeyPair();
+    const maliciousWallet = ethers.Wallet.createRandom();
+    const wallet = ethers.Wallet.createRandom();
     let node: PeerNode | null = null;
     let mongod: MongoMemoryServer | null = null;
 
@@ -33,25 +37,16 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
         await node.init();
         node.consensusEngine.runGlobalAudit = async () => {};
 
-        node.publicKey = keys.publicKey;
-        node.privateKey = keys.privateKey;
+        node.publicKey = wallet.address;
 
         // Stage 1: Scaffold Initial Staking Collateral internally mapping Phase 5b
         const stakingLockPayload = {
-            operatorAddress: maliciousHostKeys.publicKey,
+            operatorAddress: maliciousWallet.address,
             collateralAmount: 50000,
             minEpochTimelineDays: 30
         };
 
-        const stakingSig = signData(JSON.stringify(stakingLockPayload), maliciousHostKeys.privateKey);
-
-        const stakingBlock = createMock<import('../../types').Block>({
-            metadata: { index: -1, timestamp: Date.now() },
-            type: BLOCK_TYPES.STAKING_CONTRACT,
-            payload: stakingLockPayload,
-            signerAddress: maliciousHostKeys.publicKey,
-            signature: stakingSig
-        });
+        const stakingBlock = await createSignedMockBlock(maliciousWallet, BLOCK_TYPES.STAKING_CONTRACT, stakingLockPayload, -1);
         const mockConn = createMock<import('../../types').PeerConnection>({ peerAddress: '0.0.0.0', send: () => { } });
 
         await node.consensusEngine.handlePendingBlock(stakingBlock, mockConn, Date.now());
@@ -65,55 +60,41 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
         delete blockToHash.hash;
         delete (blockToHash as any)._id;
         const blockId = hashData(JSON.stringify(blockToHash));
-        const pMsg = { blockId: blockId, signature: stakingSig };
+        const pMsg = { blockId: blockId, signature: stakingBlock.signature };
         await node.consensusEngine.handleVerifyBlock(pMsg.blockId, pMsg.signature, mockConn);
 
         await forkEvent;
         await new Promise(res => setTimeout(res, 50));
 
         // Assert Step: WalletManager tracks initial Locked Escrow correctly 
-        const testBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousHostKeys.publicKey);
+        const testBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousWallet.address);
         assert.strictEqual(testBalance, -50000, '50,000 collateral effectively tracked removing liquid boundaries');
 
         // Stage 2: Intercept global mathematical failure! Injecting native Slashing penalty!
         const invalidSlashPayload = {
-            penalizedAddress: maliciousHostKeys.publicKey,
+            penalizedAddress: maliciousWallet.address,
             evidenceSignature: 'INVALID_GARBAGE_STRING_NOT_A_HASH',
             burntAmount: 50000
         };
 
-        const invalidSlashSig = signData(JSON.stringify(invalidSlashPayload), node.privateKey);
-
-        const invalidSlashBlock = createMock<import('../../types').Block>({
-            metadata: { index: -1, timestamp: Date.now() },
-            type: BLOCK_TYPES.SLASHING_TRANSACTION,
-            payload: invalidSlashPayload,
-            signerAddress: node.publicKey,
-            signature: invalidSlashSig
-        });
+        // We use the WRONG key intentionally to make it an invalid block signature? Wait, the test is supposed to reject it because of evidenceSignature. 
+        // Let's sign it with the valid node's signature properly organically mapping.
+        const invalidSlashBlock = await createSignedMockBlock(wallet, BLOCK_TYPES.SLASHING_TRANSACTION, invalidSlashPayload, -1);
 
         await node.consensusEngine.handlePendingBlock(invalidSlashBlock, mockConn, Date.now());
         
         // Balance should still be -50000 
-        const interimBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousHostKeys.publicKey);
+        const interimBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousWallet.address);
         assert.strictEqual(interimBalance, -50000, 'Invalid evidence signature was correctly rejected by consensus engine');
 
         // Stage 3: Inject valid Slashing penalty!
         const slashPayload = {
-            penalizedAddress: maliciousHostKeys.publicKey,
+            penalizedAddress: maliciousWallet.address,
             evidenceSignature: createHash('sha256').update('FORGERY_EVIDENCE_MAP').digest('hex'),
             burntAmount: 50000
         };
 
-        const slashSig = signData(JSON.stringify(slashPayload), node.privateKey);
-
-        const slashBlock = createMock<import('../../types').Block>({
-            metadata: { index: -1, timestamp: Date.now() },
-            type: BLOCK_TYPES.SLASHING_TRANSACTION,
-            payload: slashPayload,
-            signerAddress: node.publicKey,
-            signature: slashSig
-        });
+        const slashBlock = await createSignedMockBlock(wallet, BLOCK_TYPES.SLASHING_TRANSACTION, slashPayload, -1);
 
         await node.consensusEngine.handlePendingBlock(slashBlock, mockConn, Date.now());
 
@@ -125,13 +106,13 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
         delete slashBlockToHash.hash;
         delete (slashBlockToHash as any)._id;
         const slashId = hashData(JSON.stringify(slashBlockToHash));
-        await node.consensusEngine.handleVerifyBlock(slashId, slashSig, mockConn);
+        await node.consensusEngine.handleVerifyBlock(slashId, slashBlock.signature, mockConn);
 
         await slashFork;
         await new Promise(res => setTimeout(res, 50));
 
         // Finalize state limits natively executing collateral mathematical checks limits
-        const postSlashBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousHostKeys.publicKey);
+        const postSlashBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousWallet.address);
         assert.strictEqual(postSlashBalance, -100000, 'Collateral slashed resulting in an immutable zeroed sum loss mathematically');
 
     } finally {

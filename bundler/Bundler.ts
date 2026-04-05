@@ -1,16 +1,20 @@
 import * as crypto from 'crypto';
+import { EventEmitter } from 'events';
 import * as fs from 'fs';
 
 import { ReedSolomonErasure } from '@subspace/reed-solomon-erasure.wasm';
 import archiver from 'archiver';
 
+
 import { hashData, encryptAES, createAESStream, buildMerkleTree } from '../crypto_utils/CryptoUtils';
 
 class Bundler {
     dataDir: string;
+    events: EventEmitter;
 
     constructor(dataDir: string) {
         this.dataDir = dataDir;
+        this.events = new EventEmitter();
     }
 
     /**

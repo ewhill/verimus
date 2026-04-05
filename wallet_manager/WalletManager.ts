@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+
 import { ethers } from 'ethers';
 
 import { BLOCK_TYPES } from '../constants';
@@ -24,10 +25,10 @@ export default class WalletManager {
     }
 
     private getAddressSafe(address: string): string {
-        if (address === 'SYSTEM') return address;
+        if (address === ethers.ZeroAddress) return address;
         try {
             return ethers.getAddress(address);
-        } catch (err) {
+        } catch ( _unusedErr ) {
             throw new Error(`Invalid checksum or EVM address: ${address}`);
         }
     }
@@ -39,11 +40,11 @@ export default class WalletManager {
 
         if (block.type === BLOCK_TYPES.TRANSACTION) {
             const p = block.payload as TransactionPayload;
-            if (p.senderAddress !== 'SYSTEM') {
-                await balances.updateOne({ address: this.getAddressSafe(p.senderAddress) }, { $inc: { balance: -p.amount } }, { upsert: true });
+            if (p.senderAddress !== ethers.ZeroAddress) {
+                await balances.updateOne({ walletAddress: this.getAddressSafe(p.senderAddress) }, { $inc: { balance: -p.amount } }, { upsert: true });
             }
-            if (p.recipientAddress !== 'SYSTEM') {
-                await balances.updateOne({ address: this.getAddressSafe(p.recipientAddress) }, { $inc: { balance: p.amount } }, { upsert: true });
+            if (p.recipientAddress !== ethers.ZeroAddress) {
+                await balances.updateOne({ walletAddress: this.getAddressSafe(p.recipientAddress) }, { $inc: { balance: p.amount } }, { upsert: true });
             }
         } else if (block.type === BLOCK_TYPES.STORAGE_CONTRACT) {
             const p = block.payload as StorageContractPayload;
@@ -56,34 +57,34 @@ export default class WalletManager {
                 const findersFee = Math.max(0.000001, escrowToDeduct * feeRate);
                 const totalCost = escrowToDeduct + findersFee;
 
-                await balances.updateOne({ address: this.getAddressSafe(p.ownerAddress) }, { $inc: { balance: -totalCost } }, { upsert: true });
-                await balances.updateOne({ address: this.getAddressSafe(block.signerAddress) }, { $inc: { balance: findersFee } }, { upsert: true });
+                await balances.updateOne({ walletAddress: this.getAddressSafe(p.ownerAddress) }, { $inc: { balance: -totalCost } }, { upsert: true });
+                await balances.updateOne({ walletAddress: this.getAddressSafe(block.signerAddress) }, { $inc: { balance: findersFee } }, { upsert: true });
 
                 if (p.fragmentMap && p.fragmentMap.length > 0) {
                     const nodeShare = escrowToDeduct / p.fragmentMap.length;
                     for (const frag of p.fragmentMap) {
                         const fragId = frag.nodeId || '';
                         const safeFragAddress = fragId.startsWith('0x') ? this.getAddressSafe(fragId) : fragId;
-                        await balances.updateOne({ address: safeFragAddress }, { $inc: { balance: -nodeShare } }, { upsert: true });
+                        await balances.updateOne({ walletAddress: safeFragAddress }, { $inc: { balance: -nodeShare } }, { upsert: true });
                     }
                 }
             }
         } else if (block.type === BLOCK_TYPES.STAKING_CONTRACT) {
             const p = block.payload as StakingContractPayload;
             if (p.collateralAmount) {
-                await balances.updateOne({ address: this.getAddressSafe(p.operatorAddress) }, { $inc: { balance: -p.collateralAmount } }, { upsert: true });
+                await balances.updateOne({ walletAddress: this.getAddressSafe(p.operatorAddress) }, { $inc: { balance: -p.collateralAmount } }, { upsert: true });
             }
         } else if (block.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
             const p = block.payload as SlashingPayload;
             if (p.burntAmount) {
-                await balances.updateOne({ address: this.getAddressSafe(p.penalizedAddress) }, { $inc: { balance: -p.burntAmount } }, { upsert: true });
+                await balances.updateOne({ walletAddress: this.getAddressSafe(p.penalizedAddress) }, { $inc: { balance: -p.burntAmount } }, { upsert: true });
             }
         }
     }
 
     async calculateBalance(address: string): Promise<number> {
         let safeAddress = address;
-        if (address === 'SYSTEM') {
+        if (address === ethers.ZeroAddress) {
             return Infinity;
         } else {
             safeAddress = this.getAddressSafe(address);
@@ -97,7 +98,7 @@ export default class WalletManager {
 
         try {
             if (this.ledger.balancesCollection) {
-                const record = await this.ledger.balancesCollection.findOne({ address: safeAddress });
+                const record = await this.ledger.balancesCollection.findOne({ walletAddress: safeAddress });
                 if (record && record.balance) {
                     balance = record.balance;
                 }
@@ -125,7 +126,7 @@ export default class WalletManager {
      * @returns True if funds exceed or match the minimum constraint
      */
     async verifyFunds(address: string, minimumRequired: number): Promise<boolean> {
-        if (address === 'SYSTEM') {
+        if (address === ethers.ZeroAddress) {
             return true;
         }
         const balance = await this.calculateBalance(address);
@@ -166,12 +167,12 @@ export default class WalletManager {
      * @returns Configures transaction payload mapped
      */
     async allocateFunds(senderAddress: string, recipientAddress: string, amount: number, senderSignature: string): Promise<TransactionPayload | null> {
-        const safeSender = senderAddress === 'SYSTEM' ? senderAddress : this.getAddressSafe(senderAddress);
-        const safeRecipient = recipientAddress === 'SYSTEM' ? recipientAddress : this.getAddressSafe(recipientAddress);
+        const safeSender = senderAddress === ethers.ZeroAddress ? senderAddress : this.getAddressSafe(senderAddress);
+        const safeRecipient = recipientAddress === ethers.ZeroAddress ? recipientAddress : this.getAddressSafe(recipientAddress);
 
         const hasFunds = await this.verifyFunds(safeSender, amount);
 
-        if (!hasFunds && safeSender !== 'SYSTEM') {
+        if (!hasFunds && safeSender !== ethers.ZeroAddress) {
             logger.warn(`Peer ${safeSender} attempted allocation of ${amount} without adequate limits.`);
             return null;
         }
@@ -241,8 +242,8 @@ export default class WalletManager {
      * @param requestId Bounding UUID tracking limit orders
      */
     freezeFunds(address: string, amount: number, requestId: string): void {
-        const safeAddr = address === 'SYSTEM' ? address : this.getAddressSafe(address);
-        if (safeAddr === 'SYSTEM') return;
+        const safeAddr = address === ethers.ZeroAddress ? address : this.getAddressSafe(address);
+        if (safeAddr === ethers.ZeroAddress) return;
         if (!this.frozenEscrows.has(requestId)) {
             this.frozenEscrows.set(requestId, []);
         }

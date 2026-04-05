@@ -3,25 +3,28 @@ import * as crypto from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { describe, it, beforeEach, afterEach, mock } from 'node:test';
 
+import { ethers } from 'ethers';
 import { ObjectId } from 'mongodb';
 
+import { BLOCK_TYPES } from '../../../constants';
 import { generateRSAKeyPair } from '../../../crypto_utils/CryptoUtils';
 import * as proxyCrypto from '../../../crypto_utils/CryptoUtils';
 import Mempool from '../../../models/mempool/Mempool';
 import type PeerNode from '../../../peer_node/PeerNode';
+import { createSignedMockBlock } from '../../../test/utils/EIP712Mock';
 import { createMock } from '../../../test/utils/TestUtils';
 import type { Block, PeerConnection } from '../../../types';
 import ConsensusEngine from '../ConsensusEngine';
 
 const mockConn: PeerConnection = { peerAddress: '127.0.0.1:3001', send: () => { } };
 const createMockBlock = (signature: string, signerAddress: string, hash: string): Block => ({
-    type: 'TRANSACTION',
+    type: BLOCK_TYPES.TRANSACTION,
     metadata: { index: 1, timestamp: 123 },
     signerAddress,
     signature,
     hash,
-    payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0 }
-});
+    payload: { senderSignature: '', senderAddress: ethers.ZeroAddress, recipientAddress: ethers.ZeroAddress, amount: 0 }
+} as unknown as Block);
 
 describe('Backend: ConsensusEngine Integrity', () => {
     let mockNode: PeerNode;
@@ -85,20 +88,10 @@ describe('Backend: ConsensusEngine Integrity', () => {
         engine.handleVerifyBlock = async () => { verifyCallCount++; };
 
 
-        const { publicKey, privateKey } = proxyCrypto.generateRSAKeyPair();
-
-        const mockBlock: Block = {
-            type: 'TRANSACTION',
-            metadata: { index: 5, timestamp: Date.now() },
-            payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0 },
-            signature: '',
-            signerAddress: publicKey,
-            hash: 'mockhash'
-        };
-        const validSignature = proxyCrypto.signData(JSON.stringify(mockBlock.payload), privateKey);
-        mockBlock.signature = validSignature;
-        const { hash: _unusedH1, ...blockToHash1 } = mockBlock;
-        mockBlock.hash = proxyCrypto.hashData(JSON.stringify(blockToHash1));
+        const wallet = ethers.Wallet.createRandom();
+        
+        const mockBlock = await createSignedMockBlock(wallet, BLOCK_TYPES.TRANSACTION, { senderSignature: '', senderAddress: ethers.ZeroAddress, recipientAddress: ethers.ZeroAddress, amount: 0 }, 5);
+        const validSignature = mockBlock.signature;
 
         const origHandleVerify = engine.handleVerifyBlock;
         const origHandlePropose = engine.handleProposeFork;
@@ -106,8 +99,9 @@ describe('Backend: ConsensusEngine Integrity', () => {
 
         try {
             // Test with bad signature (wrong key)
-            const { privateKey: badKey } = proxyCrypto.generateRSAKeyPair();
-            mockBlock.signature = proxyCrypto.signData(JSON.stringify(mockBlock.payload), badKey);
+            const badWallet = ethers.Wallet.createRandom();
+            const badBlock = await createSignedMockBlock(badWallet, BLOCK_TYPES.TRANSACTION, { senderSignature: '', senderAddress: ethers.ZeroAddress, recipientAddress: ethers.ZeroAddress, amount: 0 }, 5);
+            mockBlock.signature = badBlock.signature; // Explicitly invalidate it against the original signerAddress
             const { hash: _unusedH2, ...blockToHash2 } = mockBlock;
             mockBlock.hash = proxyCrypto.hashData(JSON.stringify(blockToHash2));
 

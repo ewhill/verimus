@@ -9,11 +9,12 @@ import { Request, Response } from 'express';
 import { Collection, FindCursor, ObjectId, WithId } from 'mongodb';
 
 import Bundler from '../../../bundler/Bundler';
-import { generateRSAKeyPair, signData } from '../../../crypto_utils/CryptoUtils';
+import { generateRSAKeyPair } from '../../../crypto_utils/CryptoUtils';
 import type Ledger from '../../../ledger/Ledger';
 import type { Peer } from '../../../p2p';
 import type PeerNode from '../../../peer_node/PeerNode';
 import type BaseProvider from '../../../storage_providers/base_provider/BaseProvider';
+import { createSignedMockBlock } from '../../../test/utils/EIP712Mock';
 import { createMock } from '../../../test/utils/TestUtils';
 import type { Block } from '../../../types';
 import { NodeRole } from '../../../types/NodeRole';
@@ -26,6 +27,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
             privateKey: 'PRIVKEY', 
+            walletAddress: 'MOCK_PUBKEY',
             ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [] })) as any }) }) 
          });
         (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
@@ -62,6 +64,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
+            walletAddress: publicKey,
             ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: validHPayload, signerAddress: publicKey, signature: 'bad_sig', type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
          });
         (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
@@ -117,7 +120,8 @@ describe('Backend: downloadHandler Unit Tests', () => {
             ]
         };
 
-        const sig = signData(JSON.stringify(payload), privateKey);
+        const mockBlock = await createSignedMockBlock(globalWallet, 'STORAGE_CONTRACT', payload);
+        const signedBlockWithId = { ...mockBlock, _id: new ObjectId('000000000000000000000001'), hash: 'validh' } as any;
         
         const realEvents = new EventEmitter();
 
@@ -125,6 +129,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
             publicKey: publicKey,
+            walletAddress: publicKey,
             events: realEvents,
             peer: createMock<Peer>({
                 connectedPeers: [
@@ -132,7 +137,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
                         remotePublicKey: 'otherNode', 
                         send: (msg: any) => {
                             setTimeout(() => {
-                                realEvents.emit(`shard_retrieve:${msg.marketId}:shard_1`, { success: true, shardDataBase64: bundleRes.shards[1].toString('base64') })
+                                realEvents.emit(`shard_retrieve:${msg. marketId}:shard_1`, { success: true, shardDataBase64: bundleRes.shards[1].toString('base64') })
                             }, 5);
                         } 
                     },
@@ -146,7 +151,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
                     }
                 ]
             }),
-            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: payload, signerAddress: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
+            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [signedBlockWithId] })) as any }) }) 
          });
         (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
 
@@ -216,12 +221,14 @@ describe('Backend: downloadHandler Unit Tests', () => {
         // 2. Setup block private and encrypt
         const priv = { key: aesKey, iv: aesIv, files, physicalId: 'pid', location: { type: 'local' } };
         const encPriv = { encryptedPayloadBase64: Buffer.from(JSON.stringify(priv)).toString('base64'), encryptedKeyBase64: 'DEPRECATED_PHASE5', encryptedIvBase64: 'DEPRECATED_PHASE5', encryptedAuthTagBase64: 'DEPRECATED_PHASE5', ownerAddress: globalWallet.address };
-        const sig = signData(JSON.stringify(encPriv), privateKey);
+        const mockBlock = await createSignedMockBlock(globalWallet, 'STORAGE_CONTRACT', encPriv);
+        const signedBlockWithId = { ...mockBlock, _id: new ObjectId('000000000000000000000001'), hash: 'validh' } as any;
 
         const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
-            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: encPriv, signerAddress: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
+            walletAddress: publicKey,
+            ledger: createMock<import('../../../ledger/Ledger').default>({ collection: createMock<import('mongodb').Collection<import('../../../types').Block>>({ find: mock.fn<() => import('mongodb').FindCursor<import('mongodb').WithId<import('../../../types').Block>>>(() => createMock<import('mongodb').FindCursor<import('mongodb').WithId<import('../../../types').Block>>>({ toArray: async () => [signedBlockWithId] })) as any }) }) 
          });
         (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
         mockNode.storageProvider = createMock<BaseProvider>({
@@ -275,13 +282,15 @@ describe('Backend: downloadHandler Unit Tests', () => {
         // const _pt = new PassThrough();
         const priv = { key: 'a'.repeat(64), iv: 'b'.repeat(32), files: [], physicalId: 'pid', location: { type: 'local' } };
         const encPriv = { encryptedPayloadBase64: Buffer.from(JSON.stringify(priv)).toString('base64'), encryptedKeyBase64: 'DEPRECATED_PHASE5', encryptedIvBase64: 'DEPRECATED_PHASE5', encryptedAuthTagBase64: 'DEPRECATED_PHASE5', ownerAddress: globalWallet.address };
-        const sig = signData(JSON.stringify(encPriv), privateKey);
+        const mockBlock = await createSignedMockBlock(globalWallet, 'STORAGE_CONTRACT', encPriv);
+        const signedBlockWithId = { ...mockBlock, _id: new ObjectId('000000000000000000000001'), hash: 'validh' } as any;
 
         let streamDestroyed = false;
         const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
-            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: encPriv, signerAddress: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
+            walletAddress: publicKey,
+            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [signedBlockWithId] })) as any }) }) 
          });
         (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
         mockNode.storageProvider = createMock<BaseProvider>({
@@ -319,12 +328,14 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const { publicKey, privateKey } = generateRSAKeyPair();
         const priv = { key: 'GARBAGEKEY1234GARBAGEKEY1234GARB', iv: 'GARBAGEIV1234567', files: [], physicalId: 'pid', location: { type: 'local' } };
         const encPriv = { encryptedPayloadBase64: Buffer.from(JSON.stringify(priv)).toString('base64'), encryptedKeyBase64: 'DEPRECATED_PHASE5', encryptedIvBase64: 'DEPRECATED_PHASE5', encryptedAuthTagBase64: 'DEPRECATED_PHASE5', ownerAddress: globalWallet.address };
-        const sig = signData(JSON.stringify(encPriv), privateKey);
+        const mockBlock = await createSignedMockBlock(globalWallet, 'STORAGE_CONTRACT', encPriv);
+        const signedBlockWithId = { ...mockBlock, _id: new ObjectId('000000000000000000000001'), hash: 'validh' } as any;
 
         const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
-            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: encPriv, signerAddress: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
+            walletAddress: publicKey,
+            ledger: createMock<import('../../../ledger/Ledger').default>({ collection: createMock<import('mongodb').Collection<import('../../../types').Block>>({ find: mock.fn<() => import('mongodb').FindCursor<import('mongodb').WithId<import('../../../types').Block>>>(() => createMock<import('mongodb').FindCursor<import('mongodb').WithId<import('../../../types').Block>>>({ toArray: async () => [signedBlockWithId] })) as any }) }) 
          });
         (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
         mockNode.storageProvider = createMock<BaseProvider>({
@@ -360,7 +371,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
 
 
     it('Returns HTTP 500 on payload parsing logic failures', async () => {
-        const mockNode = createMock<PeerNode>({  roles: [NodeRole.STORAGE], privateKey: 'PRIV'  });
+        const mockNode = createMock<PeerNode>({  roles: [NodeRole.STORAGE], privateKey: 'PRIV', walletAddress: 'MOCK_PUBKEY'  });
         (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
         Object.defineProperty(mockNode, 'ledger', { get: () => { throw new Error('Simulated null reference'); } });
         const handler = new DownloadHandler(mockNode);
@@ -397,12 +408,14 @@ describe('Backend: downloadHandler Unit Tests', () => {
             files: [], physicalId: 'pid', location: { type: 'local' }
         };
         const encPriv = { encryptedPayloadBase64: Buffer.from(JSON.stringify(priv)).toString('base64'), encryptedKeyBase64: 'DEPRECATED_PHASE5', encryptedIvBase64: 'DEPRECATED_PHASE5', encryptedAuthTagBase64: 'DEPRECATED_PHASE5', ownerAddress: globalWallet.address };
-        const sig = signData(JSON.stringify(encPriv), privateKey);
+        const mockBlock = await createSignedMockBlock(globalWallet, 'STORAGE_CONTRACT', encPriv);
+        const signedBlockWithId = { ...mockBlock, _id: new ObjectId('000000000000000000000001'), hash: 'validh' } as any;
 
         const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
             privateKey: privateKey, 
-            ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: encPriv, signerAddress: publicKey, signature: sig, type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
+            walletAddress: publicKey,
+            ledger: createMock<import('../../../ledger/Ledger').default>({ collection: createMock<import('mongodb').Collection<import('../../../types').Block>>({ find: mock.fn<() => import('mongodb').FindCursor<import('mongodb').WithId<import('../../../types').Block>>>(() => createMock<import('mongodb').FindCursor<import('mongodb').WithId<import('../../../types').Block>>>({ toArray: async () => [signedBlockWithId] })) as any }) }) 
          });
         (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
         mockNode.storageProvider = createMock<BaseProvider>({

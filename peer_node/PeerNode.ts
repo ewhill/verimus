@@ -50,6 +50,7 @@ class PeerNode {
     publicKey!: string;
     privateKey!: string;
     walletAddress!: string;
+    wallet!: ethers.Wallet | ethers.HDNodeWallet;
     signature!: string;
     httpServer?: https.Server;
     isHeadless: boolean;
@@ -116,7 +117,8 @@ class PeerNode {
         this.signature = this.keyPaths.signature || fs.readFileSync(this.keyPaths.signaturePath!, 'utf8');
 
         // Dynamically instantiate random backend EVM wallet address explicitly used purely for checkpoint and systemic signing 
-        this.walletAddress = ethers.Wallet.createRandom().address;
+        this.wallet = ethers.Wallet.createRandom();
+        this.walletAddress = this.wallet.address;
 
         // Setup Express API Server
         await this.loadOwnedBlocksCache();

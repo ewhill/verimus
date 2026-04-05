@@ -4,11 +4,14 @@ import test from 'node:test';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
+import { ethers } from 'ethers';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
+
 import { BLOCK_TYPES } from '../../constants';
-import { generateRSAKeyPair, hashData, signData } from '../../crypto_utils/CryptoUtils';
+import { generateRSAKeyPair, hashData } from '../../crypto_utils/CryptoUtils';
 import PeerNode from '../../peer_node/PeerNode';
+import { createSignedMockBlock } from '../../test/utils/EIP712Mock';
 import { createMock } from '../../test/utils/TestUtils';
 import type { Block, TransactionPayload } from '../../types';
 
@@ -31,31 +34,20 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
         await node.init();
         node.consensusEngine.runGlobalAudit = async () => {};
 
-        node.publicKey = keys.publicKey;
-        node.privateKey = keys.privateKey;
+        const wallet = new ethers.Wallet(node.wallet.privateKey!);
+        node.publicKey = wallet.address;
 
         // 1. Manually synthesize 999,999 bounds
         // Inject a base transaction that gives peer 1000 tokens. 
         // This validates the incremental `balances` tracking hook dynamically.
         const seedPayload: TransactionPayload = {
-            senderAddress: 'SYSTEM',
+            senderAddress: ethers.ZeroAddress,
             recipientAddress: node.publicKey,
             amount: 1000,
             senderSignature: 'MOCK_SYS_SIG'
         };
-        const seedSig = signData(JSON.stringify(seedPayload), node.privateKey);
         
-        const seedBlock: Block = {
-            metadata: { index: 999999, timestamp: Date.now() },
-            type: BLOCK_TYPES.TRANSACTION,
-            payload: seedPayload,
-            signerAddress: node.publicKey,
-            signature: seedSig as string
-        };
-        const seedBlockToHash = { ...seedBlock };
-        // @ts-ignore
-        delete seedBlockToHash._id;
-        seedBlock.hash = hashData(JSON.stringify(seedBlockToHash));
+        const seedBlock = await createSignedMockBlock(wallet, BLOCK_TYPES.TRANSACTION, seedPayload, 999999);
         
         await node.ledger.addBlockToChain(seedBlock);
         
@@ -67,21 +59,18 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
         // 2. Cross the 1,000,000 Epoch Boundary
         // Formulate exactly Block 1,000,000 and push into the ConsensusEngine mempool
         const epochPayload: TransactionPayload = {
-            senderAddress: 'SYSTEM',
+            senderAddress: ethers.ZeroAddress,
             recipientAddress: node.publicKey,
             amount: 500,
             senderSignature: 'MOCK_SYS_SIG'
         };
-        const epochSig = signData(JSON.stringify(epochPayload), node.privateKey);
         
-        const epochBlock = createMock<Block>({
-            metadata: { index: 1000000, timestamp: Date.now() },
-            type: BLOCK_TYPES.TRANSACTION,
-            payload: epochPayload,
-            signerAddress: node.publicKey,
-            signature: epochSig as string,
-            previousHash: seedBlock.hash
-        });
+        const epochBlock = await createSignedMockBlock(wallet, BLOCK_TYPES.TRANSACTION, epochPayload, 1000000, seedBlock.hash);
+        
+        // Ensure dummy previous hash validates cleanly mathematically structurally inside hashing payload implicitly if needed
+        const epochBlockToHash = { ...epochBlock };
+        delete epochBlockToHash.hash;
+        epochBlock.hash = hashData(JSON.stringify(epochBlockToHash));
 
         const mockConn = createMock<import('../../types').PeerConnection>({ peerAddress: '0.0.0.0', send: () => { } });
         
@@ -95,11 +84,11 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
 
         await node.consensusEngine.handlePendingBlock(epochBlock, mockConn, Date.now());
         
-        const epochBlockToHash = { ...epochBlock };
-        delete epochBlockToHash.hash;
-        delete (epochBlockToHash as any)._id;
-        const blockId = hashData(JSON.stringify(epochBlockToHash));
-        await node.consensusEngine.handleVerifyBlock(blockId, epochSig as string, mockConn);
+        const epochBlockValidationHash = { ...epochBlock };
+        delete epochBlockValidationHash.hash;
+        delete (epochBlockValidationHash as any)._id;
+        const blockId = hashData(JSON.stringify(epochBlockValidationHash));
+        await node.consensusEngine.handleVerifyBlock(blockId, epochBlock.signature, mockConn);
 
         await checkpointEvent;
         await new Promise(r => setTimeout(r, 200));

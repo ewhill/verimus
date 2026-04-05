@@ -10,6 +10,7 @@ import * as cryptoUtils from '../../../crypto_utils/CryptoUtils';
 import type Ledger from '../../../ledger/Ledger';
 import type Mempool from '../../../models/mempool/Mempool';
 import type PeerNode from '../../../peer_node/PeerNode';
+import { createSignedMockBlock } from '../../../test/utils/EIP712Mock';
 import { createMock } from '../../../test/utils/TestUtils';
 import type { Block } from '../../../types';
 import PrivatePayloadHandler from '../PrivatePayloadHandler';
@@ -113,7 +114,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const mockNode: PeerNode = createMock<PeerNode>({ 
             publicKey, 
             ledger: createMock<Ledger>({ collection: mockCollection }),
-            mempool: createMock<Mempool>({ pendingBlocks: new Map([['memhash', { block: mockBlock, committed: false, verifications: new Set(), eligible: true, originalTimestamp: 0 }]]) })
+            mempool: createMock<Mempool>({ pendingBlocks: new Map([['memhash', { block: mockBlock, committed: false, verifications: new Set<string>(), eligible: true, originalTimestamp: 0 }]]) })
         });
         const handler = new PrivatePayloadHandler(mockNode);
 
@@ -139,12 +140,13 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const timestamp = Date.now().toString();
         const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
         const payload = { encryptedPayloadBase64: Buffer.from(JSON.stringify({ physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] })).toString('base64'), ownerAddress: wallet ? wallet.address : 'other' };
+        const mockBlock = await createSignedMockBlock(wallet, 'STORAGE_CONTRACT', payload);
+        const signedBlockWithId = { ...mockBlock, _id: new ObjectId('000000000000000000000001'), hash: 'validh' } as any;
+        signedBlockWithId.signature = 'bad_sig';
         
         const mockCollectionFind = mock.fn<() => FindCursor<WithId<Block>>>();
         mockCollectionFind.mock.mockImplementation(() => createMock<FindCursor<WithId<Block>>>({
-            toArray: async () => [createMock<WithId<Block>>({
-                _id: new ObjectId('000000000000000000000001'), metadata: { index: 0, timestamp: 0 }, hash: 'validh', previousHash: 'prev', signerAddress: publicKey, payload: payload, type: 'STORAGE_CONTRACT', signature: 'bad_sig'
-            })]
+            toArray: async () => [signedBlockWithId]
         }));
         const mockCollection = createMock<Collection<Block>>({ find: mockCollectionFind as any });
         const mockNode: PeerNode = createMock<PeerNode>({ 
@@ -171,19 +173,18 @@ describe('Backend: privatePayloadHandler Coverage', () => {
     });
 
     it('Returns 401 on invalid Web3 signature mapping', async () => {
-        const { publicKey, privateKey } = cryptoUtils.generateRSAKeyPair();
+        const { publicKey } = cryptoUtils.generateRSAKeyPair();
         const wallet = ethers.Wallet.createRandom();
         const timestamp = Date.now().toString();
         const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
         const priv = { physicalId: 'pid', key: 'key', iv: 'iv', location: { type: 'local'}, files: [] };
         const encPriv = { encryptedPayloadBase64: Buffer.from(JSON.stringify(priv)).toString('base64'), encryptedKeyBase64: '', encryptedIvBase64: '', ownerAddress: wallet.address };
-        const sig = cryptoUtils.signData(JSON.stringify(encPriv), privateKey);
+        const mockBlock = await createSignedMockBlock(wallet, 'STORAGE_CONTRACT', encPriv);
+        const signedBlockWithId = { ...mockBlock, _id: new ObjectId('000000000000000000000001'), hash: 'validh' } as any;
 
         const mockCollectionFind = mock.fn<() => FindCursor<WithId<Block>>>();
         mockCollectionFind.mock.mockImplementation(() => createMock<FindCursor<WithId<Block>>>({
-            toArray: async () => [createMock<WithId<Block>>({
-                _id: new ObjectId('000000000000000000000001'), metadata: { index: 0, timestamp: 0 }, hash: 'validh', previousHash: '', signerAddress: publicKey, payload: encPriv, type: 'STORAGE_CONTRACT', signature: sig
-            })]
+            toArray: async () => [signedBlockWithId]
         }));
         const mockCollection = createMock<Collection<Block>>({ find: mockCollectionFind as any });
         const mockNode: PeerNode = createMock<PeerNode>({ 
@@ -228,13 +229,12 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
         const priv = { physicalId: 'pid', key: 'key', iv: 'iv', location: { type: 'local' }, files: [] };
         const encPriv = { encryptedPayloadBase64: Buffer.from(JSON.stringify(priv)).toString('base64'), encryptedKeyBase64: '', encryptedIvBase64: '', ownerAddress: wallet.address };
-        const sig = cryptoUtils.signData(JSON.stringify(encPriv), privateKey);
+        const mockBlock = await createSignedMockBlock(wallet, 'STORAGE_CONTRACT', encPriv);
+        const signedBlockWithId = { ...mockBlock, _id: new ObjectId('000000000000000000000001'), hash: 'validh' } as any;
 
         const mockCollectionFind = mock.fn<() => FindCursor<WithId<Block>>>();
         mockCollectionFind.mock.mockImplementation(() => createMock<FindCursor<WithId<Block>>>({
-            toArray: async () => [createMock<WithId<Block>>({
-                _id: new ObjectId('000000000000000000000001'), metadata: { index: 0, timestamp: 0 }, hash: 'validh', previousHash: '', signerAddress: publicKey, payload: encPriv, type: 'STORAGE_CONTRACT', signature: sig
-            })]
+            toArray: async () => [signedBlockWithId]
         }));
         const mockCollection = createMock<Collection<Block>>({ find: mockCollectionFind as any });
         const mockNode: PeerNode = createMock<PeerNode>({ 

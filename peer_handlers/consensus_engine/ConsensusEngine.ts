@@ -1,7 +1,12 @@
+
+
 import * as crypto from 'crypto';
 
+import { ethers } from 'ethers';
+
 import { GENESIS_TIMESTAMP, BLOCK_TYPES, calculateAuditDecayInterval, IS_DEV_NETWORK } from '../../constants';
-import { hashData, signData, verifySignature, verifyMerkleProof } from '../../crypto_utils/CryptoUtils';
+import { hashData, signData, verifyEIP712BlockSignature, verifyMerkleProof } from '../../crypto_utils/CryptoUtils';
+import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from '../../crypto_utils/EIP712Types';
 import logger from '../../logger/Logger';
 import { AdoptForkMessage } from '../../messages/adopt_fork_message/AdoptForkMessage';
 import { MerkleProofChallengeRequestMessage } from '../../messages/merkle_proof_challenge_request_message/MerkleProofChallengeRequestMessage';
@@ -36,8 +41,8 @@ class ConsensusEngine {
             this.taskQueue = this.taskQueue.then(async () => {
                 try {
                     resolve(await task());
-                } catch (e) {
-                    reject(e);
+                } catch ( _unusedE ) {
+                    reject( _unusedE );
                 }
             });
         });
@@ -105,8 +110,8 @@ class ConsensusEngine {
             // rather than only mapping block.signature uniquely preventing dummy-sig static overlays
             const blockId = recalculatedHash;
 
-            const isSignatureValid = verifySignature(JSON.stringify(block.payload), block.signature, block.signerAddress);
-            if (!isSignatureValid) {
+            const isSignatureValid = verifyEIP712BlockSignature(block);
+            logger.warn(`[DEBUG] handlePendingBlock hash: ${recalculatedHash}, valid: ${isSignatureValid}`); if (!isSignatureValid) {
                 logger.info(`[Peer ${this.node.port}] Rejected Invalid Pending Block from ${connection.peerAddress}`);
                 await this.node.reputationManager.penalizeCritical(block.signerAddress, "Signature Forgery");
                 return;
@@ -115,7 +120,7 @@ class ConsensusEngine {
             if (block.type === BLOCK_TYPES.TRANSACTION) {
                 const txPayload = block.payload as TransactionPayload;
                 const hasFunds = await this.walletManager.verifyFunds(txPayload.senderAddress, txPayload.amount);
-                if (!hasFunds && txPayload.senderAddress !== 'SYSTEM') {
+                if (!hasFunds && txPayload.senderAddress !== ethers.ZeroAddress) {
                     logger.warn(`[Peer ${this.node.port}] Rejected Transaction: Insufficient Funds from ${txPayload.senderAddress}`);
                     if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(block.signerAddress, "Insufficient Funds Double Spend");
                     return;
@@ -227,6 +232,7 @@ class ConsensusEngine {
     }
 
     async handleVerifyBlock(blockId: string, signature: string, connection: PeerConnection) {
+        logger.warn(`[DEBUG] handleVerifyBlock received blockId: ${blockId}, sig: ${signature.slice(0, 5)}...`);
         return this.enqueueTask(async () => {
             if (!blockId) {
                 logger.warn(`[Peer ${this.node.port}] Discarding malformed VerifyBlockMessage with undefined blockId.`);
@@ -557,17 +563,27 @@ class ConsensusEngine {
                                 activeContractsMerkleRoot: stateRoots.activeContractsMerkleRoot
                             };
 
-                            const sigStr = signData(JSON.stringify(checkpointPayload), this.node.privateKey);
-                            const checkpointBlock: Block = {
+                            const valBlock: Block = {
                                 metadata: { index: block.metadata.index + 1, timestamp: Date.now() },
                                 type: BLOCK_TYPES.CHECKPOINT,
                                 payload: checkpointPayload,
                                 signerAddress: this.node.walletAddress,
                                 previousHash: block.hash!,
-                                signature: sigStr as string
+                                signature: ''
                             };
+                            
+                            const valueObj = normalizeBlockForSignature(valBlock);
+                            const schema = EIP712_SCHEMAS[BLOCK_TYPES.CHECKPOINT];
+                            
+                            if (this.node.wallet) {
+                                valBlock.signature = await this.node.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
+                            } else {
+                                valBlock.signature = signData(JSON.stringify(checkpointPayload), this.node.privateKey) as string;
+                            }
+                            
+                            const checkpointBlock = valBlock;
 
-                            this.handlePendingBlock(checkpointBlock, { peerAddress: '0.0.0.0', send: () => { } } as any, Date.now()).catch((e: any) => logger.warn(`[Peer ${this.node.port}] Suppressed Checkpoint execution wrap exception: ${e.message}`));
+                            this.handlePendingBlock(checkpointBlock, { peerAddress: '0.0.0.0', send: () => { } } as any, Date.now()).catch(( _unusedE: any ) => logger.warn(`[Peer ${this.node.port}] Suppressed Checkpoint execution wrap exception: ${e.message}`));
                         }
                     }
                 }
@@ -736,7 +752,7 @@ class ConsensusEngine {
                                 logger.warn(`[Peer ${this.node.port}] Broadcast error for slashing block: ${err.message}`);
                             }
                         }
-                    } catch (e: any) {
+                    } catch ( _unusedE: any ) {
                         logger.warn(`[Peer ${this.node.port}] Failed to execute slashing block: ${e.message}`);
                     }
                 };
@@ -799,8 +815,8 @@ class ConsensusEngine {
 
                         try {
                             const [hostTx, auditorTx] = await Promise.all([
-                                this.walletManager.allocateFunds('SYSTEM', fragment.nodeId, hostReward, 'SYSTEM_SIG'),
-                                this.walletManager.allocateFunds('SYSTEM', this.node.walletAddress, auditorReward, 'SYSTEM_SIG')
+                                this.walletManager.allocateFunds(ethers.ZeroAddress, fragment.nodeId, hostReward, 'SYSTEM_SIG'),
+                                this.walletManager.allocateFunds(ethers.ZeroAddress, this.node.walletAddress, auditorReward, 'SYSTEM_SIG')
                             ]);
 
                             const mintTxBlock = async (txPayload: any) => {
@@ -823,7 +839,7 @@ class ConsensusEngine {
 
                             await mintTxBlock(hostTx);
                             await mintTxBlock(auditorTx);
-                        } catch (e: any) {
+                        } catch ( _unusedE: any ) {
                             logger.error(`Failed to formulate compensation bounds: ${e.message}`);
                         }
                     }

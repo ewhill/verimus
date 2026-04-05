@@ -1,4 +1,9 @@
-import * as crypto from 'crypto'
+import * as crypto from 'crypto';
+
+import { ethers } from 'ethers';
+
+import type { Block } from '../types';
+import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from './EIP712Types';
 
 /**
  * Generates an RSA key pair.
@@ -228,10 +233,39 @@ function verifyMerkleProof(leaf: Buffer | string, proof: string[], root: string,
     return currentHash === root;
 }
 
+/**
+ * Validates fundamentally natively block signatures mapped dynamically to EIP-712 standard web3 limits gracefully checking recovering logic implicitly correctly structurally!
+ */
+function verifyEIP712BlockSignature(block: Block): boolean {
+    if (!block.signature || !block.type || !block.signerAddress) return false;
+
+    try {
+        const schema = EIP712_SCHEMAS[block.type];
+        if (!schema) return false;
+
+        const valueObj = normalizeBlockForSignature(block);
+        
+        // Ethers explicitly natively checks standard limits cleanly!
+        const recoveredAddr = ethers.verifyTypedData(
+            EIP712_DOMAIN,
+            schema,
+            valueObj.payload ? valueObj : valueObj, // the value itself is the Block mapping explicitly cleanly natively.
+            block.signature
+        );
+        console.error("verifyEIP712BlockSignature FAILING. Address recovered:", recoveredAddr, "Expected:", block.signerAddress, "Value:", JSON.stringify(valueObj));
+
+
+        return recoveredAddr.toLowerCase() === block.signerAddress.toLowerCase();
+    } catch ( _unusedE ) {
+        return false;
+    }
+}
+
 export {
     generateRSAKeyPair,
     signData,
     verifySignature,
+    verifyEIP712BlockSignature,
     hashData,
     encryptAES,
     decryptAES,

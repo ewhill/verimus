@@ -9,11 +9,11 @@ import type { PeerReputation } from '../../../types';
 import { ReputationManager } from '../ReputationManager';
 
 const createMockCollection = (data: Record<string, any> = {}) => createMock<Collection<PeerReputation>>({
-    findOne: mock.fn<({ publicKey }: { publicKey: string }) => Promise<PeerReputation | null>>(async ({ publicKey }: { publicKey: string }) => data[publicKey] || null) as any,
-    insertOne: mock.fn<(doc: any) => Promise<void>>(async (doc: any) => { data[doc.publicKey] = { ...doc }; }) as any,
-    updateOne: mock.fn<(filter: { publicKey: string }, updateDoc: any) => Promise<void>>(async ({ publicKey }: { publicKey: string }, updateDoc: any) => { 
-        if (!data[publicKey]) data[publicKey] = { publicKey, ...(updateDoc.$setOnInsert || {}) };
-        if (updateDoc.$set) data[publicKey] = { ...data[publicKey], ...updateDoc.$set };
+    findOne: mock.fn<({ operatorAddress }: { operatorAddress: string }) => Promise<PeerReputation | null>>(async ({ operatorAddress }: { operatorAddress: string }) => data[operatorAddress] || null) as any,
+    insertOne: mock.fn<(doc: any) => Promise<void>>(async (doc: any) => { data[doc.operatorAddress] = { ...doc }; }) as any,
+    updateOne: mock.fn<(filter: { operatorAddress: string }, updateDoc: any) => Promise<void>>(async ({ operatorAddress }: { operatorAddress: string }, updateDoc: any) => { 
+        if (!data[operatorAddress]) data[operatorAddress] = { operatorAddress, ...(updateDoc.$setOnInsert || {}) };
+        if (updateDoc.$set) data[operatorAddress] = { ...data[operatorAddress], ...updateDoc.$set };
     }) as any
 });
 
@@ -55,7 +55,7 @@ describe('Backend: ReputationManager Analytics and Threshold Parsing', () => {
         await manager.penalizeMinor('test_faulty', 'Spam');
         await manager.penalizeMajor('test_faulty', 'Bad schema');
 
-        const peer = await mockCollection.findOne({ publicKey: 'test_faulty' } as any) as any;
+        const peer = await mockCollection.findOne({ operatorAddress: 'test_faulty' } as any) as any;
 
         assert.strictEqual(peer.score, 89);
         assert.strictEqual(peer.strikeCount, 2);
@@ -69,12 +69,12 @@ describe('Backend: ReputationManager Analytics and Threshold Parsing', () => {
 
         // Seed peer implicitly
         mockCollectionData['test_node'] = {
-            publicKey: 'test_node', score: 95, strikeCount: 1, isBanned: false, lastOffense: 'Spam'
+            operatorAddress: 'test_node', score: 95, strikeCount: 1, isBanned: false, lastOffense: 'Spam'
         };
 
         await manager.rewardValidSync('test_node');
 
-        const peer = await mockCollection.findOne({ publicKey: 'test_node' } as any) as any;
+        const peer = await mockCollection.findOne({ operatorAddress: 'test_node' } as any) as any;
         assert.strictEqual(peer.score, 96);
         assert.strictEqual(peer.strikeCount, 1); // Reward MUST NOT artificially alter strike metrics
     });

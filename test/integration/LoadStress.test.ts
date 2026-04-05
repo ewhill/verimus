@@ -83,6 +83,9 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
             close: async () => { }
         };
         Object.assign(node, { peer: mockPeer });
+        node.wallet = ethers.Wallet.createRandom();
+        node.walletAddress = node.wallet.address;
+
 
         node.consensusEngine.handlePendingBlock = async () => { };
 
@@ -216,11 +219,15 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
                 req.end(postDataEnd);
             });
             req.on('response', (res) => {
-                if (res.statusCode !== 202 && res.statusCode !== 200) {
-                    reject(new Error(`Server failed upload with status: ${res.statusCode}`));
-                }
-                res.on('data', () => { }); // Consumer 
-                res.on('end', () => resolve(true));
+                let responseData = '';
+                res.on('data', (chunk) => { responseData += chunk; }); // Consumer 
+                res.on('end', () => {
+                    if (res.statusCode !== 202 && res.statusCode !== 200) {
+                        reject(new Error(`Server failed upload with status: ${res.statusCode} Body: ${responseData}`));
+                    } else {
+                        resolve(true);
+                    }
+                });
             });
             req.on('error', reject);
         });

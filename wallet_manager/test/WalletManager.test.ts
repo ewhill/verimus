@@ -1,8 +1,8 @@
 import assert from 'node:assert';
 import { describe, it, mock } from 'node:test';
 
-import { Collection } from 'mongodb';
 import { ethers } from 'ethers';
+import { Collection } from 'mongodb';
 
 import Ledger from '../../ledger/Ledger';
 import { createMock } from '../../test/utils/TestUtils';
@@ -15,7 +15,7 @@ describe('WalletManager', () => {
         const mockLedger = createMock<Ledger>({
             balancesCollection: createMock<Collection<any>>({
                 findOne: mock.fn<(...args: any[]) => Promise<any>>(async (query: any) => {
-                    if (query.address === testWallet) return { balance: 130 };
+                    if (query.walletAddress === testWallet) return { balance: 130 };
                     return null;
                 })
             }),
@@ -92,13 +92,13 @@ describe('WalletManager', () => {
             blockAddedSubscribers: []
         });
         const walletManager = new WalletManager(mockLedger);
-        const balance = await walletManager.calculateBalance('SYSTEM');
+        const balance = await walletManager.calculateBalance(ethers.ZeroAddress);
         assert.strictEqual(balance, Infinity);
 
-        const hasFunds = await walletManager.verifyFunds('SYSTEM', 99999999);
+        const hasFunds = await walletManager.verifyFunds(ethers.ZeroAddress, 99999999);
         assert.strictEqual(hasFunds, true);
 
-        const approved = await walletManager.allocateFunds('SYSTEM', wallet, 500000, 'SYSTEM_SIG');
+        const approved = await walletManager.allocateFunds(ethers.ZeroAddress, wallet, 500000, 'SYSTEM_SIG');
         assert.ok(approved);
         assert.strictEqual(approved.amount, 500000);
     });

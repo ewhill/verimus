@@ -91,6 +91,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
 
         const mockNode = await getMockNode(PeerNodeClass);
         mockNode.publicKey = 'myPubKey';
+        mockNode.walletAddress = 'myPubKey';
         mock.method(mockNode.ledger.ownedBlocksCollection!, 'countDocuments', async () => 0);
         mock.method(mockNode.ledger.collection!, 'countDocuments', async () => 5);
         mock.method(mockNode.ledger.collection!, 'find', mock.fn<() => FindCursor<WithId<any>>>(() => createMock<FindCursor<WithId<any>>>({
@@ -108,6 +109,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
 
         const mockNode = new PeerNode(3002, [], createMock<BaseProvider>(), createMock<Bundler>(), 'mongodb://localhost:27017/test', createMock<string>(), createMock<PeerCredentials>(), 'data');
         mockNode.publicKey = 'myPubKey';
+        mockNode.walletAddress = 'myPubKey';
         mockNode.ownedBlocksCache = [];
 
         mockNode.mempool = createMock<Mempool>({
@@ -140,6 +142,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
 
         const mockNode = await getMockNode(PeerNodeClass);
         mockNode.publicKey = 'myPubKey';
+        mockNode.walletAddress = 'myPubKey';
 
         mock.method(mockNode.ledger.collection!, 'countDocuments', async () => 5);
         mock.method(mockNode.ledger.ownedBlocksCollection!, 'countDocuments', async () => 5);
@@ -156,6 +159,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     it('Auto-invalidates stale cache if database appears purged', async () => {
         const mockNode = await getMockNode(PeerNodeClass);
         mockNode.publicKey = 'myPubKey';
+        mockNode.walletAddress = 'myPubKey';
 
         let deleted = false;
         mockNode.ownedBlocksCache = ['hash1']; // Simulate existing cache
@@ -187,6 +191,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     it('Synchronizes deletion from unverified blocks', async () => {
         const mockNode = await getMockNode(PeerNodeClass);
         mockNode.publicKey = 'myPubKey';
+        mockNode.walletAddress = 'myPubKey';
 
         mockNode.mempool = createMock<Mempool>({
             pendingBlocks: new Map() as any

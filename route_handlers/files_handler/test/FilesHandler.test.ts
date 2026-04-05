@@ -41,6 +41,7 @@ describe('Backend: filesHandler Coverage', () => {
     beforeEach(() => {
         keys = generateRSAKeyPair();
         mockNode = createMock<PeerNode>({
+            walletAddress: 'testPubKey',
             publicKey: 'testPubKey',
             privateKey: keys.privateKey,
             ownedBlocksCache: [],
@@ -150,6 +151,7 @@ describe('Backend: filesHandler Coverage', () => {
     it('Gracefully catches and returns 500 on internal processor failure', async () => {
         const brokenNode = createMock<PeerNode>({
             ...mockNode,
+            walletAddress: 'testPubKey',
             ownedBlocksCache: ['trigger_db_query_hash'],
             ledger: createMock<Ledger>({
                 collection: createMock<Collection<Block>>({

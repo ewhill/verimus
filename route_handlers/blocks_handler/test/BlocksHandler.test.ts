@@ -48,6 +48,7 @@ describe('Backend: blocksHandler Coverage', () => {
         mockCollection = createMock<Collection<Block>>({ find: mockCollectionFind as any });
         
         mockNode = createMock<PeerNode>({
+            walletAddress: 'testPubKey',
             publicKey: 'testPubKey',
             privateKey: keys.privateKey,
             ledger: createMock<Ledger>({ collection: mockCollection }),
@@ -153,7 +154,7 @@ describe('Backend: blocksHandler Coverage', () => {
         const responseData = mockResponseJson.mock.calls.pop()?.arguments[0];
         // Only the pending block with testPubKey should be returned
         assert.strictEqual(responseData.blocks.length, 1);
-        assert.strictEqual(responseData.blocks[0].publicKey, 'testPubKey');
+        assert.strictEqual(responseData.blocks[0].signerAddress, 'testPubKey');
     });
 
     it('Sorts pending blocks in ASC and DESC', async () => {
