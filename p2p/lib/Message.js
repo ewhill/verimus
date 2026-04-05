@@ -90,7 +90,7 @@ class Message {
   calculateHash() {
     this._hash = crypto
       .createHash('sha256')
-      .update(JSON.stringify(this._body))
+      .update(JSON.stringify(this._body, (_, v) => typeof v === 'bigint' ? v.toString() : v))
       .digest('hex');
   }
 

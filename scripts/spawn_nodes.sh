@@ -105,14 +105,14 @@ for port in "${PORTS[@]}"; do
         PRIV_KEY_PATH="$PROJECT_ROOT/keys/peer_${target_port}.peer.pem"
         if [ -f "$PRIV_KEY_PATH" ]; then
             NODE_ADDR_CHECKSUM=$(node -e "const {ethers} = require('ethers'); const crypto = require('crypto'); const fs = require('fs'); const priv = fs.readFileSync('$PRIV_KEY_PATH', 'utf8'); const hash = crypto.createHash('sha256').update(priv).digest('hex'); console.log(new ethers.Wallet('0x'+hash).address)")
-            mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ walletAddress: '$NODE_ADDR_CHECKSUM' }, { \$set: { balance: 500000 } }, { upsert: true });" > /dev/null 2>&1
+            mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ walletAddress: '$NODE_ADDR_CHECKSUM' }, { \$set: { balance: \"500000000000000000000000\" } }, { upsert: true });" > /dev/null 2>&1
         fi
     done
     if [ -n "$SEED_WALLET" ]; then
         SEED_WALLET_CHECKSUM=$(node -e "const {ethers} = require('ethers'); console.log(ethers.getAddress('$SEED_WALLET'))")
-        mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ walletAddress: '$SEED_WALLET_CHECKSUM' }, { \$set: { balance: 50000 } }, { upsert: true });" > /dev/null 2>&1
+        mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ walletAddress: '$SEED_WALLET_CHECKSUM' }, { \$set: { balance: \"50000000000000000000000\" } }, { upsert: true });" > /dev/null 2>&1
     fi
-    mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ walletAddress: '$DUMMY_WALLET' }, { \$set: { balance: 500000 } }, { upsert: true });" > /dev/null 2>&1
+    mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ walletAddress: '$DUMMY_WALLET' }, { \$set: { balance: \"500000000000000000000000\" } }, { upsert: true });" > /dev/null 2>&1
 done
 echo "✅ Baseline balances physically synchronized to DB natively!"
 

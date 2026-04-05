@@ -28,7 +28,7 @@ const createDummyBlock = (hash: string, pk: string = 'pk'): import('../../types'
     signerAddress: pk,
     signature: 'sig',
     hash,
-    payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0 }
+    payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0n }
 });
 
 const getMockNode = async (PeerNodeClass: any) => {
@@ -129,7 +129,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
             signerAddress: 'myPubKey',
             signature: 'sig',
             hash: 'hash2',
-            payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0 }
+            payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0n }
         };
         await mockNode.addOwnedBlockToCache(dummyBlock2);
 
@@ -202,7 +202,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
             signerAddress: 'myPubKey',
             signature: 'sig',
             hash: 'hash3',
-            payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0 }
+            payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0n }
         };
         const mockConn = { peerAddress: '127.0.0.1:1234', send: () => { } };
         const blockToHashTest = { ...dummyBlock3 };

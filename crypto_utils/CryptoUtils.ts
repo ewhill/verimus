@@ -256,7 +256,8 @@ function verifyEIP712BlockSignature(block: Block): boolean {
 
 
         return recoveredAddr.toLowerCase() === block.signerAddress.toLowerCase();
-    } catch ( _unusedE ) {
+    } catch ( e: any ) {
+        console.error("EIP712 VERIFY ERROR:", e);
         return false;
     }
 }

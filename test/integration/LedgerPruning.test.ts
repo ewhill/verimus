@@ -43,7 +43,7 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
         const seedPayload: TransactionPayload = {
             senderAddress: ethers.ZeroAddress,
             recipientAddress: node.publicKey,
-            amount: 1000,
+            amount: ethers.parseUnits("1000", 18),
             senderSignature: 'MOCK_SYS_SIG'
         };
         
@@ -54,14 +54,14 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
         await new Promise(res => setTimeout(res, 50));
         
         const initialBal = await node.consensusEngine.walletManager.calculateBalance(node.publicKey);
-        assert.strictEqual(initialBal, 1000, 'Incremental state mathematically mapped 1000 bounds efficiently.');
+        assert.strictEqual(initialBal, ethers.parseUnits("1000", 18), 'Incremental state mathematically mapped 1000 bounds efficiently.');
 
         // 2. Cross the 1,000,000 Epoch Boundary
         // Formulate exactly Block 1,000,000 and push into the ConsensusEngine mempool
         const epochPayload: TransactionPayload = {
             senderAddress: ethers.ZeroAddress,
             recipientAddress: node.publicKey,
-            amount: 500,
+            amount: ethers.parseUnits("500", 18),
             senderSignature: 'MOCK_SYS_SIG'
         };
         
@@ -95,7 +95,7 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
 
         // 3. Mathematical Verification of Checkpoint Pruning
         const postEpochBal = await node.consensusEngine.walletManager.calculateBalance(node.publicKey);
-        assert.strictEqual(postEpochBal, 1500, 'Balance fully preserved completely functionally through Epoch Pruning iteration bounds.');
+        assert.strictEqual(postEpochBal, ethers.parseUnits("1500", 18), 'Balance fully preserved completely functionally through Epoch Pruning iteration bounds.');
 
         const blockCount = await node.ledger.collection!.countDocuments();
         assert.ok(blockCount <= 3, `Pruning execution correctly executed O(1) bounds mathematically! Blocks tracked: ${blockCount}`);

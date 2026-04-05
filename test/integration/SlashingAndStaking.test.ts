@@ -42,8 +42,8 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
         // Stage 1: Scaffold Initial Staking Collateral internally mapping Phase 5b
         const stakingLockPayload = {
             operatorAddress: maliciousWallet.address,
-            collateralAmount: 50000,
-            minEpochTimelineDays: 30
+            collateralAmount: 50000n,
+            minEpochTimelineDays: 30n
         };
 
         const stakingBlock = await createSignedMockBlock(maliciousWallet, BLOCK_TYPES.STAKING_CONTRACT, stakingLockPayload, -1);
@@ -59,7 +59,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
         const blockToHash = { ...stakingBlock };
         delete blockToHash.hash;
         delete (blockToHash as any)._id;
-        const blockId = hashData(JSON.stringify(blockToHash));
+        const blockId = hashData(JSON.stringify(blockToHash, (_, v) => typeof v === 'bigint' ? v.toString() : v));
         const pMsg = { blockId: blockId, signature: stakingBlock.signature };
         await node.consensusEngine.handleVerifyBlock(pMsg.blockId, pMsg.signature, mockConn);
 
@@ -68,13 +68,13 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
 
         // Assert Step: WalletManager tracks initial Locked Escrow correctly 
         const testBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousWallet.address);
-        assert.strictEqual(testBalance, -50000, '50,000 collateral effectively tracked removing liquid boundaries');
+        assert.strictEqual(testBalance, -50000n, '50000n collateral effectively tracked removing liquid boundaries');
 
         // Stage 2: Intercept global mathematical failure! Injecting native Slashing penalty!
         const invalidSlashPayload = {
             penalizedAddress: maliciousWallet.address,
             evidenceSignature: 'INVALID_GARBAGE_STRING_NOT_A_HASH',
-            burntAmount: 50000
+            burntAmount: 50000n
         };
 
         // We use the WRONG key intentionally to make it an invalid block signature? Wait, the test is supposed to reject it because of evidenceSignature. 
@@ -85,13 +85,13 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
         
         // Balance should still be -50000 
         const interimBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousWallet.address);
-        assert.strictEqual(interimBalance, -50000, 'Invalid evidence signature was correctly rejected by consensus engine');
+        assert.strictEqual(interimBalance, -50000n, 'Invalid evidence signature was correctly rejected by consensus engine');
 
         // Stage 3: Inject valid Slashing penalty!
         const slashPayload = {
             penalizedAddress: maliciousWallet.address,
             evidenceSignature: createHash('sha256').update('FORGERY_EVIDENCE_MAP').digest('hex'),
-            burntAmount: 50000
+            burntAmount: 50000n
         };
 
         const slashBlock = await createSignedMockBlock(wallet, BLOCK_TYPES.SLASHING_TRANSACTION, slashPayload, -1);
@@ -105,7 +105,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
         const slashBlockToHash = { ...slashBlock };
         delete slashBlockToHash.hash;
         delete (slashBlockToHash as any)._id;
-        const slashId = hashData(JSON.stringify(slashBlockToHash));
+        const slashId = hashData(JSON.stringify(slashBlockToHash, (_, v) => typeof v === 'bigint' ? v.toString() : v));
         await node.consensusEngine.handleVerifyBlock(slashId, slashBlock.signature, mockConn);
 
         await slashFork;
@@ -113,7 +113,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
 
         // Finalize state limits natively executing collateral mathematical checks limits
         const postSlashBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousWallet.address);
-        assert.strictEqual(postSlashBalance, -100000, 'Collateral slashed resulting in an immutable zeroed sum loss mathematically');
+        assert.strictEqual(postSlashBalance, -100000n, 'Collateral slashed resulting in an immutable zeroed sum loss mathematically');
 
     } finally {
         if (node) {

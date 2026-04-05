@@ -136,7 +136,7 @@ class ConsensusEngine {
             if (block.type === BLOCK_TYPES.STORAGE_CONTRACT) {
                 const scPayload = block.payload as StorageContractPayload;
                 if (scPayload.ownerAddress && scPayload.allocatedEgressEscrow) {
-                    const totalCost = scPayload.allocatedEgressEscrow * 1.05;
+                    const totalCost = (scPayload.allocatedEgressEscrow * 105n) / 100n;
                     const hasUserFunds = await this.walletManager.verifyFunds(scPayload.ownerAddress, totalCost);
                     if (!hasUserFunds) {
                         logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Insufficient EIP-191 Funds for ${scPayload.ownerAddress}`);
@@ -144,7 +144,7 @@ class ConsensusEngine {
                     }
 
                     if (scPayload.fragmentMap && scPayload.fragmentMap.length > 0) {
-                        const nodeShare = scPayload.allocatedEgressEscrow / scPayload.fragmentMap.length;
+                        const nodeShare = scPayload.allocatedEgressEscrow / BigInt(scPayload.fragmentMap.length);
                         for (const frag of scPayload.fragmentMap) {
                             const hasNodeFunds = await this.walletManager.verifyFunds(frag.nodeId, nodeShare);
                             if (!hasNodeFunds) {
@@ -155,8 +155,8 @@ class ConsensusEngine {
                     }
                 }
 
-                if (scPayload.brokerFeePercentage !== undefined && scPayload.brokerFeePercentage > 0.15) {
-                    logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: brokerFeePercentage exceeded 0.15 ceiling from ${block.signerAddress}`);
+                if (scPayload.brokerFeePercentage !== undefined && scPayload.brokerFeePercentage > 1500n) {
+                    logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: brokerFeePercentage exceeded 15% (1500 bps) ceiling from ${block.signerAddress}`);
                     return;
                 }
 
@@ -736,7 +736,7 @@ class ConsensusEngine {
                     const slashPayload = {
                         penalizedAddress: nodeId,
                         evidenceSignature: crypto.createHash('sha256').update(`${contractHash}:${fragment.physicalId}:${targetIndex}:${reason}`).digest('hex'),
-                        burntAmount: 50000
+                        burntAmount: ethers.parseUnits("50000", 18)
                     };
                     try {
                         const pendingBlock: Block = {
@@ -837,8 +837,8 @@ class ConsensusEngine {
 
                         // Phase 5 Financial Execution 
                         const reward = WalletManager.calculateSystemReward(Date.now(), GENESIS_TIMESTAMP);
-                        const hostReward = reward * 0.9;
-                        const auditorReward = reward * 0.1;
+                        const hostReward = (reward * 90n) / 100n;
+                        const auditorReward = reward - hostReward;
 
                         try {
                             const [hostTx, auditorTx] = await Promise.all([

@@ -214,12 +214,12 @@ class PeerNode {
                     // --- Phase 6: Originator Staking Boot Sequence ---
                     if (this.roles.includes(NodeRole.ORIGINATOR) && !IS_DEV_NETWORK) {
                         try {
-                            const stakeStr = JSON.stringify({ operatorAddress: this.walletAddress, collateralAmount: 50000, minEpochTimelineDays: 30 });
+                            const stakeStr = JSON.stringify({ operatorAddress: this.walletAddress, collateralAmount: Number(ethers.parseUnits("50000", 18)), minEpochTimelineDays: 30 }); // Wait, stringify can't serialize BigInt. Let's use toString or I injected BigInt toJSON. We can just use big ints!
                             const sigStr = signData(stakeStr, this.privateKey) as string;
                             const stakingBlock: Block = {
                                 metadata: { index: -1, timestamp: Date.now() },
                                 type: 'STAKING_CONTRACT',
-                                payload: { operatorAddress: this.walletAddress, collateralAmount: 50000, minEpochTimelineDays: 30 },
+                                payload: { operatorAddress: this.walletAddress, collateralAmount: ethers.parseUnits("50000", 18), minEpochTimelineDays: 30 },
                                 signerAddress: this.walletAddress,
                                 signature: sigStr
                             };

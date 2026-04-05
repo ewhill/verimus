@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
 import type { Block } from '../../../types';
+import { createMock } from '../../../test/utils/TestUtils';
 import { PendingBlockMessage } from '../PendingBlockMessage';
 
 describe('Messages: PendingBlockMessage', () => {
@@ -10,7 +11,7 @@ describe('Messages: PendingBlockMessage', () => {
         type: 'TRANSACTION',
         metadata: { index: 1, timestamp: 123 },
         signerAddress: 'PK',
-        payload: { senderSignature: 'sig', senderAddress: 's1', recipientAddress: 'r1', amount: 100 },
+        payload: { senderSignature: 'sig', senderAddress: 's1', recipientAddress: 'r1', amount: 100n },
         signature: 'SIG',
         previousHash: 'PREV'
     };

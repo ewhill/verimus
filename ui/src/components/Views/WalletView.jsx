@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { ethers } from 'ethers';
 import { useStore } from '../../store';
 import FilesView from './FilesView/FilesView';
 
@@ -43,8 +44,8 @@ const WalletView = () => {
         };
     }, [web3Account]);
 
-    // Format helpers mapping raw blockchain precision
-    const formatVeri = (num) => parseFloat(num).toFixed(6) + ' $VERI';
+    // Format helpers mapping raw blockchain precision from BigInt strings natively
+    const formatVeri = (num) => parseFloat(ethers.formatUnits(num ? num.toString() : "0", 18)).toFixed(6) + ' $VERI';
     const formatDate = (ts) => new Date(ts).toLocaleString();
 
     return (

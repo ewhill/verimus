@@ -125,20 +125,20 @@ export const EIP712_SCHEMAS: Record<string, Record<string, Array<{name: string, 
  * Ethers EIP-712 requires all properties mathematically map to their struct definitions seamlessly, otherwise rejecting dynamically explicitly organically.
  */
 export const normalizeBlockForSignature = (block: Block): Record<string, any> => {
-    const b = JSON.parse(JSON.stringify(block));
-
     // Base properties standard fills logically
-    if (!b.previousHash) b.previousHash = "";
-    
-    // Type specific map structures gracefully
+    if (!block.previousHash) block.previousHash = "";
+
+    const b: any = { ...block, payload: { ...block.payload } };
+
+    // Type specific map structures gracefully mapping BSON Long constraints preventing object fragmentation
     if (b.type === BLOCK_TYPES.STORAGE_CONTRACT) {
         const p = b.payload;
         p.encryptedKeyBase64 = p.encryptedKeyBase64 || "";
         p.encryptedIvBase64 = p.encryptedIvBase64 || "";
         p.encryptedAuthTagBase64 = p.encryptedAuthTagBase64 || "";
-        p.allocatedRestToll = Math.ceil(p.allocatedRestToll || 0);
-        p.allocatedEgressEscrow = Math.ceil(p.allocatedEgressEscrow || 0);
-        p.remainingEgressEscrow = Math.ceil(p.remainingEgressEscrow || 0);
+        p.allocatedRestToll = p.allocatedRestToll ? p.allocatedRestToll.toString() : "0";
+        p.allocatedEgressEscrow = p.allocatedEgressEscrow ? p.allocatedEgressEscrow.toString() : "0";
+        p.remainingEgressEscrow = p.remainingEgressEscrow ? p.remainingEgressEscrow.toString() : "0";
         p.marketId = p.marketId || "";
         p.activeHosts = p.activeHosts || [];
         p.erasureParams = p.erasureParams || { n: 0, k: 0, originalSize: 0 };
@@ -147,16 +147,28 @@ export const normalizeBlockForSignature = (block: Block): Record<string, any> =>
         p.merkleRoots = p.merkleRoots || [];
         p.ownerAddress = p.ownerAddress || "0x0000000000000000000000000000000000000000";
         p.ownerSignature = p.ownerSignature || "";
-        p.brokerFeePercentage = Math.ceil((p.brokerFeePercentage || 0) * 10000);
+        p.brokerFeePercentage = p.brokerFeePercentage ? p.brokerFeePercentage.toString() : "0";
     }
 
     if (b.type === BLOCK_TYPES.TRANSACTION) {
-        b.payload.amount = Math.round((b.payload.amount || 0) * 1000000);
+        b.payload.amount = b.payload.amount ? b.payload.amount.toString() : "0";
     }
 
+    if (b.type === BLOCK_TYPES.STAKING_CONTRACT) {
+        b.payload.collateralAmount = b.payload.collateralAmount ? b.payload.collateralAmount.toString() : "0";
+        b.payload.minEpochTimelineDays = b.payload.minEpochTimelineDays ? b.payload.minEpochTimelineDays.toString() : "0";
+    }
+
+    if (b.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
+        b.payload.burntAmount = b.payload.burntAmount ? b.payload.burntAmount.toString() : "0";
+    }
+
+    // Deep clone stripped logic avoiding memory mutation while resolving strings dynamically
+    const outB = JSON.parse(JSON.stringify(b));
+
     return {
-        type: b.type,
-        signerAddress: b.signerAddress,
-        payload: b.payload
+        type: outB.type,
+        signerAddress: outB.signerAddress,
+        payload: outB.payload
     };
 };

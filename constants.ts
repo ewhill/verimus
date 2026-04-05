@@ -9,6 +9,10 @@ export const GENESIS_TIMESTAMP = process.env.VERIMUS_GENESIS_TIMESTAMP ? parseIn
 
 export const IS_DEV_NETWORK = process.env.NODE_ENV !== 'production';
 
+if (!('toJSON' in BigInt.prototype)) {
+    (BigInt.prototype as any).toJSON = function() { return this.toString(); };
+}
+
 export const BLOCK_TYPES = {
     TRANSACTION: 'TRANSACTION',
     STORAGE_CONTRACT: 'STORAGE_CONTRACT',
@@ -35,7 +39,7 @@ const fundingBlockBase = {
     payload: {
         senderAddress: ethers.ZeroAddress,
         recipientAddress: ethers.ZeroAddress,
-        amount: Number.MAX_VALUE,
+        amount: ethers.parseUnits("9999999999", 18),
         senderSignature: ''
     },
     signerAddress: ethers.ZeroAddress,
@@ -52,8 +56,8 @@ const contractBlockBase = {
     payload: {
         marketId: 'GENESIS_MARKET',
         activeHosts: [],
-        allocatedEgressEscrow: 0,
-        remainingEgressEscrow: 0,
+        allocatedEgressEscrow: 0n,
+        remainingEgressEscrow: 0n,
         erasureParams: { k: 1, n: 1, originalSize: GENESIS_SEED_DATA.length },
         fragmentMap: [{
             nodeId: 'GENESIS_NODE',

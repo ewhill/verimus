@@ -210,7 +210,7 @@ export default class DownloadHandler extends BaseHandler {
             res.on('close', async () => {
                 if (accumulatedCost > 0) {
                     const resolvedHash = Array.isArray(hash) ? hash[0] : hash;
-                    await this.node.consensusEngine?.walletManager?.deductEgressEscrow(resolvedHash, accumulatedCost);
+                    await this.node.consensusEngine?.walletManager?.deductEgressEscrow(resolvedHash, ethers.parseUnits(accumulatedCost.toFixed(18), 18));
                 }
             });
 

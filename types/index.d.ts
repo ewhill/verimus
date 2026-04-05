@@ -21,15 +21,15 @@ export interface PeerReputation {
 }
 
 export interface StoragePricingConfig {
-    restCostPerGBHour: number;
-    egressCostPerGB: number;
+    restCostPerGBHour: bigint;
+    egressCostPerGB: bigint;
 }
 
 export interface TransactionPayload {
     senderSignature: string;
     senderAddress: string;
     recipientAddress: string;
-    amount: number;
+    amount: bigint;
 }
 
 export interface ErasureParameters {
@@ -50,9 +50,9 @@ export interface StorageContractPayload {
     encryptedKeyBase64?: string;
     encryptedIvBase64?: string;
     encryptedAuthTagBase64?: string;
-    allocatedRestToll?: number;
-    allocatedEgressEscrow?: number;
-    remainingEgressEscrow?: number;
+    allocatedRestToll?: bigint;
+    allocatedEgressEscrow?: bigint;
+    remainingEgressEscrow?: bigint;
     marketId?: string;
     activeHosts?: string[];
     erasureParams?: ErasureParameters;
@@ -60,19 +60,19 @@ export interface StorageContractPayload {
     merkleRoots?: string[]; // Phase 4b - Constant size 64-character hash resolving entire physical matrix dynamically
     ownerAddress?: string;
     ownerSignature?: string;
-    brokerFeePercentage?: number;
+    brokerFeePercentage?: bigint;
 }
 
 export interface StakingContractPayload {
     operatorAddress: string;
-    collateralAmount: number;
+    collateralAmount: bigint;
     minEpochTimelineDays: number;
 }
 
 export interface SlashingPayload {
     penalizedAddress: string;
     evidenceSignature: string;
-    burntAmount: number;
+    burntAmount: bigint;
 }
 
 export interface CheckpointStatePayload {

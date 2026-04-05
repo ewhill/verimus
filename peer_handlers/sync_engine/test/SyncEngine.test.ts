@@ -20,7 +20,7 @@ const createMockBlock = (hash: string, pk: string = 'pk'): Block => ({
     signerAddress: pk,
     signature: 'sig',
     hash,
-    payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0 }
+    payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0n }
 });
 
 describe('Backend: SyncEngine Integrity', () => {

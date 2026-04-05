@@ -74,19 +74,21 @@ export default class UploadHandler extends BaseHandler {
             }
             if (paths.length === 0) paths = files.map(f => f.originalname);
 
-            const totalSize = files.reduce((acc, f) => acc + f.size, 0);
+            const totalSize = files.reduce((acc, f) => acc + (f.size || 1024), 0);
             const chunkSizeBytes = 65536; // 64KB Phase 3 explicit constant
             const theoreticalMaxCost = Math.ceil(maxCost * redundancy * Math.max((totalSize / (1024 * 1024 * 1024)), 0.000001));
+            const theoreticalMaxCostWei = ethers.parseUnits(theoreticalMaxCost.toString(), 18);
             const marketReqId = crypto.randomUUID();
 
             // Escrow phase tracking theoretical spend limits mapping against double-spends
-            const hasFunds = await this.node.consensusEngine.walletManager.verifyFunds(signerAddress, theoreticalMaxCost);
+            const hasFunds = await this.node.consensusEngine.walletManager.verifyFunds(signerAddress, theoreticalMaxCostWei);
             const totalUserCost = Math.ceil(theoreticalMaxCost * 1.05);
+            const totalUserCostWei = ethers.parseUnits(totalUserCost.toString(), 18);
             
             const currentBalance = await this.node.consensusEngine.walletManager.calculateBalance(ownerAddress);
-            logger.error(`[UploadHandler] DEBUG: ownerAddress: ${ownerAddress}, totalUserCost: ${totalUserCost}, currentBalance: ${currentBalance}, redundancy: ${redundancy}, maxCost: ${maxCost}, totalSize: ${totalSize}`);
+            logger.error(`[UploadHandler] DEBUG: ownerAddress: ${ownerAddress}, totalUserCostWei: ${totalUserCostWei}, currentBalance: ${currentBalance}, redundancy: ${redundancy}, maxCost: ${maxCost}, totalSize: ${totalSize}`);
             
-            const hasUserFunds = await this.node.consensusEngine.walletManager.verifyFunds(ownerAddress, totalUserCost);
+            const hasUserFunds = await this.node.consensusEngine.walletManager.verifyFunds(ownerAddress, totalUserCostWei);
             
             if (!hasFunds && signerAddress !== ethers.ZeroAddress) {
                 return res.status(402).send('Insufficient Wallet Funds allocating constrained P2P limit orders.');
@@ -95,8 +97,8 @@ export default class UploadHandler extends BaseHandler {
                 return res.status(402).send('Insufficient EIP-191 Egress Extrinsic Bounds mapped explicitly natively.');
             }
 
-            this.node.consensusEngine.walletManager.freezeFunds(signerAddress, theoreticalMaxCost, marketReqId);
-            this.node.consensusEngine.walletManager.freezeFunds(ownerAddress, totalUserCost, marketReqId);
+            this.node.consensusEngine.walletManager.freezeFunds(signerAddress, theoreticalMaxCostWei, marketReqId);
+            this.node.consensusEngine.walletManager.freezeFunds(ownerAddress, totalUserCostWei, marketReqId);
             logger.info(`[Peer ${this.node.port}] Initiating async storage limit order ${marketReqId} searching mapping ${redundancy} hosts...`);
 
             this.node.events.emit('upload_telemetry', { status: 'MARKET_INITIATED', message: `Broadcasting Limit Orders (${redundancy} Hosts, $${theoreticalMaxCost.toFixed(3)} VERI Escrow)` });
@@ -266,14 +268,14 @@ export default class UploadHandler extends BaseHandler {
                 ...encryptedPrivate,
                 marketId: marketReqId,
                 activeHosts: bids.map((b: { peerId: string }) => b.peerId),
-                allocatedEgressEscrow: theoreticalMaxCost,
-                remainingEgressEscrow: theoreticalMaxCost,
+                allocatedEgressEscrow: theoreticalMaxCostWei,
+                remainingEgressEscrow: theoreticalMaxCostWei,
                 erasureParams: { k: K, n: N, originalSize: bundleResult.originalSize! },
                 fragmentMap: fragmentMap,
                 merkleRoots: bundleResult.merkleRoots,
                 ownerAddress: recoveredAddress,
                 ownerSignature: ownerSignature,
-                brokerFeePercentage: this.node.proxyBrokerFee
+                brokerFeePercentage: BigInt(Math.floor((this.node.proxyBrokerFee || 0) * 10000))
             };
 
             const valBlock: Block = {

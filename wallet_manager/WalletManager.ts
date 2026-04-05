@@ -9,7 +9,7 @@ import type { TransactionPayload, StorageContractBlock, StorageContractPayload, 
 
 export default class WalletManager {
     private ledger: Ledger;
-    private frozenEscrows: Map<string, { address: string; amount: number }[]> = new Map();
+    private frozenEscrows: Map<string, { address: string; amount: bigint }[]> = new Map();
 
     constructor(ledger: Ledger) {
         this.ledger = ledger;
@@ -37,6 +37,14 @@ export default class WalletManager {
         }
     }
 
+    private async applyBalanceDelta(address: string, deltaWei: bigint, balancesCol: any): Promise<void> {
+        const safeAddress = this.getAddressSafe(address);
+        const record = await balancesCol.findOne({ walletAddress: safeAddress });
+        let current = record && record.balance !== undefined ? BigInt(record.balance) : 0n;
+        current += deltaWei;
+        await balancesCol.updateOne({ walletAddress: safeAddress }, { $set: { balance: current.toString() } }, { upsert: true });
+    }
+
     async updateIncrementalState(block: Block): Promise<void> {
         if (!this.ledger.balancesCollection) return;
         const balances = this.ledger.balancesCollection;
@@ -45,66 +53,66 @@ export default class WalletManager {
         if (block.type === BLOCK_TYPES.TRANSACTION) {
             const p = block.payload as TransactionPayload;
             if (p.senderAddress !== ethers.ZeroAddress) {
-                await balances.updateOne({ walletAddress: this.getAddressSafe(p.senderAddress) }, { $inc: { balance: -p.amount } }, { upsert: true });
+                await this.applyBalanceDelta(p.senderAddress, -p.amount, balances);
             }
             if (p.recipientAddress !== ethers.ZeroAddress) {
-                await balances.updateOne({ walletAddress: this.getAddressSafe(p.recipientAddress) }, { $inc: { balance: p.amount } }, { upsert: true });
+                await this.applyBalanceDelta(p.recipientAddress, p.amount, balances);
             }
         } else if (block.type === BLOCK_TYPES.STORAGE_CONTRACT) {
             const p = block.payload as StorageContractPayload;
             if (activeContracts) {
                 await activeContracts.updateOne({ contractId: block.hash }, { $set: { payload: p, signerAddress: this.getAddressSafe(block.signerAddress) } }, { upsert: true });
             }
-            const escrowToDeduct = p.remainingEgressEscrow ?? p.allocatedEgressEscrow ?? 0;
-            if (escrowToDeduct > 0 && p.ownerAddress) {
-                const feeRate = p.brokerFeePercentage ?? 0.01;
-                const findersFee = Math.max(0.000001, escrowToDeduct * feeRate);
+            const escrowToDeduct = p.remainingEgressEscrow ?? p.allocatedEgressEscrow ?? 0n;
+            if (escrowToDeduct > 0n && p.ownerAddress) {
+                const feeRateBasis = p.brokerFeePercentage ?? 100n; // default 1% (100 basis points)
+                const _findersFeeRaw = (escrowToDeduct * feeRateBasis) / 10000n;
+                const findersFee = _findersFeeRaw === 0n ? 1n : _findersFeeRaw;
                 const totalCost = escrowToDeduct + findersFee;
 
-                await balances.updateOne({ walletAddress: this.getAddressSafe(p.ownerAddress) }, { $inc: { balance: -totalCost } }, { upsert: true });
-                await balances.updateOne({ walletAddress: this.getAddressSafe(block.signerAddress) }, { $inc: { balance: findersFee } }, { upsert: true });
+                await this.applyBalanceDelta(p.ownerAddress, -totalCost, balances);
+                await this.applyBalanceDelta(block.signerAddress, findersFee, balances);
 
                 if (p.fragmentMap && p.fragmentMap.length > 0) {
-                    const nodeShare = escrowToDeduct / p.fragmentMap.length;
+                    const nodeShare = escrowToDeduct / BigInt(p.fragmentMap.length);
                     for (const frag of p.fragmentMap) {
                         const fragId = frag.nodeId || '';
                         const safeFragAddress = fragId.startsWith('0x') ? this.getAddressSafe(fragId) : fragId;
-                        await balances.updateOne({ walletAddress: safeFragAddress }, { $inc: { balance: -nodeShare } }, { upsert: true });
+                        await this.applyBalanceDelta(safeFragAddress, -nodeShare, balances);
                     }
                 }
             }
         } else if (block.type === BLOCK_TYPES.STAKING_CONTRACT) {
             const p = block.payload as StakingContractPayload;
-            if (p.collateralAmount) {
-                await balances.updateOne({ walletAddress: this.getAddressSafe(p.operatorAddress) }, { $inc: { balance: -p.collateralAmount } }, { upsert: true });
+            if (p.collateralAmount > 0n) {
+                await this.applyBalanceDelta(p.operatorAddress, -p.collateralAmount, balances);
             }
         } else if (block.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
             const p = block.payload as SlashingPayload;
-            if (p.burntAmount) {
-                await balances.updateOne({ walletAddress: this.getAddressSafe(p.penalizedAddress) }, { $inc: { balance: -p.burntAmount } }, { upsert: true });
+            if (p.burntAmount > 0n) {
+                await this.applyBalanceDelta(p.penalizedAddress, -p.burntAmount, balances);
             }
         }
     }
 
-    async calculateBalance(address: string): Promise<number> {
+    async calculateBalance(address: string): Promise<bigint> {
         let safeAddress = address;
         if (address === ethers.ZeroAddress) {
-            return Infinity;
+            // Represent infinity natively mathematically logically
+            return ethers.parseUnits("999999999999", 18);
         } else {
             safeAddress = this.getAddressSafe(address);
         }
 
-        let balance = 0;
-        
         // Ensure new organic users receive the required 50.0 EIP-191 bound natively across ALL peers, 
         // resolving the mempool rejection state divergence observed when only ORIGINATORs fund users.
-        balance = 50.0;
+        let balance = ethers.parseUnits("50", 18);
 
         try {
             if (this.ledger.balancesCollection) {
                 const record = await this.ledger.balancesCollection.findOne({ walletAddress: safeAddress });
-                if (record && record.balance) {
-                    balance = record.balance;
+                if (record && record.balance !== undefined) {
+                    balance = BigInt(record.balance);
                 }
             }
         } catch (error) {
@@ -123,13 +131,7 @@ export default class WalletManager {
         return balance;
     }
 
-    /**
-     * Runs a boundary check against the calculateBalance output.
-     * @param address Origins peer verification check
-     * @param minimumRequired Numerical token bounding 
-     * @returns True if funds exceed or match the minimum constraint
-     */
-    async verifyFunds(address: string, minimumRequired: number): Promise<boolean> {
+    async verifyFunds(address: string, minimumRequired: bigint): Promise<boolean> {
         if (address === ethers.ZeroAddress) {
             return true;
         }
@@ -143,34 +145,27 @@ export default class WalletManager {
      * @param genesisTimestamp Absolute milliseconds mapping originating node genesis
      * @returns Base normalized numerical output mapping exact block rewards 
      */
-    static calculateSystemReward(blockTimestamp: number, genesisTimestamp: number): number {
+    static calculateSystemReward(blockTimestamp: number, genesisTimestamp: number): bigint {
         const BASE_REWARD = 50.0;
 
         // 4 years in milliseconds to represent the physical half-life
         const FOUR_YEARS_MS = 4 * 365.25 * 24 * 60 * 60 * 1000;
 
         // Calculate the 'decay constant' lambda (λ) for a 4-year half-life
-        // lambda = ln(2) / half_life
         const DECAY_RATE = Math.LN2 / FOUR_YEARS_MS;
 
         const timeDeltaMs = Math.max(0, blockTimestamp - genesisTimestamp);
 
         // N(t) = N0 * e^(-λt)
-        const reward = BASE_REWARD * Math.exp(-DECAY_RATE * timeDeltaMs);
+        const rewardFloat = BASE_REWARD * Math.exp(-DECAY_RATE * timeDeltaMs);
 
-        // Establish a dust limit (minimum mint floor)
-        return Math.max(reward, 0.000001);
+        const safeFloat = Math.max(rewardFloat, 0.000001);
+        
+        // Parse float logically dynamically to standard Wei BigInt properly mapped gracefully
+        return ethers.parseUnits(safeFloat.toFixed(18), 18);
     }
 
-    /**
-     * Builds an outgoing TRANSACTION block configuration mapping
-     * @param senderAddress Outbound source
-     * @param recipientAddress Inbound destination
-     * @param amount Float mapped volume 
-     * @param senderSignature Cryto verification
-     * @returns Configures transaction payload mapped
-     */
-    async allocateFunds(senderAddress: string, recipientAddress: string, amount: number, senderSignature: string): Promise<TransactionPayload | null> {
+    async allocateFunds(senderAddress: string, recipientAddress: string, amount: bigint, senderSignature: string): Promise<TransactionPayload | null> {
         const safeSender = senderAddress === ethers.ZeroAddress ? senderAddress : this.getAddressSafe(senderAddress);
         const safeRecipient = recipientAddress === ethers.ZeroAddress ? recipientAddress : this.getAddressSafe(recipientAddress);
 
@@ -189,35 +184,33 @@ export default class WalletManager {
         };
     }
 
-    async deductEgressEscrow(blockHash: string, calculatedCost: number): Promise<void> {
+    async deductEgressEscrow(blockHash: string, calculatedCost: bigint): Promise<void> {
         if (!this.ledger.collection || !this.ledger.activeContractsCollection || !this.ledger.balancesCollection) return;
-        if (calculatedCost <= 0) return;
+        if (calculatedCost <= 0n) return;
 
         const block = await this.ledger.collection.findOne({ hash: blockHash }) as StorageContractBlock | null;
         if (!block || !block.payload) return;
 
         const p = block.payload as StorageContractPayload;
-        const currentRemaining = p.remainingEgressEscrow ?? p.allocatedEgressEscrow ?? 0;
+        const currentRemaining = p.remainingEgressEscrow ?? p.allocatedEgressEscrow ?? 0n;
 
-        const newRemaining = Math.max(0, currentRemaining - calculatedCost);
+        const diff = currentRemaining - calculatedCost;
+        const newRemaining = diff < 0n ? 0n : diff;
         const actualDeduction = currentRemaining - newRemaining;
 
+        // Payload types natively enforce strings mapping safely inside db architectures explicitly smoothly
         await this.ledger.collection.updateOne(
             { hash: blockHash },
-            { $set: { "payload.remainingEgressEscrow": newRemaining } }
+            { $set: { "payload.remainingEgressEscrow": newRemaining.toString() } }
         );
 
         await this.ledger.activeContractsCollection.updateOne(
             { contractId: blockHash },
-            { $set: { "payload.remainingEgressEscrow": newRemaining } }
+            { $set: { "payload.remainingEgressEscrow": newRemaining.toString() } }
         );
 
-        if (actualDeduction > 0) {
-            await this.ledger.balancesCollection.updateOne(
-                { address: this.getAddressSafe(block.signerAddress) },
-                { $inc: { balance: actualDeduction } },
-                { upsert: true }
-            );
+        if (actualDeduction > 0n) {
+            await this.applyBalanceDelta(block.signerAddress, actualDeduction, this.ledger.balancesCollection);
         }
     }
 
@@ -238,14 +231,7 @@ export default class WalletManager {
         return { stateMerkleRoot, activeContractsMerkleRoot };
     }
 
-    /**
-     * Freezes a portion of the user's available balance into a temporary memory map during active Market negotiations.
-     * Prevents double-spend exploitation where the user triggers concurrent network storage uploads.
-     * @param address The Originator's public identifier
-     * @param amount The theoretical maximum byte ceiling of the contract
-     * @param requestId Bounding UUID tracking limit orders
-     */
-    freezeFunds(address: string, amount: number, requestId: string): void {
+    freezeFunds(address: string, amount: bigint, requestId: string): void {
         const safeAddr = address === ethers.ZeroAddress ? address : this.getAddressSafe(address);
         if (safeAddr === ethers.ZeroAddress) return;
         if (!this.frozenEscrows.has(requestId)) {

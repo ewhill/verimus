@@ -102,14 +102,14 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         const w2 = wallets[2];
 
         // Seed Node 1 and Node 2 Wallet Funds simulating algorithmic rewards
-        const payload1: TransactionPayload = { senderAddress: ethers.ZeroAddress, recipientAddress: w1.address, amount: 50000, senderSignature: 'sys_sig' };
+        const payload1: TransactionPayload = { senderAddress: ethers.ZeroAddress, recipientAddress: w1.address, amount: ethers.parseUnits("50000", 18), senderSignature: 'sys_sig' };
         
         const block1 = await createSignedMockBlock(rootWallet, BLOCK_TYPES.TRANSACTION, payload1, 2);
         
         await node1.ledger.addBlockToChain(block1);
         await node2.ledger.addBlockToChain(block1);
 
-        const payload2: TransactionPayload = { senderAddress: ethers.ZeroAddress, recipientAddress: w2.address, amount: 50000, senderSignature: 'sys_sig' };
+        const payload2: TransactionPayload = { senderAddress: ethers.ZeroAddress, recipientAddress: w2.address, amount: ethers.parseUnits("50000", 18), senderSignature: 'sys_sig' };
         
         const block2 = await createSignedMockBlock(rootWallet, BLOCK_TYPES.TRANSACTION, payload2, 3);
         
@@ -119,7 +119,7 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         await new Promise(r => setTimeout(r, 50));
 
         const bal1 = await node1.consensusEngine.walletManager.calculateBalance(w1.address);
-        assert.strictEqual(bal1, 50000, 'Phase 1 Token distribution successfully synchronized seamlessly mapped via continuous metrics');
+        assert.strictEqual(bal1, ethers.parseUnits("50000", 18), 'Phase 1 Token distribution successfully synchronized seamlessly mapped via continuous metrics');
     });
 
     it('[Phase 2 & 3] Originator Negotiates an active STORAGE_CONTRACT P2P Agreement locking Escrow mapping', async () => {
@@ -152,7 +152,7 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         const slashPayload: SlashingPayload = {
             penalizedAddress: w2.address,
             evidenceSignature: maliciousHash,
-            burntAmount: 20000 
+            burntAmount: ethers.parseUnits("20000", 18) 
         };
         
         const slashBlock = await createSignedMockBlock(w1, BLOCK_TYPES.SLASHING_TRANSACTION, slashPayload, 7);
@@ -161,7 +161,7 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         await new Promise(r => setTimeout(r, 50));
 
         const slashedBal = await node1.consensusEngine.walletManager.calculateBalance(w2.address);
-        assert.strictEqual(slashedBal, 30000, 'Node strictly correctly deducted slashed penalties mathematically');
+        assert.strictEqual(slashedBal, ethers.parseUnits("30000", 18), 'Node strictly correctly deducted slashed penalties mathematically');
     });
 
     it('[Phase 6] Evaluates O(1) Checkpoint Scalability fast-forwarding Ephemeral Block History', async () => {
@@ -172,7 +172,7 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         await node1.peer!.close();
 
         // Inject 999,999 Boundary mapped synthetically via Time Travel natively!
-        const payload: TransactionPayload = { senderAddress: ethers.ZeroAddress, recipientAddress: w1.address, amount: 500, senderSignature: 'sys_sig' };
+        const payload: TransactionPayload = { senderAddress: ethers.ZeroAddress, recipientAddress: w1.address, amount: ethers.parseUnits("500", 18), senderSignature: 'sys_sig' };
         
         const nodeWallet = new ethers.Wallet(node1.wallet.privateKey!);
         
@@ -181,7 +181,7 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         await new Promise(r => setTimeout(r, 50));
 
         // Evaluate Consensus Epoch trigger natively mapping block 1000000 precisely 
-        const epochPayload: TransactionPayload = { senderAddress: ethers.ZeroAddress, recipientAddress: w1.address, amount: 200, senderSignature: 'sys_sig' };
+        const epochPayload: TransactionPayload = { senderAddress: ethers.ZeroAddress, recipientAddress: w1.address, amount: ethers.parseUnits("200", 18), senderSignature: 'sys_sig' };
         
         const epochBlock = await createSignedMockBlock(nodeWallet, BLOCK_TYPES.TRANSACTION, epochPayload, 1000000, seedBlock.hash);
         
@@ -210,7 +210,7 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
 
         // Mathematical Assertions strictly validating continuous limits!
         const postEpochBal = await node1.consensusEngine.walletManager.calculateBalance(w1.address);
-        assert.strictEqual(postEpochBal, 50700, 'Continuous Math reliably verified across total scale execution bounds linearly'); // 50000 + 500 + 200
+        assert.strictEqual(postEpochBal, ethers.parseUnits("50700", 18), 'Continuous Math reliably verified across total scale execution bounds linearly'); // 50000 + 500 + 200
 
         const blockCount = await node1.ledger.collection!.countDocuments();
         assert.ok(blockCount <= 6, `Disk eviction successfully purged legacy blocks strictly limiting active disk bloat! Total remaining: ${blockCount}`);

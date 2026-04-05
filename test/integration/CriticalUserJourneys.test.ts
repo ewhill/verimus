@@ -56,7 +56,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
                             delete blockToHash.hash;
                             delete (blockToHash as any)._id;
                             const blockId = cryptoUtils.hashData(JSON.stringify(blockToHash));
-                            node.consensusEngine.handleVerifyBlock(blockId, 'mock_sig', createMock<PeerConnection>({ peerAddress: 'mock' })).catch(console.error);
+                            node.consensusEngine.handleVerifyBlock(blockId, msg.body.block.signature, createMock<PeerConnection>({ peerAddress: 'mock' })).catch(console.error);
                         }, 10);
                     } else if (msg.constructor && msg.constructor.name === 'ProposeForkMessage') {
                         setTimeout(() => {
