@@ -300,10 +300,6 @@ class ConsensusEngine {
         eligibleBlockIds.sort((a, b) => {
             const entryA = this.mempool.pendingBlocks.get(a)!;
             const entryB = this.mempool.pendingBlocks.get(b)!;
-            
-            const failsA = (entryA as any).failedProposals || 0;
-            const failsB = (entryB as any).failedProposals || 0;
-            if (failsA !== failsB) return failsA - failsB;
 
             const tsA = entryA.block.metadata.timestamp || 0;
             const tsB = entryB.block.metadata.timestamp || 0;
@@ -342,15 +338,6 @@ class ConsensusEngine {
                 logger.warn(`[Peer ${this.node.port}] P2P BFT Timeout Triggered for ${forkId.slice(0, 8)}. Demoting stalled proposal implicitly mathematically unlocking chain bounds.`);
                 this.mempool.eligibleForks.delete(forkId);
                 this.mempool.settledForks.delete(forkId);
-
-                for (const bId of tempBlockIds) {
-                    const pb = this.mempool.pendingBlocks.get(bId);
-                    if (pb) {
-                        // CRITICAL FIX: Explicitly assign a deterministic integer strikes threshold
-                        // bypassing the fractional milliseconds divergence of Date.now() across different geographic nodes
-                        (pb as any).failedProposals = ((pb as any).failedProposals || 0) + 1;
-                    }
-                }
 
                 this._checkAndProposeFork().catch(() => { });
             }, 10000).unref();
