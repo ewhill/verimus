@@ -298,11 +298,17 @@ class ConsensusEngine {
         if (eligibleBlockIds.length === 0) return;
 
         eligibleBlockIds.sort((a, b) => {
-            const entryA = this.mempool.pendingBlocks.get(a);
-            const entryB = this.mempool.pendingBlocks.get(b);
-            const tsA = new Date((entryA as any).demotedTimestamp || entryA!.block.metadata.timestamp || entryA!.originalTimestamp).getTime();
-            const tsB = new Date((entryB as any).demotedTimestamp || entryB!.block.metadata.timestamp || entryB!.originalTimestamp).getTime();
+            const entryA = this.mempool.pendingBlocks.get(a)!;
+            const entryB = this.mempool.pendingBlocks.get(b)!;
+            
+            const failsA = (entryA as any).failedProposals || 0;
+            const failsB = (entryB as any).failedProposals || 0;
+            if (failsA !== failsB) return failsA - failsB;
+
+            const tsA = entryA.block.metadata.timestamp || 0;
+            const tsB = entryB.block.metadata.timestamp || 0;
             if (tsA !== tsB) return tsA - tsB;
+
             return a < b ? -1 : 1;
         });
 
@@ -340,9 +346,9 @@ class ConsensusEngine {
                 for (const bId of tempBlockIds) {
                     const pb = this.mempool.pendingBlocks.get(bId);
                     if (pb) {
-                        // CRITICAL FIX: Explicitly assign a tracking demotion stamp natively replacing 
-                        // rigid rejection routines. Resolves the perpetual 6 "Pending" blocks anomaly flawlessly.
-                        (pb as any).demotedTimestamp = Date.now();
+                        // CRITICAL FIX: Explicitly assign a deterministic integer strikes threshold
+                        // bypassing the fractional milliseconds divergence of Date.now() across different geographic nodes
+                        (pb as any).failedProposals = ((pb as any).failedProposals || 0) + 1;
                     }
                 }
 
