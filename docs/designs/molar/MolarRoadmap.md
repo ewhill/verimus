@@ -81,6 +81,14 @@ To execute the integration, we will partition the workload into trackable milest
 - **Design:** `docs/designs/UI_MetaMask_Injection_Design.md`
 - **Task Breakdown:** `docs/agents/frontend_metamask_integration_tasks.md`
 
+### Milestone 5: Native Wei BigInt Arithmetic Migration
+**Expected Deliverables:**
+- Seamless backend migration replacing standard Javascript integers/floats structurally encapsulating `BigInt` Wei standards homogeneously.
+- EIP-712 typing schema cleanup decoupling dynamic precision constraints accurately mathematically matching ecosystem scale uniformly smoothly organically perfectly elegantly.
+
+**Required Documentation:**
+- **Design:** `docs/designs/molar/MilestoneFiveDesign.md`
+
 ---
 
 ## Ongoing Verification & Testing Methodology

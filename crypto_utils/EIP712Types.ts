@@ -150,6 +150,10 @@ export const normalizeBlockForSignature = (block: Block): Record<string, any> =>
         p.brokerFeePercentage = Math.ceil((p.brokerFeePercentage || 0) * 10000);
     }
 
+    if (b.type === BLOCK_TYPES.TRANSACTION) {
+        b.payload.amount = Math.round((b.payload.amount || 0) * 1000000);
+    }
+
     return {
         type: b.type,
         signerAddress: b.signerAddress,

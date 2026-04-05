@@ -70,6 +70,12 @@ class ConsensusEngine {
         this.node.peer?.bind(AdoptForkMessage).to(async (m: AdoptForkMessage, c: PeerConnection) => {
             await this.handleAdoptFork(m.forkId, m.finalTipHash, c);
         });
+
+        // Initialize Decentralized Market Validation Job
+        const auditTimer = setInterval(() => {
+            this.runGlobalAudit().catch(err => logger.warn(`[Peer ${this.node.port}] Global audit loop trace failed natively: ${err.message}`));
+        }, 30000); // 30s jitter loop mappings evaluating chronological sortition independent of dynamic user upload chains
+        auditTimer.unref();
     }
 
     async handlePendingBlock(block: Block, connection: PeerConnection, headerTimestamp: number) {
@@ -601,7 +607,6 @@ class ConsensusEngine {
 
             await this._checkAndProposeFork();
 
-            this.runGlobalAudit().catch(err => logger.warn(`[Peer ${this.node.port}] Global audit loop trace failed natively: ${err.message}`));
         } catch (error) {
             logger.error(`[Peer ${this.node.port}] Error committing fork ${forkId.slice(0, 8)}:`, error);
         }
