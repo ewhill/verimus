@@ -10,8 +10,12 @@ export interface PeerConnection {
 
 export type BlockType = typeof BLOCK_TYPES[keyof typeof BLOCK_TYPES];
 
+export interface Validator {
+    validatorAddress: string;
+    stakeAmount: string;
+}
+
 export interface PeerReputation {
-    _id?: any;
     operatorAddress: string;
     score: number;
     strikeCount: number;

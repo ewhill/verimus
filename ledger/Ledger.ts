@@ -2,10 +2,10 @@ import { EventEmitter } from 'events';
 
 import { MongoClient, Db, Collection } from 'mongodb';
 
-import { BLOCK_TYPES, GENESIS_FUNDING_BLOCK, GENESIS_STORAGE_CONTRACT } from '../constants';
+import { BLOCK_TYPES, GENESIS_FUNDING_BLOCK, GENESIS_STORAGE_CONTRACT, EPOCH_LENGTH } from '../constants';
 import { hashData } from '../crypto_utils/CryptoUtils';
 import { hydrateBlockBigInts } from '../crypto_utils/EIP712Types';
-import type { Block, PeerReputation, BlockType } from '../types';
+import type { Block, PeerReputation, BlockType, Validator } from '../types';
 
 
 class Ledger {
@@ -16,8 +16,11 @@ class Ledger {
     ownedBlocksCollection: Collection<any> | null;
     balancesCollection: Collection<any> | null;
     activeContractsCollection: Collection<any> | null;
+    activeValidatorsCollection: Collection<Validator> | null;
+    activeValidatorCountCache: number = 0;
     events: EventEmitter;
     public blockAddedSubscribers: ((block: Block) => Promise<void>)[] = [];
+
     constructor(mongoUri: string = 'mongodb://127.0.0.1:27017') {
         this.client = new MongoClient(mongoUri, {
             serverSelectionTimeoutMS: 5000,
@@ -32,6 +35,7 @@ class Ledger {
         this.ownedBlocksCollection = null;
         this.balancesCollection = null;
         this.activeContractsCollection = null;
+        this.activeValidatorsCollection = null;
         this.events = new EventEmitter();
     }
 
@@ -43,6 +47,7 @@ class Ledger {
         this.ownedBlocksCollection = this.db.collection('ownedBlocks');
         this.balancesCollection = this.db.collection('balances');
         this.activeContractsCollection = this.db.collection('activeContracts');
+        this.activeValidatorsCollection = this.db.collection('activeValidators');
 
         // Enforce strict mathematical sequence indexing to prevent silent ledger race bounds mapping identical heights 
         await this.collection.createIndex({ "metadata.index": 1 }, { unique: true });
@@ -52,6 +57,7 @@ class Ledger {
         await this.ownedBlocksCollection.createIndex({ hash: 1 }, { unique: true });
         await this.balancesCollection.createIndex({ "walletAddress": 1 }, { unique: true });
         await this.activeContractsCollection.createIndex({ contractId: 1 }, { unique: true });
+        await this.activeValidatorsCollection.createIndex({ "validatorAddress": 1 }, { unique: true });
 
         // Ensure genesis block exists
         const count = await this.collection.countDocuments();
@@ -61,6 +67,13 @@ class Ledger {
             genesisBlocks[1]._id = genesisBlocks[1].hash!;
             await this.collection.insertMany(genesisBlocks as any);
         }
+
+        await this.syncValidatorCache();
+    }
+
+    async syncValidatorCache() {
+        if (!this.activeValidatorsCollection) return;
+        this.activeValidatorCountCache = await this.activeValidatorsCollection.countDocuments();
     }
 
     createGenesisBlocks(): [Block, Block] {
@@ -86,6 +99,7 @@ class Ledger {
         await this.collection!.deleteMany({});
         await this.balancesCollection!.deleteMany({});
         await this.activeContractsCollection!.deleteMany({});
+        await this.activeValidatorsCollection!.deleteMany({});
 
         const genesisBlocks = this.createGenesisBlocks() as unknown as Array<Block & { _id: string }>;
         genesisBlocks[0]._id = genesisBlocks[0].hash!;
@@ -106,6 +120,11 @@ class Ledger {
         const doc = { ...block, _id: block.hash };
         const safelySerializedDoc = JSON.parse(JSON.stringify(doc));
         await this.collection!.insertOne(safelySerializedDoc);
+        
+        if (block.metadata.index % EPOCH_LENGTH === 0) {
+            await this.syncValidatorCache();
+        }
+
         for (const sub of this.blockAddedSubscribers) {
             await sub(block);
         }
@@ -134,6 +153,11 @@ class Ledger {
         newBlock.hash = hashData(JSON.stringify(newBlock));
         const doc = { ...newBlock, _id: newBlock.hash };
         await this.collection!.insertOne(doc as any);
+
+        if (newBlock.metadata.index % EPOCH_LENGTH === 0) {
+            await this.syncValidatorCache();
+        }
+
         for (const sub of this.blockAddedSubscribers) {
             await sub(newBlock);
         }

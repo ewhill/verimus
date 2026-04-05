@@ -56,7 +56,6 @@ class PeerNode {
     isHeadless: boolean;
     roles: NodeRole[];
     proxyBrokerFee: number;
-    networkHighWaterMark: number = 0;
     constructor(port: number, discoverAddresses: string[] = [], storageProvider: BaseProvider | null = null, bundler: Bundler | null = null, mongoUri: string | null = null, publicAddress: string | null = null, keyPaths: PeerCredentials, dataDir: string | null = null, isHeadless: boolean = false, roles: NodeRole[] = [NodeRole.ORIGINATOR, NodeRole.VALIDATOR, NodeRole.STORAGE], proxyBrokerFee: number = 0.01) {
         this.port = port;
         this.discoverAddresses = discoverAddresses;
@@ -99,7 +98,7 @@ class PeerNode {
 
         this.reputationManager = new ReputationManager(this.ledger.peersCollection);
 
-        this.reputationManager.on('banned', (pubKey: string) => {
+        this.reputationManager.on('banned', async (pubKey: string) => {
             if (this.peer && this.peer.peers) {
                 // Find and disconnect the banned peer
                 const bannedClient = this.peer.peers.find((p: any) => p.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8') === pubKey);
@@ -110,6 +109,25 @@ class PeerNode {
                     logger.warn(`[Peer ${this.port}] terminating physical socket bounds for banned peer ${bannedClient.peerAddress}`);
                     bannedClient.connection_.close();
                 }
+            }
+
+            try {
+                // If a peer is banned, we structurally trigger an internal proof of stake slashing sequence 
+                if (this.roles.includes(NodeRole.VALIDATOR)) {
+                    const slashStr = JSON.stringify({ penalizedAddress: pubKey, evidenceSignature: "SYSTEM_BANNED", burntAmount: Number(ethers.parseUnits("100", 18)) });
+                    const slashSig = signData(slashStr, this.privateKey) as string;
+                    const slashBlock: import('../types').Block = {
+                        metadata: { index: -1, timestamp: Date.now() },
+                        type: 'SLASHING_TRANSACTION',
+                        payload: { penalizedAddress: pubKey, evidenceSignature: "SYSTEM_BANNED", burntAmount: ethers.parseUnits("100", 18) },
+                        signerAddress: this.walletAddress,
+                        signature: slashSig
+                    };
+                    await this.consensusEngine.handlePendingBlock(slashBlock, { peerAddress: `127.0.0.1:${this.port}` } as any, Date.now());
+                    logger.warn(`[Peer ${this.port}] Issued localized SLASHING_TRANSACTION against BANNED entity ${pubKey.substring(0, 16)}...`);
+                }
+            } catch (err: any) {
+                logger.error(`[Peer ${this.port}] Failed emitting SLASHING_TRANSACTION autonomously: ${err.message}`);
             }
         });
 
@@ -321,10 +339,9 @@ class PeerNode {
     }
 
     getMajorityCount() {
-        const currentPeers = this.peer && this.peer.trustedPeers ? this.peer.trustedPeers.length : 0;
-        this.networkHighWaterMark = Math.max(this.networkHighWaterMark, currentPeers);
-        
-        const totalNodes = this.networkHighWaterMark + 1;
+        const activeValidators = this.ledger.activeValidatorCountCache;
+        // In local mock tests or very early genesis spins where validation caching is 0, default strictly to 1 safely
+        const totalNodes = activeValidators > 0 ? activeValidators : 1; 
         return Math.floor(totalNodes / 2) + 1;
     }
 }

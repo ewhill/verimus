@@ -22,6 +22,8 @@ export const BLOCK_TYPES = {
     VALIDATOR_REGISTRATION: 'VALIDATOR_REGISTRATION'
 } as const;
 
+export const EPOCH_LENGTH = 100;
+
 export const GENESIS_SEED_DATA = Buffer.from(JSON.stringify({
     version: "1.0.0",
     genesis_timestamp: GENESIS_TIMESTAMP,

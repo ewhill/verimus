@@ -49,6 +49,7 @@ export default class WalletManager {
         if (!this.ledger.balancesCollection) return;
         const balances = this.ledger.balancesCollection;
         const activeContracts = this.ledger.activeContractsCollection;
+        const activeValidators = this.ledger.activeValidatorsCollection;
 
         if (block.type === BLOCK_TYPES.TRANSACTION) {
             const p = block.payload as TransactionPayload;
@@ -91,11 +92,26 @@ export default class WalletManager {
             const p = block.payload as SlashingPayload;
             if (p.burntAmount > 0n) {
                 await this.applyBalanceDelta(p.penalizedAddress, -p.burntAmount, balances);
+                if (activeValidators) {
+                    await activeValidators.deleteOne({ validatorAddress: p.penalizedAddress });
+                }
             }
         } else if (block.type === BLOCK_TYPES.VALIDATOR_REGISTRATION) {
             const p = block.payload as import('../types').ValidatorRegistrationPayload;
-            if (p.stakeAmount > 0n && p.action === 'STAKE') {
+            if (p.action === 'STAKE' && p.stakeAmount > 0n) {
                 await this.applyBalanceDelta(p.validatorAddress, -p.stakeAmount, balances);
+                if (activeValidators) {
+                    await activeValidators.updateOne(
+                        { validatorAddress: p.validatorAddress },
+                        { $set: { stakeAmount: p.stakeAmount.toString() } },
+                        { upsert: true }
+                    );
+                }
+            } else if (p.action === 'UNSTAKE') {
+                if (activeValidators) {
+                    await activeValidators.deleteOne({ validatorAddress: p.validatorAddress });
+                }
+                // Escrow refunds map asynchronously via Epoch triggers not instantaneous block injections.
             }
         }
     }

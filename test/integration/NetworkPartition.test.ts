@@ -90,11 +90,11 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
 
     it('Drops minority forks during Network Partition', async () => {
         // Total Network Size = 3 (Majority = 2)
-        Object.assign(node1.peer || {}, { trustedPeers: ['127.0.0.1:31002', '127.0.0.1:31003'] });
-        Object.assign(node2.peer || {}, { trustedPeers: ['127.0.0.1:31001', '127.0.0.1:31003'] });
+        node1.ledger.activeValidatorCountCache = 3;
+        node2.ledger.activeValidatorCountCache = 3;
         
         // Node 3 suffers a Byzantine Partition and only sees Node 1 (Simulated Split Brain)
-        Object.assign(node3.peer || {}, { trustedPeers: ['127.0.0.1:31001'] });
+        node3.ledger.activeValidatorCountCache = 3;
         
         const majority = node3.getMajorityCount();
         assert.strictEqual(majority, 2, 'Node 3 bounds a local perception majority counting correctly.');
