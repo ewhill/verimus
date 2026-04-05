@@ -33,6 +33,13 @@ export const STAKING_CONTRACT_PAYLOAD_SCHEMA = [
     { name: 'minEpochTimelineDays', type: 'uint256' }
 ];
 
+// Validator Registration Payload
+export const VALIDATOR_REGISTRATION_PAYLOAD_SCHEMA = [
+    { name: 'validatorAddress', type: 'address' },
+    { name: 'stakeAmount', type: 'uint256' },
+    { name: 'action', type: 'string' }
+];
+
 // Ensure we flatten or specify exact structs for nested arrays
 export const ERASURE_PARAMS_SCHEMA = [
     { name: 'n', type: 'uint256' },
@@ -101,6 +108,14 @@ export const EIP712_SCHEMAS: Record<string, Record<string, Array<{name: string, 
             { name: 'payload', type: 'StakingContractPayload' }
         ],
         StakingContractPayload: STAKING_CONTRACT_PAYLOAD_SCHEMA
+    },
+    [BLOCK_TYPES.VALIDATOR_REGISTRATION]: {
+        Block: [
+            { name: 'type', type: 'string' },
+            { name: 'signerAddress', type: 'address' },
+            { name: 'payload', type: 'ValidatorRegistrationPayload' }
+        ],
+        ValidatorRegistrationPayload: VALIDATOR_REGISTRATION_PAYLOAD_SCHEMA
     },
     [BLOCK_TYPES.SLASHING_TRANSACTION]: {
         Block: [
@@ -193,5 +208,8 @@ export const hydrateBlockBigInts = (block: Block): void => {
     } else if (block.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
         const p = block.payload as any;
         if (p.burntAmount !== undefined) p.burntAmount = BigInt(p.burntAmount.toString());
+    } else if (block.type === BLOCK_TYPES.VALIDATOR_REGISTRATION) {
+        const p = block.payload as any;
+        if (p.stakeAmount !== undefined) p.stakeAmount = BigInt(p.stakeAmount.toString());
     }
 };

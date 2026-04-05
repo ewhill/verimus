@@ -6,6 +6,7 @@ import { ethers } from 'ethers';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import { BLOCK_TYPES } from '../../constants';
+import { hydrateBlockBigInts } from '../../crypto_utils/EIP712Types';
 import { createSignedMockBlock } from '../../test/utils/EIP712Mock';
 import Ledger from '../Ledger';
 
@@ -69,6 +70,30 @@ describe('Backend: Ledger Integrity and Tamper Evidence', () => {
         const latest = await ledger.getLatestBlock();
         assert.strictEqual(latest.hash, newBlock.hash, 'Appended block must correctly correlate to head ledger pointers');
         assert.strictEqual(latest.metadata.index, 2);
+    });
+
+    it('Strictly processes VALIDATOR_REGISTRATION payload hydration matrices natively', async () => {
+        const wallet = ethers.Wallet.createRandom();
+        const validatorPayload = { validatorAddress: wallet.address, stakeAmount: 1000n, action: 'STAKE' };
+        
+        // Ledger expects index 3 since previous block was 2
+        const prevBlock = await ledger.getLatestBlock();
+        const newBlock = await createSignedMockBlock(wallet, BLOCK_TYPES.VALIDATOR_REGISTRATION, validatorPayload, prevBlock.metadata.index + 1);
+        newBlock.previousHash = prevBlock.hash;
+        
+        const blockToHash = { ...newBlock };
+        delete blockToHash.hash;
+        newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(blockToHash)).digest('hex');
+
+        await ledger.addBlockToChain(newBlock);
+        
+        const latest = await ledger.getLatestBlock();
+        hydrateBlockBigInts(latest);
+        assert.strictEqual(latest.type, BLOCK_TYPES.VALIDATOR_REGISTRATION);
+        assert.strictEqual(latest.payload.validatorAddress, wallet.address);
+        assert.strictEqual(typeof latest.payload.stakeAmount, 'bigint');
+        assert.strictEqual(latest.payload.stakeAmount, 1000n);
+        assert.strictEqual(latest.payload.action, 'STAKE');
     });
 
     it('Validates cryptography of chain', async () => {

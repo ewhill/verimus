@@ -69,6 +69,12 @@ export interface StakingContractPayload {
     minEpochTimelineDays: number;
 }
 
+export interface ValidatorRegistrationPayload {
+    validatorAddress: string;
+    stakeAmount: bigint;
+    action: 'STAKE' | 'UNSTAKE';
+}
+
 export interface SlashingPayload {
     penalizedAddress: string;
     evidenceSignature: string;
@@ -173,6 +179,11 @@ export interface StakingContractBlock extends BaseBlock {
     payload: StakingContractPayload;
 }
 
+export interface ValidatorRegistrationBlock extends BaseBlock {
+    type: typeof BLOCK_TYPES.VALIDATOR_REGISTRATION;
+    payload: ValidatorRegistrationPayload;
+}
+
 export interface SlashingTransactionBlock extends BaseBlock {
     type: typeof BLOCK_TYPES.SLASHING_TRANSACTION;
     payload: SlashingPayload;
@@ -183,6 +194,6 @@ export interface CheckpointBlock extends BaseBlock {
     payload: CheckpointStatePayload;
 }
 
-export type Block = TransactionBlock | StorageContractBlock | StakingContractBlock | SlashingTransactionBlock | CheckpointBlock;
+export type Block = TransactionBlock | StorageContractBlock | StakingContractBlock | SlashingTransactionBlock | CheckpointBlock | ValidatorRegistrationBlock;
 
 declare module '@marsaud/smb2';

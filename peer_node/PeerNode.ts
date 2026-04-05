@@ -229,6 +229,24 @@ class PeerNode {
                             logger.warn(`[Peer ${this.port}] Failed to emit initial Proof-of-Stake STAKING_CONTRACT dynamically: ${err.message}`);
                         }
                     }
+
+                    // --- Phase 7: Validator Registry Boot Sequence ---
+                    if (this.roles.includes(NodeRole.VALIDATOR) && !IS_DEV_NETWORK) {
+                        try {
+                            const valStr = JSON.stringify({ validatorAddress: this.walletAddress, stakeAmount: Number(ethers.parseUnits("1000", 18)), action: 'STAKE' });
+                            const valSig = signData(valStr, this.privateKey) as string;
+                            const valBlock: Block = {
+                                metadata: { index: -1, timestamp: Date.now() },
+                                type: 'VALIDATOR_REGISTRATION',
+                                payload: { validatorAddress: this.walletAddress, stakeAmount: ethers.parseUnits("1000", 18), action: 'STAKE' },
+                                signerAddress: this.walletAddress,
+                                signature: valSig
+                            };
+                            await this.consensusEngine.handlePendingBlock(valBlock, { peerAddress: `127.0.0.1:${this.port}` } as any, Date.now());
+                        } catch (err: any) {
+                            logger.warn(`[Peer ${this.port}] Failed to emit initial VALIDATOR_REGISTRATION dynamically: ${err.message}`);
+                        }
+                    }
                 } catch (_unusedE: any) {
                     logger.warn(`[Peer ${this.port}] Genesis Seed formulation dynamically skipped explicitly mapping safe execution limit constraints.`);
                 }

@@ -92,6 +92,11 @@ export default class WalletManager {
             if (p.burntAmount > 0n) {
                 await this.applyBalanceDelta(p.penalizedAddress, -p.burntAmount, balances);
             }
+        } else if (block.type === BLOCK_TYPES.VALIDATOR_REGISTRATION) {
+            const p = block.payload as import('../types').ValidatorRegistrationPayload;
+            if (p.stakeAmount > 0n && p.action === 'STAKE') {
+                await this.applyBalanceDelta(p.validatorAddress, -p.stakeAmount, balances);
+            }
         }
     }
 
