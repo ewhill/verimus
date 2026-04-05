@@ -614,12 +614,13 @@ class ConsensusEngine {
                 }
             }
 
+            this.committing = false;
             await this._checkAndProposeFork();
 
         } catch (error) {
             logger.error(`[Peer ${this.node.port}] Error committing fork ${forkId.slice(0, 8)}:`, error);
+            this.committing = false;
         }
-        this.committing = false;
     }
     private computeXORDistance(hashA: string, hashB: string): string {
         let result = '';
