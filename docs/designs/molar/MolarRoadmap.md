@@ -11,20 +11,24 @@ This document details a strategic roadmap to fully integrate Ethereum-standard (
 
 When integrating EVM standards, we must resolve how node communication cryptography integrates with the ledger economy.
 
-### Proposed Solution: Unified secp256k1 Ethereum Keys
-Replace the underlying Node's P2P routing identity with Ethereum secp256k1 keys, aggressively uniting Node ID and Economic ID into a single unified cryptographic derivation mechanism across both transport and consensus layers.
+### ~~Proposed Solution: Unified secp256k1 Ethereum Keys~~ (Abandoned)
 
-**Pros:**
-- Highly cohesive holistic architecture (cryptography is uniformly secp256k1 everywhere, natively aligning with Ethereum and Web3 standards).
-- Eliminates "split-brain" tracking; network handshakes and payload signatures securely map to the identical overarching ledger identity without secondary translation layers.
-- Considerably limits configuration overhead over time, operating completely independent of legacy Node RSA shims.
+> [!NOTE]
+> **Direction Change:** We have officially abandoned the unified transport cryptographic overhaul. See [MilestoneOneDesign.md](./MilestoneOneDesign.md) for a detailed comparative analysis regarding why we pivoted back to the Decoupled architecture. 
 
-**Cons:**
-- Demands a massive structural rewrite of `p2p/lib/*` mechanics currently rigidly bound to legacy `crypto` RSA limits.
-- Substantially increased implementation scope, temporarily degrading the P2P networking test baseline until `Secp256k1KeyPair.js` equivalents are fully established.
-- Elevates the operator risk profile by coupling network transmission sign-offs to the underlying funds key.
+~~Replace the underlying Node's P2P routing identity with Ethereum secp256k1 keys, aggressively uniting Node ID and Economic ID into a single unified cryptographic derivation mechanism across both transport and consensus layers.~~
 
-### Alternative Solution: Decoupled RSA / EVM Identities
+~~**Pros:**~~
+~~- Highly cohesive holistic architecture (cryptography is uniformly secp256k1 everywhere, natively aligning with Ethereum and Web3 standards).~~
+~~- Eliminates "split-brain" tracking; network handshakes and payload signatures securely map to the identical overarching ledger identity without secondary translation layers.~~
+~~- Considerably limits configuration overhead over time, operating completely independent of legacy Node RSA shims.~~
+
+~~**Cons:**~~
+~~- Demands a massive structural rewrite of `p2p/lib/*` mechanics currently rigidly bound to legacy `crypto` RSA limits.~~
+~~- Substantially increased implementation scope, temporarily degrading the P2P networking test baseline until `Secp256k1KeyPair.js` equivalents are fully established.~~
+~~- Elevates the operator risk profile by coupling network transmission sign-offs to the underlying funds key.~~
+
+### Proposed Solution (Pivoted): Decoupled RSA / EVM Identities
 Keep RSA strictly for P2P transport encryption and network overlay topologies while adopting EVM accounts exclusively for layer-2 ledger economics.
 
 **Pros:**
@@ -38,17 +42,17 @@ Keep RSA strictly for P2P transport encryption and network overlay topologies wh
 
 ## Roadmap
 
-To execute the **Unified secp256k1 Ethereum Keys** architecture, we will partition the workload into four distinct, trackable milestones.
+To execute the integration, we will partition the workload into trackable milestones.
 
-### Milestone 1: P2P Cryptography Overhaul
-**Expected Deliverables:** 
-- The `p2p/lib/*` modules are completely refactored to generate, negotiate, and verify `secp256k1` keys exclusively.
-- `RSAKeyPair.js` and dependent `.pem` files are entirely deprecated. 
-- Successful internal network mesh discovery leveraging standard web3 crypto mappings.
+### ~~Milestone 1: P2P Cryptography Overhaul~~ (Abandoned)
+~~**Expected Deliverables:**~~ 
+~~- The `p2p/lib/*` modules are completely refactored to generate, negotiate, and verify `secp256k1` keys exclusively.~~
+~~- `RSAKeyPair.js` and dependent `.pem` files are entirely deprecated.~~ 
+~~- Successful internal network mesh discovery leveraging standard web3 crypto mappings.~~
 
-**Required Documentation:**
-- **Design:** `docs/designs/P2P_Secp256k1_Transport_Design.md`
-- **Task Breakdown:** `docs/agents/p2p_crypto_migration_tasks.md`
+~~**Required Documentation:**~~
+~~- **Design:** `docs/designs/P2P_Secp256k1_Transport_Design.md`~~
+~~- **Task Breakdown:** `docs/agents/p2p_crypto_migration_tasks.md`~~
 
 ### Milestone 2: Ledger Data Model & Economic Typing Evolution
 **Expected Deliverables:**
@@ -100,7 +104,7 @@ To hold ourselves accountable, each milestone outlined above will be strictly va
 
 These bounds validate the culmination of our full MetaMask Integration across the ecosystem:
 
-- [ ] Nodes autonomously communicate executing peer ID bounds mapped solely derived from Web3 standard uncompressed secp256k1 structures.
+- ~~[ ] Nodes autonomously communicate executing peer ID bounds mapped solely derived from Web3 standard uncompressed secp256k1 structures.~~
 - [ ] WalletManager and active Consensus bounds universally map execution addressing strictly utilizing `0x` representations exclusively. 
 - [ ] Integration execution (`npm test`) fully passes utilizing natively mocked `ethers.Wallet` accounts, signaling the final termination of legacy `createKeyPair` HTTP models.
 - [ ] The localized frontend demands an injected browser `ethereum` capability to execute transaction dispatches and triggers visible JSON-RPC MetaMask confirmation events natively.
