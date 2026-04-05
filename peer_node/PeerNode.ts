@@ -56,6 +56,7 @@ class PeerNode {
     isHeadless: boolean;
     roles: NodeRole[];
     proxyBrokerFee: number;
+    networkHighWaterMark: number = 0;
     constructor(port: number, discoverAddresses: string[] = [], storageProvider: BaseProvider | null = null, bundler: Bundler | null = null, mongoUri: string | null = null, publicAddress: string | null = null, keyPaths: PeerCredentials, dataDir: string | null = null, isHeadless: boolean = false, roles: NodeRole[] = [NodeRole.ORIGINATOR, NodeRole.VALIDATOR, NodeRole.STORAGE], proxyBrokerFee: number = 0.01) {
         this.port = port;
         this.discoverAddresses = discoverAddresses;
@@ -302,7 +303,10 @@ class PeerNode {
     }
 
     getMajorityCount() {
-        const totalNodes = (this.peer && this.peer.trustedPeers ? this.peer.trustedPeers.length : 0) + 1;
+        const currentPeers = this.peer && this.peer.trustedPeers ? this.peer.trustedPeers.length : 0;
+        this.networkHighWaterMark = Math.max(this.networkHighWaterMark, currentPeers);
+        
+        const totalNodes = this.networkHighWaterMark + 1;
         return Math.floor(totalNodes / 2) + 1;
     }
 }

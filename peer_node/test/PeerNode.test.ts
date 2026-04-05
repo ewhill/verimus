@@ -231,6 +231,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
         assert.strictEqual(mockNode.getMajorityCount(), 3);
 
         mockNode.peer = createMock<Peer>(null as any);
+        mockNode.networkHighWaterMark = 0;
         assert.strictEqual(mockNode.getMajorityCount(), 1);
     });
 });
