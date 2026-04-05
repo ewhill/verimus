@@ -353,6 +353,7 @@ class ConsensusEngine {
                 const latestBlock = await this.node.ledger.getLatestBlock();
                 const currentTip = latestBlock && latestBlock.hash ? latestBlock.hash.slice(0, 16) : '0'.repeat(16);
                 if (currentTip !== tipConstraint) {
+                    logger.warn(`[Peer ${this.node.port}] REJECTED ProposeFork because tip mismatch! currentTip: ${currentTip}, constraint: ${tipConstraint}`);
                     if (this.node.syncEngine) {
                         this.node.syncEngine.syncBuffer.push({ type: 'ProposeFork', forkId, blockIds, connection });
                         this.node.syncEngine.performInitialSync().catch(() => { });
