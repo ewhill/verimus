@@ -223,15 +223,14 @@ describe('Backend: PeerNode Logical Verification Check', () => {
         assert.ok(!mockNode.mempool.pendingBlocks.has(recalculatedHashTest));
         assert.ok(mockNode.ownedBlocksCache.includes('hash3'));
 
-        // Test getMajorityCount
-        mockNode.peer = createMock<Peer>({ ...mockNode.peer, trustedPeers: ['peer1', 'peer2'] });
+        // Test getMajorityCount maps to Proof of Stake dynamically instead of connection counts
+        mockNode.ledger.activeValidatorCountCache = 3;
         assert.strictEqual(mockNode.getMajorityCount(), 2);
 
-        mockNode.peer = createMock<Peer>({ ...mockNode.peer, trustedPeers: ['peer1', 'peer2', 'peer3'] });
+        mockNode.ledger.activeValidatorCountCache = 4;
         assert.strictEqual(mockNode.getMajorityCount(), 3);
 
-        mockNode.peer = createMock<Peer>(null as any);
-        mockNode.networkHighWaterMark = 0;
+        mockNode.ledger.activeValidatorCountCache = 0;
         assert.strictEqual(mockNode.getMajorityCount(), 1);
     });
 });
