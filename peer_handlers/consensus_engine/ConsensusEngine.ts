@@ -6,7 +6,7 @@ import { ethers } from 'ethers';
 
 import { GENESIS_TIMESTAMP, BLOCK_TYPES, calculateAuditDecayInterval, IS_DEV_NETWORK } from '../../constants';
 import { hashData, signData, verifyEIP712BlockSignature, verifyMerkleProof } from '../../crypto_utils/CryptoUtils';
-import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from '../../crypto_utils/EIP712Types';
+import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature, hydrateBlockBigInts } from '../../crypto_utils/EIP712Types';
 import logger from '../../logger/Logger';
 import { AdoptForkMessage } from '../../messages/adopt_fork_message/AdoptForkMessage';
 import { MerkleProofChallengeRequestMessage } from '../../messages/merkle_proof_challenge_request_message/MerkleProofChallengeRequestMessage';
@@ -80,6 +80,8 @@ class ConsensusEngine {
 
     async handlePendingBlock(block: Block, connection: PeerConnection, headerTimestamp: number) {
         return this.enqueueTask(async () => {
+            hydrateBlockBigInts(block);
+
             if (this.node.syncEngine && this.node.syncEngine.isSyncing) {
                 this.node.syncEngine.syncBuffer.push({ type: 'PendingBlock', block, connection, timestamp: headerTimestamp });
                 return;
@@ -135,7 +137,8 @@ class ConsensusEngine {
 
             if (block.type === BLOCK_TYPES.STORAGE_CONTRACT) {
                 const scPayload = block.payload as StorageContractPayload;
-                if (scPayload.ownerAddress && scPayload.allocatedEgressEscrow) {
+                if (scPayload.ownerAddress && scPayload.allocatedEgressEscrow !== undefined) {
+                    logger.error(`[DEBUG] handlePendingBlock typeof allocatedEgressEscrow: ${typeof scPayload.allocatedEgressEscrow}, val: ${scPayload.allocatedEgressEscrow}`);
                     const totalCost = (scPayload.allocatedEgressEscrow * 105n) / 100n;
                     const hasUserFunds = await this.walletManager.verifyFunds(scPayload.ownerAddress, totalCost);
                     if (!hasUserFunds) {

@@ -4,6 +4,7 @@ import { MongoClient, Db, Collection } from 'mongodb';
 
 import { BLOCK_TYPES, GENESIS_FUNDING_BLOCK, GENESIS_STORAGE_CONTRACT } from '../constants';
 import { hashData } from '../crypto_utils/CryptoUtils';
+import { hydrateBlockBigInts } from '../crypto_utils/EIP712Types';
 import type { Block, PeerReputation, BlockType } from '../types';
 
 
@@ -142,6 +143,7 @@ class Ledger {
         let previousBlock: any = null;
 
         for await (const currentBlock of cursor) {
+            hydrateBlockBigInts(currentBlock);
             if (previousBlock) {
                 // Remove the hash before recalculating
                 const blockToHash = { ...currentBlock };

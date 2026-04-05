@@ -172,3 +172,26 @@ export const normalizeBlockForSignature = (block: Block): Record<string, any> =>
         payload: outB.payload
     };
 };
+
+/**
+ * Hydrates deeply structured BigInt mathematical constants restoring strings efficiently dynamically correctly over native limits organically logically.
+ */
+export const hydrateBlockBigInts = (block: Block): void => {
+    if (block.type === BLOCK_TYPES.STORAGE_CONTRACT) {
+        const p = block.payload as any;
+        if (p.allocatedEgressEscrow !== undefined) p.allocatedEgressEscrow = BigInt(p.allocatedEgressEscrow.toString());
+        if (p.remainingEgressEscrow !== undefined) p.remainingEgressEscrow = BigInt(p.remainingEgressEscrow.toString());
+        if (p.allocatedRestToll !== undefined) p.allocatedRestToll = BigInt(p.allocatedRestToll.toString());
+        if (p.brokerFeePercentage !== undefined) p.brokerFeePercentage = BigInt(p.brokerFeePercentage.toString());
+    } else if (block.type === BLOCK_TYPES.TRANSACTION) {
+        const p = block.payload as any;
+        if (p.amount !== undefined) p.amount = BigInt(p.amount.toString());
+    } else if (block.type === BLOCK_TYPES.STAKING_CONTRACT) {
+        const p = block.payload as any;
+        if (p.collateralAmount !== undefined) p.collateralAmount = BigInt(p.collateralAmount.toString());
+        if (p.minEpochTimelineDays !== undefined) p.minEpochTimelineDays = BigInt(p.minEpochTimelineDays.toString());
+    } else if (block.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
+        const p = block.payload as any;
+        if (p.burntAmount !== undefined) p.burntAmount = BigInt(p.burntAmount.toString());
+    }
+};
