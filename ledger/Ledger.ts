@@ -90,7 +90,9 @@ class Ledger {
         const genesisBlocks = this.createGenesisBlocks() as unknown as Array<Block & { _id: string }>;
         genesisBlocks[0]._id = genesisBlocks[0].hash!;
         genesisBlocks[1]._id = genesisBlocks[1].hash!;
-        await this.collection!.insertMany(genesisBlocks as any);
+        
+        const safelySerializedGenesis = JSON.parse(JSON.stringify(genesisBlocks));
+        await this.collection!.insertMany(safelySerializedGenesis);
     }
 
     async pruneHistory(checkpointIndex: number) {
@@ -102,7 +104,8 @@ class Ledger {
 
     async addBlockToChain(block: Block) {
         const doc = { ...block, _id: block.hash };
-        await this.collection!.insertOne(doc as any);
+        const safelySerializedDoc = JSON.parse(JSON.stringify(doc));
+        await this.collection!.insertOne(safelySerializedDoc);
         for (const sub of this.blockAddedSubscribers) {
             await sub(block);
         }
