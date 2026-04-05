@@ -31,7 +31,7 @@ export default class DownloadHandler extends BaseHandler {
             const block = blocks[0];
 
             // Verify signature
-            const isSignatureValid = verifySignature(JSON.stringify(block.payload), block.signature, block.publicKey);
+            const isSignatureValid = verifySignature(JSON.stringify(block.payload), block.signature, block.signerAddress);
             if (!isSignatureValid) {
                 return res.status(401).send('Invalid block signature.');
             }
@@ -106,7 +106,7 @@ export default class DownloadHandler extends BaseHandler {
                         });
 
                         try {
-                            if (mapping.nodeId === this.node.publicKey) {
+                            if (mapping.nodeId === this.node.walletAddress) {
                                 this.node.storageProvider!.getBlockReadStream(mapping.physicalId).then(readRes => {
                                     if (readRes.status !== 'available' || !readRes.stream) {
                                         this.node.events.emit(`shard_retrieve:${marketId}:${mapping.physicalId}`, { success: false });

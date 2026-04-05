@@ -49,7 +49,7 @@ describe('Backend: Ledger Integrity and Tamper Evidence', () => {
         const sig = proxyCrypto.signData(JSON.stringify(dummyPayload), privateKey) as string;
         const newBlock = await ledger.addBlock(publicKey, dummyPayload, sig);
         assert.strictEqual(newBlock.metadata.index, 2);
-        assert.strictEqual(newBlock.publicKey, publicKey);
+        assert.strictEqual(newBlock.signerAddress, publicKey);
 
         const latest = await ledger.getLatestBlock();
         assert.strictEqual(latest.hash, newBlock.hash, 'Appended block must correctly correlate to head ledger pointers');
@@ -65,7 +65,7 @@ describe('Backend: Ledger Integrity and Tamper Evidence', () => {
         const latestBlock = await ledger.getLatestBlock();
         
         // Manually tamper the database sequence directly to simulate node tampering/attack vectors
-        await ledger.collection!.updateOne({ "metadata.index": latestBlock.metadata.index }, { $set: { publicKey: 'TAMPERED_KEY' }});
+        await ledger.collection!.updateOne({ "metadata.index": latestBlock.metadata.index }, { $set: { signerAddress: 'TAMPERED_KEY' }});
 
         const isStillValid = await ledger.isChainValid();
         assert.strictEqual(isStillValid, false, 'Chain state must definitively catch internal hash deviations via rigorous validations');
@@ -74,7 +74,7 @@ describe('Backend: Ledger Integrity and Tamper Evidence', () => {
     it('Preserves peers collection during ledger purge', async () => {
         // Mock a peer locally inside the database tracking
         await ledger.peersCollection!.insertOne({
-            publicKey: 'HONEST_NODE',
+            operatorAddress: 'HONEST_NODE',
             score: 100,
             strikeCount: 0,
             isBanned: false,
@@ -84,7 +84,7 @@ describe('Backend: Ledger Integrity and Tamper Evidence', () => {
         // Trigger the destructive ledger purge 
         await ledger.purgeChain();
 
-        const peer = await ledger.peersCollection!.findOne({ publicKey: 'HONEST_NODE' });
+        const peer = await ledger.peersCollection!.findOne({ operatorAddress: 'HONEST_NODE' });
         assert.ok(peer, 'Peers collection data must absolutely survive ledger sequence wiping');
         assert.strictEqual(peer.score, 100, 'Peer score mappings inherently immutable across DB lifecycle operations');
     });

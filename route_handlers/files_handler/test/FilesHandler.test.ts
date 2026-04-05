@@ -4,7 +4,7 @@ import { describe, it, beforeEach, mock } from 'node:test';
 import { Request, Response } from 'express';
 import { Collection, FindCursor, ObjectId, WithId } from 'mongodb';
 
-import { generateRSAKeyPair, encryptPrivatePayload } from '../../../crypto_utils/CryptoUtils';
+import { generateRSAKeyPair } from '../../../crypto_utils/CryptoUtils';
 import type Ledger from '../../../ledger/Ledger';
 import type { PendingBlockEntry } from '../../../models/mempool/Mempool';
 import type Mempool from '../../../models/mempool/Mempool';
@@ -20,7 +20,7 @@ const createValidPendingBlock = (sig: string, pub: string, hash: string, payload
     originalTimestamp: ts,
     block: createMock<Block>({
         type: 'STORAGE_CONTRACT',
-        publicKey: pub,
+        signerAddress: pub,
         signature: sig,
         hash: hash,
         payload: payload,
@@ -84,7 +84,7 @@ describe('Backend: filesHandler Coverage', () => {
                         },
                         hash: 'hashABC',
                         previousHash: 'prev',
-                        publicKey: 'testPubKey',
+                        signerAddress: 'testPubKey',
                         payload: {
                             encryptedPayloadBase64: Buffer.from(JSON.stringify({
                                 location: { type: 's3', bucket: 'test-bucket' },
@@ -182,7 +182,7 @@ describe('Backend: filesHandler Coverage', () => {
                         metadata: { index: 1, timestamp: 1000 },
                         hash: 'b1',
                         previousHash: 'prev',
-                        publicKey: 'testPubKey',
+                        signerAddress: 'testPubKey',
                         payload: {
                             encryptedPayloadBase64: Buffer.from(JSON.stringify({
                                 location: { type: 'local', storageDir: '/tmp' },
@@ -200,7 +200,7 @@ describe('Backend: filesHandler Coverage', () => {
                         metadata: { index: 2, timestamp: 2000 },
                         hash: 'b2',
                         previousHash: 'prev',
-                        publicKey: 'testPubKey',
+                        signerAddress: 'testPubKey',
                         payload: {
                             encryptedPayloadBase64: Buffer.from(JSON.stringify({
                                 location: { type: 'local', storageDir: '/tmp' },
@@ -240,7 +240,7 @@ describe('Backend: filesHandler Coverage', () => {
                         metadata: { index: 0, timestamp: 0 },
                         hash: 'badBlock',
                         previousHash: 'prev',
-                        publicKey: 'testPubKey',
+                        signerAddress: 'testPubKey',
                         payload: {
                             encryptedPayloadBase64: Buffer.from(JSON.stringify({
                                 physicalId: 'pid',

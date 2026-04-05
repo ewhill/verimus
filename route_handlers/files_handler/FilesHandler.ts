@@ -13,7 +13,7 @@ export default class FilesHandler extends BaseHandler {
             let pendingBlocks: Block[] = [];
             if (this.node.mempool && this.node.mempool.pendingBlocks) {
                 for (const [_unusedBId, entry] of this.node.mempool.pendingBlocks.entries()) {
-                    if (!entry.committed && entry.block.publicKey === this.node.publicKey) {
+                    if (!entry.committed && entry.block.signerAddress === this.node.walletAddress) {
                         pendingBlocks.push(entry.block);
                     }
                 }

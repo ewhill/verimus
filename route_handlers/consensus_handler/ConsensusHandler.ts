@@ -16,7 +16,7 @@ export default class ConsensusHandler extends BaseHandler {
                 hash,
                 type: entry.block.type,
                 timestamp: entry.originalTimestamp,
-                publicKey: entry.block.publicKey,
+                signerAddress: entry.block.signerAddress,
                 eligible: entry.eligible || false,
                 committed: entry.committed || false,
                 verificationsCount: entry.verifications.size

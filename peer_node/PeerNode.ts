@@ -7,6 +7,7 @@ import * as https from 'https';
 import { Socket } from 'net';
 
 
+import { ethers } from 'ethers';
 import { Db } from 'mongodb';
 import { WebSocket } from 'ws';
 
@@ -48,6 +49,7 @@ class PeerNode {
     events: EventEmitter;
     publicKey!: string;
     privateKey!: string;
+    walletAddress!: string;
     signature!: string;
     httpServer?: https.Server;
     isHeadless: boolean;
@@ -112,6 +114,9 @@ class PeerNode {
         this.publicKey = this.keyPaths.publicKey || fs.readFileSync(this.keyPaths.publicKeyPath!, 'utf8');
         this.privateKey = this.keyPaths.privateKey || fs.readFileSync(this.keyPaths.privateKeyPath!, 'utf8');
         this.signature = this.keyPaths.signature || fs.readFileSync(this.keyPaths.signaturePath!, 'utf8');
+
+        // Dynamically instantiate random backend EVM wallet address explicitly used purely for checkpoint and systemic signing 
+        this.walletAddress = ethers.Wallet.createRandom().address;
 
         // Setup Express API Server
         await this.loadOwnedBlocksCache();
@@ -206,13 +211,13 @@ class PeerNode {
                     // --- Phase 6: Originator Staking Boot Sequence ---
                     if (this.roles.includes(NodeRole.ORIGINATOR) && !IS_DEV_NETWORK) {
                         try {
-                            const stakeStr = JSON.stringify({ operatorPublicKey: this.publicKey, collateralAmount: 50000, minEpochTimelineDays: 30 });
+                            const stakeStr = JSON.stringify({ operatorAddress: this.walletAddress, collateralAmount: 50000, minEpochTimelineDays: 30 });
                             const sigStr = signData(stakeStr, this.privateKey) as string;
                             const stakingBlock: Block = {
                                 metadata: { index: -1, timestamp: Date.now() },
                                 type: 'STAKING_CONTRACT',
-                                payload: { operatorPublicKey: this.publicKey, collateralAmount: 50000, minEpochTimelineDays: 30 },
-                                publicKey: this.publicKey,
+                                payload: { operatorAddress: this.walletAddress, collateralAmount: 50000, minEpochTimelineDays: 30 },
+                                signerAddress: this.walletAddress,
                                 signature: sigStr
                             };
                             await this.consensusEngine.handlePendingBlock(stakingBlock, { peerAddress: `127.0.0.1:${this.port}` } as any, Date.now());
@@ -243,7 +248,7 @@ class PeerNode {
 
             if (ownedDocsCount === 0 && dbBlockCount > 1) {
                 // Initial migration or recovery: fetch all owned blocks from main collection and index them
-                const blocks = await this.ledger.collection!.find({ publicKey: this.publicKey }).toArray();
+                const blocks = await this.ledger.collection!.find({ signerAddress: this.walletAddress }).toArray();
                 this.ownedBlocksCache = blocks.map(b => b.hash!);
 
                 if (this.ownedBlocksCache.length > 0) {
@@ -282,7 +287,7 @@ class PeerNode {
             }
         }
 
-        if (block.publicKey === this.publicKey && !this.ownedBlocksCache.includes(block.hash!)) {
+        if (block.signerAddress === this.walletAddress && !this.ownedBlocksCache.includes(block.hash!)) {
             this.ownedBlocksCache.push(block.hash!);
             try {
                 await this.ledger.ownedBlocksCollection!.insertOne({ hash: block.hash! });

@@ -17,10 +17,10 @@ import SyncEngine from '../SyncEngine';
 const createMockBlock = (hash: string, pk: string = 'pk'): Block => ({
     type: 'TRANSACTION',
     metadata: { index: 1, timestamp: 1 },
-    publicKey: pk,
+    signerAddress: pk,
     signature: 'sig',
     hash,
-    payload: { senderSignature: '', senderId: '', recipientId: '', amount: 0 }
+    payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0 }
 });
 
 describe('Backend: SyncEngine Integrity', () => {
@@ -335,7 +335,7 @@ describe('Backend: SyncEngine Integrity', () => {
         const mockConnection: import('../../../types').PeerConnection = { peerAddress: 'mock', send: (msg: any) => { sentMessage = msg; } };
 
         (mockNode as any).roles = [NodeRole.ORIGINATOR];
-        await syncEngine.handleStorageRequest(new StorageRequestMessage({ fileSizeBytes: 100, chunkSizeBytes: 200, requiredNodes: 2, storageRequestId: 'r-2', senderId: 'remote', maxCostPerGB: 0.10 }), mockConnection);
+        await syncEngine.handleStorageRequest(new StorageRequestMessage({ fileSizeBytes: 100, chunkSizeBytes: 200, requiredNodes: 2, storageRequestId: 'r-2', senderAddress: 'remote', maxCostPerGB: 0.10 }), mockConnection);
 
         assert.strictEqual(sentMessage, null);
 
@@ -343,13 +343,13 @@ describe('Backend: SyncEngine Integrity', () => {
         mockNode.publicKey = 'local-storage';
         mockNode.storageProvider = createMock<any>({ getEgressCostPerGB: () => 0.05 });
 
-        await syncEngine.handleStorageRequest(new StorageRequestMessage({ fileSizeBytes: 100, chunkSizeBytes: 200, requiredNodes: 2, storageRequestId: 'r-2', senderId: 'remote', maxCostPerGB: 0.10 }), mockConnection);
+        await syncEngine.handleStorageRequest(new StorageRequestMessage({ fileSizeBytes: 100, chunkSizeBytes: 200, requiredNodes: 2, storageRequestId: 'r-2', senderAddress: 'remote', maxCostPerGB: 0.10 }), mockConnection);
         assert.ok(sentMessage !== null);
         assert.strictEqual((sentMessage as StorageBidMessage).proposedCostPerGB, 0.05);
 
         // Tests dropping requests when internal limit mappings exceed ceiling
         sentMessage = null;
-        await syncEngine.handleStorageRequest(new StorageRequestMessage({ fileSizeBytes: 100, chunkSizeBytes: 200, requiredNodes: 2, storageRequestId: 'r-3', senderId: 'remote', maxCostPerGB: 0.01 }), mockConnection);
+        await syncEngine.handleStorageRequest(new StorageRequestMessage({ fileSizeBytes: 100, chunkSizeBytes: 200, requiredNodes: 2, storageRequestId: 'r-3', senderAddress: 'remote', maxCostPerGB: 0.01 }), mockConnection);
         assert.strictEqual(sentMessage, null);
     });
 

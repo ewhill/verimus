@@ -95,14 +95,14 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         const node2 = nodes[2];
 
         // Seed Node 1 and Node 2 Wallet Funds simulating algorithmic rewards
-        const payload1: TransactionPayload = { senderId: 'SYSTEM', recipientId: node1.publicKey, amount: 50000, senderSignature: 'sys_sig' };
+        const payload1: TransactionPayload = { senderAddress: 'SYSTEM', recipientAddress: node1.publicKey, amount: 50000, senderSignature: 'sys_sig' };
         const sig1 = signData(JSON.stringify(payload1), node0.privateKey);
         
         const block1: Block = {
             metadata: { index: 2, timestamp: Date.now() },
             type: BLOCK_TYPES.TRANSACTION,
             payload: payload1,
-            publicKey: node1.publicKey,
+            signerAddress: node1.publicKey,
             signature: sig1 as string
         };
         const block1ToHash = { ...block1 };
@@ -112,14 +112,14 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         await node1.ledger.addBlockToChain(block1);
         await node2.ledger.addBlockToChain(block1);
 
-        const payload2: TransactionPayload = { senderId: 'SYSTEM', recipientId: node2.publicKey, amount: 50000, senderSignature: 'sys_sig' };
+        const payload2: TransactionPayload = { senderAddress: 'SYSTEM', recipientAddress: node2.publicKey, amount: 50000, senderSignature: 'sys_sig' };
         const sig2 = signData(JSON.stringify(payload2), node0.privateKey);
         
         const block2: Block = {
             metadata: { index: 3, timestamp: Date.now() },
             type: BLOCK_TYPES.TRANSACTION,
             payload: payload2,
-            publicKey: node2.publicKey,
+            signerAddress: node2.publicKey,
             signature: sig2 as string
         };
         const block2ToHash = { ...block2 };
@@ -151,7 +151,7 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
             metadata: { index: 5, timestamp: Date.now() },
             type: BLOCK_TYPES.STORAGE_CONTRACT,
             payload,
-            publicKey: node3.publicKey,
+            signerAddress: node3.publicKey,
             signature: sig as string
         };
         const blockToHash = { ...block };
@@ -173,7 +173,7 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
 
         const maliciousHash = 'CORRUPTED_SYSTEM_CHECKSUM';
         const slashPayload: SlashingPayload = {
-            penalizedPublicKey: node2.publicKey,
+            penalizedAddress: node2.publicKey,
             evidenceSignature: maliciousHash,
             burntAmount: 20000 
         };
@@ -182,7 +182,7 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
             metadata: { index: 7, timestamp: Date.now() },
             type: BLOCK_TYPES.SLASHING_TRANSACTION,
             payload: slashPayload,
-            publicKey: node1.publicKey,
+            signerAddress: node1.publicKey,
             signature: slashSig as string
         };
         const slashBlockToHash = { ...slashBlock };
@@ -204,14 +204,14 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         await node1.peer!.close();
 
         // Inject 999,999 Boundary mapped synthetically via Time Travel natively!
-        const payload: TransactionPayload = { senderId: 'SYSTEM', recipientId: node1.publicKey, amount: 500, senderSignature: 'sys_sig' };
+        const payload: TransactionPayload = { senderAddress: 'SYSTEM', recipientAddress: node1.publicKey, amount: 500, senderSignature: 'sys_sig' };
         const sig = signData(JSON.stringify(payload), node1.privateKey);
         
         const seedBlock: Block = {
             metadata: { index: 999999, timestamp: Date.now() },
             type: BLOCK_TYPES.TRANSACTION,
             payload: payload,
-            publicKey: node1.publicKey,
+            signerAddress: node1.publicKey,
             signature: sig as string
         };
         const seedBlockToHash = { ...seedBlock };
@@ -222,13 +222,13 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         await new Promise(r => setTimeout(r, 50));
 
         // Evaluate Consensus Epoch trigger natively mapping block 1000000 precisely 
-        const epochPayload: TransactionPayload = { senderId: 'SYSTEM', recipientId: node1.publicKey, amount: 200, senderSignature: 'sys_sig' };
+        const epochPayload: TransactionPayload = { senderAddress: 'SYSTEM', recipientAddress: node1.publicKey, amount: 200, senderSignature: 'sys_sig' };
         const epochSig = signData(JSON.stringify(epochPayload), node1.privateKey);
         const epochBlock = createMock<Block>({
             metadata: { index: 1000000, timestamp: Date.now() },
             type: BLOCK_TYPES.TRANSACTION,
             payload: epochPayload,
-            publicKey: node1.publicKey,
+            signerAddress: node1.publicKey,
             signature: epochSig as string,
             previousHash: seedBlock.hash
         });

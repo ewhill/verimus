@@ -43,7 +43,7 @@ export default class UploadHandler extends BaseHandler {
         }
 
         try {
-            const publicKey = this.node.publicKey;
+            const signerAddress = this.node.walletAddress;
             const privateKey = this.node.privateKey;
 
             // 1 & 2 & 6. Stream zip and encode mathematically into parity boundary limits
@@ -79,7 +79,7 @@ export default class UploadHandler extends BaseHandler {
             const marketReqId = crypto.randomUUID();
 
             // Escrow phase tracking theoretical spend limits mapping against double-spends
-            const hasFunds = await this.node.consensusEngine.walletManager.verifyFunds(publicKey, theoreticalMaxCost);
+            const hasFunds = await this.node.consensusEngine.walletManager.verifyFunds(signerAddress, theoreticalMaxCost);
             const totalUserCost = theoreticalMaxCost * 1.05;
             
             const currentBalance = await this.node.consensusEngine.walletManager.calculateBalance(ownerAddress);
@@ -87,14 +87,14 @@ export default class UploadHandler extends BaseHandler {
             
             const hasUserFunds = await this.node.consensusEngine.walletManager.verifyFunds(ownerAddress, totalUserCost);
             
-            if (!hasFunds && publicKey !== 'SYSTEM') {
+            if (!hasFunds && signerAddress !== 'SYSTEM') {
                 return res.status(402).send('Insufficient Wallet Funds allocating constrained P2P limit orders.');
             }
             if (!hasUserFunds) {
                 return res.status(402).send('Insufficient EIP-191 Egress Extrinsic Bounds mapped explicitly natively.');
             }
 
-            this.node.consensusEngine.walletManager.freezeFunds(publicKey, theoreticalMaxCost, marketReqId);
+            this.node.consensusEngine.walletManager.freezeFunds(signerAddress, theoreticalMaxCost, marketReqId);
             this.node.consensusEngine.walletManager.freezeFunds(ownerAddress, totalUserCost, marketReqId);
             logger.info(`[Peer ${this.node.port}] Initiating async storage limit order ${marketReqId} searching mapping ${redundancy} hosts...`);
 
@@ -284,7 +284,7 @@ export default class UploadHandler extends BaseHandler {
                 },
                 type: BLOCK_TYPES.STORAGE_CONTRACT,
                 payload: payloadResult,
-                publicKey: publicKey,
+                signerAddress: signerAddress,
                 signature: signatureStr
             };
 

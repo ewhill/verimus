@@ -47,9 +47,9 @@ class Ledger {
         await this.collection.createIndex({ "metadata.index": 1 }, { unique: true });
 
         // Ensure peer lookups by publicKey are bound mathematically O(1) matching uniquely
-        await this.peersCollection.createIndex({ "publicKey": 1 }, { unique: true });
+        await this.peersCollection.createIndex({ "operatorAddress": 1 }, { unique: true });
         await this.ownedBlocksCollection.createIndex({ hash: 1 }, { unique: true });
-        await this.balancesCollection.createIndex({ publicKey: 1 }, { unique: true });
+        await this.balancesCollection.createIndex({ "walletAddress": 1 }, { unique: true });
         await this.activeContractsCollection.createIndex({ contractId: 1 }, { unique: true });
 
         // Ensure genesis block exists
@@ -105,10 +105,10 @@ class Ledger {
     }
 
     /**
-     * Generates a block comprising the previous hash, publicKey, 
+     * Generates a block comprising the previous hash, signerAddress, 
      * encrypted private payload, and signature.
      */
-    async addBlock(publicKey: string, privatePayload: any, signatureStr: string, type: Exclude<BlockType, undefined> = BLOCK_TYPES.STORAGE_CONTRACT) {
+    async addBlock(signerAddress: string, privatePayload: any, signatureStr: string, type: Exclude<BlockType, undefined> = BLOCK_TYPES.STORAGE_CONTRACT) {
         const previousBlock = await this.getLatestBlock();
         const newBlock: Block = {
             metadata: {
@@ -118,7 +118,7 @@ class Ledger {
             // @ts-ignore
             type: type,
             previousHash: previousBlock.hash,
-            publicKey: publicKey,
+            signerAddress: signerAddress,
             payload: privatePayload,
             signature: signatureStr
         };

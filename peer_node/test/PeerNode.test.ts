@@ -25,10 +25,10 @@ const getMockCredentials = (): PeerCredentials => ({
 const createDummyBlock = (hash: string, pk: string = 'pk'): import('../../types').Block => ({
     type: 'TRANSACTION',
     metadata: { index: 1, timestamp: 1 },
-    publicKey: pk,
+    signerAddress: pk,
     signature: 'sig',
     hash,
-    payload: { senderSignature: '', senderId: '', recipientId: '', amount: 0 }
+    payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0 }
 });
 
 const getMockNode = async (PeerNodeClass: any) => {
@@ -124,10 +124,10 @@ describe('Backend: PeerNode Logical Verification Check', () => {
         const dummyBlock2: import('../../types').Block = {
             type: 'TRANSACTION',
             metadata: { index: 1, timestamp: 1 },
-            publicKey: 'myPubKey',
+            signerAddress: 'myPubKey',
             signature: 'sig',
             hash: 'hash2',
-            payload: { senderSignature: '', senderId: '', recipientId: '', amount: 0 }
+            payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0 }
         };
         await mockNode.addOwnedBlockToCache(dummyBlock2);
 
@@ -194,10 +194,10 @@ describe('Backend: PeerNode Logical Verification Check', () => {
         const dummyBlock3: import('../../types').Block = {
             type: 'TRANSACTION',
             metadata: { index: 1, timestamp: 1 },
-            publicKey: 'myPubKey',
+            signerAddress: 'myPubKey',
             signature: 'sig',
             hash: 'hash3',
-            payload: { senderSignature: '', senderId: '', recipientId: '', amount: 0 }
+            payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0 }
         };
         const mockConn = { peerAddress: '127.0.0.1:1234', send: () => { } };
         const blockToHashTest = { ...dummyBlock3 };

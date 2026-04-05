@@ -9,8 +9,8 @@ describe('Messages: BlockSyncResponseMessage', () => {
     const mockBlock: Block = {
         type: 'TRANSACTION',
         metadata: { index: 1, timestamp: 123 },
-        publicKey: 'PK',
-        payload: { senderSignature: 'sig', senderId: 's1', recipientId: 'r1', amount: 100 },
+        signerAddress: 'PK',
+        payload: { senderSignature: 'sig', senderAddress: 's1', recipientAddress: 'r1', amount: 100 },
         signature: 'SIG',
         previousHash: 'PREV'
     };

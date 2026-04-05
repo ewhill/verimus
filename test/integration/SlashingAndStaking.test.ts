@@ -38,7 +38,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
 
         // Stage 1: Scaffold Initial Staking Collateral internally mapping Phase 5b
         const stakingLockPayload = {
-            operatorPublicKey: maliciousHostKeys.publicKey,
+            operatorAddress: maliciousHostKeys.publicKey,
             collateralAmount: 50000,
             minEpochTimelineDays: 30
         };
@@ -49,7 +49,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
             metadata: { index: -1, timestamp: Date.now() },
             type: BLOCK_TYPES.STAKING_CONTRACT,
             payload: stakingLockPayload,
-            publicKey: maliciousHostKeys.publicKey,
+            signerAddress: maliciousHostKeys.publicKey,
             signature: stakingSig
         });
         const mockConn = createMock<import('../../types').PeerConnection>({ peerAddress: '0.0.0.0', send: () => { } });
@@ -77,7 +77,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
 
         // Stage 2: Intercept global mathematical failure! Injecting native Slashing penalty!
         const invalidSlashPayload = {
-            penalizedPublicKey: maliciousHostKeys.publicKey,
+            penalizedAddress: maliciousHostKeys.publicKey,
             evidenceSignature: 'INVALID_GARBAGE_STRING_NOT_A_HASH',
             burntAmount: 50000
         };
@@ -88,7 +88,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
             metadata: { index: -1, timestamp: Date.now() },
             type: BLOCK_TYPES.SLASHING_TRANSACTION,
             payload: invalidSlashPayload,
-            publicKey: node.publicKey,
+            signerAddress: node.publicKey,
             signature: invalidSlashSig
         });
 
@@ -100,7 +100,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
 
         // Stage 3: Inject valid Slashing penalty!
         const slashPayload = {
-            penalizedPublicKey: maliciousHostKeys.publicKey,
+            penalizedAddress: maliciousHostKeys.publicKey,
             evidenceSignature: createHash('sha256').update('FORGERY_EVIDENCE_MAP').digest('hex'),
             burntAmount: 50000
         };
@@ -111,7 +111,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
             metadata: { index: -1, timestamp: Date.now() },
             type: BLOCK_TYPES.SLASHING_TRANSACTION,
             payload: slashPayload,
-            publicKey: node.publicKey,
+            signerAddress: node.publicKey,
             signature: slashSig
         });
 

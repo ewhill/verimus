@@ -3,7 +3,7 @@ import { NodeRole } from '../../types/NodeRole';
 import { MessageOptions } from '../types/Types';
 
 export interface ScorePayload {
-    publicKey: string;
+    operatorAddress: string;
     score: number;
     roles?: NodeRole[];
 }

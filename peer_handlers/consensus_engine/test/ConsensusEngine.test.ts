@@ -14,13 +14,13 @@ import type { Block, PeerConnection } from '../../../types';
 import ConsensusEngine from '../ConsensusEngine';
 
 const mockConn: PeerConnection = { peerAddress: '127.0.0.1:3001', send: () => { } };
-const createMockBlock = (signature: string, publicKey: string, hash: string): Block => ({
+const createMockBlock = (signature: string, signerAddress: string, hash: string): Block => ({
     type: 'TRANSACTION',
     metadata: { index: 1, timestamp: 123 },
-    publicKey,
+    signerAddress,
     signature,
     hash,
-    payload: { senderSignature: '', senderId: '', recipientId: '', amount: 0 }
+    payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0 }
 });
 
 describe('Backend: ConsensusEngine Integrity', () => {
@@ -90,9 +90,9 @@ describe('Backend: ConsensusEngine Integrity', () => {
         const mockBlock: Block = {
             type: 'TRANSACTION',
             metadata: { index: 5, timestamp: Date.now() },
-            payload: { senderSignature: '', senderId: '', recipientId: '', amount: 0 },
+            payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0 },
             signature: '',
-            publicKey: publicKey,
+            signerAddress: publicKey,
             hash: 'mockhash'
         };
         const validSignature = proxyCrypto.signData(JSON.stringify(mockBlock.payload), privateKey);

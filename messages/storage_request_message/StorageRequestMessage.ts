@@ -7,7 +7,7 @@ export interface StorageRequestOptions {
     chunkSizeBytes: number;
     requiredNodes: number;
     maxCostPerGB: number;
-    senderId: string;
+    senderAddress: string;
 }
 
 export class StorageRequestMessage extends Message {
@@ -28,8 +28,8 @@ export class StorageRequestMessage extends Message {
         if (options.maxCostPerGB !== undefined) this.maxCostPerGB = options.maxCostPerGB;
         else if (options.body?.maxCostPerGB !== undefined) this.maxCostPerGB = options.body.maxCostPerGB;
 
-        if (options.senderId !== undefined) this.senderId = options.senderId;
-        else if (options.body?.senderId !== undefined) this.senderId = options.body.senderId;
+        if (options.senderAddress !== undefined) this.senderAddress = options.senderAddress;
+        else if (options.body?.senderAddress !== undefined) this.senderAddress = options.body.senderAddress;
     }
 
     get storageRequestId(): string { return this.body.storageRequestId; }
@@ -47,6 +47,6 @@ export class StorageRequestMessage extends Message {
     get maxCostPerGB(): number { return this.body.maxCostPerGB; }
     set maxCostPerGB(value: number) { this.body = { ...this.body, maxCostPerGB: value }; }
 
-    get senderId(): string { return this.body.senderId; }
-    set senderId(value: string) { this.body = { ...this.body, senderId: value }; }
+    get senderAddress(): string { return this.body.senderAddress; }
+    set senderAddress(value: string) { this.body = { ...this.body, senderAddress: value }; }
 }

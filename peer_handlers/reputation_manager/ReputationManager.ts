@@ -13,16 +13,16 @@ export class ReputationManager extends EventEmitter {
         this.peersCollection = peersCollection;
     }
 
-    private async executePeerUpsert(publicKey: string, scoreDelta: number, offense: string | null = null): Promise<PeerReputation | null> {
+    private async executePeerUpsert(operatorAddress: string, scoreDelta: number, offense: string | null = null): Promise<PeerReputation | null> {
         if (!this.peersCollection) return null;
 
         await this.peersCollection.updateOne(
-            { publicKey },
+            { operatorAddress },
             { $setOnInsert: { score: 100, strikeCount: 0, isBanned: false, lastOffense: null } },
             { upsert: true }
         );
 
-        let peer: any = await this.peersCollection.findOne({ publicKey });
+        let peer: any = await this.peersCollection.findOne({ operatorAddress });
         if (!peer) return null;
 
         // Apply mathematical score adjustments
@@ -38,56 +38,56 @@ export class ReputationManager extends EventEmitter {
         const strikeCount = scoreDelta < 0 ? peer.strikeCount + 1 : peer.strikeCount;
         const lastOffense = scoreDelta < 0 ? (offense || peer.lastOffense) : peer.lastOffense;
 
-        const updatedPeer = { ...peer, publicKey, score: newScore, strikeCount, isBanned, lastOffense };
+        const updatedPeer = { ...peer, operatorAddress, score: newScore, strikeCount, isBanned, lastOffense };
         
         await this.peersCollection.updateOne(
-            { publicKey },
+            { operatorAddress },
             { $set: { score: newScore, strikeCount, isBanned, lastOffense } }
         );
 
         if (scoreDelta < 0) {
-            logger.warn(`Peer ${publicKey.substring(0, 16)}... penalized (${scoreDelta}): ${offense}. New Score: ${newScore}`);
+            logger.warn(`Peer ${operatorAddress.substring(0, 16)}... penalized (${scoreDelta}): ${offense}. New Score: ${newScore}`);
         } else if (scoreDelta > 0) {
-            logger.info(`Peer ${publicKey.substring(0, 16)}... rewarded (+${scoreDelta}). New Score: ${newScore}`);
+            logger.info(`Peer ${operatorAddress.substring(0, 16)}... rewarded (+${scoreDelta}). New Score: ${newScore}`);
         }
         
         if (isBanned && peer.score > 0) { // Just reached 0
-            logger.warn(`Peer ${publicKey.substring(0, 16)}... HAS BEEN BANNED across network metrics.`);
-            this.emit('banned', publicKey);
+            logger.warn(`Peer ${operatorAddress.substring(0, 16)}... HAS BEEN BANNED across network metrics.`);
+            this.emit('banned', operatorAddress);
         }
 
         return updatedPeer as PeerReputation;
     }
 
-    async penalizeMinor(publicKey: string, reason: string) {
-        return this.executePeerUpsert(publicKey, -1, reason);
+    async penalizeMinor(operatorAddress: string, reason: string) {
+        return this.executePeerUpsert(operatorAddress, -1, reason);
     }
 
-    async penalizeMajor(publicKey: string, reason: string) {
-        return this.executePeerUpsert(publicKey, -10, reason);
+    async penalizeMajor(operatorAddress: string, reason: string) {
+        return this.executePeerUpsert(operatorAddress, -10, reason);
     }
 
-    async penalizeCritical(publicKey: string, reason: string) {
-        return this.executePeerUpsert(publicKey, -100, reason);
+    async penalizeCritical(operatorAddress: string, reason: string) {
+        return this.executePeerUpsert(operatorAddress, -100, reason);
     }
 
-    async rewardValidSync(publicKey: string) {
-        return this.executePeerUpsert(publicKey, 1);
+    async rewardValidSync(operatorAddress: string) {
+        return this.executePeerUpsert(operatorAddress, 1);
     }
 
-    async rewardHonestProposal(publicKey: string) {
-        return this.executePeerUpsert(publicKey, 2);
+    async rewardHonestProposal(operatorAddress: string) {
+        return this.executePeerUpsert(operatorAddress, 2);
     }
 
-    async isBanned(publicKey: string): Promise<boolean> {
+    async isBanned(operatorAddress: string): Promise<boolean> {
         if (!this.peersCollection) return false;
-        const peer = await this.peersCollection.findOne({ publicKey });
+        const peer = await this.peersCollection.findOne({ operatorAddress });
         return peer ? peer.isBanned : false;
     }
     
-    async getScore(publicKey: string): Promise<number> {
+    async getScore(operatorAddress: string): Promise<number> {
         if (!this.peersCollection) return 100;
-        const peer = await this.peersCollection.findOne({ publicKey });
+        const peer = await this.peersCollection.findOne({ operatorAddress });
         return peer ? peer.score : 100;
     }
 }

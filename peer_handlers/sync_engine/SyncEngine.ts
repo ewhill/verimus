@@ -87,10 +87,10 @@ class SyncEngine {
             this.syncInterval = setInterval(async () => {
                 if (!this.node.ledger.peersCollection) return;
                 const peers = await this.node.ledger.peersCollection.find({}).toArray();
-                const score_payloads = peers.map(p => ({ publicKey: p.publicKey, score: p.score, roles: p.roles }));
+                const score_payloads = peers.map(p => ({ operatorAddress: p.operatorAddress, score: p.score, roles: p.roles }));
                 
                 // Also broadcast our own native node roles mapped
-                score_payloads.push({ publicKey: this.node.publicKey, score: 100, roles: this.node.roles });
+                score_payloads.push({ operatorAddress: this.node.publicKey, score: 100, roles: this.node.roles });
                 if (score_payloads.length > 0) {
                     this.node.peer!.broadcast(new NetworkHealthSyncMessage({ score_payloads })).catch(() => {});
                 }
@@ -98,11 +98,11 @@ class SyncEngine {
         }
     }
 
-    async handleNetworkHealthSync(score_payloads: { publicKey: string, score: number, roles?: NodeRole[] }[], _unusedConnection: PeerConnection) {
+    async handleNetworkHealthSync(score_payloads: { operatorAddress: string, score: number, roles?: NodeRole[] }[], _unusedConnection: PeerConnection) {
         if (!this.node.ledger.peersCollection) return;
         
         for (const remoteScore of score_payloads) {
-            const localPeer = await this.node.ledger.peersCollection.findOne({ publicKey: remoteScore.publicKey });
+            const localPeer = await this.node.ledger.peersCollection.findOne({ operatorAddress: remoteScore.operatorAddress });
             if (localPeer) {
                 // Drift Fix: Preserve internal cutoff bounds if local score is drastically lower (Sybil defense)
                 if (localPeer.isBanned || localPeer.score === 0) continue; // Banned locally, permanently isolated
@@ -119,14 +119,14 @@ class SyncEngine {
                 
                 if (updatedScore !== localPeer.score || (remoteScore.roles && JSON.stringify(localPeer.roles) !== JSON.stringify(remoteScore.roles))) {
                     await this.node.ledger.peersCollection.updateOne(
-                        { publicKey: remoteScore.publicKey },
+                        { operatorAddress: remoteScore.operatorAddress },
                         { $set: { score: updatedScore, isBanned: updatedScore === 0, ...(remoteScore.roles ? { roles: remoteScore.roles } : {}) } }
                     );
                 }
             } else if (remoteScore.score > 0) {
                 // ingest new metrics tracking
                 await this.node.ledger.peersCollection.insertOne({
-                     publicKey: remoteScore.publicKey,
+                     operatorAddress: remoteScore.operatorAddress,
                      score: Math.min(remoteScore.score, 100),
                      strikeCount: 0,
                      isBanned: false,
@@ -195,7 +195,7 @@ class SyncEngine {
             chunkSizeBytes,
             requiredNodes,
             maxCostPerGB,
-            senderId: this.node.publicKey
+            senderAddress: this.node.walletAddress
         });
         
         await this.node.peer!.broadcast(reqMsg);
@@ -227,7 +227,7 @@ class SyncEngine {
         if (!this.node.roles.includes(NodeRole.STORAGE)) return;
 
         // Ensure we are not bidding on our own packets mapping isolated networks
-        if (msg.senderId === this.node.publicKey) return;
+        if (msg.senderAddress === this.node.walletAddress) return;
 
         // Check if we can beat the maxCost limit
         const egressCost = this.node.storageProvider?.getEgressCostPerGB ? this.node.storageProvider.getEgressCostPerGB() : 0.00;
@@ -236,7 +236,7 @@ class SyncEngine {
         // Formulate returning Bid payload successfully 
         const bidMsg = new StorageBidMessage({
             storageRequestId: msg.storageRequestId,
-            storageHostId: this.node.publicKey,
+            storageHostId: this.node.walletAddress,
             proposedCostPerGB: egressCost,
             guaranteedUptimeMs: 86400000 // Mock 24h guarantee for now mappings
         });

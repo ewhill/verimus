@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Filter } from 'mongodb';
+
 
 import { BLOCK_TYPES } from '../../constants';
 import { decryptPrivatePayload } from '../../crypto_utils/CryptoUtils';
@@ -20,7 +20,7 @@ export default class BlocksHandler extends BaseHandler {
                 if (req.query.address) {
                     query["payload.ownerAddress"] = { $regex: new RegExp(`^${req.query.address as string}$`, 'i') };
                 } else {
-                    query.publicKey = this.node.publicKey;
+                    query.signerAddress = this.node.walletAddress;
                 }
             }
 
@@ -62,7 +62,7 @@ export default class BlocksHandler extends BaseHandler {
                             if (req.query.address) {
                                 if (!entry.block.payload || (entry.block.payload as any).ownerAddress?.toLowerCase() !== (req.query.address as string).toLowerCase()) continue;
                             } else {
-                                if (entry.block.publicKey !== this.node.publicKey) continue;
+                                if (entry.block.signerAddress !== this.node.walletAddress) continue;
                             }
                         }
                         if (req.query.type && entry.block.type !== req.query.type) continue;
@@ -75,7 +75,7 @@ export default class BlocksHandler extends BaseHandler {
                             },
                             type: entry.block.type || BLOCK_TYPES.STORAGE_CONTRACT,
                             payload: entry.block.payload,
-                            publicKey: entry.block.publicKey,
+                            signerAddress: entry.block.signerAddress,
                             signature: entry.block.signature,
                         } as Block);
                     }

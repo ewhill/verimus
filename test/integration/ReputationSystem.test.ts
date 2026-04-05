@@ -118,7 +118,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
             type: BLOCK_TYPES.STORAGE_CONTRACT,
             hash: 'wrong_hash',
             previousHash: 'fake',
-            publicKey: node2.publicKey,
+            signerAddress: node2.publicKey,
             payload: createMock<StorageContractPayload>({}),
             signature: 'fakesig'
         };
@@ -132,7 +132,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
 
         await new Promise(r => setTimeout(r, 4000));
 
-        const node2ScoreRecord = await node1.ledger.peersCollection?.findOne({ publicKey: node2.publicKey });
+        const node2ScoreRecord = await node1.ledger.peersCollection?.findOne({ operatorAddress: node2.publicKey });
         assert.ok(node2ScoreRecord, 'Node 1 created active reputation record');
         assert.strictEqual(node2ScoreRecord?.score, 90, 'Node 1 correctly docked Node 2 (-10)');
     });
@@ -146,7 +146,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
             metadata: { index: 99, timestamp: Date.now() },
             type: BLOCK_TYPES.STORAGE_CONTRACT,
             previousHash: 'fake',
-            publicKey: node3.publicKey,
+            signerAddress: node3.publicKey,
             payload: {
                 encryptedPayloadBase64: 'enc',
                 encryptedKeyBase64: 'key',
@@ -166,7 +166,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
 
         await new Promise(r => setTimeout(r, 4000));
 
-        const node3ScoreRecord = await node1.ledger.peersCollection?.findOne({ publicKey: node3.publicKey });
+        const node3ScoreRecord = await node1.ledger.peersCollection?.findOne({ operatorAddress: node3.publicKey });
         assert.strictEqual(node3ScoreRecord?.score, 0, 'Node 1 docked Node 3 dropping to 0');
         assert.strictEqual(node3ScoreRecord?.isBanned, true, 'Node 1 flagged node');
     });
@@ -199,7 +199,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
 
         await new Promise(r => setTimeout(r, 1000));
 
-        const node4ScoreRecord = await node1.ledger.peersCollection?.findOne({ publicKey: node4.publicKey });
+        const node4ScoreRecord = await node1.ledger.peersCollection?.findOne({ operatorAddress: node4.publicKey });
         assert.strictEqual(node4ScoreRecord?.score, 99, 'Node 1 penalized node');
     });
 });

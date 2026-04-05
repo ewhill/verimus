@@ -74,10 +74,10 @@ class ConsensusEngine {
                 return;
             }
 
-            if (!block || !block.publicKey || !block.signature || !block.payload || !block.metadata) {
+            if (!block || !block.signerAddress || !block.signature || !block.payload || !block.metadata) {
                 logger.info(`[Peer ${this.node.port}] Rejected malformed block from ${connection.peerAddress}`);
-                if (block && block.publicKey) {
-                    await this.node.reputationManager.penalizeMajor(block.publicKey, "Structural Failure");
+                if (block && block.signerAddress) {
+                    await this.node.reputationManager.penalizeMajor(block.signerAddress, "Structural Failure");
                 }
                 return;
             }
@@ -85,7 +85,7 @@ class ConsensusEngine {
             const latestBlock = await this.node.ledger.getLatestBlock();
             if (block.metadata.index !== -1 && latestBlock && block.metadata.index < (latestBlock.metadata.index - 5)) {
                 logger.info(`[Peer ${this.node.port}] Rejected Excessively Stale Block from ${connection.peerAddress}`);
-                await this.node.reputationManager.penalizeMinor(block.publicKey, "Stale Block or Fork Deviation");
+                await this.node.reputationManager.penalizeMinor(block.signerAddress, "Stale Block or Fork Deviation");
                 return;
             }
 
@@ -97,7 +97,7 @@ class ConsensusEngine {
 
             if (block.hash && block.hash !== recalculatedHash) {
                 logger.info(`[Peer ${this.node.port}] Rejected Hash Mismatch from ${connection.peerAddress}`);
-                await this.node.reputationManager.penalizeMajor(block.publicKey, "Hash Mismatch");
+                await this.node.reputationManager.penalizeMajor(block.signerAddress, "Hash Mismatch");
                 return;
             }
 
@@ -105,19 +105,19 @@ class ConsensusEngine {
             // rather than only mapping block.signature uniquely preventing dummy-sig static overlays
             const blockId = recalculatedHash;
 
-            const isSignatureValid = verifySignature(JSON.stringify(block.payload), block.signature, block.publicKey);
+            const isSignatureValid = verifySignature(JSON.stringify(block.payload), block.signature, block.signerAddress);
             if (!isSignatureValid) {
                 logger.info(`[Peer ${this.node.port}] Rejected Invalid Pending Block from ${connection.peerAddress}`);
-                await this.node.reputationManager.penalizeCritical(block.publicKey, "Signature Forgery");
+                await this.node.reputationManager.penalizeCritical(block.signerAddress, "Signature Forgery");
                 return;
             }
 
             if (block.type === BLOCK_TYPES.TRANSACTION) {
                 const txPayload = block.payload as TransactionPayload;
-                const hasFunds = await this.walletManager.verifyFunds(txPayload.senderId, txPayload.amount);
-                if (!hasFunds && txPayload.senderId !== 'SYSTEM') {
-                    logger.warn(`[Peer ${this.node.port}] Rejected Transaction: Insufficient Funds from ${txPayload.senderId}`);
-                    if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(block.publicKey, "Insufficient Funds Double Spend");
+                const hasFunds = await this.walletManager.verifyFunds(txPayload.senderAddress, txPayload.amount);
+                if (!hasFunds && txPayload.senderAddress !== 'SYSTEM') {
+                    logger.warn(`[Peer ${this.node.port}] Rejected Transaction: Insufficient Funds from ${txPayload.senderAddress}`);
+                    if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(block.signerAddress, "Insufficient Funds Double Spend");
                     return;
                 }
             }
@@ -145,16 +145,16 @@ class ConsensusEngine {
                 }
 
                 if (scPayload.brokerFeePercentage !== undefined && scPayload.brokerFeePercentage > 0.15) {
-                    logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: brokerFeePercentage exceeded 0.15 ceiling from ${block.publicKey}`);
+                    logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: brokerFeePercentage exceeded 0.15 ceiling from ${block.signerAddress}`);
                     return;
                 }
 
                 if (!IS_DEV_NETWORK) {
                     const activeContractsCollection = this.node.ledger.activeContractsCollection;
                     if (activeContractsCollection) {
-                        const stakingLog = await this.node.ledger.collection!.findOne({ type: BLOCK_TYPES.STAKING_CONTRACT, 'payload.operatorPublicKey': block.publicKey });
+                        const stakingLog = await this.node.ledger.collection!.findOne({ type: BLOCK_TYPES.STAKING_CONTRACT, 'payload.operatorPublicKey': block.signerAddress });
                         if (!stakingLog) {
-                            logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Originator ${block.publicKey.slice(0, 8)} possesses NO valid Proof-of-Stake STAKING_CONTRACT collateral!`);
+                            logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Originator ${block.signerAddress.slice(0, 8)} possesses NO valid Proof-of-Stake STAKING_CONTRACT collateral!`);
                             return;
                         }
                     }
@@ -163,14 +163,14 @@ class ConsensusEngine {
 
             if (block.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
                 const slashPayload = block.payload as SlashingPayload;
-                if (!slashPayload.evidenceSignature || !slashPayload.penalizedPublicKey || !slashPayload.burntAmount) {
+                if (!slashPayload.evidenceSignature || !slashPayload.penalizedAddress || !slashPayload.burntAmount) {
                     logger.warn(`[Peer ${this.node.port}] Rejected Slashing: Forgery of evidence signature bounds`);
-                    if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.publicKey, "Slashing Forgery");
+                    if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.signerAddress, "Slashing Forgery");
                     return;
                 }
-                if (!this.verifySlashingEvidence(slashPayload, block.publicKey)) {
+                if (!this.verifySlashingEvidence(slashPayload, block.signerAddress)) {
                     logger.warn(`[Peer ${this.node.port}] Rejected Slashing: Invalid evidence signature format/proof`);
-                    if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.publicKey, "Slashing Forgery");
+                    if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.signerAddress, "Slashing Forgery");
                     return;
                 }
             }
@@ -181,13 +181,13 @@ class ConsensusEngine {
 
                 if (chkPayload.stateMerkleRoot !== expectedRoots.stateMerkleRoot || chkPayload.activeContractsMerkleRoot !== expectedRoots.activeContractsMerkleRoot) {
                     logger.warn(`[Peer ${this.node.port}] Rejected CHECKPOINT: State Root mismatch! Forgery detected. Expected SR: ${expectedRoots.stateMerkleRoot.slice(0, 8)} vs Got SR: ${chkPayload.stateMerkleRoot.slice(0, 8)}`);
-                    if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.publicKey, "Checkpoint State Forgery");
+                    if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.signerAddress, "Checkpoint State Forgery");
                     return;
                 }
                 logger.info(`[Peer ${this.node.port}] Verified CHECKPOINT Block successfully matching local physical Merkle roots.`);
             }
 
-            if (this.node.reputationManager) await this.node.reputationManager.rewardHonestProposal(block.publicKey);
+            if (this.node.reputationManager) await this.node.reputationManager.rewardHonestProposal(block.signerAddress);
 
             if (!this.mempool.pendingBlocks.has(blockId)) {
                 this.mempool.pendingBlocks.set(blockId, {
@@ -406,7 +406,7 @@ class ConsensusEngine {
                         metadata: { index, timestamp: pEntry.block.metadata?.timestamp || pEntry.originalTimestamp || Date.now() },
                         type: pEntry.block.type || BLOCK_TYPES.STORAGE_CONTRACT,
                         previousHash,
-                        publicKey: pEntry.block.publicKey,
+                        signerAddress: pEntry.block.signerAddress,
                         payload: pEntry.block.payload,
                         signature: pEntry.block.signature
                     } as Block;
@@ -545,7 +545,7 @@ class ConsensusEngine {
                 } else {
                     const EPOCH_SIZE = 1000000;
                     if (block.metadata.index > 0 && block.metadata.index % EPOCH_SIZE === 0) {
-                        if (block.publicKey === this.node.publicKey) {
+                        if (block.signerAddress === this.node.walletAddress) {
                             logger.info(`[Peer ${this.node.port}] Node triggered Epoch Boundary at index ${block.metadata.index}! Formulating Checkpoint block...`);
 
                             const stateRoots = await this.walletManager.buildStateRoot();
@@ -562,7 +562,7 @@ class ConsensusEngine {
                                 metadata: { index: block.metadata.index + 1, timestamp: Date.now() },
                                 type: BLOCK_TYPES.CHECKPOINT,
                                 payload: checkpointPayload,
-                                publicKey: this.node.publicKey,
+                                signerAddress: this.node.walletAddress,
                                 previousHash: block.hash!,
                                 signature: sigStr as string
                             };
@@ -714,7 +714,7 @@ class ConsensusEngine {
 
                 const executeSlashing = async (nodeId: string, reason: string) => {
                     const slashPayload = {
-                        penalizedPublicKey: nodeId,
+                        penalizedAddress: nodeId,
                         evidenceSignature: crypto.createHash('sha256').update(JSON.stringify(challengeMsg) + reason).digest('hex'),
                         burntAmount: 50000
                     };
@@ -724,7 +724,7 @@ class ConsensusEngine {
                             metadata: { index: -1, timestamp: Date.now() },
                             type: BLOCK_TYPES.SLASHING_TRANSACTION,
                             payload: slashPayload,
-                            publicKey: this.node.publicKey,
+                            signerAddress: this.node.walletAddress,
                             signature: signatureStr
                         };
                         await this.handlePendingBlock(pendingBlock, { peerAddress: `127.0.0.1:${this.node.port}` } as any, Date.now());
@@ -800,7 +800,7 @@ class ConsensusEngine {
                         try {
                             const [hostTx, auditorTx] = await Promise.all([
                                 this.walletManager.allocateFunds('SYSTEM', fragment.nodeId, hostReward, 'SYSTEM_SIG'),
-                                this.walletManager.allocateFunds('SYSTEM', this.node.publicKey, auditorReward, 'SYSTEM_SIG')
+                                this.walletManager.allocateFunds('SYSTEM', this.node.walletAddress, auditorReward, 'SYSTEM_SIG')
                             ]);
 
                             const mintTxBlock = async (txPayload: any) => {
@@ -811,7 +811,7 @@ class ConsensusEngine {
                                     metadata: { index: -1, timestamp: Date.now() },
                                     type: BLOCK_TYPES.TRANSACTION,
                                     payload: txPayload,
-                                    publicKey: this.node.publicKey,
+                                    signerAddress: this.node.walletAddress,
                                     signature: sig
                                 };
                                 await this.handlePendingBlock(b, { peerAddress: `127.0.0.1:${this.node.port}` } as any, Date.now());

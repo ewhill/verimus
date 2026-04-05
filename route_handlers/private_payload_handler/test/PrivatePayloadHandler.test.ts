@@ -52,7 +52,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const mockCollectionFind = mock.fn<() => FindCursor<WithId<Block>>>();
         mockCollectionFind.mock.mockImplementation(() => createMock<FindCursor<WithId<Block>>>({
             toArray: async () => [createMock<WithId<Block>>({
-                _id: new ObjectId('000000000000000000000001'), metadata: { index: 0, timestamp: 0 }, hash: 'exists', previousHash: 'prev', publicKey: otherPubKey, payload: payload, type: 'STORAGE_CONTRACT', signature: ''
+                _id: new ObjectId('000000000000000000000001'), metadata: { index: 0, timestamp: 0 }, hash: 'exists', previousHash: 'prev', signerAddress: otherPubKey, payload: payload, type: 'STORAGE_CONTRACT', signature: ''
             })]
         }));
         const mockCollection = createMock<Collection<Block>>({ find: mockCollectionFind as any });
@@ -105,7 +105,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const wallet = ethers.Wallet.createRandom();
         const timestamp = Date.now().toString();
         const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'memhash', timestamp }));
-        const mockBlock = { hash: 'memhash', publicKey: publicKey, payload: { encryptedPayloadBase64: Buffer.from(JSON.stringify({ physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] })).toString('base64'), ownerAddress: wallet ? wallet.address : 'other' }, signature: 'bad_sig', type: 'STORAGE_CONTRACT' as const, previousHash: 'prev', metadata: { index: -1, timestamp: 12345 } };
+        const mockBlock = { hash: 'memhash', signerAddress: publicKey, payload: { encryptedPayloadBase64: Buffer.from(JSON.stringify({ physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] })).toString('base64'), ownerAddress: wallet ? wallet.address : 'other' }, signature: 'bad_sig', type: 'STORAGE_CONTRACT' as const, previousHash: 'prev', metadata: { index: -1, timestamp: 12345 } };
         
         const mockCollectionFind = mock.fn<() => FindCursor<WithId<Block>>>();
         mockCollectionFind.mock.mockImplementation(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [] }));
@@ -143,7 +143,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const mockCollectionFind = mock.fn<() => FindCursor<WithId<Block>>>();
         mockCollectionFind.mock.mockImplementation(() => createMock<FindCursor<WithId<Block>>>({
             toArray: async () => [createMock<WithId<Block>>({
-                _id: new ObjectId('000000000000000000000001'), metadata: { index: 0, timestamp: 0 }, hash: 'validh', previousHash: 'prev', publicKey: publicKey, payload: payload, type: 'STORAGE_CONTRACT', signature: 'bad_sig'
+                _id: new ObjectId('000000000000000000000001'), metadata: { index: 0, timestamp: 0 }, hash: 'validh', previousHash: 'prev', signerAddress: publicKey, payload: payload, type: 'STORAGE_CONTRACT', signature: 'bad_sig'
             })]
         }));
         const mockCollection = createMock<Collection<Block>>({ find: mockCollectionFind as any });
@@ -182,7 +182,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const mockCollectionFind = mock.fn<() => FindCursor<WithId<Block>>>();
         mockCollectionFind.mock.mockImplementation(() => createMock<FindCursor<WithId<Block>>>({
             toArray: async () => [createMock<WithId<Block>>({
-                _id: new ObjectId('000000000000000000000001'), metadata: { index: 0, timestamp: 0 }, hash: 'validh', previousHash: '', publicKey: publicKey, payload: encPriv, type: 'STORAGE_CONTRACT', signature: sig
+                _id: new ObjectId('000000000000000000000001'), metadata: { index: 0, timestamp: 0 }, hash: 'validh', previousHash: '', signerAddress: publicKey, payload: encPriv, type: 'STORAGE_CONTRACT', signature: sig
             })]
         }));
         const mockCollection = createMock<Collection<Block>>({ find: mockCollectionFind as any });
@@ -233,7 +233,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const mockCollectionFind = mock.fn<() => FindCursor<WithId<Block>>>();
         mockCollectionFind.mock.mockImplementation(() => createMock<FindCursor<WithId<Block>>>({
             toArray: async () => [createMock<WithId<Block>>({
-                _id: new ObjectId('000000000000000000000001'), metadata: { index: 0, timestamp: 0 }, hash: 'validh', previousHash: '', publicKey: publicKey, payload: encPriv, type: 'STORAGE_CONTRACT', signature: sig
+                _id: new ObjectId('000000000000000000000001'), metadata: { index: 0, timestamp: 0 }, hash: 'validh', previousHash: '', signerAddress: publicKey, payload: encPriv, type: 'STORAGE_CONTRACT', signature: sig
             })]
         }));
         const mockCollection = createMock<Collection<Block>>({ find: mockCollectionFind as any });

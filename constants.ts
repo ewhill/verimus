@@ -31,12 +31,12 @@ const fundingBlockBase = {
     type: BLOCK_TYPES.TRANSACTION,
     previousHash: '',
     payload: {
-        senderId: 'SYSTEM',
-        recipientId: 'SYSTEM',
+        senderAddress: 'SYSTEM',
+        recipientAddress: 'SYSTEM',
         amount: Number.MAX_VALUE,
         senderSignature: ''
     },
-    publicKey: 'SYSTEM',
+    signerAddress: 'SYSTEM',
     signature: 'sys_sig'
 };
 
@@ -64,7 +64,7 @@ const contractBlockBase = {
         encryptedKeyBase64: 'GENESIS_KEY',
         encryptedIvBase64: 'GENESIS_IV'
     },
-    publicKey: 'SYSTEM',
+    signerAddress: 'SYSTEM',
     signature: 'GENESIS_SIG'
 };
 

@@ -6,7 +6,7 @@ import { NetworkHealthSyncMessage } from '../NetworkHealthSyncMessage';
 
 describe('Messages: NetworkHealthSyncMessage', () => {
 
-    const payloads = [{ publicKey: 'PK1', score: 95, roles: [NodeRole.STORAGE] }];
+    const payloads = [{ operatorAddress: 'PK1', score: 95, roles: [NodeRole.STORAGE] }];
 
     it('Initializes with direct options properties correctly', () => {
         const msg = new NetworkHealthSyncMessage({ score_payloads: payloads });

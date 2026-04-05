@@ -12,7 +12,7 @@ describe('Messages: StorageRequestMessage Definitions', () => {
             chunkSizeBytes: 64,
             requiredNodes: 3,
             maxCostPerGB: 0.05,
-            senderId: 'PUBKEY'
+            senderAddress: 'PUBKEY'
         });
 
         assert.strictEqual(msg.storageRequestId, 'req-123');
@@ -20,7 +20,7 @@ describe('Messages: StorageRequestMessage Definitions', () => {
         assert.strictEqual(msg.chunkSizeBytes, 64);
         assert.strictEqual(msg.requiredNodes, 3);
         assert.strictEqual(msg.maxCostPerGB, 0.05);
-        assert.strictEqual(msg.senderId, 'PUBKEY');
+        assert.strictEqual(msg.senderAddress, 'PUBKEY');
     });
 
     it('Initializes via nested payload properties', () => {
@@ -31,7 +31,7 @@ describe('Messages: StorageRequestMessage Definitions', () => {
                 chunkSizeBytes: 128,
                 requiredNodes: 5,
                 maxCostPerGB: 0.1,
-                senderId: 'PUBKEY2'
+                senderAddress: 'PUBKEY2'
             }
         });
 
@@ -40,15 +40,15 @@ describe('Messages: StorageRequestMessage Definitions', () => {
         assert.strictEqual(msg.chunkSizeBytes, 128);
         assert.strictEqual(msg.requiredNodes, 5);
         assert.strictEqual(msg.maxCostPerGB, 0.1);
-        assert.strictEqual(msg.senderId, 'PUBKEY2');
+        assert.strictEqual(msg.senderAddress, 'PUBKEY2');
     });
 
     it('Mutates structured data payloads supporting dynamic setters', () => {
         const msg = new StorageRequestMessage();
-        msg.senderId = 'MOCK_KEY';
+        msg.senderAddress = 'MOCK_KEY';
         msg.maxCostPerGB = 0.8;
         
-        assert.strictEqual(msg.senderId, 'MOCK_KEY');
+        assert.strictEqual(msg.senderAddress, 'MOCK_KEY');
         assert.strictEqual(msg.maxCostPerGB, 0.8);
         assert.strictEqual(msg.body.maxCostPerGB, 0.8);
     });

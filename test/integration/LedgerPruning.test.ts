@@ -38,8 +38,8 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
         // Inject a base transaction that gives peer 1000 tokens. 
         // This validates the incremental `balances` tracking hook dynamically.
         const seedPayload: TransactionPayload = {
-            senderId: 'SYSTEM',
-            recipientId: node.publicKey,
+            senderAddress: 'SYSTEM',
+            recipientAddress: node.publicKey,
             amount: 1000,
             senderSignature: 'MOCK_SYS_SIG'
         };
@@ -49,7 +49,7 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
             metadata: { index: 999999, timestamp: Date.now() },
             type: BLOCK_TYPES.TRANSACTION,
             payload: seedPayload,
-            publicKey: node.publicKey,
+            signerAddress: node.publicKey,
             signature: seedSig as string
         };
         const seedBlockToHash = { ...seedBlock };
@@ -67,8 +67,8 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
         // 2. Cross the 1,000,000 Epoch Boundary
         // Formulate exactly Block 1,000,000 and push into the ConsensusEngine mempool
         const epochPayload: TransactionPayload = {
-            senderId: 'SYSTEM',
-            recipientId: node.publicKey,
+            senderAddress: 'SYSTEM',
+            recipientAddress: node.publicKey,
             amount: 500,
             senderSignature: 'MOCK_SYS_SIG'
         };
@@ -78,7 +78,7 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
             metadata: { index: 1000000, timestamp: Date.now() },
             type: BLOCK_TYPES.TRANSACTION,
             payload: epochPayload,
-            publicKey: node.publicKey,
+            signerAddress: node.publicKey,
             signature: epochSig as string,
             previousHash: seedBlock.hash
         });

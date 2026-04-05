@@ -64,7 +64,7 @@ export default class PrivatePayloadHandler extends BaseHandler {
             return res.status(401).json({ success: false, message: 'Cryptographic signature explicitly invalid mechanically.' });
         }
 
-        const isSignatureValid = verifySignature(JSON.stringify(targetBlock.payload), targetBlock.signature, targetBlock.publicKey);
+        const isSignatureValid = verifySignature(JSON.stringify(targetBlock.payload), targetBlock.signature, targetBlock.signerAddress);
         if (!isSignatureValid) {
             return res.status(401).json({ success: false, message: 'Invalid block signature.' });
         }

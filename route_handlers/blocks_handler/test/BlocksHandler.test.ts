@@ -24,7 +24,7 @@ const createValidPendingBlock = (sig: string, pub: string, payload: any, ts: num
         previousHash: 'prev',
         type: 'STORAGE_CONTRACT' as const,
         metadata: { index: -1, timestamp: ts },
-        publicKey: pub,
+        signerAddress: pub,
         signature: sig,
         payload: payload
     }
@@ -84,7 +84,7 @@ describe('Backend: blocksHandler Coverage', () => {
             sort: () => createMock<FindCursor<WithId<Block>>>({
                 toArray: async () => [createMock<WithId<Block>>({
                     _id: new ObjectId('000000000000000000000001'),
-                    metadata: { index: 1, timestamp: 0 }, hash: 'hash1', previousHash: 'prev', publicKey: 'testPubKey', payload: encrypted, type: 'STORAGE_CONTRACT', signature: 'sig'
+                    metadata: { index: 1, timestamp: 0 }, hash: 'hash1', previousHash: 'prev', signerAddress: 'testPubKey', payload: encrypted, type: 'STORAGE_CONTRACT', signature: 'sig'
                 })]
             })
         }));
@@ -103,8 +103,8 @@ describe('Backend: blocksHandler Coverage', () => {
         mockCollectionFind.mock.mockImplementationOnce(() => createMock<FindCursor<WithId<Block>>>({
             sort: () => createMock<FindCursor<WithId<Block>>>({
                 toArray: async () => [
-                    createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), metadata: { index: 1, timestamp: 0 }, hash: 'hash1', previousHash: 'prev', publicKey: 'testPubKey', payload: encryptedMatch, type: 'STORAGE_CONTRACT', signature: 'sig1' }),
-                    createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000002'), metadata: { index: 2, timestamp: 0 }, hash: 'hash2', previousHash: 'prev', publicKey: 'testPubKey', payload: encryptedNoMatch, type: 'STORAGE_CONTRACT', signature: 'sig2' })
+                    createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), metadata: { index: 1, timestamp: 0 }, hash: 'hash1', previousHash: 'prev', signerAddress: 'testPubKey', payload: encryptedMatch, type: 'STORAGE_CONTRACT', signature: 'sig1' }),
+                    createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000002'), metadata: { index: 2, timestamp: 0 }, hash: 'hash2', previousHash: 'prev', signerAddress: 'testPubKey', payload: encryptedNoMatch, type: 'STORAGE_CONTRACT', signature: 'sig2' })
                 ]
             })
         }));
@@ -196,8 +196,8 @@ describe('Backend: blocksHandler Coverage', () => {
         mockCollectionFind.mock.mockImplementationOnce(() => createMock<FindCursor<WithId<Block>>>({
             sort: () => createMock<FindCursor<WithId<Block>>>({
                 toArray: async () => [
-                    createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), metadata: { index: 1, timestamp: 0 }, hash: 'hash1', previousHash: 'prev', publicKey: 'testPubKey', payload: encryptPrivatePayload(keys.publicKey, { physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] }), type: 'STORAGE_CONTRACT', signature: 'sig1' }),
-                    createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000002'), metadata: { index: 2, timestamp: 0 }, hash: 'hash2', previousHash: 'prev', publicKey: 'testPubKey', payload: encryptedMatch, type: 'STORAGE_CONTRACT', signature: 'sig2' })
+                    createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), metadata: { index: 1, timestamp: 0 }, hash: 'hash1', previousHash: 'prev', signerAddress: 'testPubKey', payload: encryptPrivatePayload(keys.publicKey, { physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] }), type: 'STORAGE_CONTRACT', signature: 'sig1' }),
+                    createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000002'), metadata: { index: 2, timestamp: 0 }, hash: 'hash2', previousHash: 'prev', signerAddress: 'testPubKey', payload: encryptedMatch, type: 'STORAGE_CONTRACT', signature: 'sig2' })
                 ]
             })
         }));

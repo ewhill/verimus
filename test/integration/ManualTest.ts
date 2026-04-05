@@ -102,8 +102,8 @@ async function runManualTest() {
         type: 'TRANSACTION',
         previousHash: 'mock_genesis_bypass',
         hash: 'mock_funds_node1',
-        payload: { senderId: 'SYSTEM', recipientId: node1.publicKey, amount: 50000.0, senderSignature: 'SYSTEM_MINT' },
-        publicKey: 'SYSTEM',
+        payload: { senderAddress: 'SYSTEM', recipientAddress: node1.publicKey, amount: 50000.0, senderSignature: 'SYSTEM_MINT' },
+        signerAddress: 'SYSTEM',
         signature: 'SYSTEM_MINT'
     });
     // Let wallet manager refresh queries organically

@@ -101,7 +101,7 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
 
         // Node 3 tries to formulate a rogue fork on its own isolated chain mappings
         node3.mempool.pendingBlocks.set('rogue_block', {
-            block: { type: 'TRANSACTION', metadata: { index: 1, timestamp: 1 }, publicKey: 'pk', signature: 'sig', hash: 'rogue_block', payload: { senderSignature: '', senderId: '', recipientId: '', amount: 0 } },
+            block: { type: 'TRANSACTION', metadata: { index: 1, timestamp: 1 }, signerAddress: 'pk', signature: 'sig', hash: 'rogue_block', payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0 } },
             verifications: new Set(),
             eligible: true,
             originalTimestamp: Date.now()
@@ -117,7 +117,7 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
 
     it('Coordinates adoption across majority segments', async () => {
         node1.mempool.pendingBlocks.set('valid_block', {
-            block: { type: 'TRANSACTION', metadata: { index: 2, timestamp: 2 }, publicKey: 'pk', signature: 'sig', hash: 'valid_block', payload: { senderSignature: '', senderId: '', recipientId: '', amount: 0 } },
+            block: { type: 'TRANSACTION', metadata: { index: 2, timestamp: 2 }, signerAddress: 'pk', signature: 'sig', hash: 'valid_block', payload: { senderSignature: '', senderAddress: '', recipientAddress: '', amount: 0 } },
             verifications: new Set(),
             eligible: true,
             originalTimestamp: Date.now()
