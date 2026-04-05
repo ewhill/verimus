@@ -403,6 +403,10 @@ class SyncEngine {
         if (this.node.peer) this.node.peer.broadcast(msg).catch(()=>{});
         if (!this.node.roles.includes(NodeRole.STORAGE)) return;
 
+        if (msg.targetNodeId && msg.targetNodeId !== this.node.walletAddress && msg.targetNodeId !== this.node.publicKey) {
+            return; // Not the targeted storage host for this geometric validation iteration
+        }
+
         try {
             const result = await this.node.storageProvider!.getBlockReadStream(msg.physicalId);
             if (result.status !== 'available' || !result.stream) {

@@ -11,6 +11,7 @@
     "start:node": "tsx index.ts",
     "watch:node": "nodemon -x tsx -e ts --ignore data/ --ignore storage/ index.ts",
     "test": "tsx --test --test-timeout=30000 \"{apis_server,bundler,crypto_utils,ledger,logger,messages,models,peer_handlers,peer_node,route_handlers,storage_providers,test,wallet_manager}/**/*.test.ts\" \"p2p/test/test*.js\"",
+    "test:integration": "tsx --test --test-timeout=30000 \"test/integration/**/*.test.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

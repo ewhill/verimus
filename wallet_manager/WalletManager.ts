@@ -25,7 +25,11 @@ export default class WalletManager {
     }
 
     private getAddressSafe(address: string): string {
+        if (!address) return '';
         if (address === ethers.ZeroAddress) return address;
+        if (address.includes('BEGIN PUBLIC KEY') || address.includes('BEGIN RSA PUBLIC KEY')) return address;
+        if (address.startsWith('GENESIS_NODE')) return address;
+        
         try {
             return ethers.getAddress(address);
         } catch ( _unusedErr ) {

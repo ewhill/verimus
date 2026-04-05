@@ -5,6 +5,7 @@ export interface MerkleProofChallengeRequestOptions {
     contractId: string;
     physicalId: string;
     auditorPublicKey: string;
+    targetNodeId: string;
     chunkIndex: number;
 }
 
@@ -21,6 +22,9 @@ export class MerkleProofChallengeRequestMessage extends Message {
         if (options.auditorPublicKey !== undefined) this.auditorPublicKey = options.auditorPublicKey;
         else if (options.body?.auditorPublicKey !== undefined) this.auditorPublicKey = options.body.auditorPublicKey;
 
+        if (options.targetNodeId !== undefined) this.targetNodeId = options.targetNodeId;
+        else if (options.body?.targetNodeId !== undefined) this.targetNodeId = options.body.targetNodeId;
+
         if (options.chunkIndex !== undefined) this.chunkIndex = options.chunkIndex;
         else if (options.body?.chunkIndex !== undefined) this.chunkIndex = options.body.chunkIndex;
     }
@@ -33,6 +37,9 @@ export class MerkleProofChallengeRequestMessage extends Message {
 
     get auditorPublicKey(): string { return this.body.auditorPublicKey; }
     set auditorPublicKey(value: string) { this.body = { ...this.body, auditorPublicKey: value }; }
+
+    get targetNodeId(): string { return this.body.targetNodeId; }
+    set targetNodeId(value: string) { this.body = { ...this.body, targetNodeId: value }; }
 
     get chunkIndex(): number { return this.body.chunkIndex; }
     set chunkIndex(value: number) { this.body = { ...this.body, chunkIndex: value }; }

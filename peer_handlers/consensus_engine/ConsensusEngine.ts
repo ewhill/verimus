@@ -41,8 +41,8 @@ class ConsensusEngine {
             this.taskQueue = this.taskQueue.then(async () => {
                 try {
                     resolve(await task());
-                } catch ( _unusedE ) {
-                    reject( _unusedE );
+                } catch (_unusedE) {
+                    reject(_unusedE);
                 }
             });
         });
@@ -327,7 +327,7 @@ class ConsensusEngine {
                 logger.warn(`[Peer ${this.node.port}] P2P BFT Timeout Triggered for ${forkId.slice(0, 8)}. Demoting stalled proposal implicitly mathematically unlocking chain bounds.`);
                 this.mempool.eligibleForks.delete(forkId);
                 this.mempool.settledForks.delete(forkId);
-                
+
                 for (const bId of tempBlockIds) {
                     const pb = this.mempool.pendingBlocks.get(bId);
                     if (pb) {
@@ -336,7 +336,7 @@ class ConsensusEngine {
                         (pb as any).demotedTimestamp = Date.now();
                     }
                 }
-                
+
                 this._checkAndProposeFork().catch(() => { });
             }, 10000).unref();
 
@@ -407,7 +407,7 @@ class ConsensusEngine {
                     }
 
                     index++;
-                    
+
                     const newBlock: Block = {
                         metadata: { index, timestamp: pEntry.block.metadata?.timestamp || pEntry.originalTimestamp || Date.now() },
                         type: pEntry.block.type || BLOCK_TYPES.STORAGE_CONTRACT,
@@ -571,19 +571,19 @@ class ConsensusEngine {
                                 previousHash: block.hash!,
                                 signature: ''
                             };
-                            
+
                             const valueObj = normalizeBlockForSignature(valBlock);
                             const schema = EIP712_SCHEMAS[BLOCK_TYPES.CHECKPOINT];
-                            
+
                             if (this.node.wallet) {
                                 valBlock.signature = await this.node.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
                             } else {
                                 valBlock.signature = signData(JSON.stringify(checkpointPayload), this.node.privateKey) as string;
                             }
-                            
+
                             const checkpointBlock = valBlock;
 
-                            this.handlePendingBlock(checkpointBlock, { peerAddress: '0.0.0.0', send: () => { } } as any, Date.now()).catch(( e: any ) => logger.warn(`[Peer ${this.node.port}] Suppressed Checkpoint execution wrap exception: ${e.message}`));
+                            this.handlePendingBlock(checkpointBlock, { peerAddress: '0.0.0.0', send: () => { } } as any, Date.now()).catch((e: any) => logger.warn(`[Peer ${this.node.port}] Suppressed Checkpoint execution wrap exception: ${e.message}`));
                         }
                     }
                 }
@@ -649,6 +649,9 @@ class ConsensusEngine {
             for (const p of this.node.peer.peers) {
                 const pubKey = p.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
                 if (pubKey) {
+                    if (IS_DEV_NETWORK) {
+                        logger.info(`[Auditor Eval ${this.node.port}] Node self=[\${this.node.publicKey.length}], peer=[\${pubKey.length}]. Identical bounds: \${this.node.publicKey.trim() === pubKey.trim()}`);
+                    }
                     const peerHashHex = crypto.createHash('sha256').update(pubKey).digest('hex');
                     const distance = this.computeXORDistance(challengeHashHex, peerHashHex);
                     if (this.isSmallerDistance(distance, minDistance)) {
@@ -724,6 +727,7 @@ class ConsensusEngine {
                     contractId: contractHash,
                     physicalId: fragment.physicalId,
                     auditorPublicKey: this.node.publicKey,
+                    targetNodeId: fragment.nodeId,
                     chunkIndex: targetIndex
                 });
 
@@ -736,14 +740,20 @@ class ConsensusEngine {
                         burntAmount: 50000
                     };
                     try {
-                        const signatureStr = signData(JSON.stringify(slashPayload), this.node.privateKey) as string;
                         const pendingBlock: Block = {
                             metadata: { index: -1, timestamp: Date.now() },
                             type: BLOCK_TYPES.SLASHING_TRANSACTION,
                             payload: slashPayload,
                             signerAddress: this.node.walletAddress,
-                            signature: signatureStr
+                            signature: ''
                         };
+                        const valueObj = normalizeBlockForSignature(pendingBlock);
+                        const schema = EIP712_SCHEMAS[BLOCK_TYPES.SLASHING_TRANSACTION];
+                        if (this.node.wallet) {
+                            pendingBlock.signature = await this.node.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
+                        } else {
+                            pendingBlock.signature = signData(JSON.stringify(slashPayload), this.node.privateKey) as string;
+                        }
                         await this.handlePendingBlock(pendingBlock, { peerAddress: `127.0.0.1:${this.node.port}` } as any, Date.now());
                         if (this.node.peer) {
                             const p2pMsg = new PendingBlockMessage({ block: pendingBlock });
@@ -753,14 +763,14 @@ class ConsensusEngine {
                                 logger.warn(`[Peer ${this.node.port}] Broadcast error for slashing block: ${err.message}`);
                             }
                         }
-                    } catch ( e: any ) {
+                    } catch (e: any) {
                         logger.warn(`[Peer ${this.node.port}] Failed to execute slashing block: ${e.message}`);
                     }
                 };
 
                 const auditId = contractHash;
-                const MAX_RETRIES = 2; // attempt 0, attempt 1, attempt 2 (3 strikes)
-                const BASE_TIMEOUT_MS = 5000;
+                const MAX_RETRIES = 3; // attempt 0 to max strikes
+                const BASE_TIMEOUT_MS = 15000;
                 let currentAttempt = 0;
                 let currentTimeoutRef: NodeJS.Timeout;
 
@@ -823,14 +833,20 @@ class ConsensusEngine {
                             const mintTxBlock = async (txPayload: any) => {
                                 if (!txPayload) return;
 
-                                const sig = signData(JSON.stringify(txPayload), this.node.privateKey) as string;
                                 const b: Block = {
                                     metadata: { index: -1, timestamp: Date.now() },
                                     type: BLOCK_TYPES.TRANSACTION,
                                     payload: txPayload,
                                     signerAddress: this.node.walletAddress,
-                                    signature: sig
+                                    signature: ''
                                 };
+                                const valueObj = normalizeBlockForSignature(b);
+                                const schema = EIP712_SCHEMAS[BLOCK_TYPES.TRANSACTION];
+                                if (this.node.wallet) {
+                                    b.signature = await this.node.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
+                                } else {
+                                    b.signature = signData(JSON.stringify(txPayload), this.node.privateKey) as string;
+                                }
                                 await this.handlePendingBlock(b, { peerAddress: `127.0.0.1:${this.node.port}` } as any, Date.now());
                                 if (this.node.peer) {
                                     const p2pMsg = new PendingBlockMessage({ block: b });
@@ -840,7 +856,7 @@ class ConsensusEngine {
 
                             await mintTxBlock(hostTx);
                             await mintTxBlock(auditorTx);
-                        } catch ( e: any ) {
+                        } catch (e: any) {
                             logger.error(`Failed to formulate compensation bounds: ${e.message}`);
                         }
                     }
