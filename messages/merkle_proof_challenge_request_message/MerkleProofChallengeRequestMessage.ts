@@ -5,6 +5,7 @@ export interface MerkleProofChallengeRequestOptions {
     contractId: string;
     physicalId: string;
     auditorPublicKey: string;
+    auditorNodeId: string;
     targetNodeId: string;
     chunkIndex: number;
 }
@@ -22,6 +23,9 @@ export class MerkleProofChallengeRequestMessage extends Message {
         if (options.auditorPublicKey !== undefined) this.auditorPublicKey = options.auditorPublicKey;
         else if (options.body?.auditorPublicKey !== undefined) this.auditorPublicKey = options.body.auditorPublicKey;
 
+        if (options.auditorNodeId !== undefined) this.auditorNodeId = options.auditorNodeId;
+        else if (options.body?.auditorNodeId !== undefined) this.auditorNodeId = options.body.auditorNodeId;
+
         if (options.targetNodeId !== undefined) this.targetNodeId = options.targetNodeId;
         else if (options.body?.targetNodeId !== undefined) this.targetNodeId = options.body.targetNodeId;
 
@@ -37,6 +41,9 @@ export class MerkleProofChallengeRequestMessage extends Message {
 
     get auditorPublicKey(): string { return this.body.auditorPublicKey; }
     set auditorPublicKey(value: string) { this.body = { ...this.body, auditorPublicKey: value }; }
+
+    get auditorNodeId(): string { return this.body.auditorNodeId; }
+    set auditorNodeId(value: string) { this.body = { ...this.body, auditorNodeId: value }; }
 
     get targetNodeId(): string { return this.body.targetNodeId; }
     set targetNodeId(value: string) { this.body = { ...this.body, targetNodeId: value }; }

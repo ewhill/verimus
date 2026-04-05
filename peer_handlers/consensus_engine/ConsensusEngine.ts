@@ -723,20 +723,14 @@ class ConsensusEngine {
                 const numericHash = parseInt(challengeHashHex.slice(0, 8), 16);
                 const targetIndex = totalChunks > 0 ? numericHash % totalChunks : 0;
 
-                const challengeMsg = new MerkleProofChallengeRequestMessage({
-                    contractId: contractHash,
-                    physicalId: fragment.physicalId,
-                    auditorPublicKey: this.node.publicKey,
-                    targetNodeId: fragment.nodeId,
-                    chunkIndex: targetIndex
-                });
+                // MerkleProofChallengeRequestMessage is generated dynamically inside attemptChallenge() to ensure valid P2P hash sequences.
 
                 this.node.events.emit('audit_telemetry', { status: 'CHALLENGE_DISPATCHED', message: `Dispatching Merkle challenge targeting Shard ${fragment.shardIndex} at Chunk Index ${targetIndex}...`, targetPeer: fragment.nodeId });
 
                 const executeSlashing = async (nodeId: string, reason: string) => {
                     const slashPayload = {
                         penalizedAddress: nodeId,
-                        evidenceSignature: crypto.createHash('sha256').update(JSON.stringify(challengeMsg) + reason).digest('hex'),
+                        evidenceSignature: crypto.createHash('sha256').update(`${contractHash}:${fragment.physicalId}:${targetIndex}:${reason}`).digest('hex'),
                         burntAmount: 50000
                     };
                     try {
@@ -773,8 +767,18 @@ class ConsensusEngine {
                 const BASE_TIMEOUT_MS = 15000;
                 let currentAttempt = 0;
                 let currentTimeoutRef: NodeJS.Timeout;
+                let isResolved = false;
 
                 const attemptChallenge = () => {
+                    const challengeMsg = new MerkleProofChallengeRequestMessage({
+                        contractId: contractHash,
+                        physicalId: fragment.physicalId,
+                        auditorPublicKey: this.node.publicKey,
+                        auditorNodeId: this.node.walletAddress,
+                        targetNodeId: fragment.nodeId,
+                        chunkIndex: targetIndex
+                    });
+
                     if (this.node.peer) {
                         this.node.peer.broadcast(challengeMsg).catch(e => {
                             logger.warn(`[Peer ${this.node.port}] Audit broadcast routing latency drop: ${e.message}`);
@@ -789,7 +793,9 @@ class ConsensusEngine {
                             logger.info(`[Peer ${this.node.port}] P2P Timeout resolving Merkle sequence. Exponential backoff retry ${currentAttempt}/${MAX_RETRIES} for host ${fragment.nodeId.slice(0, 8)}...`);
                             attemptChallenge();
                         } else {
-                            this.node.events.removeAllListeners(`merkle_audit_response:${auditId}:${fragment.physicalId}`);
+                            if (isResolved) return;
+                            isResolved = true;
+                            this.node.events.off(`merkle_audit_response:${auditId}:${fragment.physicalId}`, responseHandler);
                             if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(fragment.nodeId, "Audit Timeout Offense");
                             logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof for physicalId=${fragment.physicalId} auditId=${auditId}! Penalty mapped.`);
                             this.node.events.emit('audit_telemetry', { status: 'SLASHING_EXECUTED', message: `Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof. Executing Slashing...`, targetPeer: fragment.nodeId });
@@ -798,8 +804,13 @@ class ConsensusEngine {
                     }, backoffTimeout);
                 };
 
-                this.node.events.once(`merkle_audit_response:${auditId}:${fragment.physicalId}`, async (resMsg: any) => {
+                const responseHandler = async (resMsg: any) => {
+                    if (isResolved) return;
+                    if (resMsg.auditorNodeId && resMsg.auditorNodeId !== this.node.walletAddress) return; 
+
+                    isResolved = true;
                     clearTimeout(currentTimeoutRef);
+                    this.node.events.off(`merkle_audit_response:${auditId}:${fragment.physicalId}`, responseHandler);
 
                     let isValid = false;
                     if (resMsg.computedRootMatch && resMsg.chunkDataBase64 && resMsg.merkleSiblings) {
@@ -860,8 +871,9 @@ class ConsensusEngine {
                             logger.error(`Failed to formulate compensation bounds: ${e.message}`);
                         }
                     }
-                });
+                };
 
+                this.node.events.on(`merkle_audit_response:${auditId}:${fragment.physicalId}`, responseHandler);
                 attemptChallenge();
             }
         }

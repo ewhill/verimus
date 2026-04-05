@@ -102,9 +102,10 @@ echo "4. Injecting Baseline Escrow Funding via MongoDB..."
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 for port in "${PORTS[@]}"; do
     for target_port in "${PORTS[@]}"; do
-        PUB_KEY_PATH="$PROJECT_ROOT/keys/peer_${target_port}.peer.pub"
-        if [ -f "$PUB_KEY_PATH" ]; then
-            mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "const fs = require('fs'); const pub = fs.readFileSync('$PUB_KEY_PATH', 'utf8'); db.balances.updateOne({ walletAddress: pub }, { \$set: { balance: 500000 } }, { upsert: true });" > /dev/null 2>&1
+        PRIV_KEY_PATH="$PROJECT_ROOT/keys/peer_${target_port}.peer.pem"
+        if [ -f "$PRIV_KEY_PATH" ]; then
+            NODE_ADDR_CHECKSUM=$(node -e "const {ethers} = require('ethers'); const crypto = require('crypto'); const fs = require('fs'); const priv = fs.readFileSync('$PRIV_KEY_PATH', 'utf8'); const hash = crypto.createHash('sha256').update(priv).digest('hex'); console.log(new ethers.Wallet('0x'+hash).address)")
+            mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ walletAddress: '$NODE_ADDR_CHECKSUM' }, { \$set: { balance: 500000 } }, { upsert: true });" > /dev/null 2>&1
         fi
     done
     if [ -n "$SEED_WALLET" ]; then

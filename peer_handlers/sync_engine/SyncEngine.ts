@@ -433,7 +433,7 @@ class SyncEngine {
                 if (chunks.length === 0 || msg.chunkIndex >= chunks.length) {
                     logger.info(`[SyncEngine DEBUG] Missing or Out-Of-Bounds chunk index req: ${msg.chunkIndex} >= ${chunks.length}. Broadcasting false.`);
                     const respMsg = new MerkleProofChallengeResponseMessage({
-                        contractId: msg.contractId, physicalId: msg.physicalId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
+                        contractId: msg.contractId, physicalId: msg.physicalId, auditorNodeId: msg.auditorNodeId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
                     });
                     if (this.node.peer) this.node.peer.broadcast(respMsg).catch(()=>{});
                     return;
@@ -445,7 +445,7 @@ class SyncEngine {
                 
                 logger.info(`[SyncEngine DEBUG] Assembled valid proof for shard chunk ${msg.chunkIndex}. Broadcasting true...`);
                 const respMsg = new MerkleProofChallengeResponseMessage({
-                    contractId: msg.contractId, physicalId: msg.physicalId, chunkDataBase64, merkleSiblings, computedRootMatch: true
+                    contractId: msg.contractId, physicalId: msg.physicalId, auditorNodeId: msg.auditorNodeId, chunkDataBase64, merkleSiblings, computedRootMatch: true
                 });
                 if (this.node.peer) this.node.peer.broadcast(respMsg).catch(()=>{});
             };
@@ -454,7 +454,7 @@ class SyncEngine {
 
             result.stream.on('error', () => {
                 const respMsg = new MerkleProofChallengeResponseMessage({
-                    contractId: msg.contractId, physicalId: msg.physicalId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
+                    contractId: msg.contractId, physicalId: msg.physicalId, auditorNodeId: msg.auditorNodeId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
                 });
                 if (this.node.peer) this.node.peer.broadcast(respMsg).catch(()=>{});
             });

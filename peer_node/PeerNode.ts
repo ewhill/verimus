@@ -116,8 +116,9 @@ class PeerNode {
         this.privateKey = this.keyPaths.privateKey || fs.readFileSync(this.keyPaths.privateKeyPath!, 'utf8');
         this.signature = this.keyPaths.signature || fs.readFileSync(this.keyPaths.signaturePath!, 'utf8');
 
-        // Dynamically instantiate random backend EVM wallet address explicitly used purely for checkpoint and systemic signing 
-        this.wallet = ethers.Wallet.createRandom();
+        // Dynamically instantiate backend EVM wallet address explicitly used purely for checkpoint and systemic signing 
+        const hash = createHash('sha256').update(this.privateKey).digest('hex');
+        this.wallet = new ethers.Wallet('0x' + hash);
         this.walletAddress = this.wallet.address;
 
         // Setup Express API Server
