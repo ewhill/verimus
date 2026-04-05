@@ -97,7 +97,7 @@ class ConsensusEngine {
             const blockToHash = { ...block };
             delete blockToHash.hash;
             // @ts-ignore
-            delete blockToHash._id;
+            delete (blockToHash as any)._id;
             const recalculatedHash = hashData(JSON.stringify(blockToHash));
 
             if (block.hash && block.hash !== recalculatedHash) {
@@ -540,7 +540,7 @@ class ConsensusEngine {
                     continue;
                 }
 
-                delete block._id;
+                delete (block as any)._id;
 
                 await this.node.ledger.addBlockToChain(block);
                 logger.info(`[Peer ${this.node.port}] Committed block index ${block.metadata.index} (hash: ${block.hash!.slice(0, 8)})`);

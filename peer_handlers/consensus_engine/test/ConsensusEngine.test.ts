@@ -122,7 +122,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
             assert.strictEqual(broadcastCount, 2);
 
             // Orphan verification map test
-            const blockToHashId = { ...mockBlock }; delete blockToHashId.hash; delete blockToHashId._id; const blockId = proxyCrypto.hashData(JSON.stringify(blockToHashId));
+            const blockToHashId = { ...mockBlock }; delete blockToHashId.hash; delete (blockToHashId as any)._id; const blockId = proxyCrypto.hashData(JSON.stringify(blockToHashId));
             engine.mempool.orphanedVerifications.set(blockId, [{ signature: 'orphanedSig', connection: { peerAddress: 'peer', send: () => { } } }]);
 
             // delete the pending to re-enter
@@ -216,7 +216,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
 
     it('Commits validated fork chains', async () => {
         const b1 = createMockBlock('sig1', 'pk', 'hsh');
-        const b1ToHash = { ...b1 }; delete b1ToHash.hash; delete b1ToHash._id;
+        const b1ToHash = { ...b1 }; delete b1ToHash.hash; delete (b1ToHash as any)._id;
         const b1Id = proxyCrypto.hashData(JSON.stringify(b1ToHash));
         engine.mempool.eligibleForks.set('forkCommit', { adopted: true, proposals: new Set(), blockIds: [b1Id], computedBlocks: [{ ...b1, previousHash: 'lastHash123', metadata: { index: 1, timestamp: Date.now() } }] });
         engine.mempool.settledForks.set('forkCommit', { finalTipHash: 'hashx', adoptions: new Set(), committed: false, pendingCommit: false });
@@ -252,7 +252,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
         mockNode.ledger.getLatestBlock = async () => ({ ...createMockBlock('', '', 'lastHash'), metadata: { index: 0, timestamp: 0 }, _id: new ObjectId() });
 
         const b2 = createMockBlock('sig1', 'pk', 'lastHash');
-        const b2ToHash = { ...createMockBlock('sig1', 'pk', 'hash1') }; delete b2ToHash.hash; delete b2ToHash._id;
+        const b2ToHash = { ...createMockBlock('sig1', 'pk', 'hash1') }; delete b2ToHash.hash; delete (b2ToHash as any)._id;
         const mockSigHash = proxyCrypto.hashData(JSON.stringify(b2ToHash));
         const mockForkEntry = {
             computedBlocks: [{ ...b2, previousHash: 'lastHash', metadata: { index: 1, timestamp: Date.now() } }],
@@ -291,7 +291,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
         // Setup variables for mock block execution tests mapping explicitly natively
         
         const bCom = createMockBlock('sig', 'pk', 'hash');
-        const bComToHash = { ...bCom }; delete bComToHash.hash; delete bComToHash._id;
+        const bComToHash = { ...bCom }; delete bComToHash.hash; delete (bComToHash as any)._id;
         const hashStr = proxyCrypto.hashData(JSON.stringify(bComToHash));
         engine.mempool.eligibleForks.set('forkCommit', { computedBlocks: [{ ...createMockBlock('sigCom', 'pk', 'hsh'), previousHash: 'lastHash', metadata: { index: 1, timestamp: Date.now() } }], adopted: true, proposals: new Set<string>(), blockIds: [hashStr] });
         engine.mempool.settledForks.set('forkCommit', { finalTipHash: 'hash', adoptions: new Set<string>(), committed: false, pendingCommit: false });
@@ -314,7 +314,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
         // Test broadcast exception in propose fork
         
         const bz = createMockBlock('sigZ', 'pkZ', 'hsh');
-        const bzToHash = { ...bz }; delete bzToHash.hash; delete bzToHash._id;
+        const bzToHash = { ...bz }; delete bzToHash.hash; delete (bzToHash as any)._id;
         const bzId = proxyCrypto.hashData(JSON.stringify(bzToHash));
         mockNode.peer!.broadcast = async () => { throw new Error('Broadcast Error Propose'); };
         engine.mempool.pendingBlocks.set(bzId, {

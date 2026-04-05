@@ -55,8 +55,10 @@ class Ledger {
         // Ensure genesis block exists
         const count = await this.collection.countDocuments();
         if (count === 0) {
-            const genesisBlocks = this.createGenesisBlocks();
-            await this.collection.insertMany(genesisBlocks);
+            const genesisBlocks = this.createGenesisBlocks() as unknown as Array<Block & { _id: string }>;
+            genesisBlocks[0]._id = genesisBlocks[0].hash!;
+            genesisBlocks[1]._id = genesisBlocks[1].hash!;
+            await this.collection.insertMany(genesisBlocks as any);
         }
     }
 
@@ -84,8 +86,10 @@ class Ledger {
         await this.balancesCollection!.deleteMany({});
         await this.activeContractsCollection!.deleteMany({});
 
-        const genesisBlocks = this.createGenesisBlocks();
-        await this.collection!.insertMany(genesisBlocks);
+        const genesisBlocks = this.createGenesisBlocks() as unknown as Array<Block & { _id: string }>;
+        genesisBlocks[0]._id = genesisBlocks[0].hash!;
+        genesisBlocks[1]._id = genesisBlocks[1].hash!;
+        await this.collection!.insertMany(genesisBlocks as any);
     }
 
     async pruneHistory(checkpointIndex: number) {
@@ -96,7 +100,8 @@ class Ledger {
     }
 
     async addBlockToChain(block: Block) {
-        await this.collection!.insertOne(block);
+        const doc = { ...block, _id: block.hash };
+        await this.collection!.insertOne(doc as any);
         for (const sub of this.blockAddedSubscribers) {
             await sub(block);
         }
@@ -123,7 +128,8 @@ class Ledger {
             signature: signatureStr
         };
         newBlock.hash = hashData(JSON.stringify(newBlock));
-        await this.collection!.insertOne(newBlock);
+        const doc = { ...newBlock, _id: newBlock.hash };
+        await this.collection!.insertOne(doc as any);
         for (const sub of this.blockAddedSubscribers) {
             await sub(newBlock);
         }
@@ -141,7 +147,7 @@ class Ledger {
                 const blockToHash = { ...currentBlock };
                 delete blockToHash.hash;
                 // @ts-ignore
-                delete blockToHash._id; // Ensure MongoDB internal ID isn't hashed
+                delete (blockToHash as any)._id; // Ensure MongoDB internal ID isn't hashed
 
                 const recalculatedHash = hashData(JSON.stringify(blockToHash));
 

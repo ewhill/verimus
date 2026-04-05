@@ -557,7 +557,7 @@ class SyncEngine {
 
                 const clonedBlock = { ...mainBlock };
                 delete clonedBlock.hash;
-                delete clonedBlock._id;
+                delete (clonedBlock as any)._id;
 
                 const structuralPrevious = await this.node.ledger.getLatestBlock();
 

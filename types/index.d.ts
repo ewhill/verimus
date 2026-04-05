@@ -151,7 +151,6 @@ export interface BlockMetadata {
 }
 
 export interface BaseBlock {
-    _id?: any;
     previousHash?: string;
     hash?: string;
     metadata: BlockMetadata;
