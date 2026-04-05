@@ -104,14 +104,14 @@ for port in "${PORTS[@]}"; do
     for target_port in "${PORTS[@]}"; do
         PUB_KEY_PATH="$PROJECT_ROOT/keys/peer_${target_port}.peer.pub"
         if [ -f "$PUB_KEY_PATH" ]; then
-            mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "const fs = require('fs'); const pub = fs.readFileSync('$PUB_KEY_PATH', 'utf8'); db.balances.updateOne({ publicKey: pub }, { \$set: { balance: 500000 } }, { upsert: true });" > /dev/null 2>&1
+            mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "const fs = require('fs'); const pub = fs.readFileSync('$PUB_KEY_PATH', 'utf8'); db.balances.updateOne({ walletAddress: pub }, { \$set: { balance: 500000 } }, { upsert: true });" > /dev/null 2>&1
         fi
     done
     if [ -n "$SEED_WALLET" ]; then
-        SEED_WALLET_LOWER=$(echo "$SEED_WALLET" | tr '[:upper:]' '[:lower:]')
-        mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ publicKey: '$SEED_WALLET_LOWER' }, { \$set: { balance: 50000 } }, { upsert: true });" > /dev/null 2>&1
+        SEED_WALLET_CHECKSUM=$(node -e "const {ethers} = require('ethers'); console.log(ethers.getAddress('$SEED_WALLET'))")
+        mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ walletAddress: '$SEED_WALLET_CHECKSUM' }, { \$set: { balance: 50000 } }, { upsert: true });" > /dev/null 2>&1
     fi
-    mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ publicKey: '$DUMMY_WALLET' }, { \$set: { balance: 500000 } }, { upsert: true });" > /dev/null 2>&1
+    mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ walletAddress: '$DUMMY_WALLET' }, { \$set: { balance: 500000 } }, { upsert: true });" > /dev/null 2>&1
 done
 echo "✅ Baseline balances physically synchronized to DB natively!"
 
