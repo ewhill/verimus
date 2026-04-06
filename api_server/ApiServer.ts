@@ -48,11 +48,9 @@ export default function setupExpressApp(peerNode: PeerNode) {
             }
         }
 
-        res.set('WWW-Authenticate', 'Basic realm="Secure Node Area"');
-        res.status(401).send('Authentication required.');
+        // Do not send WWW-Authenticate header to prevent native browser popups interrupting public wallet users.
+        res.status(401).json({ success: false, message: 'Authentication required. Reserved for Node Owner.' });
     };
-
-    app.use(checkAuth);
 
     // Serve static files from public directory
     if (!peerNode.isHeadless) {
@@ -60,22 +58,28 @@ export default function setupExpressApp(peerNode: PeerNode) {
     }
     app.use(express.json());
 
+    // Public Node Config (Allows clients to discover fee / roles)
     app.get('/api/node/config', new NodeConfigHandler(peerNode).handle);
-    app.post('/api/node/config', new UpdateNodeConfigHandler(peerNode).handle);
+
+    // Private Node Owner Routes
+    app.get('/api/node/auth', checkAuth, (req, res) => res.json({ success: true, message: 'Authorized Admin' }));
+    app.post('/api/node/config', checkAuth, new UpdateNodeConfigHandler(peerNode).handle);
+    app.get('/api/audit/events', checkAuth, new AuditEventsHandler(peerNode).handle);
+    app.get('/api/peers', checkAuth, new PeersHandler(peerNode).handle);
+    app.get('/api/logs', checkAuth, new LogsHandler(peerNode).handle);
+
+    // Public Wallet Owner Routes
     app.get('/api/upload/events', new UploadEventsHandler(peerNode).handle);
-    app.get('/api/audit/events', new AuditEventsHandler(peerNode).handle);
     app.get('/api/ledger/metrics', new LedgerMetricsHandler(peerNode).handle);
     app.get('/api/blocks', new BlocksHandler(peerNode).handle);
     app.get('/api/consensus', new ConsensusHandler(peerNode).handle);
     app.get('/api/contracts', new ContractsHandler(peerNode).handle);
-    app.get('/api/peers', new PeersHandler(peerNode).handle);
     app.post('/api/upload', upload.array('files'), new UploadHandler(peerNode).handle);
     app.get('/api/download/:hash', new DownloadHandler(peerNode).handle);
     app.get('/api/download/:hash/file/:filename', new DownloadFileHandler(peerNode).handle);
     app.get('/api/blocks/:hash/private', new PrivatePayloadHandler(peerNode).handle);
     app.get('/api/files', new FilesHandler(peerNode).handle);
     app.get('/api/wallet', new WalletHandler(peerNode).handle);
-    app.get('/api/logs', new LogsHandler(peerNode).handle);
 
     // Fallback for SPA path-based routing
     if (!peerNode.isHeadless) {

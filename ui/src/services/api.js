@@ -108,13 +108,25 @@ export const ApiService = {
             if (!res.ok) throw new Error('Network response was not ok');
             const data = await res.json();
             if (data.success) {
-                dispatch({ type: 'SET_NODE_CONFIG', payload: data });
+                dispatch({ type: 'SET_NODE_CONFIG', payload: data.config ? data.config : data });
+                
+                // Fire async privilege check natively sequentially
+                ApiService.checkAdminPrivileges(dispatch);
+                
                 dispatch({ type: 'SET_ERROR', payload: null });
             }
         } catch (err) {
             console.error("Failed fetching node config:", err);
             dispatch({ type: 'SET_ERROR', payload: 'Connection lost' });
         }
+    },
+
+    checkAdminPrivileges: async (dispatch) => {
+        try {
+            const res = await fetch(`${ApiService.activeProxyUrl}/api/node/auth`);
+            const currentState = useStore.getState().nodeConfig || {};
+            dispatch({ type: 'SET_NODE_CONFIG', payload: { ...currentState, isAdmin: res.ok } });
+        } catch(e) {}
     },
 
     fetchPrivatePayload: async (hash, optionalHeaders = null) => {

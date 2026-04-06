@@ -47,7 +47,9 @@ const Header = () => {
                 <a href="#" className={`nav-link ${activeRoute === 'wallet' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'wallet')}>Wallet</a>
             )}
             <a href="#" className={`nav-link ${activeRoute === 'ledger' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'ledger')}>Ledger</a>
-            <a href="#" className={`nav-link ${activeRoute === 'network' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'network')}>Network</a>
+            {nodeConfig?.isAdmin && (
+                <a href="#" className={`nav-link ${activeRoute === 'network' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'network')}>Network</a>
+            )}
         </>
     );
 
@@ -86,7 +88,7 @@ const Header = () => {
                     )}
                 </>
             )}
-            {activeRoute === 'network' && (
+            {(nodeConfig?.isAdmin && activeRoute === 'network') && (
                 <>
                     <button className={`segmented-btn ${activePeersTab === 'mesh' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_PEERS_TAB', payload: 'mesh' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Network Mesh</button>
                     <button className={`segmented-btn ${activePeersTab === 'reputation' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_PEERS_TAB', payload: 'reputation' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Global Reputation</button>
@@ -140,23 +142,25 @@ const Header = () => {
                 )}
             </div>
 
-            <div className="mobile-accordion-group">
-                <a href="#" className={`mobile-accordion-header ${expandedAccordion === 'network' ? 'active' : ''}`} onClick={(e) => handleAccordionToggle(e, 'network')}>
-                    Network
-                    <div className="mobile-accordion-cta">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expandedAccordion === 'network' ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </div>
-                </a>
-                {expandedAccordion === 'network' && (
-                    <div className="mobile-nested-group" style={{ animation: 'fadeInDown 0.2s ease-out' }}>
-                        <button className={`mobile-nested-item ${activePeersTab === 'mesh' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_PEERS_TAB', payload: 'mesh' }); routeTo(e, 'network'); }}>Network Mesh</button>
-                        <button className={`mobile-nested-item ${activePeersTab === 'reputation' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_PEERS_TAB', payload: 'reputation' }); routeTo(e, 'network'); }}>Global Reputation</button>
-                        <button className={`mobile-nested-item ${activePeersTab === 'logs' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_PEERS_TAB', payload: 'logs' }); routeTo(e, 'network'); }}>System Logs</button>
-                    </div>
-                )}
-            </div>
+            {nodeConfig?.isAdmin && (
+                <div className="mobile-accordion-group">
+                    <a href="#" className={`mobile-accordion-header ${expandedAccordion === 'network' ? 'active' : ''}`} onClick={(e) => handleAccordionToggle(e, 'network')}>
+                        Network
+                        <div className="mobile-accordion-cta">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expandedAccordion === 'network' ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </div>
+                    </a>
+                    {expandedAccordion === 'network' && (
+                        <div className="mobile-nested-group" style={{ animation: 'fadeInDown 0.2s ease-out' }}>
+                            <button className={`mobile-nested-item ${activePeersTab === 'mesh' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_PEERS_TAB', payload: 'mesh' }); routeTo(e, 'network'); }}>Network Mesh</button>
+                            <button className={`mobile-nested-item ${activePeersTab === 'reputation' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_PEERS_TAB', payload: 'reputation' }); routeTo(e, 'network'); }}>Global Reputation</button>
+                            <button className={`mobile-nested-item ${activePeersTab === 'logs' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_PEERS_TAB', payload: 'logs' }); routeTo(e, 'network'); }}>System Logs</button>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 
@@ -188,9 +192,9 @@ const Header = () => {
                                 <path d="M12 6L18 12L12 18L6 12L12 6Z" fill="#ffffff" />
                             </svg>
                         </div>
-                        <div className="logo-titles node-identity-trigger" onClick={() => dispatch({ type: 'SET_NODE_CONFIG_MODAL_OPEN', payload: true })} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-sm)', transition: 'background 0.2s', margin: '-0.2rem -0.5rem' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'} title="Configure Node Settings">
-                            <h1 style={{ cursor: 'pointer' }}>{title}</h1>
-                            <div className="node-status" style={{ cursor: 'pointer' }}>
+                        <div className={`logo-titles ${nodeConfig?.isAdmin ? 'node-identity-trigger' : ''}`} onClick={() => nodeConfig?.isAdmin && dispatch({ type: 'SET_NODE_CONFIG_MODAL_OPEN', payload: true })} style={{ cursor: nodeConfig?.isAdmin ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-sm)', transition: 'background 0.2s', margin: '-0.2rem -0.5rem' }} onMouseOver={(e) => nodeConfig?.isAdmin && (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'} title={nodeConfig?.isAdmin ? "Configure Node Settings" : ""}>
+                            <h1 style={{ cursor: nodeConfig?.isAdmin ? 'pointer' : 'default' }}>{title}</h1>
+                            <div className="node-status" style={{ cursor: nodeConfig?.isAdmin ? 'pointer' : 'default' }}>
                                 <span className={`status-indicator ${error ? 'offline' : 'active'}`}></span> {error ? 'Node Offline' : 'Node Online'}
                             </div>
                         </div>

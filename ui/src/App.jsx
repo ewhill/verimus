@@ -15,6 +15,7 @@ import { initializeEIP6963Discovery } from './utils/web3';
 function App() {
     const dispatch = useStore(s => s.dispatch);
     const web3Account = useStore(s => s.web3Account);
+    const nodeConfig = useStore(s => s.nodeConfig);
     const currentRoute = useStore(s => s.currentRoute);
     const activeWalletTab = useStore(s => s.activeWalletTab);
     const activeLedgerTab = useStore(s => s.activeLedgerTab);
@@ -109,6 +110,9 @@ function App() {
 
     const renderActiveView = () => {
         if ((currentRoute === 'wallet' || currentRoute === 'files') && !web3Account) {
+            return <LedgerView />;
+        }
+        if (currentRoute === 'network' && nodeConfig?.isAdmin === false) {
             return <LedgerView />;
         }
         switch (currentRoute) {
