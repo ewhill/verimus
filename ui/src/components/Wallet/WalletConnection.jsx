@@ -12,6 +12,44 @@ const WalletConnection = ({ isMobileDrawer }) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isProviderListOpen, setIsProviderListOpen] = useState(false);
 
+    const disconnectWallet = React.useCallback((message = 'You have been unmapped successfully', type = 'success') => {
+        dispatch({ type: 'SET_ACTIVE_PROVIDER', payload: null });
+        dispatch({ type: 'SET_WEB3_ACCOUNT', payload: null });
+        setIsDropdownOpen(false);
+        const currentPath = window.location.pathname;
+        if (currentPath === '/wallet' || currentPath === '/files') {
+            window.history.pushState({}, '', '/ledger');
+            dispatch({ type: 'SET_ROUTE', payload: 'ledger' });
+        }
+        dispatch({ type: 'ADD_TOAST', payload: { id: Date.now(), title: 'Wallet Disconnected', message, type } });
+    }, [dispatch]);
+
+    React.useEffect(() => {
+        if (!activeProvider) return;
+
+        const handleAccountsChanged = (accounts) => {
+            if (accounts.length === 0) {
+                disconnectWallet("Wallet locked or disconnected organically.", "error");
+            } else if (web3Account && accounts[0].toLowerCase() !== web3Account.toLowerCase()) {
+                dispatch({ type: 'SET_WEB3_ACCOUNT', payload: accounts[0] });
+            }
+        };
+
+        const handleProviderDisconnect = () => {
+            disconnectWallet("Wallet disconnected from provider unexpectedly.", "error");
+        };
+
+        activeProvider.on('accountsChanged', handleAccountsChanged);
+        activeProvider.on('disconnect', handleProviderDisconnect);
+
+        return () => {
+            if (activeProvider.removeListener) {
+                activeProvider.removeListener('accountsChanged', handleAccountsChanged);
+                activeProvider.removeListener('disconnect', handleProviderDisconnect);
+            }
+        };
+    }, [activeProvider, web3Account, disconnectWallet, dispatch]);
+
     const executeConnection = async (selectedProvider) => {
         try {
             setIsConnecting(true);
@@ -77,16 +115,7 @@ const WalletConnection = ({ isMobileDrawer }) => {
                             {web3Account}
                         </span>
                     </div>
-                    <button onClick={() => {
-                        dispatch({ type: 'SET_ACTIVE_PROVIDER', payload: null });
-                        dispatch({ type: 'SET_WEB3_ACCOUNT', payload: null });
-                        const currentPath = window.location.pathname;
-                        if (currentPath === '/wallet' || currentPath === '/files') {
-                            window.history.pushState({}, '', '/ledger');
-                            dispatch({ type: 'SET_ROUTE', payload: 'ledger' });
-                        }
-                        dispatch({ type: 'ADD_TOAST', payload: { id: Date.now(), title: 'Wallet Disconnected', message: 'You have been unmapped successfully', type: 'success' } });
-                    }} style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0', transition: 'opacity 0.2s' }} onMouseOver={(e) => e.currentTarget.style.opacity = '0.7'} onMouseOut={(e) => e.currentTarget.style.opacity = '1'} title="Disconnect Wallet">
+                    <button onClick={() => disconnectWallet()} style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0', transition: 'opacity 0.2s' }} onMouseOver={(e) => e.currentTarget.style.opacity = '0.7'} onMouseOut={(e) => e.currentTarget.style.opacity = '1'} title="Disconnect Wallet">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                     </button>
                 </div>
@@ -115,18 +144,7 @@ const WalletConnection = ({ isMobileDrawer }) => {
                     <div style={{
                         position: 'absolute', top: 'calc(100% + 0.5rem)', right: '0', background: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '0.5rem', zIndex: 100, boxShadow: '0 4px 20px rgba(0,0,0,0.5)', minWidth: '180px'
                     }}>
-                        <button onClick={() => {
-                            dispatch({ type: 'SET_ACTIVE_PROVIDER', payload: null });
-                            dispatch({ type: 'SET_WEB3_ACCOUNT', payload: null });
-                            setIsDropdownOpen(false);
-                            // If user is inside a protected route, we route them back to ledger
-                            const currentPath = window.location.pathname;
-                            if (currentPath === '/wallet' || currentPath === '/files') {
-                                window.history.pushState({}, '', '/ledger');
-                                dispatch({ type: 'SET_ROUTE', payload: 'ledger' });
-                            }
-                            dispatch({ type: 'ADD_TOAST', payload: { id: Date.now(), title: 'Wallet Disconnected', message: 'You have been unmapped successfully', type: 'success' } });
-                        }} style={{ width: '100%', padding: '0.6rem 0.5rem', background: 'transparent', border: 'none', color: '#f87171', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(248, 113, 113, 0.1)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                        <button onClick={() => disconnectWallet()} style={{ width: '100%', padding: '0.6rem 0.5rem', background: 'transparent', border: 'none', color: '#f87171', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(248, 113, 113, 0.1)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                             Disconnect Wallet
                         </button>

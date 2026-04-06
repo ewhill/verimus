@@ -16,7 +16,7 @@ vi.mock('../src/components/Views/FilesView/FilesView', () => ({ default: () => <
 vi.mock('../src/components/Modals/BlockModal', () => ({ default: () => <div data-testid="block-modal">BlockModal</div> }));
 
 vi.mock('../src/store', () => ({ useStore: vi.fn() }));
-vi.mock('../src/services/api', () => ({ ApiService: { fetchNodeConfig: vi.fn(), resumePendingDownloads: vi.fn() } }));
+vi.mock('../src/services/api', () => ({ ApiService: { fetchNodeConfig: vi.fn(), resumePendingDownloads: vi.fn(), discoverOptimalProxy: vi.fn() } }));
 
 import { useStore } from '../src/store';
 import { ApiService } from '../src/services/api';
@@ -27,6 +27,7 @@ describe('Frontend: App', () => {
     beforeEach(() => {
         mockDispatch = vi.fn();
         ApiService.fetchNodeConfig.mockClear();
+        ApiService.discoverOptimalProxy.mockClear();
     });
 
     it('Renders active navigation route correctly based on location state', async () => {

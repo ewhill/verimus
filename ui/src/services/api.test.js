@@ -19,6 +19,7 @@ describe('ApiService', () => {
             };
             
             global.fetch.mockResolvedValue({
+                ok: true,
                 json: vi.fn().mockResolvedValue(mockResponse)
             });
 
@@ -77,7 +78,7 @@ describe('ApiService', () => {
     describe('fetchFiles', () => {
         it('Dispatches successful files map', async () => {
             const mockResponse = { success: true, files: ['a'] };
-            global.fetch.mockResolvedValue({ json: vi.fn().mockResolvedValue(mockResponse) });
+            global.fetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue(mockResponse) });
 
             await ApiService.fetchFiles(mockDispatch);
             
@@ -95,7 +96,7 @@ describe('ApiService', () => {
     describe('fetchNodeConfig', () => {
         it('Dispatches successful node config', async () => {
             const mockResponse = { success: true, config: 'x' };
-            global.fetch.mockResolvedValue({ json: vi.fn().mockResolvedValue(mockResponse) });
+            global.fetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue(mockResponse) });
 
             await ApiService.fetchNodeConfig(mockDispatch);
             
@@ -113,7 +114,7 @@ describe('ApiService', () => {
     describe('fetchPrivatePayload', () => {
         it('Returns JSON API responses', async () => {
             const mockResponse = { success: true, payload: 'base64' };
-            global.fetch.mockResolvedValue({ json: vi.fn().mockResolvedValue(mockResponse) });
+            global.fetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue(mockResponse) });
 
             const result = await ApiService.fetchPrivatePayload('hash123');
             

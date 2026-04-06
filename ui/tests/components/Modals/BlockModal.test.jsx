@@ -94,7 +94,7 @@ describe('Frontend: BlockModal Component Render Validity', () => {
 
         render(<BlockModal />);
         
-        const unauthorizedMsg = screen.getByText(/Payload strictly mandates active asymmetric RSA decryption/i);
+        const unauthorizedMsg = screen.getByText(/Payload strictly mandates active wallet decryption/i);
         expect(unauthorizedMsg).toBeDefined();
     });
 

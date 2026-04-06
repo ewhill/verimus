@@ -194,9 +194,9 @@ const BlockModal = () => {
                         <div style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)' }}>
                             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '0.5rem 1rem', fontSize: '0.85rem' }}>
                                 <span style={{ color: 'var(--text-muted)' }}>Sender:</span>
-                                <PropertyValue value={block.payload.senderId} />
+                                <PropertyValue value={block.payload.senderAddress} />
                                 <span style={{ color: 'var(--text-muted)' }}>Recipient:</span>
-                                <PropertyValue value={block.payload.recipientId} />
+                                <PropertyValue value={block.payload.recipientAddress} />
                                 <span style={{ color: 'var(--text-muted)' }}>Amount:</span>
                                 <PropertyValue className="success" value={`${block.payload.amount} VERI`} copyable={false} />
                                 <span style={{ color: 'var(--text-muted)' }}>Signature:</span>
@@ -402,7 +402,7 @@ const BlockModal = () => {
                                     ) : renderPayloadHtml()
                                 ) : (
                                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '2rem', background: 'rgba(0,0,0,0.2)', border: '1px dashed var(--border-soft)', borderRadius: 'var(--radius-sm)', textAlign: 'center', width: '100%', boxSizing: 'border-box' }}>
-                                        Payload strictly mandates active asymmetric RSA decryption keys securely maintained by the authorized originator directly.
+                                        Payload strictly mandates active wallet decryption keys securely maintained by the authorized originator directly.
                                     </div>
                                 )
                             ) : renderGenericPayloadHtml(pkg)}
