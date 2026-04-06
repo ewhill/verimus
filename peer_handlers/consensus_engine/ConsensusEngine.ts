@@ -623,6 +623,16 @@ class ConsensusEngine {
         } catch (error) {
             logger.error(`[Peer ${this.node.port}] Error committing fork ${forkId.slice(0, 8)}:`, error);
             this.committing = false;
+
+            // Cleanse the corrupted state boundaries strictly eliminating perpetually pending anomalies
+            this.mempool.eligibleForks.delete(forkId);
+            this.mempool.settledForks.delete(forkId);
+            if (forkEntry && forkEntry.blockIds) {
+                for (const bId of forkEntry.blockIds) {
+                    this.mempool.pendingBlocks.delete(bId);
+                }
+            }
+            this._checkAndProposeFork().catch(() => {});
         }
     }
     private computeXORDistance(hashA: string, hashB: string): string {
