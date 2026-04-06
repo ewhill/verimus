@@ -44,7 +44,7 @@ export default class WalletHandler extends BaseHandler {
                     hash: b.hash,
                     timestamp: b.metadata.timestamp,
                     senderAddress: b.payload.senderAddress,
-                    recipientId: b.payload.recipientId,
+                    recipientAddress: b.payload.recipientAddress,
                     amount: b.payload.amount
                 }));
             }

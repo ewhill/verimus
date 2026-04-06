@@ -473,9 +473,9 @@ class SyncEngine {
     async performInitialSync() {
         if (!this.node.peer) return;
         if (this.node.peer.trustedPeers.length === 0) return;
+        if (this.isSyncing) return;
 
         this.isSyncing = true;
-        this.syncBuffer = [];
         this._chainStatusResponses = [];
 
         logger.info(`[Peer ${this.node.port}] Initiating Core Ledger Sync mapped across ${this.node.peer.trustedPeers.length} active network hosts...`);

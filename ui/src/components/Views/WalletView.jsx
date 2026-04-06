@@ -110,7 +110,7 @@ const WalletView = () => {
                                         </thead>
                                         <tbody>
                                             {walletData.transactions.map((tx, idx) => {
-                                                const isMint = tx.senderId === 'SYSTEM';
+                                                const isMint = tx.senderAddress === ethers.ZeroAddress;
                                                 return (
                                                     <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#cbd5e1' }}>
                                                         <td style={{ padding: '1rem 0' }}>{formatDate(tx.timestamp)}</td>
