@@ -288,6 +288,8 @@ class ConsensusEngine {
     }
 
     async _checkAndProposeFork() {
+        if (this.node.syncEngine && this.node.syncEngine.isSyncing) return;
+
         const eligibleBlockIds: string[] = [];
         for (const [bId, pEntry] of this.mempool.pendingBlocks.entries()) {
             if (pEntry.eligible && !pEntry.committed) {
@@ -348,6 +350,11 @@ class ConsensusEngine {
 
     async handleProposeFork(forkId: string, blockIds: string[], connection: PeerConnection) {
         return this.enqueueTask(async () => {
+            if (this.node.syncEngine && this.node.syncEngine.isSyncing) {
+                this.node.syncEngine.syncBuffer.push({ type: 'ProposeFork', forkId, blockIds, connection });
+                return;
+            }
+
             const tipConstraint = forkId && forkId.includes('_') ? forkId.split('_')[1] : null;
             if (tipConstraint) {
                 const latestBlock = await this.node.ledger.getLatestBlock();
@@ -451,6 +458,11 @@ class ConsensusEngine {
 
     async handleAdoptFork(forkId: string, finalTipHash: string, connection: PeerConnection) {
         return this.enqueueTask(async () => {
+            if (this.node.syncEngine && this.node.syncEngine.isSyncing) {
+                this.node.syncEngine.syncBuffer.push({ type: 'AdoptFork', forkId, finalTipHash, connection });
+                return;
+            }
+
             const tipConstraint = forkId && forkId.includes('_') ? forkId.split('_')[1] : null;
             if (tipConstraint) {
                 const latestBlock = await this.node.ledger.getLatestBlock();
