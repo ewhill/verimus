@@ -253,8 +253,6 @@ function verifyEIP712BlockSignature(block: Block): boolean {
             valueObj.payload ? valueObj : valueObj, // the value itself is the Block mapping explicitly cleanly natively.
             block.signature
         );
-        console.error("verifyEIP712BlockSignature FAILING. Address recovered:", recoveredAddr, "Expected:", block.signerAddress, "Value:", JSON.stringify(valueObj));
-
 
         return recoveredAddr.toLowerCase() === block.signerAddress.toLowerCase();
     } catch ( e: any ) {

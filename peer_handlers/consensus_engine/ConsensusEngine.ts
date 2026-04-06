@@ -653,7 +653,7 @@ class ConsensusEngine {
                 const pubKey = p.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
                 if (pubKey) {
                     if (IS_DEV_NETWORK) {
-                        logger.info(`[Auditor Eval ${this.node.port}] Node self=[\${this.node.publicKey.length}], peer=[\${pubKey.length}]. Identical bounds: \${this.node.publicKey.trim() === pubKey.trim()}`);
+                        logger.info(`[Auditor Eval ${this.node.port}] Node self=[${this.node.publicKey.length}], peer=[${pubKey.length}]. Identical bounds: ${this.node.publicKey.trim() === pubKey.trim()}`);
                     }
                     const peerHashHex = crypto.createHash('sha256').update(pubKey).digest('hex');
                     const distance = this.computeXORDistance(challengeHashHex, peerHashHex);
@@ -711,7 +711,7 @@ class ConsensusEngine {
             if (!contractPayload.fragmentMap || !contractPayload.merkleRoots) continue;
 
             for (const fragment of contractPayload.fragmentMap) {
-                if (fragment.nodeId === this.node.publicKey) continue; // Skip auditing self logically
+                if (fragment.nodeId === this.node.walletAddress || fragment.nodeId === this.node.publicKey) continue; // Skip auditing self logically
                 if (fragment.nodeId === 'GENESIS_NODE' && IS_DEV_NETWORK) continue; // Immutable system seed nodes cannot be mathematically audited over standard P2P Pings in development/test networks natively.
 
                 const merkleRoot = contractPayload.merkleRoots[fragment.shardIndex];
@@ -731,6 +731,7 @@ class ConsensusEngine {
                 this.node.events.emit('audit_telemetry', { status: 'CHALLENGE_DISPATCHED', message: `Dispatching Merkle challenge targeting Shard ${fragment.shardIndex} at Chunk Index ${targetIndex}...`, targetPeer: fragment.nodeId });
 
                 const executeSlashing = async (nodeId: string, reason: string) => {
+                    logger.warn(`[Peer ${this.node.port}] Executing slashing for ${nodeId} due to: ${reason}`);
                     const slashPayload = {
                         penalizedAddress: nodeId,
                         evidenceSignature: crypto.createHash('sha256').update(`${contractHash}:${fragment.physicalId}:${targetIndex}:${reason}`).digest('hex'),
@@ -767,7 +768,7 @@ class ConsensusEngine {
 
                 const auditId = contractHash;
                 const MAX_RETRIES = 3; // attempt 0 to max strikes
-                const BASE_TIMEOUT_MS = 15000;
+                const BASE_TIMEOUT_MS = IS_DEV_NETWORK ? 60000 : 15000;
                 let currentAttempt = 0;
                 let currentTimeoutRef: NodeJS.Timeout;
                 let isResolved = false;
