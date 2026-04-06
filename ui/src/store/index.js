@@ -21,7 +21,7 @@ export const useStore = create(
     currentView: 'grid',
     selectedIndex: -1,
     pagination: { page: 1, limit: 16, pages: 1 },
-    nodeConfig: { publicKey: null, signature: null },
+    nodeConfig: { walletAddress: null, publicKey: null, signature: null },
     isModalOpen: false,
     isNodeConfigModalOpen: false,
     isUploadModalOpen: false,

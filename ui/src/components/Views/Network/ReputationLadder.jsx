@@ -66,7 +66,7 @@ const ReputationLadder = ({ peers, error, otherPeers, connectedPeers }) => {
                             <h4>{peer.address} {peer.status === 'self' ? '(You)' : ''}</h4>
                             <div style={{ marginTop: 'auto', paddingTop: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
                                 <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                                    Signature: {peer.signature ? `${peer.signature.substring(0, 32)}...` : 'N/A'}
+                                    Wallet: {peer.walletAddress ? `${peer.walletAddress.substring(0, 10)}...${peer.walletAddress.substring(34)}` : 'N/A'}
                                 </span>
                                 {peer.strikeCount > 0 && (
                                     <span style={{ fontSize: '0.7rem', color: '#f59e0b', fontWeight: 600 }}>

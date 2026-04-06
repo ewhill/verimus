@@ -61,7 +61,7 @@ const BlockModal = () => {
     useEffect(() => {
         if (isModalOpen && selectedBlockHash) {
             const pkg = blocks.find(b => b.hash === selectedBlockHash);
-            const isOwner = nodeConfig && nodeConfig.publicKey === pkg?.publicKey;
+            const isOwner = nodeConfig && nodeConfig.walletAddress === pkg?.signerAddress;
 
             if (pkg?.type === 'STORAGE_CONTRACT' && isOwner && fetchedHashRef.current !== selectedBlockHash) {
                 fetchedHashRef.current = selectedBlockHash;
@@ -115,7 +115,7 @@ const BlockModal = () => {
     };
 
     const date = formatDate(pkg.metadata?.timestamp || pkg.timestamp);
-    const isOwner = nodeConfig && nodeConfig.publicKey === pkg.publicKey;
+    const isOwner = nodeConfig && nodeConfig.walletAddress === pkg.signerAddress;
 
     const renderPayloadHtml = () => {
         if (payloadError) {
@@ -231,8 +231,8 @@ const BlockModal = () => {
                             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '0.5rem 1rem', fontSize: '0.85rem' }}>
                                 <span style={{ color: 'var(--text-muted)' }}>Collateral:</span>
                                 <PropertyValue className="highlight" value={`${block.payload.collateralAmount} VERI`} copyable={false} />
-                                <span style={{ color: 'var(--text-muted)' }}>Operator Key:</span>
-                                <PropertyValue value={block.payload.operatorPublicKey} />
+                                <span style={{ color: 'var(--text-muted)' }}>Operator Address:</span>
+                                <PropertyValue value={block.payload.operatorAddress} />
                                 <span style={{ color: 'var(--text-muted)' }}>Timeline Bound:</span>
                                 <PropertyValue value={`${block.payload.minEpochTimelineDays} Days`} copyable={false} />
                             </div>
@@ -245,7 +245,7 @@ const BlockModal = () => {
                         <div style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
                             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '0.5rem 1rem', fontSize: '0.85rem' }}>
                                 <span style={{ color: 'var(--text-muted)' }}>Penalized Entity:</span>
-                                <PropertyValue value={block.payload.penalizedPublicKey} />
+                                <PropertyValue value={block.payload.penalizedAddress} />
                                 <span style={{ color: 'var(--text-muted)' }}>Burnt Ledger:</span>
                                 <PropertyValue value={`-${block.payload.burntAmount} VERI`} copyable={false} style={{ color: '#ef4444' }} />
                                 <span style={{ color: 'var(--text-muted)' }}>Evidence Sign:</span>
@@ -372,22 +372,8 @@ const BlockModal = () => {
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Timestamp:</span>
                         <PropertyValue value={date} copyable={false} />
 
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', alignSelf: 'center' }}>Public Key:</span>
-                        <button onClick={(e) => {
-                            e.preventDefault();
-                            const blob = new Blob([pkg.publicKey], { type: 'text/plain' });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `public_key_${pkg.hash.substring(0, 8)}.pub`;
-                            a.click();
-                            setTimeout(() => URL.revokeObjectURL(url), 100);
-                        }} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-main)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', width: 'fit-content', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
-                            <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '16px', height: '16px' }}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                            </svg>
-                            Download public_key.pub
-                        </button>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', alignSelf: 'center' }}>Signer Address:</span>
+                        <PropertyValue value={pkg.signerAddress} />
 
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Signature:</span>
                         <div style={{ minWidth: 0, overflow: 'hidden', width: '100%' }}>

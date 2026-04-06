@@ -96,7 +96,7 @@ const ConsensusView = () => {
                                                 {b.type}
                                             </span>
                                         </td>
-                                        <td style={{ padding: '1rem 0.75rem', color: '#e2e8f0' }}>{formatAddress(b.publicKey)}</td>
+                                        <td style={{ padding: '1rem 0.75rem', color: '#e2e8f0' }}>{formatAddress(b.signerAddress)}</td>
                                         <td style={{ padding: '1rem 0.75rem', color: b.verificationsCount > 0 ? '#10b981' : 'var(--text-muted)' }}>
                                             {b.verificationsCount}
                                         </td>

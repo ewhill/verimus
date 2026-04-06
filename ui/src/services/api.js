@@ -11,6 +11,7 @@ const getBaseQueryParams = (state) => {
     return `?page=${page}&limit=${limit}&q=${query}&own=${filterOwn}&sort=${sort}${filterCheckpoints}${addressFragment}`;
 };
 
+/* eslint-disable no-empty, no-unused-vars */
 export const ApiService = {
     activeProxyUrl: '',
 
@@ -27,7 +28,7 @@ export const ApiService = {
                         const data = await res.json();
                         if (data.success && data.peers) allPeers.push(...data.peers);
                     }
-                } catch (e) { }
+                } catch (_unusedE) { }
             }
 
             if (allPeers.length === 0) return;
@@ -38,10 +39,10 @@ export const ApiService = {
                 if (res.ok) {
                     const data = await res.json();
                     if (data.blocks) {
-                        data.blocks.filter(b => b.type === 'STAKING_CONTRACT').forEach(b => stakedValidators.add(b.publicKey));
+                        data.blocks.filter(b => b.type === 'STAKING_CONTRACT').forEach(b => stakedValidators.add(b.signerAddress));
                     }
                 }
-            } catch (e) { }
+            } catch (_unusedE) { }
 
             let bestProxy = '';
             let bestFee = Infinity;
@@ -61,14 +62,14 @@ export const ApiService = {
                             bestProxy = endpoint;
                         }
                     }
-                } catch (e) { }
+                } catch (_unusedE) { }
             }
 
             if (bestProxy) {
                 ApiService.activeProxyUrl = bestProxy;
                 console.log(`Discovered competitive Originator Proxy boundary mapping structurally dynamically: ${bestProxy} at fee ${bestFee}`);
             }
-        } catch (e) { }
+        } catch (_unusedE) { }
     },
 
     fetchBlocks: async (state, dispatch) => {
@@ -180,7 +181,7 @@ export const ApiService = {
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(pending));
                     } catch(e) {}
                 }
-            } catch (e) {
+            } catch (_unusedE) {
                  // check failed, ignore to poll again
             }
         }, 10000);

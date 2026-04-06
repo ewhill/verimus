@@ -1,13 +1,23 @@
+/* eslint-disable no-undef */
 import '@testing-library/jest-dom';
 /** @vitest-environment jsdom */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import PeersView from '../../../src/components/Views/PeersView.jsx';
+import { useStore } from '../../../src/store';
+
+vi.mock('../../../src/store', async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual,
+        useStore: vi.fn(),
+    };
+});
 
 describe('Frontend: PeersView', () => {
     beforeEach(() => {
-        global.fetch = vi.fn();
+        globalThis.fetch = vi.fn();
         
         // mock HTMLCanvasElement.getContext
         HTMLCanvasElement.prototype.getContext = () => ({
@@ -24,6 +34,11 @@ describe('Frontend: PeersView', () => {
         // Mock offsetWidth/offsetHeight
         Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, value: 500 });
         Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 300 });
+
+        useStore.mockImplementation((selector) => {
+            const state = { activePeersTab: 'reputation' };
+            return selector(state);
+        });
     });
 
     it('Simulates canvas peer nodes map mapping API properties', async () => {
@@ -33,10 +48,10 @@ describe('Frontend: PeersView', () => {
             { address: 'peer:3002', status: 'disconnected', signature: 'sigB' }
         ];
 
-        global.fetch.mockResolvedValueOnce({
+        globalThis.fetch.mockResolvedValueOnce({
             json: async () => ({ success: true, peers: mockPeers })
         });
-        global.fetch.mockResolvedValue({
+        globalThis.fetch.mockResolvedValue({
             json: async () => ({ success: true, peers: mockPeers })
         }); // for interval
 
@@ -59,11 +74,11 @@ describe('Frontend: PeersView', () => {
         // Check resize event calling drawNetwork
         fireEvent.resize(window);
         
-        expect(global.fetch).toHaveBeenCalledTimes(1); // Initial
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1); // Initial
     });
 
     it('Validates fallback message gracefully shown during API crashes', async () => {
-        global.fetch.mockRejectedValue(new Error('crash'));
+        globalThis.fetch.mockRejectedValue(new Error('crash'));
         
         render(<PeersView />);
         
@@ -73,7 +88,7 @@ describe('Frontend: PeersView', () => {
     });
 
     it('Signals connection attempts ongoing when discovery node offline', async () => {
-        global.fetch.mockResolvedValueOnce({
+        globalThis.fetch.mockResolvedValueOnce({
             json: async () => ({ success: true, peers: [{ address: 'self', status: 'self' }] })
         });
         
@@ -85,7 +100,7 @@ describe('Frontend: PeersView', () => {
     });
 
     it('Flags isolated network environment accurately visually', async () => {
-        global.fetch.mockResolvedValueOnce({
+        globalThis.fetch.mockResolvedValueOnce({
             json: async () => ({ success: true, peers: [{ address: 'self', status: 'self' }, { address: 'peer2', status: 'disconnected' }] })
         });
         

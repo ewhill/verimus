@@ -21,6 +21,7 @@ export default class PeersHandler extends BaseHandler {
             const pg = mongoPeers.find(p => p.publicKey === pubKey);
             return {
                 address: conn.peerAddress || 'unknown',
+                walletAddress: pg ? pg.operatorAddress : null,
                 signature: pubKey ? Buffer.from(pubKey).toString('base64').slice(-16) : null,
                 status: conn.isConnected ? (conn.isTrusted ? 'connected' : 'upgrading') : 'disconnected',
                 score: pg ? pg.score : 100,
@@ -33,6 +34,7 @@ export default class PeersHandler extends BaseHandler {
         const selfPg = mongoPeers.find(p => p.publicKey === this.node.publicKey);
         const self = {
             address: `127.0.0.1:${this.node.port}`,
+            walletAddress: this.node.walletAddress,
             signature: this.node.publicKey ? Buffer.from(this.node.publicKey).toString('base64').slice(-16) : null,
             status: 'self',
             score: selfPg ? selfPg.score : 100,

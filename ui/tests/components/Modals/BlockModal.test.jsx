@@ -31,12 +31,12 @@ describe('Frontend: BlockModal Component Render Validity', () => {
                 hash: 'hash123', 
                 metadata: { index: 1, timestamp: 1000000 }, 
                 previousHash: 'hash000', 
-                publicKey: 'PUBKEY_OWNER', 
+                signerAddress: '0x123', 
                 signature: 'SIG_XYZ',
                 type: 'STORAGE_CONTRACT'
             }
         ];
-        const mockNodeConfig = { publicKey: 'PUBKEY_OWNER' };
+        const mockNodeConfig = { walletAddress: '0x123' };
 
         useStore.mockImplementation((selector) => {
             const state = {
@@ -54,7 +54,7 @@ describe('Frontend: BlockModal Component Render Validity', () => {
         render(<BlockModal />);
         expect(screen.getByText('Block Details')).toBeDefined();
         expect(screen.getByText('hash123')).toBeDefined();
-        expect(screen.getByText(/Download public_key\.pub/i)).toBeDefined();
+        expect(screen.getByText('Signer Address:')).toBeDefined();
     });
 
     it('Resolves and previews decrypted private payload properties asynchronously for block owners', async () => {
@@ -75,11 +75,11 @@ describe('Frontend: BlockModal Component Render Validity', () => {
             { 
                 hash: 'hash123', 
                 metadata: { index: 1, timestamp: 1000000 }, 
-                publicKey: 'PUBKEY_OTHER',
+                signerAddress: '0xOTHER',
                 type: 'STORAGE_CONTRACT'
             }
         ];
-        const otherConfig = { publicKey: 'PUBKEY_OWNER' };
+        const otherConfig = { walletAddress: '0x123' };
 
         useStore.mockImplementation((selector) => {
             const state = {
@@ -167,11 +167,11 @@ describe('Frontend: BlockModal Component Render Validity', () => {
                     { 
                         hash: 'hash123', 
                         metadata: { index: 1, timestamp: 1000000 }, 
-                        publicKey: 'PUBKEY_OWNER',
+                        signerAddress: '0x123',
                         type: 'STORAGE_CONTRACT'
                     }
                 ],
-                nodeConfig: { publicKey: 'PUBKEY_OWNER' }
+                nodeConfig: { walletAddress: '0x123' }
             };
             return selector(state);
         });
