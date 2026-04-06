@@ -63,7 +63,7 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
              await node.loadOwnedBlocksCache();
              // Mock peer initialization for controlled connectivity mapping
              const mockPeer = {
-                  trustedPeers: [],
+                  peers: [],
                   broadcast: async () => {},
                   bind: () => ({ to: () => {} }),
                   close: async () => {}

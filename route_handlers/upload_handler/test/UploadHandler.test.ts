@@ -117,7 +117,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             peer: createMock<Peer>({
                 broadcast: async () => { },
                 // @ts-ignore
-                trustedPeers: [{}]
+                peers: [{}]
             }),
             reputationManager: createMock<ReputationManager>({
                 penalizeMajor: async () => null
@@ -194,7 +194,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             }),
             peer: createMock<Peer>({
                 // @ts-ignore
-                trustedPeers: [{}]
+                peers: [{}]
             })
         });
         const proxyBody = await generateMockProxyPayload('batch');
@@ -269,7 +269,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             peer: createMock<Peer>({
                 broadcast: async () => { },
                 // @ts-ignore
-                trustedPeers: [{}]
+                peers: [{}]
             }),
             reputationManager: createMock<ReputationManager>({
                 penalizeMajor: async (_unusedPeerId: string, _unusedReason: string) => null
@@ -372,7 +372,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             peer: createMock<Peer>({
                 broadcast: async () => { },
                 // @ts-ignore
-                trustedPeers: [{}]
+                peers: [{}]
             }),
             reputationManager: createMock<ReputationManager>({
                 penalizeMajor: async (_unusedPeerId: string, _unusedReason: string) => null
@@ -478,7 +478,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             peer: createMock<Peer>({
                 broadcast: async () => { },
                 // @ts-ignore
-                trustedPeers: [{}]
+                peers: [{}]
             }),
             events: createMock<EventEmitter>({
                 once: (evt: string | symbol, cb: (..._unusedArgs: unknown[]) => void): EventEmitter => {

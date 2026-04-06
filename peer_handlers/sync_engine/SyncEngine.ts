@@ -472,119 +472,122 @@ class SyncEngine {
 
     async performInitialSync() {
         if (!this.node.peer) return;
-        if (this.node.peer.trustedPeers.length === 0) return;
+        if (this.node.peer.peers.length === 0) return;
         if (this.isSyncing) return;
 
         this.isSyncing = true;
         this._chainStatusResponses = [];
 
-        logger.info(`[Peer ${this.node.port}] Initiating Core Ledger Sync mapped across ${this.node.peer.trustedPeers.length} active network hosts...`);
-        let localLatest = await this.node.ledger.getLatestBlock();
+        try {
+            logger.info(`[Peer ${this.node.port}] Initiating Core Ledger Sync mapped across ${this.node.peer.peers.length} active network hosts...`);
+            let localLatest = await this.node.ledger.getLatestBlock();
 
-        this.node.peer.broadcast(new ChainStatusRequestMessage()).catch(err => {
-            logger.warn(`[Peer ${this.node.port}] Chain sync broadcast exception ignored: ${err.message}`);
-        });
+            this.node.peer.broadcast(new ChainStatusRequestMessage()).catch(err => {
+                logger.warn(`[Peer ${this.node.port}] Chain sync broadcast exception ignored: ${err.message}`);
+            });
 
-        await new Promise(resolve => setTimeout(resolve, 3000));
+            await new Promise(resolve => setTimeout(resolve, 3000));
 
-        const indexCounts: Record<number, { count: number, peers: PeerConnection[], hash: string }> = {};
-        let highestConsensusIndex = -1;
-        // let _highestConsensusHash: string | null = null;
-        let highestConsensusPeers: PeerConnection[] = [];
+            const indexCounts: Record<number, { count: number, peers: PeerConnection[], hash: string }> = {};
+            let highestConsensusIndex = -1;
+            // let _highestConsensusHash: string | null = null;
+            let highestConsensusPeers: PeerConnection[] = [];
 
-        for (const res of this._chainStatusResponses) {
-            const k = res.latestIndex;
-            if (!indexCounts[k]) indexCounts[k] = { count: 0, peers: [], hash: res.latestHash };
-            indexCounts[k].count++;
-            indexCounts[k].peers.push(res.connection);
-        }
+            for (const res of this._chainStatusResponses) {
+                const k = res.latestIndex;
+                if (!indexCounts[k]) indexCounts[k] = { count: 0, peers: [], hash: res.latestHash };
+                indexCounts[k].count++;
+                indexCounts[k].peers.push(res.connection);
+            }
 
-        const responderCount = this._chainStatusResponses.length;
-        if (responderCount > 0) {
-            for (const key in indexCounts) {
-                const data = indexCounts[key];
-                const index = parseInt(key, 10);
-                if (data.count >= Math.ceil(responderCount / 2)) {
-                    if (index > highestConsensusIndex) {
-                        highestConsensusIndex = index;
-                        // highestConsensusHash = data.hash;
-                        highestConsensusPeers = data.peers;
+            const responderCount = this._chainStatusResponses.length;
+            if (responderCount > 0) {
+                for (const key in indexCounts) {
+                    const data = indexCounts[key];
+                    const index = parseInt(key, 10);
+                    if (data.count >= Math.ceil(responderCount / 2)) {
+                        if (index > highestConsensusIndex) {
+                            highestConsensusIndex = index;
+                            // highestConsensusHash = data.hash;
+                            highestConsensusPeers = data.peers;
+                        }
                     }
                 }
             }
-        }
 
-        const isLocalValid = await this.node.ledger.isChainValid();
-        if (!isLocalValid) {
-            logger.warn(`[Peer ${this.node.port}] Critical internal hash misalignment detected! Wiping local blockchain entirely resetting zero bounds...`);
-            await this.node.ledger.purgeChain();
-            localLatest = await this.node.ledger.getLatestBlock();
-        }
+            const isLocalValid = await this.node.ledger.isChainValid();
+            if (!isLocalValid) {
+                logger.warn(`[Peer ${this.node.port}] Critical internal hash misalignment detected! Wiping local blockchain entirely resetting zero bounds...`);
+                await this.node.ledger.purgeChain();
+                localLatest = await this.node.ledger.getLatestBlock();
+            }
 
-        if (highestConsensusIndex > localLatest.metadata.index) {
-            logger.info(`[Peer ${this.node.port}] Synchronizing missing payload layers: ${localLatest.metadata.index + 1} -> ${highestConsensusIndex}`);
+            if (highestConsensusIndex > localLatest.metadata.index) {
+                logger.info(`[Peer ${this.node.port}] Synchronizing missing payload layers: ${localLatest.metadata.index + 1} -> ${highestConsensusIndex}`);
 
-            for (let i = localLatest.metadata.index + 1; i <= highestConsensusIndex; i++) {
-                this._blockSyncResponses = new Map();
-                const validNetworkNodes = highestConsensusPeers;
+                for (let i = localLatest.metadata.index + 1; i <= highestConsensusIndex; i++) {
+                    this._blockSyncResponses = new Map();
+                    const validNetworkNodes = highestConsensusPeers;
 
-                if (validNetworkNodes.length === 0) {
-                    logger.error(`[Peer ${this.node.port}] Dropping sync synchronization loop over null majority counts!`);
-                    break;
-                }
-
-                let primaryHostConnection = validNetworkNodes[i % validNetworkNodes.length];
-                primaryHostConnection.send(new BlockSyncRequestMessage({ index: i }));
-
-                let verifyHostConnection: any = null;
-                if (validNetworkNodes.length >= 2) {
-                    verifyHostConnection = validNetworkNodes[(i + 1) % validNetworkNodes.length];
-                    verifyHostConnection.send(new BlockSyncRequestMessage({ index: i }));
-                }
-
-                await new Promise(resolve => setTimeout(resolve, 2000));
-
-                const mainBlock = this._blockSyncResponses.get(`${i}_${primaryHostConnection.peerAddress}`);
-                const secondaryBlock = verifyHostConnection ? this._blockSyncResponses.get(`${i}_${verifyHostConnection.peerAddress}`) : null;
-
-                if (!mainBlock) {
-                    logger.error(`[Peer ${this.node.port}] Sync stalling upon missing block chunk ${i}! Provider node timed tracking loop down!`);
-                    break;
-                }
-
-                if (verifyHostConnection && secondaryBlock) {
-                    if (mainBlock.hash !== secondaryBlock.hash) {
-                        logger.error(`[Peer ${this.node.port}] Blockchain Validator Collision! Provider[${primaryHostConnection.peerAddress}] and Validator[${verifyHostConnection.peerAddress}] returned conflicting branches crossing block ${i}. Nullifying routine!`);
+                    if (validNetworkNodes.length === 0) {
+                        logger.error(`[Peer ${this.node.port}] Dropping sync synchronization loop over null majority counts!`);
                         break;
                     }
+
+                    let primaryHostConnection = validNetworkNodes[i % validNetworkNodes.length];
+                    primaryHostConnection.send(new BlockSyncRequestMessage({ index: i }));
+
+                    let verifyHostConnection: any = null;
+                    if (validNetworkNodes.length >= 2) {
+                        verifyHostConnection = validNetworkNodes[(i + 1) % validNetworkNodes.length];
+                        verifyHostConnection.send(new BlockSyncRequestMessage({ index: i }));
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+
+                    const mainBlock = this._blockSyncResponses.get(`${i}_${primaryHostConnection.peerAddress}`);
+                    const secondaryBlock = verifyHostConnection ? this._blockSyncResponses.get(`${i}_${verifyHostConnection.peerAddress}`) : null;
+
+                    if (!mainBlock) {
+                        logger.error(`[Peer ${this.node.port}] Sync stalling upon missing block chunk ${i}! Provider node timed tracking loop down!`);
+                        break;
+                    }
+
+                    if (verifyHostConnection && secondaryBlock) {
+                        if (mainBlock.hash !== secondaryBlock.hash) {
+                            logger.error(`[Peer ${this.node.port}] Blockchain Validator Collision! Provider[${primaryHostConnection.peerAddress}] and Validator[${verifyHostConnection.peerAddress}] returned conflicting branches crossing block ${i}. Nullifying routine!`);
+                            break;
+                        }
+                    }
+
+                    const clonedBlock = { ...mainBlock };
+                    delete clonedBlock.hash;
+                    delete (clonedBlock as any)._id;
+
+                    const structuralPrevious = await this.node.ledger.getLatestBlock();
+
+                    if (cryptoUtils.hashData(JSON.stringify(clonedBlock)) !== mainBlock.hash || mainBlock.previousHash !== structuralPrevious.hash) {
+                        logger.error(`[Peer ${this.node.port}] Dropping invalid mathematical cryptographic sync index ${i}!`);
+                        break;
+                    }
+
+                    await this.node.ledger.addBlockToChain(mainBlock);
+                    logger.info(`[Peer ${this.node.port}] Mathematical verification successful appending block [${i}] from source ${primaryHostConnection.peerAddress}`);
+                    
+                    let mainPubKey = primaryHostConnection.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
+                    if (mainPubKey) {
+                        await this.node.reputationManager.rewardValidSync(mainPubKey);
+                    }
                 }
-
-
-                const clonedBlock = { ...mainBlock };
-                delete clonedBlock.hash;
-                delete (clonedBlock as any)._id;
-
-                const structuralPrevious = await this.node.ledger.getLatestBlock();
-
-                if (cryptoUtils.hashData(JSON.stringify(clonedBlock)) !== mainBlock.hash || mainBlock.previousHash !== structuralPrevious.hash) {
-                    logger.error(`[Peer ${this.node.port}] Dropping invalid mathematical cryptographic sync index ${i}!`);
-                    break;
-                }
-
-                await this.node.ledger.addBlockToChain(mainBlock);
-                logger.info(`[Peer ${this.node.port}] Mathematical verification successful appending block [${i}] from source ${primaryHostConnection.peerAddress}`);
-                
-                let mainPubKey = primaryHostConnection.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
-                if (mainPubKey) {
-                    await this.node.reputationManager.rewardValidSync(mainPubKey);
-                }
+            } else {
+                logger.info(`[Peer ${this.node.port}] Mathematical consensus fully synchronized scaling network bounds globally up to speed!`);
             }
-        } else {
-            logger.info(`[Peer ${this.node.port}] Mathematical consensus fully synchronized scaling network bounds globally up to speed!`);
+        } catch (error: any) {
+            logger.error(`[Peer ${this.node.port}] initial sync unexpectedly crashed avoiding lock: ${error.stack || error.message}`);
+        } finally {
+            logger.info(`[Peer ${this.node.port}] Completing Active Sync - Processing Buffer Arrays spanning [${this.syncBuffer.length} objects] intercepted`);
+            this.isSyncing = false;
         }
-
-        logger.info(`[Peer ${this.node.port}] Completing Active Sync - Processing Buffer Arrays spanning [${this.syncBuffer.length} objects] intercepted`);
-        this.isSyncing = false;
 
         const tempNativeQueue = [...this.syncBuffer];
         this.syncBuffer = [];

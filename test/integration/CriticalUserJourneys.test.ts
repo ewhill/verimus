@@ -68,7 +68,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
                         }, 10);
                     }
                 };
-                Object.defineProperty(node.peer, 'trustedPeers', { get: () => ['mock'] });
+                Object.defineProperty(node.peer, 'peers', { get: () => ['mock'] });
                 Object.assign(node.peer, { request: async () => ({}) });
             }
             node.consensusEngine.walletManager.verifyFunds = async () => true;
@@ -179,7 +179,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
             formDataPayload.append('ownerSignature', signature);
             formDataPayload.append('timestamp', timestamp);
 
-            const response = await fetch(`${baseUrl}/api/upload?trustedPeers=`, {
+            const response = await fetch(`${baseUrl}/api/upload?peers=`, {
                 method: 'POST',
                 body: formDataPayload
             });

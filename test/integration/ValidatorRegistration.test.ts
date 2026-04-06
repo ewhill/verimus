@@ -1,6 +1,6 @@
 import { mkdtempSync, rmSync } from 'fs';
 import assert from 'node:assert';
-import test, { describe, it } from 'node:test';
+import { describe, it } from 'node:test';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
@@ -10,8 +10,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { BLOCK_TYPES, EPOCH_LENGTH } from '../../constants';
 import { generateRSAKeyPair } from '../../crypto_utils/CryptoUtils';
 import PeerNode from '../../peer_node/PeerNode';
-import { NodeRole } from '../../types/NodeRole';
 import { createSignedMockBlock } from '../../test/utils/EIP712Mock';
+import { NodeRole } from '../../types/NodeRole';
 
 describe('Integration: On-Chain Validator Registry Transitions', () => {
 
@@ -37,7 +37,7 @@ describe('Integration: On-Chain Validator Registry Transitions', () => {
             await (node as any).loadOwnedBlocksCache?.();
             Object.assign(node, { 
                 peer: {
-                    trustedPeers: [],
+                    peers: [],
                     broadcast: async () => {},
                     bind: () => ({ to: () => {} }),
                     close: async () => {}

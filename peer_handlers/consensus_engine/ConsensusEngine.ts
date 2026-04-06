@@ -435,7 +435,7 @@ class ConsensusEngine {
                 this.handleAdoptFork(forkId, finalTipHash, { peerAddress: `127.0.0.1:${this.node.port}` } as PeerConnection);
 
                 const msg = new AdoptForkMessage({ forkId, finalTipHash });
-                if (this.node.peer && this.node.peer.trustedPeers.length > 0) {
+                if (this.node.peer && this.node.peer.peers.length > 0) {
                     this.node.peer.broadcast(msg).catch(err => {
                         logger.warn(`[Peer ${this.node.port}] Suppressed consensus adoption broadcast exception: ${err.message}`);
                     });

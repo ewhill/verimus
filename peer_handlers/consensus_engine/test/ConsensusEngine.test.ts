@@ -50,7 +50,7 @@ describe('Backend: ConsensusEngine Integrity', () => {
                 blockAddedSubscribers: []
             }),
             peer: createMock<any>({
-                trustedPeers: [{ peerAddress: '127.0.0.1:3001', send: () => { } }] as any,
+                peers: [{ peerAddress: '127.0.0.1:3001', send: () => { } }] as any,
                 broadcast: mock.fn<() => Promise<void>>(async () => { }) as any,
                 bind: mock.fn<() => void>() as any
             }),

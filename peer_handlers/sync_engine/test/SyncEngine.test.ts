@@ -38,7 +38,7 @@ describe('Backend: SyncEngine Integrity', () => {
                 }
             }),
             peer: createMock<any>({
-                trustedPeers: ['127.0.0.1:3001'],
+                peers: ['127.0.0.1:3001'],
                 bind: () => ({ to: () => { } }),
                 broadcast: async () => { }
             })

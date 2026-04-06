@@ -67,7 +67,7 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
         node.signature = fs.readFileSync('keys/peer_26780.peer.signature', 'utf8');
 
         const mockPeer = {
-            trustedPeers: [{ id: 'mock-test' }],
+            peers: [{ id: 'mock-test' }],
             broadcast: async (msg: any) => {
                 if (msg.name === 'VerifyHandoffRequestMessage') {
                     setTimeout(() => {

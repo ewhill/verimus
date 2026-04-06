@@ -91,9 +91,9 @@ async function runManualTest() {
 
     // Network Setup
     while (
-        (node1.peer?.trustedPeers?.length || 0) < 2 || 
-        (node2.peer?.trustedPeers?.length || 0) < 2 || 
-        (node3.peer?.trustedPeers?.length || 0) < 2
+        (node1.peer?.peers?.length || 0) < 2 || 
+        (node2.peer?.peers?.length || 0) < 2 || 
+        (node3.peer?.peers?.length || 0) < 2
     ) {
         await new Promise(r => setTimeout(r, 500));
     }
@@ -147,9 +147,9 @@ async function runManualTest() {
 
         console.log("\n--- 5. Simulating Network Partition (Phase 3 Resilience) ---");
         // Isolate Node 3
-        Object.assign(node3.peer || {}, { trustedPeers: [] });
-        Object.assign(node1.peer || {}, { trustedPeers: ['127.0.0.1:26781'] });
-        Object.assign(node2.peer || {}, { trustedPeers: ['127.0.0.1:26780'] });
+        Object.assign(node3.peer || {}, { peers: [] });
+        Object.assign(node1.peer || {}, { peers: ['127.0.0.1:26781'] });
+        Object.assign(node2.peer || {}, { peers: ['127.0.0.1:26780'] });
         
         const rogueForm = new FormData();
         rogueForm.append('files', Buffer.from('Byzantine attack payload'), { filename: 'attack.txt' });
