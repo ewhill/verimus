@@ -353,6 +353,9 @@ class ConsensusEngine {
                 const latestBlock = await this.node.ledger.getLatestBlock();
                 const currentTip = latestBlock && latestBlock.hash ? latestBlock.hash.slice(0, 16) : '0'.repeat(16);
                 if (currentTip !== tipConstraint) {
+                    const existingFork = this.mempool.eligibleForks.get(forkId);
+                    if (existingFork && existingFork.adopted) return;
+
                     logger.warn(`[Peer ${this.node.port}] REJECTED ProposeFork because tip mismatch! currentTip: ${currentTip}, constraint: ${tipConstraint}`);
                     if (this.node.syncEngine) {
                         this.node.syncEngine.syncBuffer.push({ type: 'ProposeFork', forkId, blockIds, connection });
@@ -453,6 +456,9 @@ class ConsensusEngine {
                 const latestBlock = await this.node.ledger.getLatestBlock();
                 const currentTip = latestBlock && latestBlock.hash ? latestBlock.hash.slice(0, 16) : '0'.repeat(16);
                 if (currentTip !== tipConstraint) {
+                    const existingSettled = this.mempool.settledForks.get(forkId);
+                    if (existingSettled && existingSettled.finalTipHash === finalTipHash) return;
+
                     if (this.node.syncEngine) {
                         this.node.syncEngine.syncBuffer.push({ type: 'AdoptFork', forkId, finalTipHash, connection });
                         this.node.syncEngine.performInitialSync().catch(() => { });
@@ -592,12 +598,21 @@ class ConsensusEngine {
                 }
             }
 
-            for (const bId of forkEntry.blockIds) {
+            for (let i = 0; i < forkEntry.blockIds.length; i++) {
+                const bId = forkEntry.blockIds[i];
                 const pEntry = this.mempool.pendingBlocks.get(bId);
+                const computedBlock = forkEntry.computedBlocks[i];
+                
                 if (pEntry) {
                     pEntry.committed = true;
                     // CRITICAL FIX: To prevent endless 6 pending blocks anomaly, natively cleanse the queue natively mapped explicitly preventing lingering memory references.
                     this.mempool.pendingBlocks.delete(bId);
+                    
+                    if (computedBlock) {
+                        pEntry.block.hash = computedBlock.hash;
+                        pEntry.block.metadata = computedBlock.metadata;
+                    }
+                    
                     this.node.events.emit(`settled:${bId}`, pEntry.block);
                 }
             }
@@ -644,28 +659,30 @@ class ConsensusEngine {
         const challengeString = `${contractId}-${latestBlockHash}-${intervalBucket}`;
         const challengeHashHex = crypto.createHash('sha256').update(challengeString).digest('hex');
 
-        let closestId = this.node.publicKey;
-        const selfHashHex = crypto.createHash('sha256').update(this.node.publicKey).digest('hex');
+        const cleanSelfId = this.node.publicKey ? this.node.publicKey.trim() : '';
+        let closestId = cleanSelfId;
+        const selfHashHex = crypto.createHash('sha256').update(cleanSelfId).digest('hex');
         let minDistance = this.computeXORDistance(challengeHashHex, selfHashHex);
 
         if (this.node.peer && this.node.peer.peers) {
             for (const p of this.node.peer.peers) {
-                const pubKey = p.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
-                if (pubKey) {
+                const pubKeyRaw = p.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
+                if (pubKeyRaw) {
+                    const cleanPeerId = pubKeyRaw.trim();
                     if (IS_DEV_NETWORK) {
-                        logger.info(`[Auditor Eval ${this.node.port}] Node self=[${this.node.publicKey.length}], peer=[${pubKey.length}]. Identical bounds: ${this.node.publicKey.trim() === pubKey.trim()}`);
+                        logger.info(`[Auditor Eval ${this.node.port}] Node self=[${cleanSelfId.length}], peer=[${cleanPeerId.length}]. Identical bounds: ${cleanSelfId === cleanPeerId}`);
                     }
-                    const peerHashHex = crypto.createHash('sha256').update(pubKey).digest('hex');
+                    const peerHashHex = crypto.createHash('sha256').update(cleanPeerId).digest('hex');
                     const distance = this.computeXORDistance(challengeHashHex, peerHashHex);
                     if (this.isSmallerDistance(distance, minDistance)) {
                         minDistance = distance;
-                        closestId = pubKey;
+                        closestId = cleanPeerId;
                     }
                 }
             }
         }
 
-        return closestId === this.node.publicKey;
+        return closestId === cleanSelfId;
     }
 
     async runGlobalAudit() {
