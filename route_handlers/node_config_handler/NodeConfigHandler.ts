@@ -8,6 +8,7 @@ export default class NodeConfigHandler extends BaseHandler {
     async handle(_unusedReq: Request, res: Response) {
         res.json({
             success: true,
+            walletAddress: this.node.walletAddress,
             publicKey: this.node.publicKey,
             signature: this.node.signature,
             port: this.node.port,

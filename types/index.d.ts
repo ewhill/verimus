@@ -17,6 +17,7 @@ export interface Validator {
 
 export interface PeerReputation {
     operatorAddress: string;
+    publicKey?: string;
     score: number;
     strikeCount: number;
     isBanned: boolean;

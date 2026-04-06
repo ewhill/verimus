@@ -53,20 +53,22 @@ export default class WalletManager {
 
         if (block.type === BLOCK_TYPES.TRANSACTION) {
             const p = block.payload as TransactionPayload;
+            const txAmt = BigInt(p.amount);
             if (p.senderAddress !== ethers.ZeroAddress) {
-                await this.applyBalanceDelta(p.senderAddress, -p.amount, balances);
+                await this.applyBalanceDelta(p.senderAddress, -txAmt, balances);
             }
             if (p.recipientAddress !== ethers.ZeroAddress) {
-                await this.applyBalanceDelta(p.recipientAddress, p.amount, balances);
+                await this.applyBalanceDelta(p.recipientAddress, txAmt, balances);
             }
         } else if (block.type === BLOCK_TYPES.STORAGE_CONTRACT) {
             const p = block.payload as StorageContractPayload;
             if (activeContracts) {
                 await activeContracts.updateOne({ contractId: block.hash }, { $set: { payload: p, signerAddress: this.getAddressSafe(block.signerAddress) } }, { upsert: true });
             }
-            const escrowToDeduct = p.remainingEgressEscrow ?? p.allocatedEgressEscrow ?? 0n;
+            const escrowToDeductStr = p.remainingEgressEscrow ?? p.allocatedEgressEscrow ?? 0n;
+            const escrowToDeduct = BigInt(escrowToDeductStr);
             if (escrowToDeduct > 0n && p.ownerAddress) {
-                const feeRateBasis = p.brokerFeePercentage ?? 100n; // default 1% (100 basis points)
+                const feeRateBasis = p.brokerFeePercentage ? BigInt(p.brokerFeePercentage) : 100n; // default 1% (100 basis points)
                 const _findersFeeRaw = (escrowToDeduct * feeRateBasis) / 10000n;
                 const findersFee = _findersFeeRaw === 0n ? 1n : _findersFeeRaw;
                 const totalCost = escrowToDeduct + findersFee;
@@ -85,25 +87,28 @@ export default class WalletManager {
             }
         } else if (block.type === BLOCK_TYPES.STAKING_CONTRACT) {
             const p = block.payload as StakingContractPayload;
-            if (p.collateralAmount > 0n) {
-                await this.applyBalanceDelta(p.operatorAddress, -p.collateralAmount, balances);
+            const colAmt = BigInt(p.collateralAmount);
+            if (colAmt > 0n) {
+                await this.applyBalanceDelta(p.operatorAddress, -colAmt, balances);
             }
         } else if (block.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
             const p = block.payload as SlashingPayload;
-            if (p.burntAmount > 0n) {
-                await this.applyBalanceDelta(p.penalizedAddress, -p.burntAmount, balances);
+            const burnAmt = BigInt(p.burntAmount);
+            if (burnAmt > 0n) {
+                await this.applyBalanceDelta(p.penalizedAddress, -burnAmt, balances);
                 if (activeValidators) {
                     await activeValidators.deleteOne({ validatorAddress: p.penalizedAddress });
                 }
             }
         } else if (block.type === BLOCK_TYPES.VALIDATOR_REGISTRATION) {
             const p = block.payload as import('../types').ValidatorRegistrationPayload;
-            if (p.action === 'STAKE' && p.stakeAmount > 0n) {
-                await this.applyBalanceDelta(p.validatorAddress, -p.stakeAmount, balances);
+            const stakeAmt = BigInt(p.stakeAmount);
+            if (p.action === 'STAKE' && stakeAmt > 0n) {
+                await this.applyBalanceDelta(p.validatorAddress, -stakeAmt, balances);
                 if (activeValidators) {
                     await activeValidators.updateOne(
                         { validatorAddress: p.validatorAddress },
-                        { $set: { stakeAmount: p.stakeAmount.toString() } },
+                        { $set: { stakeAmount: stakeAmt.toString() } },
                         { upsert: true }
                     );
                 }
@@ -213,7 +218,8 @@ export default class WalletManager {
         if (!block || !block.payload) return;
 
         const p = block.payload as StorageContractPayload;
-        const currentRemaining = p.remainingEgressEscrow ?? p.allocatedEgressEscrow ?? 0n;
+        const currentRemainingStr = p.remainingEgressEscrow ?? p.allocatedEgressEscrow ?? 0n;
+        const currentRemaining = BigInt(currentRemainingStr);
 
         const diff = currentRemaining - calculatedCost;
         const newRemaining = diff < 0n ? 0n : diff;

@@ -768,7 +768,7 @@ class ConsensusEngine {
 
                 const auditId = contractHash;
                 const MAX_RETRIES = 3; // attempt 0 to max strikes
-                const BASE_TIMEOUT_MS = IS_DEV_NETWORK ? 60000 : 15000;
+                const BASE_TIMEOUT_MS = 15000;
                 let currentAttempt = 0;
                 let currentTimeoutRef: NodeJS.Timeout;
                 let isResolved = false;

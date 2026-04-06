@@ -28,13 +28,13 @@ describe('ContractsHandler', () => {
         const mockReq = createMock<Request>({ query: {} });
 
         const mockNode = createMock<PeerNode>({
-            publicKey: 'hostPeer',
+            walletAddress: 'hostPeer',
             ledger: createMock<Ledger>({
                 activeContractsCollection: {
                     find: mock.fn<any>(() => ({
                         toArray: mock.fn<any>(async () => [
-                            { contractId: 'c1', publicKey: 'originatorA', payload: { fragmentMap: [{ nodeId: 'hostPeer' }] } },
-                            { contractId: 'c2', publicKey: 'originatorB', payload: { fragmentMap: [{ nodeId: 'peerX' }] } }
+                            { contractId: 'c1', signerAddress: 'originatorA', payload: { fragmentMap: [{ nodeId: 'hostPeer' }] } },
+                            { contractId: 'c2', signerAddress: 'originatorB', payload: { fragmentMap: [{ nodeId: 'peerX' }] } }
                         ])
                     }))
                 } as any
@@ -72,13 +72,13 @@ describe('ContractsHandler', () => {
         const mockReq = createMock<Request>({ query: { own: 'true' } });
 
         const mockNode = createMock<PeerNode>({
-            publicKey: 'hostPeer',
+            walletAddress: 'hostPeer',
             ledger: createMock<Ledger>({
                 activeContractsCollection: {
                     find: mock.fn<any>(() => ({
                         toArray: mock.fn<any>(async () => [
-                            { contractId: 'c1', publicKey: 'originatorA', payload: { fragmentMap: [{ nodeId: 'hostPeer' }] } },
-                            { contractId: 'c2', publicKey: 'originatorB', payload: { fragmentMap: [{ nodeId: 'peerX' }] } }
+                            { contractId: 'c1', signerAddress: 'hostPeer', payload: { fragmentMap: [{ nodeId: 'hostPeer' }] } },
+                            { contractId: 'c2', signerAddress: 'originatorB', payload: { fragmentMap: [{ nodeId: 'peerX' }] } }
                         ])
                     }))
                 } as any

@@ -13,11 +13,11 @@ export default class ContractsHandler extends BaseHandler {
 
             // Transform mappings to emphasize node allocation visually via the structural bounds
             const formattedContracts = activeContracts.map(doc => {
-                const isLocalHost = doc.payload?.fragmentMap?.some((f: any) => f.nodeId === this.node.publicKey) || false;
+                const isLocalHost = doc.payload?.fragmentMap?.some((f: any) => f.nodeId === this.node.walletAddress) || false;
 
                 return {
                     contractId: doc.contractId,
-                    originator: doc.publicKey,
+                    originator: doc.signerAddress,
                     payload: doc.payload,
                     isLocalHost,
                     localActive: isLocalHost && req.query.own === 'true'
@@ -25,7 +25,7 @@ export default class ContractsHandler extends BaseHandler {
             });
 
             const filteredContracts = req.query.own === 'true' 
-                ? formattedContracts.filter(c => c.isLocalHost || c.originator === this.node.publicKey)
+                ? formattedContracts.filter(c => c.isLocalHost || c.originator === this.node.walletAddress)
                 : formattedContracts;
 
             return res.status(200).json({
