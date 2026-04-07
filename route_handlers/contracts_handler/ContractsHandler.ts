@@ -13,8 +13,17 @@ export default class ContractsHandler extends BaseHandler {
             const limit = parseInt((req.query.limit as string) || '10', 10);
             const skip = Math.max(0, (page - 1) * limit);
 
-            const total = await this.node.ledger.activeContractsCollection.countDocuments({});
-            const activeContracts = await this.node.ledger.activeContractsCollection.find({}).skip(skip).limit(limit).toArray();
+            const query: any = {};
+            if (req.query.q) {
+                const search = req.query.q as string;
+                query.$or = [
+                    { contractId: { $regex: new RegExp(search, 'i') } },
+                    { signerAddress: { $regex: new RegExp(search, 'i') } }
+                ];
+            }
+
+            const total = await this.node.ledger.activeContractsCollection.countDocuments(query);
+            const activeContracts = await this.node.ledger.activeContractsCollection.find(query).skip(skip).limit(limit).toArray();
 
             // Transform mappings to emphasize node allocation visually via the structural bounds
             const formattedContracts = activeContracts.map(doc => {
