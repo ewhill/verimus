@@ -126,7 +126,10 @@ export const ApiService = {
             const res = await fetch(`${ApiService.activeProxyUrl}/api/node/auth`);
             const currentState = useStore.getState().nodeConfig || {};
             dispatch({ type: 'SET_NODE_CONFIG', payload: { ...currentState, isAdmin: res.ok } });
-        } catch(e) {}
+        } catch(e) {
+            const currentState = useStore.getState().nodeConfig || {};
+            dispatch({ type: 'SET_NODE_CONFIG', payload: { ...currentState, isAdmin: false } });
+        }
     },
 
     fetchPrivatePayload: async (hash, optionalHeaders = null) => {

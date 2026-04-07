@@ -600,6 +600,10 @@ class SyncEngine {
                 await this.node.consensusEngine.handleProposeFork(evt.forkId!, evt.blockIds!, evt.connection);
             }
         }
+        
+        // CRITICAL FIX: Awaken the consensus engine properly preventing deferred blocks from hanging indefinitely
+        // if the buffer array happened to be barren during `isSyncing` boolean toggles organically natively.
+        this.node.consensusEngine._checkAndProposeFork().catch(() => {});
     }
 }
 

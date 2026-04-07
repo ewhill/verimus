@@ -30,7 +30,7 @@ export default function setupExpressApp(peerNode: PeerNode) {
 
     const checkAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
         const ip = req.ip || req.socket.remoteAddress || '';
-        
+
         if ((ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') && IS_DEV_NETWORK) {
             return next();
         }

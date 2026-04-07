@@ -139,6 +139,13 @@ describe('Backend: SyncEngine Integrity', () => {
         // let blockAdded = false;
         (mockNode.ledger as any).addBlockToChain = async (_unusedB: any) => { };
 
+        mockNode.consensusEngine = createMock<any>({
+            handlePendingBlock: async () => { },
+            handleAdoptFork: async () => { },
+            handleProposeFork: async () => { },
+            _checkAndProposeFork: async () => { }
+        });
+
         try {
             await syncEngine.performInitialSync();
         } finally {
@@ -190,11 +197,10 @@ describe('Backend: SyncEngine Integrity', () => {
         });
 
         // Buffer queue handling
-        // let _pbHandled = false;
-        // let _afHandled = false;
         mockNode.consensusEngine = createMock<any>({
             handlePendingBlock: async () => { },
-            handleAdoptFork: async () => { }
+            handleAdoptFork: async () => { },
+            _checkAndProposeFork: async () => { }
         });
 
         await syncEngine.performInitialSync();
@@ -217,7 +223,8 @@ describe('Backend: SyncEngine Integrity', () => {
         let afHandled = false;
         mockNode.consensusEngine = createMock<any>({
             handlePendingBlock: async () => { pbHandled = true; },
-            handleAdoptFork: async () => { afHandled = true; }
+            handleAdoptFork: async () => { afHandled = true; },
+            _checkAndProposeFork: async () => { }
         });
 
         const originalSetTimeout = global.setTimeout;
@@ -262,6 +269,13 @@ describe('Backend: SyncEngine Integrity', () => {
             }
         });
 
+        mockNode.consensusEngine = createMock<any>({
+            handlePendingBlock: async () => { },
+            handleAdoptFork: async () => { },
+            handleProposeFork: async () => { },
+            _checkAndProposeFork: async () => { }
+        });
+
         await syncEngine.performInitialSync();
         global.setTimeout = originalSetTimeout;
         assert.strictEqual(syncEngine.isSyncing, false);
@@ -300,6 +314,13 @@ describe('Backend: SyncEngine Integrity', () => {
                     syncEngine['_blockSyncResponses'].set('2_addr1', Object.assign(createMockBlock('invalidHash'), { metadata: { index: 2 }, previousHash: computedHash1 }));
                     cb(); return originalSetTimeout(() => { }, 0);
                 }
+            });
+
+            mockNode.consensusEngine = createMock<any>({
+                handlePendingBlock: async () => { },
+                handleAdoptFork: async () => { },
+                handleProposeFork: async () => { },
+                _checkAndProposeFork: async () => { }
             });
 
             await syncEngine.performInitialSync();

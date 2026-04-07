@@ -2,7 +2,6 @@ import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
 import type { Block } from '../../../types';
-import { createMock } from '../../../test/utils/TestUtils';
 import { BlockSyncResponseMessage } from '../BlockSyncResponseMessage';
 
 describe('Messages: BlockSyncResponseMessage', () => {

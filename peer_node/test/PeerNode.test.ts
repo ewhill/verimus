@@ -8,7 +8,6 @@ import Bundler from '../../bundler/Bundler';
 import type { PeerCredentials } from '../../credential_provider/CredentialProvider';
 import type Ledger from '../../ledger/Ledger';
 import Mempool from '../../models/mempool/Mempool';
-import type { Peer } from '../../p2p';
 import BaseProvider from '../../storage_providers/base_provider/BaseProvider';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
 import { createMock } from '../../test/utils/TestUtils';
