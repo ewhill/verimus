@@ -90,6 +90,14 @@ class ConsensusEngine {
              await this.mempoolManager.handlePendingBlock(block, { peerAddress: '127.0.0.1:0' } as any, Date.now());
         });
 
+        this.node.events.on('AUDITOR:REWARD_GENERATED', async (block: any) => {
+             await this.mempoolManager.handlePendingBlock(block, { peerAddress: '127.0.0.1:0' } as any, Date.now());
+        });
+
+        this.node.events.on('AUDITOR:SLASHING_GENERATED', async (block: any) => {
+             await this.mempoolManager.handlePendingBlock(block, { peerAddress: '127.0.0.1:0' } as any, Date.now());
+        });
+
         // Map decoupled SyncEngine thresholds natively back towards the local memory routers
         this.node.events.on('SYNC_PHASE_COMPLETE', async (evt: any) => {
             if (evt.type === 'PendingBlock') {

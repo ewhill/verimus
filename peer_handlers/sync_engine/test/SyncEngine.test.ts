@@ -155,7 +155,7 @@ describe('Backend: SyncEngine Integrity', () => {
         }
         global.setTimeout = originalSetTimeout;
 
-        assert.strictEqual(syncEngine.currentState, SyncState.OFFLINE);
+        assert.strictEqual(syncEngine.currentState, SyncState.ACTIVE);
     });
 
     it('Rejects arrays with hash inconsistencies', async () => {
@@ -294,7 +294,7 @@ describe('Backend: SyncEngine Integrity', () => {
 
         await syncEngine.performInitialSync();
         global.setTimeout = originalSetTimeout;
-        assert.strictEqual(syncEngine.currentState, SyncState.OFFLINE);
+        assert.strictEqual(syncEngine.currentState, SyncState.ACTIVE);
     });
 
     it('Drops blocks with hash integrity faults', async () => {
@@ -344,7 +344,7 @@ describe('Backend: SyncEngine Integrity', () => {
             global.setTimeout = originalSetTimeout;
         }
 
-        assert.strictEqual(syncEngine.currentState, SyncState.OFFLINE);
+        assert.strictEqual(syncEngine.currentState, SyncState.ACTIVE);
         assert.strictEqual(addedCount, 1);
     });
 

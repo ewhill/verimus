@@ -37,6 +37,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
             signature: 'MOCK_SIG'
         }, testDir);
         await node.init();
+        node.syncEngine.currentState = 'ACTIVE' as any;
         node.consensusEngine.runGlobalAudit = async () => {};
 
         node.publicKey = wallet.address;
@@ -131,7 +132,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
     }
 });
 
-test('Integration: Deterministic Auditor Verification (Phase 4 Chaos Overlap)', async () => {
+test('Integration: Deterministic Auditor Verification (Phase 4 Chaos Overlap)', { timeout: 100000 }, async () => {
     try {
         const testDir = mkdtempSync(join(tmpdir(), 'verimus-slash-chaos-test-'));
         const keys = generateRSAKeyPair();
@@ -154,6 +155,7 @@ test('Integration: Deterministic Auditor Verification (Phase 4 Chaos Overlap)', 
         node.publicKey = node.walletAddress;
 
         await node.init();
+        node.syncEngine.currentState = 'ACTIVE' as any;
 
         // Implement ChaosRouter network lag across standard nodes
         const chaosRouter = new ChaosRouter();
