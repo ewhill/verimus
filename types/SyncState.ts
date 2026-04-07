@@ -1,0 +1,6 @@
+export enum SyncState {
+    OFFLINE = 'OFFLINE',
+    SYNCING_HEADERS = 'SYNCING_HEADERS',
+    SYNCING_BLOCKS = 'SYNCING_BLOCKS',
+    ACTIVE = 'ACTIVE'
+}

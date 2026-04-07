@@ -17,6 +17,7 @@ class Ledger {
     balancesCollection: Collection<any> | null;
     activeContractsCollection: Collection<any> | null;
     activeValidatorsCollection: Collection<Validator> | null;
+    orphanBlocksCollection: Collection<any> | null;
     activeValidatorCountCache: number = 0;
     events: EventEmitter;
     public blockAddedSubscribers: ((block: Block) => Promise<void>)[] = [];
@@ -36,6 +37,7 @@ class Ledger {
         this.balancesCollection = null;
         this.activeContractsCollection = null;
         this.activeValidatorsCollection = null;
+        this.orphanBlocksCollection = null;
         this.events = new EventEmitter();
     }
 
@@ -48,6 +50,7 @@ class Ledger {
         this.balancesCollection = this.db.collection('balances');
         this.activeContractsCollection = this.db.collection('activeContracts');
         this.activeValidatorsCollection = this.db.collection('activeValidators');
+        this.orphanBlocksCollection = this.db.collection('orphanBlocks');
 
         // Enforce strict mathematical sequence indexing to prevent silent ledger race bounds mapping identical heights 
         await this.collection.createIndex({ "metadata.index": 1 }, { unique: true });
@@ -100,6 +103,7 @@ class Ledger {
         await this.balancesCollection!.deleteMany({});
         await this.activeContractsCollection!.deleteMany({});
         await this.activeValidatorsCollection!.deleteMany({});
+        await this.orphanBlocksCollection!.deleteMany({});
 
         const genesisBlocks = this.createGenesisBlocks() as unknown as Array<Block & { _id: string }>;
         genesisBlocks[0]._id = genesisBlocks[0].hash!;

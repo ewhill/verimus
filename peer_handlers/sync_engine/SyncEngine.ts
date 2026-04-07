@@ -18,6 +18,7 @@ import { VerifyHandoffResponseMessage } from '../../messages/verify_handoff_resp
 import PeerNode from '../../peer_node/PeerNode';
 import type { Block, PeerConnection } from '../../types';
 import { NodeRole } from '../../types/NodeRole';
+import { SyncState } from '../../types/SyncState';
 
 export interface SyncBufferEvent {
     type: 'PendingBlock' | 'AdoptFork' | 'ProposeFork';
@@ -42,8 +43,7 @@ export interface ChainStatusResponse {
 
 class SyncEngine {
     node: PeerNode;
-    isSyncing: boolean;
-    syncBuffer: SyncBufferEvent[];
+    currentState: SyncState;
     _chainStatusResponses: { latestIndex: number, latestHash: string, connection: PeerConnection }[];
     _blockSyncResponses: Map<string, Block>;
     spamTracker: Map<string, number[]>;
@@ -57,12 +57,16 @@ class SyncEngine {
 
     constructor(node: PeerNode) {
         this.node = node;
-        this.isSyncing = false;
-        this.syncBuffer = [];
+        this.currentState = SyncState.OFFLINE;
         this._chainStatusResponses = [];
         this._blockSyncResponses = new Map();
         this.spamTracker = new Map();
         this.activeStorageMarkets = new Map();
+    }
+
+    transitionState(newState: SyncState) {
+        logger.info(`[Peer ${this.node.port}] SyncEngine State Transition: ${this.currentState} -> ${newState}`);
+        this.currentState = newState;
     }
 
     bindHandlers() {
@@ -162,7 +166,7 @@ class SyncEngine {
     }
 
     async handleChainStatusResponse(latestIndex: number, latestHash: string, connection: PeerConnection) {
-        if (this.isSyncing && this._chainStatusResponses) {
+        if (this.currentState !== SyncState.OFFLINE && this._chainStatusResponses) {
             this._chainStatusResponses.push({ latestIndex, latestHash, connection });
         }
     }
@@ -175,7 +179,7 @@ class SyncEngine {
     }
 
     async handleBlockSyncResponse(block: Block, connection: PeerConnection) {
-        if (this.isSyncing && this._blockSyncResponses) {
+        if (this.currentState !== SyncState.OFFLINE && this._blockSyncResponses) {
             const key = `${block.metadata.index}_${connection.peerAddress}`;
             this._blockSyncResponses.set(key, block);
         }
@@ -473,9 +477,9 @@ class SyncEngine {
     async performInitialSync() {
         if (!this.node.peer) return;
         if (this.node.peer.peers.length === 0) return;
-        if (this.isSyncing) return;
+        if (this.currentState !== SyncState.OFFLINE) return;
 
-        this.isSyncing = true;
+        this.transitionState(SyncState.SYNCING_HEADERS);
         this._chainStatusResponses = [];
 
         try {
@@ -523,6 +527,7 @@ class SyncEngine {
             }
 
             if (highestConsensusIndex > localLatest.metadata.index) {
+                this.transitionState(SyncState.SYNCING_BLOCKS);
                 logger.info(`[Peer ${this.node.port}] Synchronizing missing payload layers: ${localLatest.metadata.index + 1} -> ${highestConsensusIndex}`);
 
                 for (let i = localLatest.metadata.index + 1; i <= highestConsensusIndex; i++) {
@@ -585,22 +590,19 @@ class SyncEngine {
         } catch (error: any) {
             logger.error(`[Peer ${this.node.port}] initial sync unexpectedly crashed avoiding lock: ${error.stack || error.message}`);
         } finally {
-            logger.info(`[Peer ${this.node.port}] Completing Active Sync - Processing Buffer Arrays spanning [${this.syncBuffer.length} objects] intercepted`);
-            this.isSyncing = false;
+            logger.info(`[Peer ${this.node.port}] Completing Active Sync - Processing Buffer Arrays mapped natively`);
+            this.transitionState(SyncState.ACTIVE);
         }
 
-        const tempNativeQueue = [...this.syncBuffer];
-        this.syncBuffer = [];
-        for (const evt of tempNativeQueue) {
-            if (evt.type === 'PendingBlock') {
-                await this.node.consensusEngine.handlePendingBlock(evt.block!, evt.connection, evt.timestamp!);
-            } else if (evt.type === 'AdoptFork') {
-                await this.node.consensusEngine.handleAdoptFork(evt.forkId!, evt.finalTipHash!, evt.connection);
-            } else if (evt.type === 'ProposeFork') {
-                await this.node.consensusEngine.handleProposeFork(evt.forkId!, evt.blockIds!, evt.connection);
+        const orphansCursor = this.node.ledger.orphanBlocksCollection?.find().sort({ timestamp: 1 });
+        if (orphansCursor) {
+            for await (const evt of orphansCursor) {
+                this.node.events.emit('SYNC_PHASE_COMPLETE', evt);
             }
+            await this.node.ledger.orphanBlocksCollection?.deleteMany({});
         }
-        
+
+        this.transitionState(SyncState.OFFLINE);
         // CRITICAL FIX: Awaken the consensus engine properly preventing deferred blocks from hanging indefinitely
         // if the buffer array happened to be barren during `isSyncing` boolean toggles organically natively.
         this.node.consensusEngine._checkAndProposeFork().catch(() => {});

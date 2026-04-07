@@ -12,6 +12,7 @@ import type PeerNode from '../../../peer_node/PeerNode';
 import { createMock } from '../../../test/utils/TestUtils';
 import type { Block, PeerConnection } from '../../../types';
 import { NodeRole } from '../../../types/NodeRole';
+import { SyncState } from '../../../types/SyncState';
 import SyncEngine from '../SyncEngine';
 
 const createMockBlock = (hash: string, pk: string = 'pk'): Block => ({
@@ -41,7 +42,8 @@ describe('Backend: SyncEngine Integrity', () => {
                 peers: ['127.0.0.1:3001'],
                 bind: () => ({ to: () => { } }),
                 broadcast: async () => { }
-            })
+            }),
+            events: new EventEmitter() as any
         });
         syncEngine = new SyncEngine(mockNode);
     });
@@ -64,7 +66,7 @@ describe('Backend: SyncEngine Integrity', () => {
     });
 
     it('Evaluates chain status pointers and peer heights', async () => {
-        syncEngine.isSyncing = true;
+        syncEngine.transitionState(SyncState.SYNCING_HEADERS);
         const mockConnection: import('../../../types').PeerConnection = { peerAddress: '127.0.0.1:3001', send: () => { } };
         await syncEngine.handleChainStatusResponse(10, 'remoteHash', mockConnection);
         assert.strictEqual(syncEngine._chainStatusResponses.length, 1);
@@ -86,7 +88,7 @@ describe('Backend: SyncEngine Integrity', () => {
     });
 
     it('Archives remotely retrieved blocks to ledger', async () => {
-        syncEngine.isSyncing = true;
+        syncEngine.transitionState(SyncState.SYNCING_BLOCKS);
         const mockBlock = createMockBlock('newHash12');
         mockBlock.metadata.index = 12;
         const mockConnection: PeerConnection = { peerAddress: '127.0.0.1:3001', send: () => { } };
@@ -97,7 +99,7 @@ describe('Backend: SyncEngine Integrity', () => {
     });
 
     it('Drops unsolicited block responses', async () => {
-        syncEngine.isSyncing = false;
+        syncEngine.currentState = SyncState.OFFLINE;
         const mockBlock = createMockBlock('newHash12');
         mockBlock.metadata.index = 12;
         const mockConnection: PeerConnection = { peerAddress: '127.0.0.1:3001', send: () => { } };
@@ -153,7 +155,7 @@ describe('Backend: SyncEngine Integrity', () => {
         }
         global.setTimeout = originalSetTimeout;
 
-        assert.strictEqual(syncEngine.isSyncing, false);
+        assert.strictEqual(syncEngine.currentState, SyncState.OFFLINE);
     });
 
     it('Rejects arrays with hash inconsistencies', async () => {
@@ -187,10 +189,15 @@ describe('Backend: SyncEngine Integrity', () => {
                 syncEngine._chainStatusResponses = [
                     { latestIndex: 10, latestHash: 'h10', connection: mockConn1 }
                 ];
-                syncEngine['syncBuffer'] = [
-                    { type: 'PendingBlock', block: createMockBlock('buff1'), connection: mockConn1, timestamp: 123 },
-                    { type: 'AdoptFork', forkId: 'f1', finalTipHash: 'h1', connection: mockConn1 }
-                ];
+                (mockNode.ledger as any).orphanBlocksCollection = {
+                    deleteMany: async () => {},
+                    find: () => ({
+                        sort: () => [
+                            { type: 'PendingBlock', block: createMockBlock('buff1'), connection: mockConn1, timestamp: 123 },
+                            { type: 'AdoptFork', forkId: 'f1', finalTipHash: 'h1', connection: mockConn1 }
+                        ]
+                    })
+                };
                 cb();
                 return originalSetTimeout(() => { }, 0);
             }
@@ -221,9 +228,13 @@ describe('Backend: SyncEngine Integrity', () => {
 
         let pbHandled = false;
         let afHandled = false;
+        
+        mockNode.events.on('SYNC_PHASE_COMPLETE', (evt: any) => {
+            if (evt.type === 'PendingBlock') pbHandled = true;
+            if (evt.type === 'AdoptFork') afHandled = true;
+        });
+
         mockNode.consensusEngine = createMock<any>({
-            handlePendingBlock: async () => { pbHandled = true; },
-            handleAdoptFork: async () => { afHandled = true; },
             _checkAndProposeFork: async () => { }
         });
 
@@ -231,10 +242,15 @@ describe('Backend: SyncEngine Integrity', () => {
         Object.assign(global, {
             setTimeout: (cb: Function) => {
                 syncEngine._chainStatusResponses = [{ latestIndex: 10, latestHash: 'h10', connection: mockConn1 }];
-                syncEngine['syncBuffer'] = [
-                    { type: 'PendingBlock', block: createMockBlock('buff-handled'), connection: mockConn1, timestamp: 123 },
-                    { type: 'AdoptFork', forkId: 'f1', finalTipHash: 'h1', connection: mockConn1 }
-                ];
+                (mockNode.ledger as any).orphanBlocksCollection = {
+                    deleteMany: async () => {},
+                    find: () => ({
+                         sort: () => [
+                             { type: 'PendingBlock', block: createMockBlock('buff-handled'), connection: mockConn1, timestamp: 123 },
+                             { type: 'AdoptFork', forkId: 'f1', finalTipHash: 'h1', connection: mockConn1 }
+                         ]
+                    })
+                };
                 cb();
                 return originalSetTimeout(() => { }, 0);
             }
@@ -278,7 +294,7 @@ describe('Backend: SyncEngine Integrity', () => {
 
         await syncEngine.performInitialSync();
         global.setTimeout = originalSetTimeout;
-        assert.strictEqual(syncEngine.isSyncing, false);
+        assert.strictEqual(syncEngine.currentState, SyncState.OFFLINE);
     });
 
     it('Drops blocks with hash integrity faults', async () => {
@@ -328,7 +344,7 @@ describe('Backend: SyncEngine Integrity', () => {
             global.setTimeout = originalSetTimeout;
         }
 
-        assert.strictEqual(syncEngine.isSyncing, false);
+        assert.strictEqual(syncEngine.currentState, SyncState.OFFLINE);
         assert.strictEqual(addedCount, 1);
     });
 

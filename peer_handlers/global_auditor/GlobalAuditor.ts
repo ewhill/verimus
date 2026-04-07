@@ -10,6 +10,7 @@ import logger from '../../logger/Logger';
 import { MerkleProofChallengeRequestMessage } from '../../messages/merkle_proof_challenge_request_message/MerkleProofChallengeRequestMessage';
 import PeerNode from '../../peer_node/PeerNode';
 import type { Block, StorageContractPayload, SlashingPayload } from '../../types';
+import { SyncState } from '../../types/SyncState';
 import KeyedMutex from '../../utils/KeyedMutex';
 import WalletManager from '../../wallet_manager/WalletManager';
 
@@ -120,7 +121,8 @@ class GlobalAuditor {
     }
 
     async runGlobalAudit() {
-        if (this.node.syncEngine && this.node.syncEngine.isSyncing) return;
+        // Suspend audits natively preventing starvation mappings while bootstrapping
+        if (this.node.syncEngine && this.node.syncEngine.currentState !== SyncState.OFFLINE) return;
 
         const latestBlock = await this.node.ledger.getLatestBlock();
         const latestBlockHash = latestBlock && latestBlock.hash ? latestBlock.hash : 'genesis_hash';

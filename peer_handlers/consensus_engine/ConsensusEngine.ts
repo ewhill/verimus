@@ -89,6 +89,17 @@ class ConsensusEngine {
         this.node.events.on('NETWORK:INBOUND_PENDING_BLOCK', async (block: any) => {
              await this.mempoolManager.handlePendingBlock(block, { peerAddress: '127.0.0.1:0' } as any, Date.now());
         });
+
+        // Map decoupled SyncEngine thresholds natively back towards the local memory routers
+        this.node.events.on('SYNC_PHASE_COMPLETE', async (evt: any) => {
+            if (evt.type === 'PendingBlock') {
+                await this.mempoolManager.handlePendingBlock(evt.block!, evt.connection, evt.timestamp!);
+            } else if (evt.type === 'AdoptFork') {
+                await this.bftCoordinator.handleAdoptFork(evt.forkId!, evt.finalTipHash!, evt.connection);
+            } else if (evt.type === 'ProposeFork') {
+                await this.bftCoordinator.handleProposeFork(evt.forkId!, evt.blockIds!, evt.connection);
+            }
+        });
     }
 }
 

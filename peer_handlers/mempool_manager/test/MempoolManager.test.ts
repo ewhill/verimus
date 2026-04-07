@@ -94,7 +94,7 @@ describe('MempoolManager', () => {
             ledger: mockLedger,
             reputationManager: mockReputation,
             events: new EventEmitter(),
-            syncEngine: { isSyncing: false } as any,
+            syncEngine: { currentState: 'OFFLINE' } as any,
             walletAddress: 'ignored',
             getMajorityCount: mock.fn(() => 1) as any
         });

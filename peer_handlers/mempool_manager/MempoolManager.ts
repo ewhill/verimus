@@ -8,6 +8,7 @@ import { PendingBlockMessage } from '../../messages/pending_block_message/Pendin
 import Mempool from '../../models/mempool/Mempool';
 import PeerNode from '../../peer_node/PeerNode';
 import type { Block, PeerConnection, TransactionPayload, StorageContractPayload, SlashingPayload, CheckpointStatePayload } from '../../types';
+import { SyncState } from '../../types/SyncState';
 import KeyedMutex from '../../utils/KeyedMutex';
 
 class MempoolManager {
@@ -29,8 +30,8 @@ class MempoolManager {
         try {
             hydrateBlockBigInts(block);
 
-            if (this.node.syncEngine && this.node.syncEngine.isSyncing) {
-                this.node.syncEngine.syncBuffer.push({ type: 'PendingBlock', block, connection, timestamp: headerTimestamp });
+            if (this.node.syncEngine && this.node.syncEngine.currentState !== SyncState.OFFLINE) {
+                await this.node.ledger.orphanBlocksCollection?.insertOne({ type: 'PendingBlock', block, connection, timestamp: headerTimestamp });
                 return;
             }
 

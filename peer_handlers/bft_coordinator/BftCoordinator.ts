@@ -9,7 +9,8 @@ import { ProposeForkMessage } from '../../messages/propose_fork_message/ProposeF
 import { VerifyBlockMessage } from '../../messages/verify_block_message/VerifyBlockMessage';
 import Mempool from '../../models/mempool/Mempool';
 import PeerNode from '../../peer_node/PeerNode';
-import type { Block, CheckpointStatePayload, PeerConnection } from '../../types';
+import type { Block, PeerConnection, CheckpointStatePayload } from '../../types';
+import { SyncState } from '../../types/SyncState';
 import KeyedMutex from '../../utils/KeyedMutex';
 
 class BftCoordinator {
@@ -105,7 +106,7 @@ class BftCoordinator {
     }
 
     async _checkAndProposeFork() {
-        if (this.node.syncEngine && this.node.syncEngine.isSyncing) return;
+        if (this.node.syncEngine && this.node.syncEngine.currentState !== SyncState.OFFLINE) return;
 
         const eligibleBlockIds: string[] = [];
         for (const [bId, pEntry] of this.mempool.pendingBlocks.entries()) {
@@ -167,8 +168,8 @@ class BftCoordinator {
     async handleProposeFork(forkId: string, blockIds: string[], connection: PeerConnection) {
         const release = await this.mutex.acquire(forkId);
         try {
-            if (this.node.syncEngine && this.node.syncEngine.isSyncing) {
-                this.node.syncEngine.syncBuffer.push({ type: 'ProposeFork', forkId, blockIds, connection });
+            if (this.node.syncEngine && this.node.syncEngine.currentState !== SyncState.OFFLINE) {
+                await this.node.ledger.orphanBlocksCollection?.insertOne({ type: 'ProposeFork', forkId, blockIds, connection });
                 return;
             }
 
@@ -181,7 +182,7 @@ class BftCoordinator {
                     if (existingFork && existingFork.adopted) return;
 
                     if (this.node.syncEngine) {
-                        this.node.syncEngine.syncBuffer.push({ type: 'ProposeFork', forkId, blockIds, connection });
+                        await this.node.ledger.orphanBlocksCollection?.insertOne({ type: 'ProposeFork', forkId, blockIds, connection });
                         this.node.syncEngine.performInitialSync().catch(() => { });
                     }
                     return;
@@ -272,8 +273,8 @@ class BftCoordinator {
     async handleAdoptFork(forkId: string, finalTipHash: string, connection: PeerConnection) {
         const release = await this.mutex.acquire(forkId);
         try {
-            if (this.node.syncEngine && this.node.syncEngine.isSyncing) {
-                this.node.syncEngine.syncBuffer.push({ type: 'AdoptFork', forkId, finalTipHash, connection });
+            if (this.node.syncEngine && this.node.syncEngine.currentState !== SyncState.OFFLINE) {
+                await this.node.ledger.orphanBlocksCollection?.insertOne({ type: 'AdoptFork', forkId, finalTipHash, connection });
                 return;
             }
 
@@ -286,7 +287,7 @@ class BftCoordinator {
                     if (existingSettled && existingSettled.finalTipHash === finalTipHash) return;
 
                     if (this.node.syncEngine) {
-                        this.node.syncEngine.syncBuffer.push({ type: 'AdoptFork', forkId, finalTipHash, connection });
+                        await this.node.ledger.orphanBlocksCollection?.insertOne({ type: 'AdoptFork', forkId, finalTipHash, connection });
                         this.node.syncEngine.performInitialSync().catch(() => { });
                     }
                     return;

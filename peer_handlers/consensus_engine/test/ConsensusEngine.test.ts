@@ -47,7 +47,7 @@ describe('Backend: ConsensusEngine Integration Pipeline', () => {
                 bind: mock.fn<() => any>(() => ({ to: mock.fn() })),
                 broadcast: mock.fn<() => Promise<void>>(async () => {})
             } as any,
-            syncEngine: { isSyncing: false } as any,
+            syncEngine: { currentState: 'OFFLINE' } as any,
             reputationManager: createMock<any>({ 
                 penalizeCritical: mock.fn<() => Promise<void>>(async () => {}),
                 penalizeMajor: mock.fn<() => Promise<void>>(async () => {}),
