@@ -128,12 +128,12 @@ npm test
 ## Abstract Directory Architecture
 
 - `index.ts`: Unified node initialization injecting explicitly modeled modular route handlers and storage drivers.
-- `peerNode.ts`: State machine coordinating asynchronous lifecycle logic traversing decentralized architectures properly mapping natively cleanly utilizing cleanly distinct sub-engines:
-  - `syncEngine/`: Event-driven state machine managing peer discovery and network history replication smoothly navigating `discovery`, `blocks`, and `mempool` sync phases seamlessly without deadlocks.
-  - `consensusEngine/`: Modularized block orchestration utilizing deeply decoupled sub-components organically seamlessly:
-    - **GlobalAuditor**: Deterministic verifiable proofs natively identifying Byzantine bounds properly cleanly isolating mathematically verifiable faults dynamically natively objectively structurally optimally reliably organically implicitly efficiently explicitly smoothly properly faithfully fully securely resolving bounds safely natively.
-    - **MempoolManager**: Asynchronous queue organically processing validated boundaries mapping limits efficiently confidently organically properly explicitly effectively smoothly natively efficiently effectively mapped optimally accurately accurately.
-    - **BftCoordinator**: Manages Byzantine Fault Tolerance adoption queues coordinating fork settling correctly properly appropriately mapped safely efficiently cleanly mapped explicitly functionally correctly effectively reliably accurately responsibly explicitly dynamically safely mathematically naturally successfully rationally optimally purely exactly flawlessly completely correctly structurally naturally reliably correctly natively cleanly mapping explicitly smoothly optimally smoothly successfully properly smoothly appropriately.
+- `peerNode.ts`: State machine coordinating asynchronous lifecycle logic bridging Websockets across `syncEngine` and `consensusEngine`:
+  - `syncEngine/`: Event-driven state machine managing peer discovery and network history replication across `discovery`, `blocks`, and `mempool` sync phases.
+  - `consensusEngine/`: Modular block orchestration utilizing decoupled sub-components:
+    - **GlobalAuditor**: Deterministic verifiable proofs identifying Byzantine faults.
+    - **MempoolManager**: Asynchronous queue processing validated transactions.
+    - **BftCoordinator**: Manages Byzantine Fault Tolerance adoption queues coordinating fork settling.
 - `route_handlers/`: Modular API directories bounding handler pipelines:
   - `blocks_handler/`, `files_handler/`, `peers_handler/`, etc.
   - Includes isolated test matrices embedded within `./test/*`

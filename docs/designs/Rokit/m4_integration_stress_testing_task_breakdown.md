@@ -20,14 +20,16 @@ This document outlines the precise developmental tasks required to fully execute
 **Instructions**:
 
 ### 1. In-Memory Asynchronous Chaos Mesh
-- [x] Create `ChaosRouter` utility class in `test/utils/ChaosRouter.ts` implementing explicit interception mapping properties natively.
-- [x] Construct a synthetic `injectJitter(minMs, maxMs)` pipeline mapping execution dynamically seamlessly.
-- [x] Configure forced deterministic drops via `simulatePacketDrop(percentage)` cleanly seamlessly validating robust routing pipelines properly realistically.
+
+- [x] Create `ChaosRouter` utility class in `test/utils/ChaosRouter.ts` implementing explicit interception mapping properties.
+- [x] Construct a synthetic `injectJitter(minMs, maxMs)` pipeline mapping execution dynamically.
+- [x] Configure forced deterministic drops via `simulatePacketDrop(percentage)` validating robust routing pipelines.
 
 ### 2. High-Concurrency Transaction Stress Tests (Phase 3 Integration)
-- [x] Update `LoadStress.test.ts` modifying `simulateLoad` to utilize the `ChaosRouter` structurally mapping overlap perfectly natively seamlessly dynamically globally natively structurally perfectly safely appropriately correctly properly safely confidently actively organically natively properly.
-- [x] Construct an `extreme load bounds` loop rapidly executing overlapping Promise blocks ensuring organic resolution without memory leaks or bounds deadlocking locally.
-- [x] Programmatically assert that all pending blocks submitted into the `ChaosRouter` are flawlessly mined despite deep pipeline overlaps seamlessly natively accurately.
+
+- [x] Update `LoadStress.test.ts` modifying `simulateLoad` to utilize the `ChaosRouter` structurally mapping overlap perfectly.
+- [x] Construct an `extreme load bounds` loop rapidly executing overlapping Promise blocks ensuring resolution without memory leaks or bounds deadlocking.
+- [x] Programmatically assert that all pending blocks submitted into the `ChaosRouter` are flawlessly mined despite deep pipeline overlaps.
 
 ## Task 3: Assert Deterministic Auditor Slashing Exclusivity
 
@@ -37,13 +39,14 @@ This document outlines the precise developmental tasks required to fully execute
 
 - [x] Update `SlashingAndStaking.test.ts` to spin up a mock validator cluster utilizing the active `ChaosRouter` to mimic baseline organic network lag constraints universally across all nodes.
 - [x] Explicitly script exactly one specific mock peer to behave maliciously, explicitly suppressing its organic return pathway for the `MerkleProofChallengeRequestMessage`.
-- [x] Force a full BFT epoch pipeline validation and assert that exactly one `SLASHING_TRANSACTION` is generated dynamically, and it strictly targets only the pre-defined malicious actor. Assert that honest nodes—despite operating under artificial async delays—do not encounter penalty flags.
+- [x] Force a full BFT epoch pipeline validation and assert that exactly one `SLASHING_TRANSACTION` is generated, and it targets the pre-defined malicious actor. Assert that honest nodes do not encounter penalty flags.
 
 ## Task 4: Codebase Documentation & Architecture Parity
 
 **Target Component**: `README.md`
-**Objective**: Finalize Rokit domain documentation to explicitly represent the structural paradigm shift cleanly.
-**Instructions**:
+**Objective**: Finalize Rokit domain documentation to represent the structural paradigm shift.
 
-- [x] Incorporate the new `ChaosRouter` definitions seamlessly into testing documentation limits correctly reliably flawlessly logically sequentially securely optimally perfectly cleanly effectively realistically appropriately.
-- [x] Preemptively update `README.md` core component diagrams fully representing the newly modular decoupled `GlobalAuditor`, `MempoolManager`, and `BftCoordinator` states organically smoothly natively mapped flawlessly properly structurally adequately correctly appropriately accurately appropriately perfectly completely reliably correctly reliably responsibly seamlessly suitably purely flawlessly appropriately reliably responsibly correctly explicitly fully structurally gracefully functionally truthfully explicitly securely flawlessly optimally securely gracefully safely appropriately safely.
+### 4. Finalize Architectural Documentation
+
+- [x] Incorporate the new `ChaosRouter` definitions into testing documentation.
+- [x] Update `README.md` core component diagrams representing the modular decoupled `GlobalAuditor`, `MempoolManager`, and `BftCoordinator` states.

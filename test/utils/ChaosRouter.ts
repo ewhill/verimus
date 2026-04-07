@@ -2,8 +2,8 @@ import logger from '../../logger/Logger';
 import type { PeerConnection } from '../../types';
 
 /**
- * ChaosRouter introduces synthetic asynchrony natively mapping P2P boundaries.
- * Enables rigorous stress testing without external daemon execution natively.
+ * ChaosRouter introduces synthetic asynchrony mapping P2P boundaries.
+ * Enables rigorous stress testing without external daemon execution.
  */
 export class ChaosRouter {
     private minJitterMs: number = 0;
@@ -13,7 +13,7 @@ export class ChaosRouter {
     constructor() {}
 
     /**
-     * Stagger packet delivery randomly mimicking hostile network congestion maps dynamically securely.
+     * Stagger packet delivery randomly mimicking hostile network congestion.
      */
     injectJitter(minMs: number, maxMs: number) {
         this.minJitterMs = minMs;
@@ -21,7 +21,7 @@ export class ChaosRouter {
     }
 
     /**
-     * Randomly returns completely simulating OS level partitioning drop events organically.
+     * Randomly drops packets simulating OS level partitioning drop events.
      */
     injectDropRate(percentage: number) {
         this.dropRatePercentage = Math.max(0, Math.min(100, percentage));
@@ -38,7 +38,7 @@ export class ChaosRouter {
     }
 
     /**
-     * Wraps a raw mock connection intercepting `.send` organically flawlessly smoothly.
+     * Wraps a raw mock connection intercepting `.send`.
      */
     wrapConnection(originalConnection: PeerConnection): PeerConnection {
         return {
@@ -54,8 +54,8 @@ export class ChaosRouter {
                         try {
                             originalConnection.send(msg);
                         } catch (_unusedE) {
-                            // Drop explicitly structurally mapped
-                            logger.warn(`Synthetic chaos partition explicitly dropped msg asynchronously targeting ${originalConnection.peerAddress}`);
+                            // Drop packet
+                            logger.warn(`Synthetic chaos partition dropped msg targeting ${originalConnection.peerAddress}`);
                         }
                     }, jitter);
                 } else {

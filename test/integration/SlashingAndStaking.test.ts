@@ -188,7 +188,7 @@ test('Integration: Deterministic Auditor Verification (Phase 4 Chaos Overlap)', 
                             node!.events.emit(`merkle_audit_response:${req.body.contractId}:${req.body.physicalId}`, {
                                 computedRootMatch: true,
                                 chunkDataBase64: Buffer.from('HONEST_PAYLOAD').toString('base64'),
-                                // Dummy structure sufficient to pass base struct limits conditionally bypassing deeper proofs for mocking organically
+                                // Dummy structure sufficient to pass base struct limits
                                 merkleSiblings: [],
                                 auditorNodeId: node!.walletAddress
                             });
@@ -234,12 +234,12 @@ test('Integration: Deterministic Auditor Verification (Phase 4 Chaos Overlap)', 
             throw e;
         }
 
-        // 75+ seconds max (Exponential P2P backoff natively inside Auditor) - Provide plenty buffer mapping dynamically mapped overlaps
+        // 75+ seconds max (Exponential P2P backoff inside Auditor)
         await new Promise(r => setTimeout(r, 85000));
         
-        // Assertions verifying Deterministic M4 limits structurally explicitly natively cleanly exactly suitably properly reliably correctly flawlessly safely successfully accurately appropriately reliably. Limit superlative usage here.
-        assert.strictEqual(slashCounter, 1, `Expected exactly 1 Slashing transaction generated organically across limits.`);
-        assert.strictEqual(targetingAddress, maliciousNodeId, `Expected Slashing specifically targeting malicious node bounds cleanly explicitly natively properly correctly flawlessly successfully. Limit superlative usage here.`);
+        // Assertions verifying Deterministic M4 limits
+        assert.strictEqual(slashCounter, 1, `Expected exactly 1 Slashing transaction.`);
+        assert.strictEqual(targetingAddress, maliciousNodeId, `Expected Slashing targeting malicious node.`);
         assert.ok(verifySpy > 0, "Spy bypassed strictly.");
 
     } finally {
