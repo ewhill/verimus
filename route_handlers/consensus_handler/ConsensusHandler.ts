@@ -11,8 +11,32 @@ export default class ConsensusHandler extends BaseHandler {
 
             const mempool = this.node.consensusEngine.mempool;
 
-            // Serialize Pending Blocks (convert Map to Array, format safely)
-            const pendingBlocks = Array.from(mempool.pendingBlocks.entries()).map(([hash, entry]) => ({
+            const pendingPage = parseInt((req.query.pendingPage as string) || '1', 10);
+            const forksPage = parseInt((req.query.forksPage as string) || '1', 10);
+            const settledPage = parseInt((req.query.settledPage as string) || '1', 10);
+            const limit = parseInt((req.query.limit as string) || '10', 10);
+
+            const paginateMap = (map: Map<any, any>, page: number, limit: number, mapper: (k: any, v: any) => any) => {
+                const result = [];
+                const startIdx = (page - 1) * limit;
+                const endIdx = page * limit;
+                let idx = 0;
+
+                for (const [key, value] of map.entries()) {
+                    if (idx >= startIdx && idx < endIdx) {
+                        result.push(mapper(key, value));
+                    }
+                    idx++;
+                    if (idx >= endIdx) break; // Terminate iterator physically
+                }
+
+                return {
+                    data: result,
+                    total: map.size
+                };
+            };
+
+            const pendingBlocks = paginateMap(mempool.pendingBlocks, pendingPage, 100, (hash, entry) => ({
                 hash,
                 type: entry.block.type,
                 timestamp: entry.originalTimestamp,
@@ -22,16 +46,14 @@ export default class ConsensusHandler extends BaseHandler {
                 verificationsCount: entry.verifications.size
             }));
 
-            // Serialize Eligible Forks
-            const eligibleForks = Array.from(mempool.eligibleForks.entries()).map(([forkId, entry]) => ({
+            const eligibleForks = paginateMap(mempool.eligibleForks, forksPage, limit, (forkId, entry) => ({
                 forkId,
                 blockCount: entry.blockIds.length,
                 proposalsCount: entry.proposals.size,
                 adopted: entry.adopted || false
             }));
 
-            // Serialize Settled Forks
-            const settledForks = Array.from(mempool.settledForks.entries()).map(([forkId, entry]) => ({
+            const settledForks = paginateMap(mempool.settledForks, settledPage, limit, (forkId, entry) => ({
                 forkId,
                 finalTipHash: entry.finalTipHash,
                 adoptionsCount: entry.adoptions.size,

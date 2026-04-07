@@ -7,7 +7,7 @@ const formatAddress = (str) => {
 };
 
 const ConsensusView = () => {
-    const [mempool, setMempool] = useState({ pendingBlocks: [], eligibleForks: [], settledForks: [] });
+    const [mempool, setMempool] = useState({ pendingBlocks: { data: [], total: 0 }, eligibleForks: { data: [], total: 0 }, settledForks: { data: [], total: 0 } });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [forksPage, setForksPage] = useState(1);
@@ -16,12 +16,12 @@ const ConsensusView = () => {
 
     const fetchMempool = async () => {
         try {
-            const res = await fetch('/api/consensus');
+            const res = await fetch(`/api/consensus?forksPage=${forksPage}&settledPage=${settledPage}&limit=${PAGE_LIMIT}`);
             if (res.status === 401) return; // Wait for auth boundary
             const data = await res.json();
-            
+
             if (!data.success) throw new Error(data.message || 'Consensus metrics API restricted.');
-            
+
             setMempool(data.mempool);
             setError(null);
         } catch (err) {
@@ -36,7 +36,7 @@ const ConsensusView = () => {
         fetchMempool();
         const interval = setInterval(fetchMempool, 3000);
         return () => clearInterval(interval);
-    }, []);
+    }, [forksPage, settledPage]);
 
     if (loading) {
         return (
@@ -60,14 +60,14 @@ const ConsensusView = () => {
 
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-                <MetricCard title="Pending Block Transactions" value={mempool.pendingBlocks.length} color="#3b82f6" />
-                <MetricCard title="Eligible Competing Forks" value={mempool.eligibleForks.length} color="#8b5cf6" />
-                <MetricCard title="Settled Adopted Forks" value={mempool.settledForks.length} color="#10b981" />
+                <MetricCard title="Pending Block Transactions" value={mempool.pendingBlocks.total} color="#3b82f6" />
+                <MetricCard title="Eligible Competing Forks" value={mempool.eligibleForks.total} color="#8b5cf6" />
+                <MetricCard title="Settled Adopted Forks" value={mempool.settledForks.total} color="#10b981" />
             </div>
 
             <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
                 <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', marginBottom: '1.25rem' }}>Pending Block Transactions</h2>
-                {mempool.pendingBlocks.length === 0 ? (
+                {mempool.pendingBlocks.data.length === 0 ? (
                     <p style={{ color: 'var(--text-muted)' }}>Pending trace clean. No stalled bounds.</p>
                 ) : (
                     <div className="table-responsive">
@@ -82,7 +82,7 @@ const ConsensusView = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {mempool.pendingBlocks.map((b, i) => (
+                                {mempool.pendingBlocks.data.map((b, i) => (
                                     <tr key={i} style={{ borderBottom: '1px solid var(--border-light)' }}>
                                         <td style={{ padding: '1rem 0.75rem', fontFamily: 'monospace', color: '#94a3b8' }}>{formatAddress(b.hash)}</td>
                                         <td style={{ padding: '1rem 0.75rem' }}>
@@ -108,12 +108,12 @@ const ConsensusView = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
                 <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
                     <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', marginBottom: '1.25rem' }}>Eligible Network Forks</h2>
-                    {mempool.eligibleForks.length === 0 ? (
+                    {mempool.eligibleForks.data.length === 0 ? (
                         <p style={{ color: 'var(--text-muted)' }}>No localized network segment forks detected.</p>
                     ) : (
                         <>
                             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                {mempool.eligibleForks.slice((forksPage - 1) * PAGE_LIMIT, forksPage * PAGE_LIMIT).map((f, i) => (
+                                {mempool.eligibleForks.data.map((f, i) => (
                                     <li key={i} style={{ background: 'var(--bg-dark)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                             <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Fork ID: {formatAddress(f.forkId)}</span>
@@ -126,11 +126,11 @@ const ConsensusView = () => {
                                     </li>
                                 ))}
                             </ul>
-                            {mempool.eligibleForks.length > PAGE_LIMIT && (
+                            {mempool.eligibleForks.total > PAGE_LIMIT && (
                                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem', gap: '1rem' }}>
                                     <button onClick={() => setForksPage(p => Math.max(1, p - 1))} disabled={forksPage === 1} style={{ background: 'none', border: '1px solid var(--border-light)', color: '#f8fafc', padding: '0.4rem 1rem', borderRadius: '6px', cursor: forksPage === 1 ? 'not-allowed' : 'pointer', opacity: forksPage === 1 ? 0.3 : 0.8, fontSize: '0.85rem' }}>Previous</button>
-                                    <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>Page {forksPage} of {Math.ceil(mempool.eligibleForks.length / PAGE_LIMIT)}</span>
-                                    <button onClick={() => setForksPage(p => Math.min(Math.ceil(mempool.eligibleForks.length / PAGE_LIMIT), p + 1))} disabled={forksPage === Math.ceil(mempool.eligibleForks.length / PAGE_LIMIT)} style={{ background: 'none', border: '1px solid var(--border-light)', color: '#f8fafc', padding: '0.4rem 1rem', borderRadius: '6px', cursor: forksPage === Math.ceil(mempool.eligibleForks.length / PAGE_LIMIT) ? 'not-allowed' : 'pointer', opacity: forksPage === Math.ceil(mempool.eligibleForks.length / PAGE_LIMIT) ? 0.3 : 0.8, fontSize: '0.85rem' }}>Next</button>
+                                    <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>Page {forksPage} of {Math.ceil(mempool.eligibleForks.total / PAGE_LIMIT)}</span>
+                                    <button onClick={() => setForksPage(p => Math.min(Math.ceil(mempool.eligibleForks.total / PAGE_LIMIT), p + 1))} disabled={forksPage === Math.ceil(mempool.eligibleForks.total / PAGE_LIMIT)} style={{ background: 'none', border: '1px solid var(--border-light)', color: '#f8fafc', padding: '0.4rem 1rem', borderRadius: '6px', cursor: forksPage === Math.ceil(mempool.eligibleForks.total / PAGE_LIMIT) ? 'not-allowed' : 'pointer', opacity: forksPage === Math.ceil(mempool.eligibleForks.total / PAGE_LIMIT) ? 0.3 : 0.8, fontSize: '0.85rem' }}>Next</button>
                                 </div>
                             )}
                         </>
@@ -139,12 +139,12 @@ const ConsensusView = () => {
 
                 <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
                     <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', marginBottom: '1.25rem' }}>Settled Integrations</h2>
-                    {mempool.settledForks.length === 0 ? (
+                    {mempool.settledForks.data.length === 0 ? (
                         <p style={{ color: 'var(--text-muted)' }}>Ledger sync cache strictly bounded.</p>
                     ) : (
                         <>
                             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                {mempool.settledForks.slice((settledPage - 1) * PAGE_LIMIT, settledPage * PAGE_LIMIT).map((f, i) => (
+                                {mempool.settledForks.data.map((f, i) => (
                                     <li key={i} style={{ background: 'var(--bg-dark)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', borderLeft: f.committed ? '3px solid #10b981' : '3px solid #3b82f6' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                             <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Fork ID: {formatAddress(f.forkId)}</span>
@@ -156,11 +156,11 @@ const ConsensusView = () => {
                                     </li>
                                 ))}
                             </ul>
-                            {mempool.settledForks.length > PAGE_LIMIT && (
+                            {mempool.settledForks.total > PAGE_LIMIT && (
                                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem', gap: '1rem' }}>
                                     <button onClick={() => setSettledPage(p => Math.max(1, p - 1))} disabled={settledPage === 1} style={{ background: 'none', border: '1px solid var(--border-light)', color: '#f8fafc', padding: '0.4rem 1rem', borderRadius: '6px', cursor: settledPage === 1 ? 'not-allowed' : 'pointer', opacity: settledPage === 1 ? 0.3 : 0.8, fontSize: '0.85rem' }}>Previous</button>
-                                    <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>Page {settledPage} of {Math.ceil(mempool.settledForks.length / PAGE_LIMIT)}</span>
-                                    <button onClick={() => setSettledPage(p => Math.min(Math.ceil(mempool.settledForks.length / PAGE_LIMIT), p + 1))} disabled={settledPage === Math.ceil(mempool.settledForks.length / PAGE_LIMIT)} style={{ background: 'none', border: '1px solid var(--border-light)', color: '#f8fafc', padding: '0.4rem 1rem', borderRadius: '6px', cursor: settledPage === Math.ceil(mempool.settledForks.length / PAGE_LIMIT) ? 'not-allowed' : 'pointer', opacity: settledPage === Math.ceil(mempool.settledForks.length / PAGE_LIMIT) ? 0.3 : 0.8, fontSize: '0.85rem' }}>Next</button>
+                                    <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>Page {settledPage} of {Math.ceil(mempool.settledForks.total / PAGE_LIMIT)}</span>
+                                    <button onClick={() => setSettledPage(p => Math.min(Math.ceil(mempool.settledForks.total / PAGE_LIMIT), p + 1))} disabled={settledPage === Math.ceil(mempool.settledForks.total / PAGE_LIMIT)} style={{ background: 'none', border: '1px solid var(--border-light)', color: '#f8fafc', padding: '0.4rem 1rem', borderRadius: '6px', cursor: settledPage === Math.ceil(mempool.settledForks.total / PAGE_LIMIT) ? 'not-allowed' : 'pointer', opacity: settledPage === Math.ceil(mempool.settledForks.total / PAGE_LIMIT) ? 0.3 : 0.8, fontSize: '0.85rem' }}>Next</button>
                                 </div>
                             )}
                         </>
