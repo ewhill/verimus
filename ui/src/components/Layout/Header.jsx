@@ -84,7 +84,7 @@ const Header = () => {
                         <button className={`segmented-btn ${activeLedgerTab === 'consensus' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Consensus</button>
                     )}
                     {nodeConfig?.roles?.includes('STORAGE') && (
-                        <button className={`segmented-btn ${activeLedgerTab === 'contracts' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Active Contracts</button>
+                        <button className={`segmented-btn ${activeLedgerTab === 'contracts' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Contracts</button>
                     )}
                 </>
             )}
@@ -136,7 +136,7 @@ const Header = () => {
                             <button className={`mobile-nested-item ${activeLedgerTab === 'consensus' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' }); routeTo(e, 'ledger'); }}>Consensus</button>
                         )}
                         {nodeConfig?.roles?.includes('STORAGE') && (
-                            <button className={`mobile-nested-item ${activeLedgerTab === 'contracts' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' }); routeTo(e, 'ledger'); }}>Active Contracts</button>
+                            <button className={`mobile-nested-item ${activeLedgerTab === 'contracts' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' }); routeTo(e, 'ledger'); }}>Contracts</button>
                         )}
                     </div>
                 )}
