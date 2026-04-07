@@ -54,7 +54,7 @@ class MempoolManager {
             delete blockToHash.hash;
             // @ts-ignore
             delete (blockToHash as any)._id;
-            const recalculatedHash = hashData(JSON.stringify(blockToHash));
+            const recalculatedHash = hashData(JSON.stringify(blockToHash, (_, v) => typeof v === 'bigint' ? v.toString() : v));
 
             if (block.hash && block.hash !== recalculatedHash) {
                 logger.info(`[Peer ${this.node.port}] Rejected Hash Mismatch from ${connection.peerAddress}`);

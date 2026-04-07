@@ -16,5 +16,10 @@ export class PendingBlockMessage extends Message {
         else if (options.body?.block !== undefined) this.block = options.body.block;
     }
     get block(): Block { return this.body.block; }
-    set block(value: Block) { this.body = { ...this.body, block: value }; }
+    set block(value: Block) { 
+        this.body = { 
+            ...this.body, 
+            block: JSON.parse(JSON.stringify(value, (_, v) => typeof v === 'bigint' ? v.toString() : v)) 
+        }; 
+    }
 }

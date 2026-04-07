@@ -153,6 +153,19 @@ class BftCoordinator {
                 try {
                     this.activeForkTimeouts.delete(forkId);
                     logger.warn(`[Peer ${this.node.port}] P2P BFT Timeout Triggered for ${forkId.slice(0, 8)}. Demoting stalled proposal implicitly mathematically unlocking chain bounds.`);
+                    
+                    if (tempBlockIds && tempBlockIds.length > 0) {
+                        const bId = tempBlockIds[0];
+                        const pEntry = this.mempool.pendingBlocks.get(bId);
+                        if (pEntry) {
+                            pEntry.strikes = (pEntry.strikes || 0) + 1;
+                            if (pEntry.strikes >= 3) {
+                                logger.error(`[Peer ${this.node.port}] Block ${bId.slice(0,8)} strictly stalled network consensus 3 times. Purging from isolated mempool limits!`);
+                                this.mempool.pendingBlocks.delete(bId);
+                            }
+                        }
+                    }
+
                     this.mempool.eligibleForks.delete(forkId);
                     this.mempool.settledForks.delete(forkId);
                     await this._checkAndProposeFork();

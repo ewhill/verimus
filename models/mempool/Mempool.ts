@@ -6,6 +6,7 @@ export interface PendingBlockEntry {
     originalTimestamp: number;
     eligible?: boolean;
     committed?: boolean;
+    strikes?: number;
 }
 
 export interface ForkEntry {
