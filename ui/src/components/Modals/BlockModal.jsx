@@ -5,45 +5,9 @@ import { ApiService } from '../../services/api';
 import { decryptAndUnzip } from '../../utils/bundler';
 import { decryptAESCore } from '../../utils/web3';
 import * as fflate from 'fflate';
-
-const PropertyValue = ({ value, className = '', copyable = true, style = {} }) => {
-    const [copied, setCopied] = useState(false);
-
-    const handleCopy = (e) => {
-        e.preventDefault();
-        navigator.clipboard.writeText(value);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
-    return (
-        <div style={{ position: 'relative', width: '100%', boxSizing: 'border-box' }}>
-            <pre className={`property-value ${className}`} style={{ ...style, ...(copyable ? { paddingRight: '2.5rem' } : {}) }}>
-                {value}
-            </pre>
-            {copyable && (
-                <button
-                    onClick={handleCopy}
-                    title="Copy to clipboard"
-                    style={{
-                        position: 'absolute', top: '0.35rem', right: '0.35rem',
-                        background: copied ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
-                        border: 'none', color: copied ? 'var(--success)' : 'var(--text-muted)',
-                        cursor: 'pointer', padding: '0.3rem', borderRadius: '4px',
-                        display: 'flex', alignItems: 'center', transition: 'color 0.2s',
-                        zIndex: 2
-                    }}
-                >
-                    {copied ? (
-                        <svg fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" style={{ width: '16px', height: '16px' }}><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
-                    ) : (
-                        <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '16px', height: '16px' }}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" /></svg>
-                    )}
-                </button>
-            )}
-        </div>
-    );
-};
+import PropertyValue from './Payloads/PropertyValue';
+import StorageContractPayload from './Payloads/StorageContractPayload';
+import { TransactionPayload, CheckpointPayload, StakingContractPayload, SlashingTransactionPayload } from './Payloads/GenericPayloads';
 
 const BlockModal = () => {
     const dispatch = useStore(s => s.dispatch);
@@ -116,148 +80,6 @@ const BlockModal = () => {
 
     const date = formatDate(pkg.metadata?.timestamp || pkg.timestamp);
     const isOwner = nodeConfig && nodeConfig.walletAddress === pkg.signerAddress;
-
-    const renderPayloadHtml = () => {
-        if (payloadError) {
-            return <div style={{ padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px dashed #ef4444', color: '#ef4444', fontSize: '0.85rem', textAlign: 'center' }}>Decryption failed: Node is not an authorized recipient.</div>;
-        }
-
-        if (!payloadData) return null;
-
-        const p = payloadData;
-
-        let storageType = 'local';
-        let storagePath = p.location || 'Local Storage';
-        if (typeof p.location === 'object') {
-            storageType = p.location.type || 'Unknown';
-            storagePath = p.location.storageDir || p.location.bucket || p.location.vaultName || p.location.share || p.location.host || p.location.remoteDir || 'Default';
-        }
-
-        return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', display: 'block', marginBottom: '0.75rem' }}>AES-256-GCM Properties</span>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '0.5rem 1rem', fontSize: '0.85rem' }}>
-                        <span style={{ color: 'var(--text-muted)' }}>Key:</span>
-                        <PropertyValue className="success" value={p.key} />
-
-                        <span style={{ color: 'var(--text-muted)' }}>IV:</span>
-                        <PropertyValue className="success" value={p.iv || 'Not designated'} />
-
-                        <span style={{ color: 'var(--text-muted)' }}>Auth Tag:</span>
-                        <PropertyValue className="success" value={p.authTag || 'N/A'} />
-
-                        <span style={{ color: 'var(--text-muted)' }}>Storage Type:</span>
-                        <PropertyValue value={storageType} copyable={false} />
-
-                        <span style={{ color: 'var(--text-muted)' }}>Storage Location:</span>
-                        <PropertyValue value={storagePath} />
-
-                        <span style={{ color: 'var(--text-muted)' }}>Storage Physical ID:</span>
-                        <PropertyValue value={p.physicalId || 'Generic'} />
-                    </div>
-                </div>
-
-                <div>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', display: 'block', marginBottom: '0.75rem' }}>Encrypted Files</span>
-                    {(!p.files || p.files.length === 0) ? (
-                        <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }}>No individual files tracked in payload</div>
-                    ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', padding: '0.5rem', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 'var(--radius-md)' }}>
-                            {p.files.map((f, idx) => (
-                                <div key={idx} style={{ padding: '0.6rem 1rem', borderRadius: 'var(--radius-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="file-row-hover">
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', overflow: 'hidden' }}>
-                                        <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.path}</span>
-                                        <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.contentHash || 'Unknown'}</span>
-                                    </div>
-                                    <button onClick={(e) => handleSingleFileDownload(e, f.path)} className="download-icon-hover" style={{ cursor: 'pointer', padding: '0.3rem', flexShrink: 0, marginLeft: '1rem', background: 'transparent', border: 'none', color: 'inherit' }} title="Decrypt and Download Native Extract">
-                                        <svg fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" style={{ width: '16px', height: '16px' }}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    };
-
-    const renderGenericPayloadHtml = (block) => {
-        if (!block || !block.payload) return <div style={{ color: 'var(--text-muted)' }}>No public payload data available.</div>;
-        
-        switch (block.type) {
-            case 'TRANSACTION':
-                return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <div style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '0.5rem 1rem', fontSize: '0.85rem' }}>
-                                <span style={{ color: 'var(--text-muted)' }}>Sender:</span>
-                                <PropertyValue value={block.payload.senderAddress} />
-                                <span style={{ color: 'var(--text-muted)' }}>Recipient:</span>
-                                <PropertyValue value={block.payload.recipientAddress} />
-                                <span style={{ color: 'var(--text-muted)' }}>Amount:</span>
-                                <PropertyValue className="success" value={`${block.payload.amount} VERI`} copyable={false} />
-                                <span style={{ color: 'var(--text-muted)' }}>Signature:</span>
-                                <PropertyValue value={block.payload.senderSignature} />
-                            </div>
-                        </div>
-                    </div>
-                );
-            case 'CHECKPOINT':
-                return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <div style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '0.5rem 1rem', fontSize: '0.85rem' }}>
-                                <span style={{ color: 'var(--text-muted)' }}>Epoch Bound:</span>
-                                <PropertyValue className="highlight" value={`Epoch #${block.payload.epochIndex}`} copyable={false} />
-                                <span style={{ color: 'var(--text-muted)' }}>Start Hash:</span>
-                                <PropertyValue value={block.payload.startHash} />
-                                <span style={{ color: 'var(--text-muted)' }}>End Hash:</span>
-                                <PropertyValue value={block.payload.endHash} />
-                                <span style={{ color: 'var(--text-muted)' }}>State Root:</span>
-                                <PropertyValue value={block.payload.stateMerkleRoot} />
-                                <span style={{ color: 'var(--text-muted)' }}>Contracts Root:</span>
-                                <PropertyValue value={block.payload.activeContractsMerkleRoot} />
-                            </div>
-                        </div>
-                    </div>
-                );
-            case 'STAKING_CONTRACT':
-                return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <div style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '0.5rem 1rem', fontSize: '0.85rem' }}>
-                                <span style={{ color: 'var(--text-muted)' }}>Collateral:</span>
-                                <PropertyValue className="highlight" value={`${block.payload.collateralAmount} VERI`} copyable={false} />
-                                <span style={{ color: 'var(--text-muted)' }}>Operator Address:</span>
-                                <PropertyValue value={block.payload.operatorAddress} />
-                                <span style={{ color: 'var(--text-muted)' }}>Timeline Bound:</span>
-                                <PropertyValue value={`${block.payload.minEpochTimelineDays} Days`} copyable={false} />
-                            </div>
-                        </div>
-                    </div>
-                );
-            case 'SLASHING_TRANSACTION':
-                return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <div style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '0.5rem 1rem', fontSize: '0.85rem' }}>
-                                <span style={{ color: 'var(--text-muted)' }}>Penalized Entity:</span>
-                                <PropertyValue value={block.payload.penalizedAddress} />
-                                <span style={{ color: 'var(--text-muted)' }}>Burnt Ledger:</span>
-                                <PropertyValue value={`-${block.payload.burntAmount} VERI`} copyable={false} style={{ color: '#ef4444' }} />
-                                <span style={{ color: 'var(--text-muted)' }}>Evidence Sign:</span>
-                                <PropertyValue value={block.payload.evidenceSignature} />
-                            </div>
-                        </div>
-                    </div>
-                );
-            default:
-                return <div style={{ color: 'var(--text-muted)' }}>Unrecognized payload type mappings.</div>;
-        }
-    };
 
     const executeDecryption = async (targetFileName = null) => {
         if (!payloadData || !payloadData.iv) return alert("Payload metrics missing. Cannot map decryption matrices.");
@@ -399,13 +221,21 @@ const BlockModal = () => {
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '2rem', textAlign: 'center', border: '1px dashed var(--border-soft)', borderRadius: 'var(--radius-sm)', width: '100%', boxSizing: 'border-box' }}>
                                             Decrypting network bundle... <div className="spinner" style={{ display: 'inline-block', width: '12px', height: '12px', borderWidth: '2px', marginLeft: '0.5rem' }}></div>
                                         </div>
-                                    ) : renderPayloadHtml()
+                                    ) : <StorageContractPayload payloadData={payloadData} payloadError={payloadError} handleSingleFileDownload={handleSingleFileDownload} />
                                 ) : (
                                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '2rem', background: 'rgba(0,0,0,0.2)', border: '1px dashed var(--border-soft)', borderRadius: 'var(--radius-sm)', textAlign: 'center', width: '100%', boxSizing: 'border-box' }}>
                                         Payload strictly mandates active wallet decryption keys securely maintained by the authorized originator directly.
                                     </div>
                                 )
-                            ) : renderGenericPayloadHtml(pkg)}
+                            ) : (
+                                <>
+                                    {pkg.type === 'TRANSACTION' && <TransactionPayload block={pkg} />}
+                                    {pkg.type === 'CHECKPOINT' && <CheckpointPayload block={pkg} />}
+                                    {pkg.type === 'STAKING_CONTRACT' && <StakingContractPayload block={pkg} />}
+                                    {pkg.type === 'SLASHING_TRANSACTION' && <SlashingTransactionPayload block={pkg} />}
+                                    {!['STORAGE_CONTRACT', 'TRANSACTION', 'CHECKPOINT', 'STAKING_CONTRACT', 'SLASHING_TRANSACTION'].includes(pkg.type) && <div style={{ color: 'var(--text-muted)' }}>Unrecognized payload type mappings.</div>}
+                                </>
+                            )}
                         </div>
                     </div>
 
