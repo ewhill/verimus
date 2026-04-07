@@ -16,8 +16,6 @@ export const useStore = create(
     filesLocationFilter: 'all',
     filesSelectedPath: [],
     searchQuery: '',
-    filterOwn: true,
-    filterCheckpoints: false,
     currentView: 'grid',
     selectedIndex: -1,
     pagination: { page: 1, limit: 16, pages: 1 },
@@ -64,8 +62,6 @@ export const useStore = create(
             case 'SET_FILES_PATH': return { filesSelectedPath: action.payload };
             case 'SET_FILES_SEARCH': return { filesSearchQuery: action.payload };
             case 'SET_SEARCH': return { searchQuery: action.payload };
-            case 'SET_FILTER_OWN': return { filterOwn: action.payload, pagination: { ...state.pagination, page: 1 } };
-            case 'SET_FILTER_CHECKPOINTS': return { filterCheckpoints: action.payload, pagination: { ...state.pagination, page: 1 } };
             case 'SET_WEB3_ACCOUNT': return { web3Account: action.payload };
             case 'SET_WEB3_ENCRYPTION_KEY': return { web3EncryptionKey: action.payload };
             case 'ADD_DISCOVERED_PROVIDER':
@@ -89,8 +85,6 @@ export const useStore = create(
         filesSortOrder: state.filesSortOrder,
         filesLocationFilter: state.filesLocationFilter,
         searchQuery: state.searchQuery,
-        filterOwn: state.filterOwn,
-        filterCheckpoints: state.filterCheckpoints,
         currentView: state.currentView,
         ledgerSortMode: state.ledgerSortMode,
         web3Account: state.web3Account,

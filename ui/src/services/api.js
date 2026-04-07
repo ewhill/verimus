@@ -2,13 +2,13 @@ import { useStore } from '../store';
 import { generateDownloadAuthHeaders } from '../utils/web3';
 
 const getBaseQueryParams = (state) => {
+    const isMyBlocksContext = state.currentRoute === 'wallet' && state.activeWalletTab === 'blocks';
     const { page, limit } = state.pagination || { page: 1, limit: 16 };
     const query = encodeURIComponent(state.searchQuery || '');
-    const filterOwn = state.filterOwn ? 'true' : 'false';
+    const filterOwn = isMyBlocksContext ? 'true' : 'false';
     const sort = state.ledgerSortMode || 'desc';
-    const filterCheckpoints = state.filterCheckpoints ? '&type=checkpoint' : '';
-    const addressFragment = (state.filterOwn && state.web3Account) ? `&address=${state.web3Account}` : '';
-    return `?page=${page}&limit=${limit}&q=${query}&own=${filterOwn}&sort=${sort}${filterCheckpoints}${addressFragment}`;
+    const addressFragment = (isMyBlocksContext && state.web3Account) ? `&address=${state.web3Account}` : '';
+    return `?page=${page}&limit=${limit}&q=${query}&own=${filterOwn}&sort=${sort}${addressFragment}`;
 };
 
 /* eslint-disable no-empty, no-unused-vars */
