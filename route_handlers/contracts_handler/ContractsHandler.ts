@@ -9,7 +9,12 @@ export default class ContractsHandler extends BaseHandler {
                 return res.status(503).json({ success: false, message: 'Ledger database mappings not structurally initialized.' });
             }
 
-            const activeContracts = await this.node.ledger.activeContractsCollection.find({}).toArray();
+            const page = parseInt((req.query.page as string) || '1', 10);
+            const limit = parseInt((req.query.limit as string) || '10', 10);
+            const skip = Math.max(0, (page - 1) * limit);
+
+            const total = await this.node.ledger.activeContractsCollection.countDocuments({});
+            const activeContracts = await this.node.ledger.activeContractsCollection.find({}).skip(skip).limit(limit).toArray();
 
             // Transform mappings to emphasize node allocation visually via the structural bounds
             const formattedContracts = activeContracts.map(doc => {
@@ -19,18 +24,16 @@ export default class ContractsHandler extends BaseHandler {
                     contractId: doc.contractId,
                     originator: doc.signerAddress,
                     payload: doc.payload,
-                    isLocalHost,
-                    localActive: isLocalHost && req.query.own === 'true'
+                    isLocalHost
                 };
             });
 
-            const filteredContracts = req.query.own === 'true' 
-                ? formattedContracts.filter(c => c.isLocalHost || c.originator === this.node.walletAddress)
-                : formattedContracts;
-
             return res.status(200).json({
                 success: true,
-                contracts: filteredContracts
+                contracts: {
+                    data: formattedContracts,
+                    total
+                }
             });
         } catch (error: any) {
             return res.status(500).json({ success: false, message: `Failed to resolve contract endpoints: ${error.message}` });

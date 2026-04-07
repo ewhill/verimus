@@ -60,15 +60,15 @@ const ConsensusView = () => {
 
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-                <MetricCard title="Pending Block Transactions" value={mempool.pendingBlocks.total} color="#3b82f6" />
-                <MetricCard title="Eligible Competing Forks" value={mempool.eligibleForks.total} color="#8b5cf6" />
-                <MetricCard title="Settled Adopted Forks" value={mempool.settledForks.total} color="#10b981" />
+                <MetricCard title="Pending Blocks" value={mempool.pendingBlocks.total} color="#3b82f6" />
+                <MetricCard title="Eligible Forks" value={mempool.eligibleForks.total} color="#8b5cf6" />
+                <MetricCard title="Settled Forks" value={mempool.settledForks.total} color="#10b981" />
             </div>
 
             <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
-                <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', marginBottom: '1.25rem' }}>Pending Block Transactions</h2>
+                <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', marginBottom: '1.25rem' }}>Pending Blocks</h2>
                 {mempool.pendingBlocks.data.length === 0 ? (
-                    <p style={{ color: 'var(--text-muted)' }}>Pending trace clean. No stalled bounds.</p>
+                    <p style={{ color: 'var(--text-muted)' }}>There are no pending blocks.</p>
                 ) : (
                     <div className="table-responsive">
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
@@ -107,9 +107,9 @@ const ConsensusView = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
                 <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
-                    <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', marginBottom: '1.25rem' }}>Eligible Network Forks</h2>
+                    <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', marginBottom: '1.25rem' }}>Eligible Forks</h2>
                     {mempool.eligibleForks.data.length === 0 ? (
-                        <p style={{ color: 'var(--text-muted)' }}>No localized network segment forks detected.</p>
+                        <p style={{ color: 'var(--text-muted)' }}>There are no eligible forks.</p>
                     ) : (
                         <>
                             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -138,9 +138,9 @@ const ConsensusView = () => {
                 </div>
 
                 <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
-                    <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', marginBottom: '1.25rem' }}>Settled Integrations</h2>
+                    <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', marginBottom: '1.25rem' }}>Settled Forks</h2>
                     {mempool.settledForks.data.length === 0 ? (
-                        <p style={{ color: 'var(--text-muted)' }}>Ledger sync cache strictly bounded.</p>
+                        <p style={{ color: 'var(--text-muted)' }}>No forks have been settled.</p>
                     ) : (
                         <>
                             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

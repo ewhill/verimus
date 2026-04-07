@@ -15,14 +15,15 @@ const formatAddress = (str) => {
 };
 
 const ContractsView = () => {
-    const [contracts, setContracts] = useState([]);
+    const [contracts, setContracts] = useState({ data: [], total: 0 });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [filterOwn, setFilterOwn] = useState(false);
+    const [page, setPage] = useState(1);
+    const PAGE_LIMIT = 8;
 
     const fetchContracts = async () => {
         try {
-            const url = filterOwn ? '/api/contracts?own=true' : '/api/contracts';
+            const url = `/api/contracts?page=${page}&limit=${PAGE_LIMIT}`;
             const res = await fetch(url);
             if (res.status === 401) return;
             const data = await res.json();
@@ -43,7 +44,7 @@ const ContractsView = () => {
         fetchContracts();
         const interval = setInterval(fetchContracts, 5000);
         return () => clearInterval(interval);
-    }, [filterOwn]);
+    }, [page]);
 
     if (loading) {
         return (
@@ -64,46 +65,14 @@ const ContractsView = () => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', animation: 'fadeIn 0.3s ease-out' }}>
-            <div className="section-header glass-panel" style={{ padding: '2rem', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                <div>
-                    <h1 style={{ fontSize: '1.75rem', color: '#f8fafc', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                            <polyline points="10 9 9 9 8 9"></polyline>
-                        </svg>
-                        Storage Contracts
-                    </h1>
-                    <p style={{ color: 'var(--text-secondary)' }}>Globally synchronized index mapping cryptographic file deployments and erasure shards identically.</p>
-                </div>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-dark)', padding: '0.5rem', borderRadius: 'var(--radius-full)' }}>
-                    <button 
-                        onClick={() => setFilterOwn(false)}
-                        className={`segmented-btn ${!filterOwn ? 'active' : ''}`}
-                        style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-full)', border: 'none', background: !filterOwn ? '#3b82f6' : 'transparent', color: !filterOwn ? '#fff' : 'var(--text-muted)', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
-                    >
-                        Global Mesh
-                    </button>
-                    <button 
-                        onClick={() => setFilterOwn(true)}
-                        className={`segmented-btn ${filterOwn ? 'active' : ''}`}
-                        style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-full)', border: 'none', background: filterOwn ? '#3b82f6' : 'transparent', color: filterOwn ? '#fff' : 'var(--text-muted)', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
-                    >
-                        Allocated to Me
-                    </button>
-                </div>
-            </div>
-
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem' }}>
-                {contracts.length === 0 ? (
+                {contracts.data.length === 0 ? (
                     <div style={{ gridColumn: '1 / -1', padding: '3rem', textAlign: 'center', color: 'var(--text-muted)', background: 'rgba(15, 23, 42, 0.4)', borderRadius: 'var(--radius-lg)' }}>
-                        <p>No storage contracts detected matching criteria.</p>
+                        <p>No active storage contracts detected on the global network.</p>
                     </div>
                 ) : (
-                    contracts.map((contract, i) => (
+                    <>
+                        {contracts.data.map((contract, i) => (
                         <div key={i} className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', gap: '1rem', borderTop: contract.isLocalHost ? '3px solid #60a5fa' : '1px solid var(--border-light)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <div>
@@ -132,10 +101,19 @@ const ContractsView = () => {
                                     </span>
                                 </div>
                             </div>
-                        </div>
-                    ))
+                            </div>
+                        ))}
+                    </>
                 )}
             </div>
+            
+            {contracts.total > PAGE_LIMIT && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem', gap: '1rem' }}>
+                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ background: 'var(--bg-dark)', border: '1px solid var(--border-light)', color: '#f8fafc', padding: '0.5rem 1.5rem', borderRadius: '8px', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.4 : 1, transition: 'all 0.2s' }}>Previous</button>
+                    <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>Page {page} of {Math.ceil(contracts.total / PAGE_LIMIT)}</span>
+                    <button onClick={() => setPage(p => Math.min(Math.ceil(contracts.total / PAGE_LIMIT), p + 1))} disabled={page === Math.ceil(contracts.total / PAGE_LIMIT)} style={{ background: 'var(--bg-dark)', border: '1px solid var(--border-light)', color: '#f8fafc', padding: '0.5rem 1.5rem', borderRadius: '8px', cursor: page === Math.ceil(contracts.total / PAGE_LIMIT) ? 'not-allowed' : 'pointer', opacity: page === Math.ceil(contracts.total / PAGE_LIMIT) ? 0.4 : 1, transition: 'all 0.2s' }}>Next</button>
+                </div>
+            )}
         </div>
     );
 };
