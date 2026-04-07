@@ -8,6 +8,7 @@ import * as fflate from 'fflate';
 import PropertyValue from './Payloads/PropertyValue';
 import StorageContractPayload from './Payloads/StorageContractPayload';
 import { TransactionPayload, CheckpointPayload, StakingContractPayload, SlashingTransactionPayload } from './Payloads/GenericPayloads';
+import GenericBlockHeader from './Payloads/GenericBlockHeader';
 
 const BlockModal = () => {
     const dispatch = useStore(s => s.dispatch);
@@ -181,63 +182,52 @@ const BlockModal = () => {
                 </div>
 
                 <div className="modal-body" style={{ padding: '2rem', overflowY: 'auto' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '0.75rem 1rem', marginBottom: '1.5rem' }}>
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Index:</span>
-                        <PropertyValue className="highlight" value={pkg.metadata?.index ?? pkg.index} copyable={false} />
-
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Hash:</span>
-                        <PropertyValue value={pkg.hash} />
-
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Prev Hash:</span>
-                        <PropertyValue value={pkg.previousHash || 'None'} />
-
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Timestamp:</span>
-                        <PropertyValue value={date} copyable={false} />
-
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', alignSelf: 'center' }}>Signer Address:</span>
-                        <PropertyValue value={pkg.signerAddress} />
-
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Signature:</span>
-                        <div style={{ minWidth: 0, overflow: 'hidden', width: '100%' }}>
-                            <PropertyValue value={pkg.signature} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', width: '100%', boxSizing: 'border-box' }} />
-                        </div>
-                    </div>
-
-                    <div style={{ height: '1px', width: '100%', background: 'linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), transparent)', margin: '2rem 0 1.5rem 0' }}></div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                            <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px', color: 'var(--text-muted)' }}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-                            </svg>
-                            <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 500, color: 'var(--text-main)' }}>
-                                {pkg.type === 'STORAGE_CONTRACT' ? 'Decrypted Private Payload' : 'Public Payload Data'}
-                            </h4>
-                        </div>
-                        <div style={{ width: '100%', boxSizing: 'border-box' }}>
-                            {pkg.type === 'STORAGE_CONTRACT' ? (
-                                isOwner ? (
-                                    isFetchingPayload ? (
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '2rem', textAlign: 'center', border: '1px dashed var(--border-soft)', borderRadius: 'var(--radius-sm)', width: '100%', boxSizing: 'border-box' }}>
-                                            Decrypting network bundle... <div className="spinner" style={{ display: 'inline-block', width: '12px', height: '12px', borderWidth: '2px', marginLeft: '0.5rem' }}></div>
-                                        </div>
-                                    ) : <StorageContractPayload payloadData={payloadData} payloadError={payloadError} handleSingleFileDownload={handleSingleFileDownload} />
-                                ) : (
-                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '2rem', background: 'rgba(0,0,0,0.2)', border: '1px dashed var(--border-soft)', borderRadius: 'var(--radius-sm)', textAlign: 'center', width: '100%', boxSizing: 'border-box' }}>
-                                        Payload strictly mandates active wallet decryption keys securely maintained by the authorized originator directly.
+                    {pkg.type === 'STORAGE_CONTRACT' ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                            <div style={{ width: '100%', boxSizing: 'border-box' }}>
+                                <StorageContractPayload block={pkg} payloadData={payloadData} payloadError={payloadError} handleSingleFileDownload={handleSingleFileDownload} web3Account={web3Account} />
+                                
+                                {isOwner && isFetchingPayload && (
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '2rem', textAlign: 'center', border: '1px dashed var(--border-soft)', borderRadius: 'var(--radius-sm)', width: '100%', boxSizing: 'border-box', marginTop: '1rem' }}>
+                                        Decrypting network bundle... <div className="spinner" style={{ display: 'inline-block', width: '12px', height: '12px', borderWidth: '2px', marginLeft: '0.5rem' }}></div>
                                     </div>
-                                )
-                            ) : (
-                                <>
-                                    {pkg.type === 'TRANSACTION' && <TransactionPayload block={pkg} />}
-                                    {pkg.type === 'CHECKPOINT' && <CheckpointPayload block={pkg} />}
-                                    {pkg.type === 'STAKING_CONTRACT' && <StakingContractPayload block={pkg} />}
-                                    {pkg.type === 'SLASHING_TRANSACTION' && <SlashingTransactionPayload block={pkg} />}
-                                    {!['STORAGE_CONTRACT', 'TRANSACTION', 'CHECKPOINT', 'STAKING_CONTRACT', 'SLASHING_TRANSACTION'].includes(pkg.type) && <div style={{ color: 'var(--text-muted)' }}>Unrecognized payload type mappings.</div>}
-                                </>
-                            )}
+                                )}
+                                {!isOwner && (
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '2rem', background: 'rgba(0,0,0,0.2)', border: '1px dashed var(--border-soft)', borderRadius: 'var(--radius-sm)', textAlign: 'center', width: '100%', boxSizing: 'border-box', marginTop: '1rem' }}>
+                                        Private Payload strictly mandates active wallet decryption keys securely maintained by the authorized originator directly.
+                                    </div>
+                                )}
+                            </div>
+
+                            <div style={{ height: '1px', width: '100%', background: 'linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), transparent)', margin: '2rem 0 1.5rem 0' }}></div>
+                            
+                            <h4 style={{ margin: '0 0 1.5rem 0', fontSize: '1rem', fontWeight: 500, color: 'var(--text-main)' }}>Generic Block Details</h4>
+                            <GenericBlockHeader block={pkg} date={date} />
                         </div>
-                    </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                            <GenericBlockHeader block={pkg} date={date} />
+                            
+                            <div style={{ height: '1px', width: '100%', background: 'linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), transparent)', margin: '2rem 0 1.5rem 0' }}></div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                                <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px', color: 'var(--text-muted)' }}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                </svg>
+                                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 500, color: 'var(--text-main)' }}>
+                                    Public Payload Data
+                                </h4>
+                            </div>
+
+                            <div style={{ width: '100%', boxSizing: 'border-box' }}>
+                                {pkg.type === 'TRANSACTION' && <TransactionPayload block={pkg} />}
+                                {pkg.type === 'CHECKPOINT' && <CheckpointPayload block={pkg} />}
+                                {pkg.type === 'STAKING_CONTRACT' && <StakingContractPayload block={pkg} />}
+                                {pkg.type === 'SLASHING_TRANSACTION' && <SlashingTransactionPayload block={pkg} />}
+                                {!['STORAGE_CONTRACT', 'TRANSACTION', 'CHECKPOINT', 'STAKING_CONTRACT', 'SLASHING_TRANSACTION'].includes(pkg.type) && <div style={{ color: 'var(--text-muted)' }}>Unrecognized payload type mappings.</div>}
+                            </div>
+                        </div>
+                    )}
 
                     {isOwner && pkg.type === 'STORAGE_CONTRACT' && !isFetchingPayload && payloadData && !payloadError && (
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>
