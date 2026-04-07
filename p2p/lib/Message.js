@@ -91,6 +91,7 @@ class Message {
     this._hash = crypto
       .createHash('sha256')
       .update(JSON.stringify(this._body, (_, v) => typeof v === 'bigint' ? v.toString() : v))
+      .update(this._timestamp ? new Date(this._timestamp).getTime().toString() : '')
       .digest('hex');
   }
 
