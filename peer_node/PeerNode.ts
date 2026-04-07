@@ -219,6 +219,7 @@ class PeerNode {
                     }, 5000);
                 } else {
                     logger.info(`[Peer ${this.port}] Genesis node detected (no discovery topology). Initialized.`);
+                    this.syncEngine.performInitialSync().catch(err => logger.warn(`[Peer ${this.port}] Genesis Sync Exception ignored: ${err.message}`));
                 }
 
                 // --- Phase 1 Genesis Bootstrapping ---

@@ -122,7 +122,7 @@ class GlobalAuditor {
 
     async runGlobalAudit() {
         // Suspend audits natively preventing starvation mappings while bootstrapping
-        if (this.node.syncEngine && this.node.syncEngine.currentState !== SyncState.OFFLINE) return;
+        if (this.node.syncEngine && this.node.syncEngine.currentState !== SyncState.ACTIVE) return;
 
         const latestBlock = await this.node.ledger.getLatestBlock();
         const latestBlockHash = latestBlock && latestBlock.hash ? latestBlock.hash : 'genesis_hash';
