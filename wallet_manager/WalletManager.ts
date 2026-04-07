@@ -63,7 +63,16 @@ export default class WalletManager {
         } else if (block.type === BLOCK_TYPES.STORAGE_CONTRACT) {
             const p = block.payload as StorageContractPayload;
             if (activeContracts) {
-                await activeContracts.updateOne({ contractId: block.hash }, { $set: { payload: p, signerAddress: this.getAddressSafe(block.signerAddress) } }, { upsert: true });
+                await activeContracts.updateOne(
+                    { contractId: block.hash }, 
+                    { $set: { 
+                        payload: p, 
+                        signerAddress: this.getAddressSafe(block.signerAddress),
+                        index: block.metadata?.index || -1,
+                        timestamp: block.metadata?.timestamp || new Date().toISOString()
+                    } }, 
+                    { upsert: true }
+                );
             }
             const escrowToDeductStr = p.remainingEgressEscrow ?? p.allocatedEgressEscrow ?? 0n;
             const escrowToDeduct = BigInt(escrowToDeductStr);

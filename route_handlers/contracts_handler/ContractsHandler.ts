@@ -23,7 +23,7 @@ export default class ContractsHandler extends BaseHandler {
             }
 
             const total = await this.node.ledger.activeContractsCollection.countDocuments(query);
-            const activeContracts = await this.node.ledger.activeContractsCollection.find(query).skip(skip).limit(limit).toArray();
+            const activeContracts = await this.node.ledger.activeContractsCollection.find(query).sort({ index: -1 }).skip(skip).limit(limit).toArray();
 
             // Transform mappings to emphasize node allocation visually via the structural bounds
             const formattedContracts = activeContracts.map(doc => {
@@ -33,7 +33,9 @@ export default class ContractsHandler extends BaseHandler {
                     contractId: doc.contractId,
                     originator: doc.signerAddress,
                     payload: doc.payload,
-                    isLocalHost
+                    isLocalHost,
+                    index: doc.index,
+                    timestamp: doc.timestamp
                 };
             });
 

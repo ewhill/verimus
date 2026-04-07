@@ -67,8 +67,12 @@ const ContractsView = () => {
             signerAddress: contract.originator,
             status: 'confirmed',
             signature: 'Restricted matrix payload',
-            timestamp: new Date().toISOString(),
-            payload: contract.payload
+            timestamp: contract.timestamp || new Date().toISOString(),
+            payload: contract.payload,
+            metadata: {
+                index: contract.index || -1,
+                timestamp: contract.timestamp || new Date().toISOString()
+            }
         };
 
         const currentBlocks = useStore.getState().blocks;
