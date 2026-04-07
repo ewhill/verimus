@@ -22,7 +22,6 @@ const getBlockTypeConfig = (type) => {
 const LedgerGrid = () => {
     const dispatch = useStore(s => s.dispatch);
     const blocks = useStore(s => s.blocks);
-    const currentView = useStore(s => s.currentView);
     const selectedIndex = useStore(s => s.selectedIndex);
     const pagination = useStore(s => s.pagination);
     
@@ -102,45 +101,10 @@ const LedgerGrid = () => {
         </div>
     );
 
-    const renderGrid = () => (
-        <div className="grid-container">
-            {blocks.map((pkg, i) => {
-                const date = new Date(pkg.metadata?.timestamp || pkg.timestamp).toLocaleString();
-                const isPending = pkg.status === 'pending' || pkg.metadata?.index === -1;
-                const isSelected = selectedIndex === i;
-                const typeConfig = getBlockTypeConfig(pkg.type);
-                
-                return (
-                    <div 
-                        key={pkg.hash}
-                        className={`block-card redesigned ${isPending ? 'pending' : ''} ${isSelected ? 'selected' : ''}`}
-                        style={{ padding: 0, display: 'flex', flexDirection: 'column', cursor: isPending ? 'default' : 'pointer', animation: `staggerFadeUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) ${i * 0.05}s both` }}
-                        onClick={() => !isPending && handleBlockClick(pkg.hash, i)}
-                    >
-                        <div className="block-card-header" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                            <div className="card-header" style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                {isPending ? <span className="badge pending" style={{ background: 'rgba(245,158,11,0.15)', color: '#fcd34d' }}>Pending Consensus</span> : <span className="badge" style={{ background: 'rgba(99,102,241,0.15)', color: '#c7d2fe' }}>#{pkg.metadata?.index ?? pkg.index}</span>}
-                                <span className="badge" style={{ background: typeConfig.bg, color: typeConfig.color, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }} title={pkg.type}>
-                                    <span style={{ width: '14px', height: '14px', display: 'flex' }}>{typeConfig.icon}</span>
-                                </span>
-                            </div>
-                            <div className="card-id" style={{ fontFamily: 'monospace', color: 'var(--text-secondary)' }} title={pkg.hash}>
-                                {pkg.hash.substring(0, 16)}...
-                            </div>
-                            <div className="card-footer" style={{ marginTop: 'auto', paddingTop: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                {date}
-                            </div>
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
-    );
-
     return (
         <>
-            <div id="ledgerContainer" className={`${currentView}-view`}>
-                {currentView === 'list' ? renderList() : renderGrid()}
+            <div id="ledgerContainer" className="list-view">
+                {renderList()}
             </div>
             
             <div className="pagination-wrapper stagger-4" style={{ display: 'flex', justifyContent: 'center', marginTop: '2.5rem' }}>
