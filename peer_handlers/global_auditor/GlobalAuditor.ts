@@ -224,8 +224,7 @@ class GlobalAuditor {
                         auditorPublicKey: this.node.publicKey,
                         auditorNodeId: this.node.walletAddress,
                         targetNodeId: fragment.nodeId,
-                        chunkIndex: targetIndex,
-                        nonce: Date.now() + Math.random() // Unique per retry to evade P2P deduplication
+                        chunkIndex: targetIndex
                     });
 
                     if (this.node.peer) {
