@@ -106,6 +106,17 @@ export default class BlocksHandler extends BaseHandler {
                 const filteredBlocks: Block[] = [];
 
                 for (const block of combinedBlocks) {
+                    // Check top-level block properties first
+                    if (
+                        (block.hash && block.hash.toLowerCase().includes(searchQuery)) ||
+                        (block.signerAddress && block.signerAddress.toLowerCase().includes(searchQuery)) ||
+                        (block.type && block.type.toLowerCase().includes(searchQuery)) ||
+                        (block.payload && (block.payload as any).ownerAddress && (block.payload as any).ownerAddress.toLowerCase().includes(searchQuery))
+                    ) {
+                        filteredBlocks.push(block);
+                        continue;
+                    }
+
                     try {
                         // Access the original block data to get the true private payload for decryption
                         // since combinedBlocks has mapped values, we pull the payload from the raw source
