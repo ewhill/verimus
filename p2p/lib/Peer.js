@@ -263,7 +263,7 @@ class Peer {
 
       await this.setupClient(client);
     } catch (e) {
-      this.logger_.error(e.message);
+      this.logger_.error(e && e.message ? e.message : (e || "Unknown Error"));
       client.close();
     }
   }

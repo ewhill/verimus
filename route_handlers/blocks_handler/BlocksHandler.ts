@@ -58,6 +58,17 @@ export default class BlocksHandler extends BaseHandler {
             if (this.node.mempool && this.node.mempool.pendingBlocks) {
                 for (const [bId, entry] of this.node.mempool.pendingBlocks.entries()) {
                     if (!entry.committed) {
+                        try {
+                            const duplicate = await this.node.ledger.collection!.findOne({ signature: entry.block.signature });
+                            if (duplicate) {
+                                entry.committed = true;
+                                this.node.mempool.pendingBlocks.delete(bId);
+                                continue;
+                            }
+                        } catch (_unusedErr) {
+                            // Safe fallthrough
+                        }
+
                         if (req.query.own === 'true') {
                             if (req.query.address) {
                                 if (!entry.block.payload || (entry.block.payload as any).ownerAddress?.toLowerCase() !== (req.query.address as string).toLowerCase()) continue;

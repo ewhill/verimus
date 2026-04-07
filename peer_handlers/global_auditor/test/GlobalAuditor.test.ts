@@ -60,6 +60,7 @@ describe('GlobalAuditor', () => {
         
         // Mock to force deterministic election natively to true ensuring bounds pass cleanly
         auditor.computeDeterministicAuditor = mock.fn(() => true) as any;
+        auditor.start();
 
         // Await the audit evaluation block securely locking execution queue
         await auditor.runGlobalAudit();

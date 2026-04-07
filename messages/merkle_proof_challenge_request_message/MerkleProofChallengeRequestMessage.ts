@@ -8,6 +8,7 @@ export interface MerkleProofChallengeRequestOptions {
     auditorNodeId: string;
     targetNodeId: string;
     chunkIndex: number;
+    nonce?: number;
 }
 
 export class MerkleProofChallengeRequestMessage extends Message {
@@ -31,6 +32,9 @@ export class MerkleProofChallengeRequestMessage extends Message {
 
         if (options.chunkIndex !== undefined) this.chunkIndex = options.chunkIndex;
         else if (options.body?.chunkIndex !== undefined) this.chunkIndex = options.body.chunkIndex;
+
+        if (options.nonce !== undefined) this.nonce = options.nonce;
+        else if (options.body?.nonce !== undefined) this.nonce = options.body.nonce;
     }
 
     get contractId(): string { return this.body.contractId; }
@@ -50,4 +54,7 @@ export class MerkleProofChallengeRequestMessage extends Message {
 
     get chunkIndex(): number { return this.body.chunkIndex; }
     set chunkIndex(value: number) { this.body = { ...this.body, chunkIndex: value }; }
+
+    get nonce(): number | undefined { return this.body.nonce; }
+    set nonce(value: number | undefined) { this.body = { ...this.body, nonce: value }; }
 }
