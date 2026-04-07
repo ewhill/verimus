@@ -79,7 +79,7 @@ const Header = () => {
             {activeRoute === 'ledger' && (
                 <>
                     <button className={`segmented-btn ${activeLedgerTab === 'global' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Global Ledger</button>
-                    <button className={`segmented-btn ${activeLedgerTab === 'audit' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'audit' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Sortition Audits</button>
+
                     {nodeConfig?.roles?.includes('VALIDATOR') && (
                         <button className={`segmented-btn ${activeLedgerTab === 'consensus' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Mempool Monitor</button>
                     )}
@@ -131,7 +131,7 @@ const Header = () => {
                 {expandedAccordion === 'ledger' && (
                     <div className="mobile-nested-group" style={{ animation: 'fadeInDown 0.2s ease-out' }}>
                         <button className={`mobile-nested-item ${activeLedgerTab === 'global' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' }); routeTo(e, 'ledger'); }}>Global Ledger</button>
-                        <button className={`mobile-nested-item ${activeLedgerTab === 'audit' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'audit' }); routeTo(e, 'ledger'); }}>Sortition Audits</button>
+
                         {nodeConfig?.roles?.includes('VALIDATOR') && (
                             <button className={`mobile-nested-item ${activeLedgerTab === 'consensus' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' }); routeTo(e, 'ledger'); }}>Mempool Monitor</button>
                         )}

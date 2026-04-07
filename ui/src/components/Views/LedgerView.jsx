@@ -4,7 +4,7 @@ import { ApiService } from '../../services/api';
 import EpochTelemetryWidget from './Ledger/EpochTelemetryWidget';
 import LedgerToolbar from './LedgerToolbar';
 import LedgerGrid from './LedgerGrid';
-import AuditTerminal from './Network/AuditTerminal';
+
 import ConsensusView from './ConsensusView';
 import ContractsView from './ContractsView';
 
@@ -96,11 +96,7 @@ const LedgerView = () => {
                     </>
                 )}
 
-                {activeTab === 'audit' && (
-                    <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }} className="stagger-1">
-                        <AuditTerminal />
-                    </div>
-                )}
+
 
                 {activeTab === 'consensus' && nodeConfig?.roles?.includes('VALIDATOR') && (
                     <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }} className="stagger-1">
