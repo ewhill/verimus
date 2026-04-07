@@ -8,12 +8,13 @@ import { PendingBlockMessage } from '../../messages/pending_block_message/Pendin
 import Mempool from '../../models/mempool/Mempool';
 import PeerNode from '../../peer_node/PeerNode';
 import type { Block, PeerConnection, TransactionPayload, StorageContractPayload, SlashingPayload, CheckpointStatePayload } from '../../types';
+import KeyedMutex from '../../utils/KeyedMutex';
 
 class MempoolManager {
     node: PeerNode;
     mempool: Mempool;
 
-    public executionMutex: Promise<any> = Promise.resolve();
+    private mutex = new KeyedMutex();
 
     constructor(peerNode: PeerNode) {
         this.node = peerNode;
@@ -22,20 +23,10 @@ class MempoolManager {
 
     get walletManager() { return this.node.walletManager; }
 
-    private async enqueueTask<T>(task: () => Promise<T>): Promise<T> {
-        return new Promise((resolve, reject) => {
-            this.executionMutex = this.executionMutex.then(async () => {
-                try {
-                    resolve(await task());
-                } catch (e) {
-                    reject(e);
-                }
-            });
-        });
-    }
-
     async handlePendingBlock(block: Block, connection: PeerConnection, headerTimestamp: number) {
-        return this.enqueueTask(async () => {
+        const lockKey = block.hash || (block.signature ? block.signature.slice(0, 16) : 'invalid_block');
+        const release = await this.mutex.acquire(lockKey);
+        try {
             hydrateBlockBigInts(block);
 
             if (this.node.syncEngine && this.node.syncEngine.isSyncing) {
@@ -178,7 +169,9 @@ class MempoolManager {
 
             // Replace nested explicit pipeline bounds with dedicated bus proxy emission maps logically
             this.node.events.emit('MEMPOOL:BLOCK_VERIFIED', blockId);
-        });
+        } finally {
+            release();
+        }
     }
 }
 

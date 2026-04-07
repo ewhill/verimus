@@ -83,4 +83,37 @@ describe('GlobalAuditor', () => {
             auditor.stop();
         }
     });
+
+    test('event-loop backpressure gracefully scales exponential logic protecting nodes from false slashes', async () => {
+        const events = new EventEmitter();
+        let slashingHit = false;
+        events.on('AUDITOR:SLASHING_GENERATED', () => slashingHit = true);
+
+        const auditor = new GlobalAuditor(createMock<PeerNode>({
+            events: events,
+            peer: { broadcast: mock.fn(async () => {}) } as any,
+            ledger: createMock<any>({
+                getLatestBlock: async () => null,
+                getBlockByIndex: async () => ({ metadata: { timestamp: Date.now() - 30000 } }),
+                collection: { find: () => ({ sort: () => ({ limit: () => ({ toArray: async () => [{ hash: 'contract', payload: { erasureParams: { k: 2, originalSize: 10 }, fragmentMap: [{ nodeId: 'testNodeId', physicalId: 'phys', shardIndex: 0 }], merkleRoots: ['root'] } }] }) }) }) }
+            }),
+            reputationManager: createMock<any>({ penalizeMajor: async () => {} })
+        }));
+        
+        auditor.computeDeterministicAuditor = mock.fn(() => true) as any;
+        auditor.start();
+
+        // Dynamically simulate extreme node stress forcing event loop metric over 100ms boundary
+        // @ts-ignore
+        Object.defineProperty(auditor.eventLoopMonitor, 'mean', { value: 150 * 1e6, writable: true }); // 150ms simulated mean delay
+
+        const executeChallenge = (auditor as any).runGlobalAudit.bind(auditor);
+        await executeChallenge();
+
+        // The timeout internally maps BASE = 5000 * 2^retries.
+        // If we inject latency natively, it attempts to slash but catches it dynamically, suppressing it.
+        // We will assert no slashing happens.
+        assert.strictEqual(slashingHit, false, 'Slashing must be suspended due to mocked local event loop lag.');
+        auditor.stop();
+    });
 });

@@ -32,7 +32,6 @@ class ConsensusEngine {
     get mempool() { return this.node.mempool; }
     get walletManager() { return this.node.walletManager; }
     get committing() { return this.bftCoordinator.committing; }
-    get taskQueue() { return Promise.all([this.mempoolManager.executionMutex, this.bftCoordinator.executionMutex]); }
 
     async handlePendingBlock(block: Block, connection: PeerConnection, timestamp: number) {
         return this.mempoolManager.handlePendingBlock(block, connection, timestamp);

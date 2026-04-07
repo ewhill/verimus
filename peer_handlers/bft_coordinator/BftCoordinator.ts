@@ -10,6 +10,7 @@ import { VerifyBlockMessage } from '../../messages/verify_block_message/VerifyBl
 import Mempool from '../../models/mempool/Mempool';
 import PeerNode from '../../peer_node/PeerNode';
 import type { Block, CheckpointStatePayload, PeerConnection } from '../../types';
+import KeyedMutex from '../../utils/KeyedMutex';
 
 class BftCoordinator {
     node: PeerNode;
@@ -20,7 +21,7 @@ class BftCoordinator {
     public committing: boolean = false;
     
     // Explicit localized fork-level isolation preventing overlapping parallel updates
-    public executionMutex: Promise<any> = Promise.resolve();
+    private mutex = new KeyedMutex();
 
     constructor(peerNode: PeerNode) {
         this.node = peerNode;
@@ -54,20 +55,9 @@ class BftCoordinator {
         });
     }
     
-    private async enqueueTask<T>(task: () => Promise<T>): Promise<T> {
-        return new Promise((resolve, reject) => {
-            this.executionMutex = this.executionMutex.then(async () => {
-                try {
-                    resolve(await task());
-                } catch (e) {
-                    reject(e);
-                }
-            });
-        });
-    }
-
     async handleVerifyBlock(blockId: string, signature: string, connection: PeerConnection) {
-        return this.enqueueTask(async () => {
+        const release = await this.mutex.acquire(blockId);
+        try {
             if (!blockId) return;
 
             const pendingEntry = this.mempool.pendingBlocks.get(blockId);
@@ -99,12 +89,19 @@ class BftCoordinator {
                 logger.info(`[Peer ${this.node.port}] Block ${blockId.slice(0, 8)} is ELIGIBLE. Scheduling fork proposal...`);
 
                 if (this.proposalTimeout) clearTimeout(this.proposalTimeout);
-                this.proposalTimeout = setTimeout(() => {
-                    this._checkAndProposeFork().catch(() => {});
-                    this.proposalTimeout = null;
+                this.proposalTimeout = setTimeout(async () => {
+                    const releaseProp = await this.mutex.acquire('global_proposal');
+                    try {
+                        await this._checkAndProposeFork();
+                    } finally {
+                        this.proposalTimeout = null;
+                        releaseProp();
+                    }
                 }, 500);
             }
-        });
+        } finally {
+            release();
+        }
     }
 
     async _checkAndProposeFork() {
@@ -150,13 +147,17 @@ class BftCoordinator {
                 clearTimeout(this.activeForkTimeouts.get(forkId)!);
             }
 
-            const timeout = setTimeout(() => {
-                this.activeForkTimeouts.delete(forkId);
-                logger.warn(`[Peer ${this.node.port}] P2P BFT Timeout Triggered for ${forkId.slice(0, 8)}. Demoting stalled proposal implicitly mathematically unlocking chain bounds.`);
-                this.mempool.eligibleForks.delete(forkId);
-                this.mempool.settledForks.delete(forkId);
-
-                this._checkAndProposeFork().catch(() => { });
+            const timeout = setTimeout(async () => {
+                const releaseFork = await this.mutex.acquire(forkId);
+                try {
+                    this.activeForkTimeouts.delete(forkId);
+                    logger.warn(`[Peer ${this.node.port}] P2P BFT Timeout Triggered for ${forkId.slice(0, 8)}. Demoting stalled proposal implicitly mathematically unlocking chain bounds.`);
+                    this.mempool.eligibleForks.delete(forkId);
+                    this.mempool.settledForks.delete(forkId);
+                    await this._checkAndProposeFork();
+                } finally {
+                    releaseFork();
+                }
             }, 10000).unref();
 
             this.activeForkTimeouts.set(forkId, timeout);
@@ -164,7 +165,8 @@ class BftCoordinator {
     }
 
     async handleProposeFork(forkId: string, blockIds: string[], connection: PeerConnection) {
-        return this.enqueueTask(async () => {
+        const release = await this.mutex.acquire(forkId);
+        try {
             if (this.node.syncEngine && this.node.syncEngine.isSyncing) {
                 this.node.syncEngine.syncBuffer.push({ type: 'ProposeFork', forkId, blockIds, connection });
                 return;
@@ -262,11 +264,14 @@ class BftCoordinator {
                     await this._commitFork(forkId);
                 }
             }
-        });
+        } finally {
+            release();
+        }
     }
 
     async handleAdoptFork(forkId: string, finalTipHash: string, connection: PeerConnection) {
-        return this.enqueueTask(async () => {
+        const release = await this.mutex.acquire(forkId);
+        try {
             if (this.node.syncEngine && this.node.syncEngine.isSyncing) {
                 this.node.syncEngine.syncBuffer.push({ type: 'AdoptFork', forkId, finalTipHash, connection });
                 return;
@@ -311,7 +316,9 @@ class BftCoordinator {
                     settledEntry!.pendingCommit = true;
                 }
             }
-        });
+        } finally {
+            release();
+        }
     }
 
     async _commitFork(forkId: string) {

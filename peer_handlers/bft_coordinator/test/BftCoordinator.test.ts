@@ -21,7 +21,7 @@ describe('BftCoordinator', () => {
         });
 
         const mockLedger = createMock<any>({
-            getLatestBlock: mock.fn<() => Promise<any>>().mock.mockImplementation(async () => ({ metadata: { index: 1 }, hash: 'oldTipHash' })),
+            getLatestBlock: mock.fn<() => Promise<any>>(async () => ({ metadata: { index: 1 }, hash: 'oldTipHash' })),
             events: new EventEmitter(),
             blockAddedSubscribers: []
         });

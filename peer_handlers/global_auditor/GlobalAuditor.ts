@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import { monitorEventLoopDelay } from 'node:perf_hooks';
 
 import { ethers } from 'ethers';
 
@@ -9,6 +10,7 @@ import logger from '../../logger/Logger';
 import { MerkleProofChallengeRequestMessage } from '../../messages/merkle_proof_challenge_request_message/MerkleProofChallengeRequestMessage';
 import PeerNode from '../../peer_node/PeerNode';
 import type { Block, StorageContractPayload, SlashingPayload } from '../../types';
+import KeyedMutex from '../../utils/KeyedMutex';
 import WalletManager from '../../wallet_manager/WalletManager';
 
 class GlobalAuditor {
@@ -16,9 +18,11 @@ class GlobalAuditor {
     private auditedIntervals: Map<string, number> = new Map();
     private auditTimer: NodeJS.Timeout | null = null;
     private isRunning: boolean = false;
+    private pendingChallenges: Set<NodeJS.Timeout> = new Set();
     
-    // Scoped instance lock ensuring intervals never overlap concurrently
-    private executionMutex: Promise<void> = Promise.resolve();
+    // Scoped instance lock ensuring intervals never overlap concurrently natively mapped via Keys
+    private mutex = new KeyedMutex();
+    private eventLoopMonitor = monitorEventLoopDelay({ resolution: 20 });
 
     constructor(peerNode: PeerNode) {
         this.node = peerNode;
@@ -29,14 +33,17 @@ class GlobalAuditor {
     start() {
         if (this.isRunning) return;
         this.isRunning = true;
-        this.auditTimer = setInterval(() => {
-            this.enqueueTask(async () => {
-                try {
-                    await this.runGlobalAudit();
-                } catch (err: any) {
-                    logger.warn(`[Peer ${this.node.port}] Global audit loop trace failed natively: ${err.message}`);
-                }
-            });
+        this.eventLoopMonitor.enable();
+
+        this.auditTimer = setInterval(async () => {
+            const release = await this.mutex.acquire('global_audit');
+            try {
+                await this.runGlobalAudit();
+            } catch (err: any) {
+                logger.warn(`[Peer ${this.node.port}] Global audit loop trace failed natively: ${err.message}`);
+            } finally {
+                release();
+            }
         }, 30000);
         this.auditTimer.unref();
     }
@@ -46,19 +53,12 @@ class GlobalAuditor {
             clearInterval(this.auditTimer);
             this.auditTimer = null;
         }
+        for (const t of this.pendingChallenges) {
+            clearTimeout(t);
+        }
+        this.pendingChallenges.clear();
         this.isRunning = false;
-    }
-
-    private async enqueueTask<T>(task: () => Promise<T>): Promise<T> {
-        return new Promise((resolve, reject) => {
-            this.executionMutex = this.executionMutex.then(async () => {
-                try {
-                    resolve(await task());
-                } catch (e) {
-                    reject(e);
-                }
-            });
-        });
+        this.eventLoopMonitor.disable();
     }
 
     private computeXORDistance(hashA: string, hashB: string): string {
@@ -236,12 +236,24 @@ class GlobalAuditor {
                     const backoffTimeout = BASE_TIMEOUT_MS * Math.pow(2, currentAttempt);
 
                     currentTimeoutRef = setTimeout(async () => {
+                        this.pendingChallenges.delete(currentTimeoutRef);
+                        
                         if (currentAttempt < MAX_RETRIES) {
                             currentAttempt++;
                             logger.info(`[Peer ${this.node.port}] P2P Timeout resolving Merkle sequence. Exponential backoff retry ${currentAttempt}/${MAX_RETRIES} for host ${fragment.nodeId.slice(0, 8)}...`);
                             attemptChallenge();
                         } else {
                             if (isResolved) return;
+                            
+                            const meanDelay = this.eventLoopMonitor.mean / 1e6; // Convert ns to ms
+                            if (meanDelay > 100) {
+                                logger.warn(`[Peer ${this.node.port}] Node load threshold exceeded (${meanDelay.toFixed(2)}ms). Dynamically suppressing auditor slashing timeout falsely mapped to P2P lag!`);
+                                // Extend retries and try again gracefully preventing false positive slashes mathematically
+                                currentAttempt--; 
+                                attemptChallenge();
+                                return;
+                            }
+
                             isResolved = true;
                             this.node.events.off(`merkle_audit_response:${auditId}:${fragment.physicalId}`, responseHandler);
                             if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(fragment.nodeId, "Audit Timeout Offense");
@@ -250,6 +262,7 @@ class GlobalAuditor {
                             await executeSlashing(fragment.nodeId, "TIMEOUT");
                         }
                     }, backoffTimeout);
+                    this.pendingChallenges.add(currentTimeoutRef);
                 };
 
                 const responseHandler = async (resMsg: any) => {
