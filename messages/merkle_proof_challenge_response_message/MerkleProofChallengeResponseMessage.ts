@@ -8,6 +8,7 @@ export interface MerkleProofChallengeResponseOptions {
     chunkDataBase64: string; 
     merkleSiblings: string[];
     computedRootMatch: boolean;
+    nonce?: number;
 }
 
 export class MerkleProofChallengeResponseMessage extends Message {
@@ -31,6 +32,9 @@ export class MerkleProofChallengeResponseMessage extends Message {
 
         if (options.computedRootMatch !== undefined) this.computedRootMatch = options.computedRootMatch;
         else if (options.body?.computedRootMatch !== undefined) this.computedRootMatch = options.body.computedRootMatch;
+
+        if (options.nonce !== undefined) this.nonce = options.nonce;
+        else if (options.body?.nonce !== undefined) this.nonce = options.body.nonce;
     }
 
     get contractId(): string { return this.body.contractId; }
@@ -50,4 +54,7 @@ export class MerkleProofChallengeResponseMessage extends Message {
 
     get computedRootMatch(): boolean { return this.body.computedRootMatch; }
     set computedRootMatch(value: boolean) { this.body = { ...this.body, computedRootMatch: value }; }
+
+    get nonce(): number | undefined { return this.body.nonce; }
+    set nonce(value: number | undefined) { this.body = { ...this.body, nonce: value }; }
 }
