@@ -30,7 +30,7 @@ class MempoolManager {
         try {
             hydrateBlockBigInts(block);
 
-            if (this.node.syncEngine && this.node.syncEngine.currentState !== SyncState.OFFLINE) {
+            if (this.node.syncEngine && (this.node.syncEngine.currentState === SyncState.SYNCING_HEADERS || this.node.syncEngine.currentState === SyncState.SYNCING_BLOCKS)) {
                 await this.node.ledger.orphanBlocksCollection?.insertOne({ type: 'PendingBlock', block, connection, timestamp: headerTimestamp });
                 return;
             }

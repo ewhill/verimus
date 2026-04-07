@@ -106,7 +106,7 @@ class BftCoordinator {
     }
 
     async _checkAndProposeFork() {
-        if (this.node.syncEngine && this.node.syncEngine.currentState !== SyncState.OFFLINE) return;
+        if (this.node.syncEngine && (this.node.syncEngine.currentState === SyncState.SYNCING_HEADERS || this.node.syncEngine.currentState === SyncState.SYNCING_BLOCKS)) return;
 
         const eligibleBlockIds: string[] = [];
         for (const [bId, pEntry] of this.mempool.pendingBlocks.entries()) {
@@ -168,7 +168,7 @@ class BftCoordinator {
     async handleProposeFork(forkId: string, blockIds: string[], connection: PeerConnection) {
         const release = await this.mutex.acquire(forkId);
         try {
-            if (this.node.syncEngine && this.node.syncEngine.currentState !== SyncState.OFFLINE) {
+            if (this.node.syncEngine && (this.node.syncEngine.currentState === SyncState.SYNCING_HEADERS || this.node.syncEngine.currentState === SyncState.SYNCING_BLOCKS)) {
                 await this.node.ledger.orphanBlocksCollection?.insertOne({ type: 'ProposeFork', forkId, blockIds, connection });
                 return;
             }
@@ -273,7 +273,7 @@ class BftCoordinator {
     async handleAdoptFork(forkId: string, finalTipHash: string, connection: PeerConnection) {
         const release = await this.mutex.acquire(forkId);
         try {
-            if (this.node.syncEngine && this.node.syncEngine.currentState !== SyncState.OFFLINE) {
+            if (this.node.syncEngine && (this.node.syncEngine.currentState === SyncState.SYNCING_HEADERS || this.node.syncEngine.currentState === SyncState.SYNCING_BLOCKS)) {
                 await this.node.ledger.orphanBlocksCollection?.insertOne({ type: 'AdoptFork', forkId, finalTipHash, connection });
                 return;
             }
