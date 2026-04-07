@@ -8,8 +8,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import Bundler from '../../bundler/Bundler';
 import PeerNode from '../../peer_node/PeerNode';
-import WalletManager from '../../wallet_manager/WalletManager';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
+import WalletManager from '../../wallet_manager/WalletManager';
 
 
 describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation (Phase 3)', () => {

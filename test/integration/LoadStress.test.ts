@@ -14,10 +14,12 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import setupExpressApp from '../../api_server/ApiServer';
 import Bundler from '../../bundler/Bundler';
 import * as cryptoUtils from '../../crypto_utils/CryptoUtils';
+import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
 import PeerNode from '../../peer_node/PeerNode';
+import BaseProvider, { GetBlockReadStreamResult } from '../../storage_providers/base_provider/BaseProvider';
+import { ChaosRouter } from '../../test/utils/ChaosRouter';
 import { createSignedMockBlock } from '../../test/utils/EIP712Mock';
 import WalletManager from '../../wallet_manager/WalletManager';
-import BaseProvider, { GetBlockReadStreamResult } from '../../storage_providers/base_provider/BaseProvider';
 
 class NullStorageProvider extends BaseProvider {
     createBlockStream(): { physicalBlockId: string, writeStream: NodeJS.WritableStream } {
@@ -241,5 +243,51 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
 
         // As it streams directly via chunks, the memory usage overhead footprint should remain significantly lower than the payload size!
         assert.ok(memoryDiffMB < 50, `V8 memory buffer overhead escalated destructively beyond stream pipeline ceilings! Memory grew by ${memoryDiffMB.toFixed(2)} MB`);
+    });
+
+    it('Maintains consensus determinism during extreme network chaos organically natively', async () => {
+        const chaosRouter = new ChaosRouter();
+        chaosRouter.injectJitter(50, 150); // Aggressive 50-150ms variance breaking procedural timing guarantees
+
+        let routedCount = 0;
+        const mockP2PConnection = chaosRouter.wrapConnection({
+            peerAddress: 'mock-chaos-client',
+            send: async (msg: any) => {
+                routedCount++;
+                // Inbound loop automatically maps natively triggering pipeline directly
+                node.events.emit('NETWORK:INBOUND_PENDING_BLOCK', msg.block);
+            }
+        });
+
+        // Generate 100 simultaneous PendingBlock validation streams
+        const PARALLEL_COUNT = 100;
+        const promises = [];
+
+        node.consensusEngine.bftCoordinator.start(); // Bootstrap loop aggressively
+
+        for (let i = 0; i < PARALLEL_COUNT; i++) {
+            const req = (async () => {
+                const w = ethers.Wallet.createRandom();
+                const mockBlock = await createSignedMockBlock(w, 'TRANSACTION', { senderAddress: w.address, recipientAddress: ethers.Wallet.createRandom().address, amount: 10n, senderSignature: 'sig' });
+                
+                return new Promise<void>((resolve) => {
+                    // Synthetically delay the pipeline explicitly staggering randomly
+                    setTimeout(() => {
+                        mockP2PConnection.send(new PendingBlockMessage({ block: mockBlock }));
+                        resolve();
+                    }, Math.random() * 50);
+                });
+            })();
+            promises.push(req);
+        }
+
+        await Promise.all(promises);
+
+        // Give KeyedMutex chains time to naturally resolve organically natively
+        await new Promise(r => setTimeout(r, 800));
+
+        // M4 Core Assertion: Zero stalling pending locks left dangling organically natively
+        assert.strictEqual(node.mempool.pendingBlocks.size, 0, `Network deadlock detected! ${node.mempool.pendingBlocks.size} blocks remained orphaned during chaos bounds.`);
+        assert.ok(routedCount === PARALLEL_COUNT, `ChaosRouter failed to dispatch exactly 100 bounds adequately routing.`);
     });
 });
