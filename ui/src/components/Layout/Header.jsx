@@ -81,7 +81,7 @@ const Header = () => {
                     <button className={`segmented-btn ${activeLedgerTab === 'global' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Global Ledger</button>
 
                     {nodeConfig?.roles?.includes('VALIDATOR') && (
-                        <button className={`segmented-btn ${activeLedgerTab === 'consensus' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Mempool Monitor</button>
+                        <button className={`segmented-btn ${activeLedgerTab === 'consensus' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Consensus</button>
                     )}
                     {nodeConfig?.roles?.includes('STORAGE') && (
                         <button className={`segmented-btn ${activeLedgerTab === 'contracts' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Active Contracts</button>
@@ -133,7 +133,7 @@ const Header = () => {
                         <button className={`mobile-nested-item ${activeLedgerTab === 'global' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' }); routeTo(e, 'ledger'); }}>Global Ledger</button>
 
                         {nodeConfig?.roles?.includes('VALIDATOR') && (
-                            <button className={`mobile-nested-item ${activeLedgerTab === 'consensus' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' }); routeTo(e, 'ledger'); }}>Mempool Monitor</button>
+                            <button className={`mobile-nested-item ${activeLedgerTab === 'consensus' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' }); routeTo(e, 'ledger'); }}>Consensus</button>
                         )}
                         {nodeConfig?.roles?.includes('STORAGE') && (
                             <button className={`mobile-nested-item ${activeLedgerTab === 'contracts' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' }); routeTo(e, 'ledger'); }}>Active Contracts</button>
