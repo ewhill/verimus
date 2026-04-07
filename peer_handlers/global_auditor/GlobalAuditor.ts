@@ -3,7 +3,7 @@ import { monitorEventLoopDelay } from 'node:perf_hooks';
 
 import { ethers } from 'ethers';
 
-import { GENESIS_TIMESTAMP, BLOCK_TYPES, calculateAuditDecayInterval, IS_DEV_NETWORK } from '../../constants';
+import { GENESIS_TIMESTAMP, BLOCK_TYPES, calculateAuditDecayInterval } from '../../constants';
 import { signData, verifyMerkleProof } from '../../crypto_utils/CryptoUtils';
 import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from '../../crypto_utils/EIP712Types';
 import logger from '../../logger/Logger';
@@ -94,7 +94,8 @@ class GlobalAuditor {
         const challengeString = `${contractId}-${latestBlockHash}-${intervalBucket}`;
         const challengeHashHex = crypto.createHash('sha256').update(challengeString).digest('hex');
 
-        const cleanSelfId = this.node.publicKey ? this.node.publicKey.trim() : '';
+        const sanitizeKey = (k: string) => k.replace(/\s+/g, '');
+        const cleanSelfId = this.node.publicKey ? sanitizeKey(this.node.publicKey) : '';
         let closestId = cleanSelfId;
         const selfHashHex = crypto.createHash('sha256').update(cleanSelfId).digest('hex');
         let minDistance = this.computeXORDistance(challengeHashHex, selfHashHex);
@@ -103,10 +104,7 @@ class GlobalAuditor {
             for (const p of this.node.peer.peers) {
                 const pubKeyRaw = p.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
                 if (pubKeyRaw) {
-                    const cleanPeerId = pubKeyRaw.trim();
-                    if (IS_DEV_NETWORK) {
-                        logger.info(`[Auditor Eval ${this.node.port}] Node self=[${cleanSelfId.length}], peer=[${cleanPeerId.length}]. Identical bounds: ${cleanSelfId === cleanPeerId}`);
-                    }
+                    const cleanPeerId = sanitizeKey(pubKeyRaw);
                     const peerHashHex = crypto.createHash('sha256').update(cleanPeerId).digest('hex');
                     const distance = this.computeXORDistance(challengeHashHex, peerHashHex);
                     if (this.isSmallerDistance(distance, minDistance)) {
@@ -161,8 +159,8 @@ class GlobalAuditor {
             if (!contractPayload.fragmentMap || !contractPayload.merkleRoots) continue;
 
             for (const fragment of contractPayload.fragmentMap) {
-                if (fragment.nodeId === this.node.walletAddress || fragment.nodeId === this.node.publicKey) continue;
-                if (fragment.nodeId === 'GENESIS_NODE' && IS_DEV_NETWORK) continue;
+                if (fragment.nodeId === this.node.walletAddress) continue;
+                if (fragment.nodeId === 'GENESIS_NODE') continue; // Never audit the static genesis node placeholder
 
                 const merkleRoot = contractPayload.merkleRoots[fragment.shardIndex];
 

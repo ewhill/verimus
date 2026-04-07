@@ -44,20 +44,21 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
 
         // Stage 1: Scaffold Initial Staking Collateral internally mapping Phase 5b
         const stakingLockPayload = {
+            amount: ethers.parseUnits("50000", 18),
             operatorAddress: maliciousWallet.address,
-            collateralAmount: 50000n,
+            collateralAmount: ethers.parseEther('50000'),
             minEpochTimelineDays: 30n
         };
 
         const stakingBlock = await createSignedMockBlock(maliciousWallet, BLOCK_TYPES.STAKING_CONTRACT, stakingLockPayload, -1);
         const mockConn = createMock<import('../../types').PeerConnection>({ peerAddress: '0.0.0.0', send: () => { } });
 
-        await node.consensusEngine.handlePendingBlock(stakingBlock, mockConn, Date.now());
-
         // Finalize Staking Mints into Local DB mapping state natively 
         const forkEvent = new Promise<void>(res => {
             node!.ledger.events.once('blockAdded', () => res());
         });
+
+        await node.consensusEngine.handlePendingBlock(stakingBlock, mockConn, Date.now());
 
         const blockToHash = { ...stakingBlock };
         delete blockToHash.hash;
@@ -71,13 +72,13 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
 
         // Assert Step: WalletManager tracks initial Locked Escrow correctly 
         const testBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousWallet.address);
-        assert.strictEqual(testBalance, -50000n, '50000n collateral effectively tracked removing liquid boundaries');
+        assert.strictEqual(testBalance, -ethers.parseEther('50000'), '50000 collateral effectively tracked removing liquid boundaries');
 
         // Stage 2: Intercept global mathematical failure! Injecting native Slashing penalty!
         const invalidSlashPayload = {
             penalizedAddress: maliciousWallet.address,
             evidenceSignature: 'INVALID_GARBAGE_STRING_NOT_A_HASH',
-            burntAmount: 50000n
+            burntAmount: ethers.parseEther('50000')
         };
 
         // We use the WRONG key intentionally to make it an invalid block signature? Wait, the test is supposed to reject it because of evidenceSignature. 
@@ -88,22 +89,22 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
         
         // Balance should still be -50000 
         const interimBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousWallet.address);
-        assert.strictEqual(interimBalance, -50000n, 'Invalid evidence signature was correctly rejected by consensus engine');
+        assert.strictEqual(interimBalance, -ethers.parseEther('50000'), 'Invalid evidence signature was correctly rejected by consensus engine');
 
         // Stage 3: Inject valid Slashing penalty!
         const slashPayload = {
             penalizedAddress: maliciousWallet.address,
             evidenceSignature: createHash('sha256').update('FORGERY_EVIDENCE_MAP').digest('hex'),
-            burntAmount: 50000n
+            burntAmount: ethers.parseEther('50000')
         };
 
         const slashBlock = await createSignedMockBlock(wallet, BLOCK_TYPES.SLASHING_TRANSACTION, slashPayload, -1);
 
-        await node.consensusEngine.handlePendingBlock(slashBlock, mockConn, Date.now());
-
         const slashFork = new Promise<void>(res => {
             node!.ledger.events.once('blockAdded', () => res());
         });
+
+        await node.consensusEngine.handlePendingBlock(slashBlock, mockConn, Date.now());
 
         const slashBlockToHash = { ...slashBlock };
         delete slashBlockToHash.hash;
@@ -116,7 +117,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
 
         // Finalize state limits natively executing collateral mathematical checks limits
         const postSlashBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousWallet.address);
-        assert.strictEqual(postSlashBalance, -100000n, 'Collateral slashed resulting in an immutable zeroed sum loss mathematically');
+        assert.strictEqual(postSlashBalance, -ethers.parseEther('100000'), 'Collateral slashed resulting in an immutable zeroed sum loss mathematically');
 
     } finally {
         if (node) {
@@ -129,6 +130,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
             if (node.peer) await node.peer.close();
             if (node.ledger && node.ledger.client) await node.ledger.client.close();
         }
+        if (mongod) await mongod.stop();
     }
 });
 
@@ -171,6 +173,10 @@ test('Integration: Deterministic Auditor Verification (Phase 4 Chaos Overlap)', 
 
         const honestNodeId = ethers.Wallet.createRandom().address;
         const maliciousNodeId = ethers.Wallet.createRandom().address;
+
+        if (node.peer) {
+            await node.peer.close();
+        }
 
         node.peer = createMock<any>({
             peers: [{ remoteCredentials_: { rsaKeyPair: { public: Buffer.from(node.walletAddress) } } }],
