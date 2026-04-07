@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
 import { useStore } from '../../store';
-import { ApiService } from '../../services/api';
 import FilesView from './FilesView/FilesView';
-import LedgerGrid from './LedgerGrid';
 
 const WalletView = () => {
-    const dispatch = useStore(s => s.dispatch);
     const activeTab = useStore(s => s.activeWalletTab);
     const web3Account = useStore(s => s.web3Account);
     const [walletData, setWalletData] = useState({ balance: 0, emissionRate: 0, transactions: [] });
@@ -47,14 +44,6 @@ const WalletView = () => {
         };
     }, [web3Account]);
 
-    useEffect(() => {
-        if (activeTab === 'blocks') {
-            ApiService.fetchBlocks(useStore.getState(), dispatch);
-            const poll = setInterval(() => ApiService.fetchBlocks(useStore.getState(), dispatch), 5000);
-            return () => clearInterval(poll);
-        }
-    }, [activeTab, dispatch]);
-
     // Format helpers mapping raw blockchain precision from BigInt strings natively
     const formatVeri = (num) => parseFloat(ethers.formatUnits(num ? num.toString() : "0", 18)).toFixed(6) + ' $VERI';
     const formatDate = (ts) => new Date(ts).toLocaleString();
@@ -65,12 +54,6 @@ const WalletView = () => {
             {activeTab === 'assets' && (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'visible' }}>
                     <FilesView />
-                </div>
-            )}
-
-            {activeTab === 'blocks' && (
-                <div style={{ padding: '2rem 0', width: '100%', maxWidth: '1400px', margin: '0 auto' }} className="stagger-1">
-                    <LedgerGrid />
                 </div>
             )}
 

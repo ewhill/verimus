@@ -74,7 +74,6 @@ const Header = () => {
                 <>
                     <button className={`segmented-btn ${activeWalletTab === 'dashboard' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_WALLET_TAB', payload: 'dashboard' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Wallet Dashboard</button>
                     <button className={`segmented-btn ${activeWalletTab === 'assets' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_WALLET_TAB', payload: 'assets' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Asset Files</button>
-                    <button className={`segmented-btn ${activeWalletTab === 'blocks' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_WALLET_TAB', payload: 'blocks' }); setIsNavOpen(false); }} style={{ flex: 1 }}>My Blocks</button>
                 </>
             )}
             {activeRoute === 'ledger' && (
@@ -115,7 +114,6 @@ const Header = () => {
                         <div className="mobile-nested-group" style={{ animation: 'fadeInDown 0.2s ease-out' }}>
                             <button className={`mobile-nested-item ${activeWalletTab === 'dashboard' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_WALLET_TAB', payload: 'dashboard' }); routeTo(e, 'wallet'); }}>Wallet Dashboard</button>
                             <button className={`mobile-nested-item ${activeWalletTab === 'assets' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_WALLET_TAB', payload: 'assets' }); routeTo(e, 'wallet'); }}>Asset Files</button>
-                            <button className={`mobile-nested-item ${activeWalletTab === 'blocks' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_WALLET_TAB', payload: 'blocks' }); routeTo(e, 'wallet'); }}>My Blocks</button>
                         </div>
                     )}
                 </div>
