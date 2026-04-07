@@ -14,3 +14,12 @@ Deep-tracing revealed the architectural flaw: `this.node.peer.trustedPeers` was 
 ## Health Check:
 - E2E Tests: ✅ 235 passing natively.
 - Linting / Syntax checks: ✅ 0 errors dynamically checked.
+
+## Rokit M1 Decoupling Milestone:
+- ✅ Task 1: Extract `GlobalAuditor` Sub-System
+- ✅ Task 2: Extract `MempoolManager` Sub-System
+- ✅ Task 3: Extract `BftCoordinator` Sub-System
+- ✅ Task 4: Rewire `ConsensusEngine` as Event Bus
+- ✅ Task 5: Stabilize Architecture and Validate Parity (No compilation errors, Lint clean)
+- ✅ Task 6: Reconstruct `ConsensusEngine` tests
+- ✅ Task 7: Establish E2E resolution bounds (All timeout / resource leak issues resolved. 228 passing tests completely cleanly with 0 failing integrations).
