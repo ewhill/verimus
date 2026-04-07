@@ -27,6 +27,7 @@ import SyncEngine from '../peer_handlers/sync_engine/SyncEngine';
 import BaseProvider from '../storage_providers/base_provider/BaseProvider';
 import { Block } from '../types';
 import { NodeRole } from '../types/NodeRole';
+import WalletManager from '../wallet_manager/WalletManager';
 
 
 
@@ -52,6 +53,7 @@ class PeerNode {
     walletAddress!: string;
     wallet!: ethers.Wallet | ethers.HDNodeWallet;
     signature!: string;
+    walletManager!: WalletManager;
     httpServer?: https.Server;
     isHeadless: boolean;
     roles: NodeRole[];
@@ -88,13 +90,15 @@ class PeerNode {
         this.db = null;
         this.ownedBlocksCache = [];
 
+        this.events = new EventEmitter();
         this.consensusEngine = new ConsensusEngine(this);
         this.syncEngine = new SyncEngine(this);
-        this.events = new EventEmitter();
     }
 
     async init() {
         await this.ledger.init(this.port);
+        
+        this.walletManager = new WalletManager(this.ledger);
 
         this.reputationManager = new ReputationManager(this.ledger.peersCollection);
 
@@ -272,6 +276,19 @@ class PeerNode {
                 resolve();
             });
         });
+    }
+
+    stop() {
+        this.consensusEngine.stop();
+        if (this.syncEngine && typeof (this.syncEngine as any).stop === 'function') {
+            (this.syncEngine as any).stop();
+        }
+        if (this.httpServer) {
+            this.httpServer.close();
+        }
+        if (this.peer && typeof this.peer.close === 'function') {
+            this.peer.close();
+        }
     }
 
     async loadOwnedBlocksCache() {

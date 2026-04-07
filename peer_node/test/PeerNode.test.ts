@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 import { createHash } from 'node:crypto';
+import { EventEmitter } from 'node:events';
 import { describe, it, mock } from 'node:test';
 
 import { Collection, DeleteResult, FindCursor, InsertManyResult, InsertOneResult, WithId } from 'mongodb';
@@ -34,6 +35,8 @@ const getMockNode = async (PeerNodeClass: any) => {
     const node = new PeerNodeClass(3002, [], new MemoryStorageProvider(), new Bundler('data'), 'mongodb://localhost:27017/test', 'mockPubKey', getMockCredentials(), 'data');
     node.ledger = createMock<Ledger>({
         init: async () => { },
+        events: new EventEmitter(),
+        blockAddedSubscribers: [],
         collection: createMock<Collection<any>>({
             find: mock.fn<() => FindCursor<WithId<any>>>(() => createMock<FindCursor<WithId<any>>>({ toArray: async () => [] })) as any,
             insertMany: mock.fn<() => Promise<InsertManyResult<any>>>(),
@@ -83,6 +86,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
         assert.ok(mockNode.reputationManager !== undefined, 'ReputationManager MUST exist post-initialization');
         assert.ok(mockNode.reputationManager.peersCollection !== undefined && mockNode.reputationManager.peersCollection !== null, 'ReputationManager bridged native persistent Mongo DB Collections');
 
+        mockNode.stop();
         mock.restoreAll();
     });
 
@@ -101,6 +105,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
 
         assert.strictEqual(mockNode.ownedBlocksCache.length, 1);
         assert.strictEqual(mockNode.ownedBlocksCache[0], 'hash1');
+        mockNode.stop();
     });
 
     it('Adds newly owned blocks directly to MongoDB correctly', async () => {
@@ -117,6 +122,8 @@ describe('Backend: PeerNode Logical Verification Check', () => {
 
         let insertedHash = '';
         mockNode.ledger = createMock<Ledger>({
+            events: new EventEmitter(),
+            blockAddedSubscribers: [],
             ownedBlocksCollection: createMock<Collection<any>>({
                 insertOne: mock.fn<(doc: any) => Promise<InsertOneResult<any>>>(async (doc: any) => { insertedHash = doc.hash; return { acknowledged: true, insertedId: 'mock' } as any; })
             })
@@ -135,6 +142,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
         assert.strictEqual(mockNode.ownedBlocksCache.length, 1);
         assert.ok(mockNode.ownedBlocksCache.includes('hash2'));
         assert.strictEqual(insertedHash, 'hash2', 'Native MongoDB insertion fired');
+        mockNode.stop();
     });
 
     it('Bypasses cache population when cache matches ledger', async () => {
@@ -153,6 +161,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
 
         assert.strictEqual(mockNode.ownedBlocksCache.length, 1);
         assert.strictEqual(mockNode.ownedBlocksCache[0], 'hash_from_cache');
+        mockNode.stop();
     });
 
     it('Auto-invalidates stale cache if database appears purged', async () => {
@@ -163,6 +172,8 @@ describe('Backend: PeerNode Logical Verification Check', () => {
         let deleted = false;
         mockNode.ownedBlocksCache = ['hash1']; // Simulate existing cache
         mockNode.ledger = createMock<Ledger>({
+            events: new EventEmitter(),
+            blockAddedSubscribers: [],
             collection: createMock<Collection<Block>>({ countDocuments: mock.fn<() => Promise<number>>(async () => 1) }),
             ownedBlocksCollection: createMock<Collection<any>>({
                 countDocuments: mock.fn<() => Promise<number>>(async () => 5),
@@ -174,17 +185,21 @@ describe('Backend: PeerNode Logical Verification Check', () => {
 
         assert.strictEqual(mockNode.ownedBlocksCache.length, 0); // Fails
         assert.strictEqual(deleted, true);
+        mockNode.stop();
     });
 
     it('Handles outer wrapper failures during cache recovery', async () => {
         const mockNode = await getMockNode(PeerNodeClass);
         mockNode.ledger = createMock<Ledger>({
+            events: new EventEmitter(),
+            blockAddedSubscribers: [],
             collection: createMock<Collection<Block>>({ countDocuments: mock.fn<() => Promise<number>>(async () => { throw new Error('DB Crash'); }) })
         });
 
         await mockNode.loadOwnedBlocksCache();
 
         assert.strictEqual(mockNode.ownedBlocksCache.length, 0); // Outer catch handles it
+        mockNode.stop();
     });
 
     it('Synchronizes deletion from unverified blocks', async () => {
@@ -212,6 +227,8 @@ describe('Backend: PeerNode Logical Verification Check', () => {
         mockNode.mempool.pendingBlocks.set(recalculatedHashTest, { block: dummyBlock3, connection: mockConn, timestamp: 12345 });
 
         mockNode.ledger = createMock<Ledger>({
+            events: new EventEmitter(),
+            blockAddedSubscribers: [],
             ownedBlocksCollection: createMock<Collection<any>>({
                 insertOne: mock.fn<() => Promise<InsertOneResult<any>>>(async () => { throw new Error('Write error'); })
             })
@@ -231,5 +248,7 @@ describe('Backend: PeerNode Logical Verification Check', () => {
 
         mockNode.ledger.activeValidatorCountCache = 0;
         assert.strictEqual(mockNode.getMajorityCount(), 1);
+        
+        mockNode.stop();
     });
 });

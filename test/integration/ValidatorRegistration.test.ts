@@ -12,6 +12,7 @@ import { generateRSAKeyPair } from '../../crypto_utils/CryptoUtils';
 import PeerNode from '../../peer_node/PeerNode';
 import { createSignedMockBlock } from '../../test/utils/EIP712Mock';
 import { NodeRole } from '../../types/NodeRole';
+import WalletManager from '../../wallet_manager/WalletManager';
 
 describe('Integration: On-Chain Validator Registry Transitions', () => {
 
@@ -34,6 +35,7 @@ describe('Integration: On-Chain Validator Registry Transitions', () => {
             node.consensusEngine.runGlobalAudit = async () => {};
             
             await node.ledger.init(32000);
+            node.walletManager = new WalletManager(node.ledger);
             await (node as any).loadOwnedBlocksCache?.();
             Object.assign(node, { 
                 peer: {

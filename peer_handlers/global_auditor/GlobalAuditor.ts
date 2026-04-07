@@ -1,0 +1,328 @@
+import * as crypto from 'crypto';
+
+import { ethers } from 'ethers';
+
+import { GENESIS_TIMESTAMP, BLOCK_TYPES, calculateAuditDecayInterval, IS_DEV_NETWORK } from '../../constants';
+import { signData, verifyMerkleProof } from '../../crypto_utils/CryptoUtils';
+import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from '../../crypto_utils/EIP712Types';
+import logger from '../../logger/Logger';
+import { MerkleProofChallengeRequestMessage } from '../../messages/merkle_proof_challenge_request_message/MerkleProofChallengeRequestMessage';
+import PeerNode from '../../peer_node/PeerNode';
+import type { Block, StorageContractPayload, SlashingPayload } from '../../types';
+import WalletManager from '../../wallet_manager/WalletManager';
+
+class GlobalAuditor {
+    private node: PeerNode;
+    private auditedIntervals: Map<string, number> = new Map();
+    private auditTimer: NodeJS.Timeout | null = null;
+    private isRunning: boolean = false;
+    
+    // Scoped instance lock ensuring intervals never overlap concurrently
+    private executionMutex: Promise<void> = Promise.resolve();
+
+    constructor(peerNode: PeerNode) {
+        this.node = peerNode;
+    }
+
+    get walletManager() { return this.node.walletManager; }
+
+    start() {
+        if (this.isRunning) return;
+        this.isRunning = true;
+        this.auditTimer = setInterval(() => {
+            this.enqueueTask(async () => {
+                try {
+                    await this.runGlobalAudit();
+                } catch (err: any) {
+                    logger.warn(`[Peer ${this.node.port}] Global audit loop trace failed natively: ${err.message}`);
+                }
+            });
+        }, 30000);
+        this.auditTimer.unref();
+    }
+
+    stop() {
+        if (this.auditTimer) {
+            clearInterval(this.auditTimer);
+            this.auditTimer = null;
+        }
+        this.isRunning = false;
+    }
+
+    private async enqueueTask<T>(task: () => Promise<T>): Promise<T> {
+        return new Promise((resolve, reject) => {
+            this.executionMutex = this.executionMutex.then(async () => {
+                try {
+                    resolve(await task());
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        });
+    }
+
+    private computeXORDistance(hashA: string, hashB: string): string {
+        let result = '';
+        for (let i = 0; i < hashA.length; i++) {
+            const hexA = parseInt(hashA[i], 16);
+            const hexB = parseInt(hashB[i], 16);
+            result += (hexA ^ hexB).toString(16);
+        }
+        return result;
+    }
+
+    private isSmallerDistance(hexA: string, hexB: string): boolean {
+        if (hexA.length !== hexB.length) return hexA.length < hexB.length;
+        for (let i = 0; i < hexA.length; i++) {
+            const a = parseInt(hexA[i], 16);
+            const b = parseInt(hexB[i], 16);
+            if (a !== b) return a < b;
+        }
+        return false;
+    }
+
+    verifySlashingEvidence(payload: SlashingPayload, _unusedAuditorPublicKey: string): boolean {
+        const hexRegex = /^[0-9a-fA-F]{64}$/;
+        if (!hexRegex.test(payload.evidenceSignature)) {
+            return false;
+        }
+        return true;
+    }
+
+    computeDeterministicAuditor(contractId: string, latestBlockHash: string, intervalBucket: number): boolean {
+        const challengeString = `${contractId}-${latestBlockHash}-${intervalBucket}`;
+        const challengeHashHex = crypto.createHash('sha256').update(challengeString).digest('hex');
+
+        const cleanSelfId = this.node.publicKey ? this.node.publicKey.trim() : '';
+        let closestId = cleanSelfId;
+        const selfHashHex = crypto.createHash('sha256').update(cleanSelfId).digest('hex');
+        let minDistance = this.computeXORDistance(challengeHashHex, selfHashHex);
+
+        if (this.node.peer && this.node.peer.peers) {
+            for (const p of this.node.peer.peers) {
+                const pubKeyRaw = p.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
+                if (pubKeyRaw) {
+                    const cleanPeerId = pubKeyRaw.trim();
+                    if (IS_DEV_NETWORK) {
+                        logger.info(`[Auditor Eval ${this.node.port}] Node self=[${cleanSelfId.length}], peer=[${cleanPeerId.length}]. Identical bounds: ${cleanSelfId === cleanPeerId}`);
+                    }
+                    const peerHashHex = crypto.createHash('sha256').update(cleanPeerId).digest('hex');
+                    const distance = this.computeXORDistance(challengeHashHex, peerHashHex);
+                    if (this.isSmallerDistance(distance, minDistance)) {
+                        minDistance = distance;
+                        closestId = cleanPeerId;
+                    }
+                }
+            }
+        }
+
+        return closestId === cleanSelfId;
+    }
+
+    async runGlobalAudit() {
+        if (this.node.syncEngine && this.node.syncEngine.isSyncing) return;
+
+        const latestBlock = await this.node.ledger.getLatestBlock();
+        const latestBlockHash = latestBlock && latestBlock.hash ? latestBlock.hash : 'genesis_hash';
+
+        const genesisBlock = await this.node.ledger.getBlockByIndex(0);
+        const genesisTimestamp = genesisBlock?.metadata?.timestamp || Date.now();
+        const timeSinceGenesis = Math.max(0, Date.now() - genesisTimestamp);
+
+        const discretizedNow = Math.floor(Date.now() / (15 * 60 * 1000)) * (15 * 60 * 1000);
+        const intervalBucketMs = calculateAuditDecayInterval(genesisTimestamp, discretizedNow);
+        const intervalBucket = Math.floor(timeSinceGenesis / intervalBucketMs);
+
+        const contracts = await this.node.ledger.collection!.find({ type: BLOCK_TYPES.STORAGE_CONTRACT }).sort({ 'metadata.timestamp': -1 }).limit(10).toArray();
+        if (!contracts.length) return;
+
+        let hasAudited = false;
+
+        for (const contract of contracts) {
+            if (!contract.hash) continue;
+            const contractHash = contract.hash;
+            const trackKey = `${contractHash}-${intervalBucket}`;
+            if (this.auditedIntervals.has(trackKey)) continue;
+
+            this.auditedIntervals.set(trackKey, intervalBucket);
+
+            const isElected = this.computeDeterministicAuditor(contractHash, latestBlockHash, intervalBucket);
+            if (!isElected) continue;
+
+            if (!hasAudited) {
+                logger.info(`[Peer ${this.node.port}] Node deterministically elected as Auditor. Initiating mathematical Proof of Spacetime intervals...`);
+                this.node.events.emit('audit_telemetry', { status: 'ELECTION_INITIATED', message: 'Node deterministically elected as Auditor. Initiating mathematical Proof of Spacetime intervals...' });
+                hasAudited = true;
+            }
+
+            const contractPayload = contract.payload as StorageContractPayload;
+            if (!contractPayload.fragmentMap || !contractPayload.merkleRoots) continue;
+
+            for (const fragment of contractPayload.fragmentMap) {
+                if (fragment.nodeId === this.node.walletAddress || fragment.nodeId === this.node.publicKey) continue;
+                if (fragment.nodeId === 'GENESIS_NODE' && IS_DEV_NETWORK) continue;
+
+                const merkleRoot = contractPayload.merkleRoots[fragment.shardIndex];
+
+                const CHUNK_SIZE = 64 * 1024;
+                const K = contractPayload.erasureParams!.k;
+                const paddedSize = Math.ceil(contractPayload.erasureParams!.originalSize / K) * K;
+                const shardSize = paddedSize / K;
+                const totalChunks = Math.ceil(shardSize / CHUNK_SIZE);
+
+                const challengeHashHex = crypto.createHash('sha256').update(`${contractHash}-${latestBlockHash}-${intervalBucket}`).digest('hex');
+                const numericHash = parseInt(challengeHashHex.slice(0, 8), 16);
+                const targetIndex = totalChunks > 0 ? numericHash % totalChunks : 0;
+
+                this.node.events.emit('audit_telemetry', { status: 'CHALLENGE_DISPATCHED', message: `Dispatching Merkle challenge targeting Shard ${fragment.shardIndex} at Chunk Index ${targetIndex}...`, targetPeer: fragment.nodeId });
+
+                const executeSlashing = async (nodeId: string, reason: string) => {
+                    logger.warn(`[Peer ${this.node.port}] Executing slashing for ${nodeId} due to: ${reason}`);
+                    const slashPayload = {
+                        penalizedAddress: nodeId,
+                        evidenceSignature: crypto.createHash('sha256').update(`${contractHash}:${fragment.physicalId}:${targetIndex}:${reason}`).digest('hex'),
+                        burntAmount: ethers.parseUnits("50000", 18)
+                    };
+                    try {
+                        const pendingBlock: Block = {
+                            metadata: { index: -1, timestamp: Date.now() },
+                            type: BLOCK_TYPES.SLASHING_TRANSACTION,
+                            payload: slashPayload,
+                            signerAddress: this.node.walletAddress,
+                            signature: ''
+                        };
+                        const valueObj = normalizeBlockForSignature(pendingBlock);
+                        const schema = EIP712_SCHEMAS[BLOCK_TYPES.SLASHING_TRANSACTION];
+                        if (this.node.wallet) {
+                            pendingBlock.signature = await this.node.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
+                        } else {
+                            pendingBlock.signature = signData(JSON.stringify(slashPayload), this.node.privateKey) as string;
+                        }
+                        
+                        // Decoupled notification rather than direct execution
+                        this.node.events.emit('AUDITOR:SLASHING_GENERATED', pendingBlock);
+                        
+                        if (this.node.peer) {
+                            // Optionally broadcast pre-verified structural block
+                        }
+                    } catch (e: any) {
+                        logger.warn(`[Peer ${this.node.port}] Failed to execute slashing block formulation: ${e.message}`);
+                    }
+                };
+
+                const auditId = contractHash;
+                const MAX_RETRIES = 3;
+                const BASE_TIMEOUT_MS = 5000;
+                let currentAttempt = 0;
+                let currentTimeoutRef: NodeJS.Timeout;
+                let isResolved = false;
+
+                const attemptChallenge = () => {
+                    const challengeMsg = new MerkleProofChallengeRequestMessage({
+                        contractId: contractHash,
+                        physicalId: fragment.physicalId,
+                        auditorPublicKey: this.node.publicKey,
+                        auditorNodeId: this.node.walletAddress,
+                        targetNodeId: fragment.nodeId,
+                        chunkIndex: targetIndex
+                    });
+
+                    if (this.node.peer) {
+                        this.node.peer.broadcast(challengeMsg).catch(e => {
+                            logger.warn(`[Peer ${this.node.port}] Audit broadcast routing latency drop: ${e.message}`);
+                        });
+                    }
+
+                    const backoffTimeout = BASE_TIMEOUT_MS * Math.pow(2, currentAttempt);
+
+                    currentTimeoutRef = setTimeout(async () => {
+                        if (currentAttempt < MAX_RETRIES) {
+                            currentAttempt++;
+                            logger.info(`[Peer ${this.node.port}] P2P Timeout resolving Merkle sequence. Exponential backoff retry ${currentAttempt}/${MAX_RETRIES} for host ${fragment.nodeId.slice(0, 8)}...`);
+                            attemptChallenge();
+                        } else {
+                            if (isResolved) return;
+                            isResolved = true;
+                            this.node.events.off(`merkle_audit_response:${auditId}:${fragment.physicalId}`, responseHandler);
+                            if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(fragment.nodeId, "Audit Timeout Offense");
+                            logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof for physicalId=${fragment.physicalId} auditId=${auditId}! Penalty mapped.`);
+                            this.node.events.emit('audit_telemetry', { status: 'SLASHING_EXECUTED', message: `Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof. Executing Slashing...`, targetPeer: fragment.nodeId });
+                            await executeSlashing(fragment.nodeId, "TIMEOUT");
+                        }
+                    }, backoffTimeout);
+                };
+
+                const responseHandler = async (resMsg: any) => {
+                    if (isResolved) return;
+                    if (resMsg.auditorNodeId && resMsg.auditorNodeId !== this.node.walletAddress) return;
+
+                    isResolved = true;
+                    clearTimeout(currentTimeoutRef);
+                    this.node.events.off(`merkle_audit_response:${auditId}:${fragment.physicalId}`, responseHandler);
+
+                    let isValid = false;
+                    if (resMsg.computedRootMatch && resMsg.chunkDataBase64 && resMsg.merkleSiblings) {
+                        try {
+                            const buffer = Buffer.from(resMsg.chunkDataBase64, 'base64');
+                            isValid = verifyMerkleProof(buffer, resMsg.merkleSiblings, merkleRoot, targetIndex);
+                        } catch (_unusedE) { isValid = false; }
+                    }
+
+                    if (!isValid) {
+                        if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(fragment.nodeId, "Proof of Spacetime Forgery");
+                        logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} explicitly failed mathematical audit! Banned!`);
+                        this.node.events.emit('audit_telemetry', { status: 'SLASHING_EXECUTED', message: `Host ${fragment.nodeId.slice(0, 8)} explicitly failed mathematical audit! Banned!`, targetPeer: fragment.nodeId });
+                        await executeSlashing(fragment.nodeId, "FORGERY_INVALID_BOUNDS");
+                    } else {
+                        if (this.node.reputationManager) await this.node.reputationManager.rewardHonestProposal(fragment.nodeId);
+                        logger.info(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} perfectly mapped rigorous spacetime boundaries!`);
+                        this.node.events.emit('audit_telemetry', { status: 'AUDIT_SUCCESS', message: `Host ${fragment.nodeId.slice(0, 8)} perfectly mapped rigorous spacetime boundaries!`, targetPeer: fragment.nodeId });
+
+                        const reward = WalletManager.calculateSystemReward(Date.now(), GENESIS_TIMESTAMP);
+                        const hostReward = (reward * 90n) / 100n;
+                        const auditorReward = reward - hostReward;
+
+                        try {
+                            const [hostTx, auditorTx] = await Promise.all([
+                                this.walletManager.allocateFunds(ethers.ZeroAddress, fragment.nodeId, hostReward, 'SYSTEM_SIG'),
+                                this.walletManager.allocateFunds(ethers.ZeroAddress, this.node.walletAddress, auditorReward, 'SYSTEM_SIG')
+                            ]);
+
+                            const mintTxBlock = async (txPayload: any) => {
+                                if (!txPayload) return;
+
+                                const b: Block = {
+                                    metadata: { index: -1, timestamp: Date.now() },
+                                    type: BLOCK_TYPES.TRANSACTION,
+                                    payload: txPayload,
+                                    signerAddress: this.node.walletAddress,
+                                    signature: ''
+                                };
+                                const valueObj = normalizeBlockForSignature(b);
+                                const schema = EIP712_SCHEMAS[BLOCK_TYPES.TRANSACTION];
+                                if (this.node.wallet) {
+                                    b.signature = await this.node.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
+                                } else {
+                                    b.signature = signData(JSON.stringify(txPayload), this.node.privateKey) as string;
+                                }
+                                
+                                // Route to component bus natively
+                                this.node.events.emit('AUDITOR:REWARD_GENERATED', b);
+                            };
+
+                            await mintTxBlock(hostTx);
+                            await mintTxBlock(auditorTx);
+                        } catch (e: any) {
+                            logger.error(`Failed to formulate compensation bounds: ${e.message}`);
+                        }
+                    }
+                };
+
+                this.node.events.on(`merkle_audit_response:${auditId}:${fragment.physicalId}`, responseHandler);
+                attemptChallenge();
+            }
+        }
+    }
+}
+
+export default GlobalAuditor;

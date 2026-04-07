@@ -8,6 +8,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import Bundler from '../../bundler/Bundler';
 import PeerNode from '../../peer_node/PeerNode';
+import WalletManager from '../../wallet_manager/WalletManager';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
 
 
@@ -60,6 +61,7 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
 
         const initWithoutServer = async (node: PeerNode) => {
              await node.ledger.init(node.port);
+             node.walletManager = new WalletManager(node.ledger);
              await node.loadOwnedBlocksCache();
              // Mock peer initialization for controlled connectivity mapping
              const mockPeer = {

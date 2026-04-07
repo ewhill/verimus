@@ -15,6 +15,8 @@ import setupExpressApp from '../../api_server/ApiServer';
 import Bundler from '../../bundler/Bundler';
 import * as cryptoUtils from '../../crypto_utils/CryptoUtils';
 import PeerNode from '../../peer_node/PeerNode';
+import { createSignedMockBlock } from '../../test/utils/EIP712Mock';
+import WalletManager from '../../wallet_manager/WalletManager';
 import BaseProvider, { GetBlockReadStreamResult } from '../../storage_providers/base_provider/BaseProvider';
 
 class NullStorageProvider extends BaseProvider {
@@ -90,6 +92,7 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
         node.consensusEngine.handlePendingBlock = async () => { };
 
         await node.ledger.init(0);
+        node.walletManager = new WalletManager(node.ledger);
         await node.loadOwnedBlocksCache();
 
         // Pass integration escrows mapping stream limits bypassing real topologies
