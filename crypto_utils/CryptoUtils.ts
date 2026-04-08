@@ -261,7 +261,40 @@ function verifyEIP712BlockSignature(block: Block): boolean {
     }
 }
 
+/**
+ * Generates an ephemeral secp256k1 session keypad.
+ * Returns an object containing the new transient parameters.
+ */
+function generateEphemeralSession(): { ephemeralPrivateKey: string; ephemeralPublicKey: string } {
+    const ephemeralWallet = ethers.Wallet.createRandom();
+    return {
+        ephemeralPrivateKey: ephemeralWallet.privateKey,
+        ephemeralPublicKey: ephemeralWallet.publicKey
+    };
+}
+
+/**
+ * Proves ownership of the ephemeral context by signing it with the canonical EVM Private Key.
+ */
+async function signEphemeralPayload(evmPrivateKey: string, ephemeralPublicKey: string): Promise<string> {
+    const wallet = new ethers.Wallet(evmPrivateKey);
+    return wallet.signMessage(ephemeralPublicKey);
+}
+
+/**
+ * Computes the shared AES-256-GCM symmetric session secret across the ECDH wire.
+ */
+function computeSessionSecret(localEphemeralPrivateKey: string, remoteEphemeralPublicKey: string): string {
+    const signingKey = new ethers.SigningKey(localEphemeralPrivateKey);
+    const sharedSecret = signingKey.computeSharedSecret(remoteEphemeralPublicKey);
+    const hash = ethers.keccak256(sharedSecret);
+    return hash.substring(2);
+}
+
 export {
+    generateEphemeralSession,
+    signEphemeralPayload,
+    computeSessionSecret,
     generateRSAKeyPair,
     signData,
     verifySignature,

@@ -4,6 +4,8 @@ import { Transform } from 'stream';
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 
+import { ethers } from 'ethers';
+
 import { 
     createAESStream, 
     createAESDecryptStream,
@@ -12,7 +14,10 @@ import {
     decryptPrivatePayload,
     buildMerkleTree,
     getMerkleProof,
-    verifyMerkleProof
+    verifyMerkleProof,
+    generateEphemeralSession,
+    signEphemeralPayload,
+    computeSessionSecret
 } from '../CryptoUtils';
 
 describe('Backend: Crypto Utils Unit Tests', () => {
@@ -123,5 +128,28 @@ describe('Backend: Crypto Utils Unit Tests', () => {
 
         const driftProof = verifyMerkleProof(leaves[3], proof, root, 2);
         assert.strictEqual(driftProof, false, 'Invalid sibling path mappings naturally reject internally');
+    });
+
+    it('Executes secp256k1 Ephemeral Elliptic Curve Diffie-Hellman Keypads symmetrically across boundaries', async () => {
+        const aliceEVM = ethers.Wallet.createRandom();
+        const bobEVM = ethers.Wallet.createRandom();
+
+        const aliceSession = generateEphemeralSession();
+        const bobSession = generateEphemeralSession();
+
+        const aliceSignature = await signEphemeralPayload(aliceEVM.privateKey, aliceSession.ephemeralPublicKey);
+        const bobSignature = await signEphemeralPayload(bobEVM.privateKey, bobSession.ephemeralPublicKey);
+
+        const recoveredAliceAddress = ethers.verifyMessage(aliceSession.ephemeralPublicKey, aliceSignature);
+        assert.strictEqual(recoveredAliceAddress, aliceEVM.address, 'Signature derivation extracts true genesis EVM wallet identity');
+        
+        const recoveredBobAddress = ethers.verifyMessage(bobSession.ephemeralPublicKey, bobSignature);
+        assert.strictEqual(recoveredBobAddress, bobEVM.address, 'Bob signature derivation extracts true genesis EVM wallet identity');
+        
+        const aliceDerivedSecret = computeSessionSecret(aliceSession.ephemeralPrivateKey, bobSession.ephemeralPublicKey);
+        const bobDerivedSecret = computeSessionSecret(bobSession.ephemeralPrivateKey, aliceSession.ephemeralPublicKey);
+
+        assert.ok(aliceDerivedSecret.length === 64, 'AES secret padding matches deterministic cipher arrays');
+        assert.strictEqual(aliceDerivedSecret, bobDerivedSecret, 'Elliptic Curve Diffie-Hellman keys execute symmetrical secrets');
     });
 });
