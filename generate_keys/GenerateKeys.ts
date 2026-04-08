@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { ethers } from 'ethers';
 
 import RSAKeyPair from '../p2p/lib/RSAKeyPair';
 
@@ -32,6 +33,10 @@ for (const port of PORTS) {
         
         const signature = ringKeyPair.sign(peerKeyPair.public);
         fs.writeFileSync(`${baseKey}.peer.signature`, signature);
+
+        const evmWallet = ethers.Wallet.createRandom();
+        fs.writeFileSync(`${baseKey}.evm.key`, evmWallet.privateKey);
+        fs.writeFileSync(`${baseKey}.evm.address`, evmWallet.address);
     }
 }
 

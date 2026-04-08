@@ -36,6 +36,7 @@ async function main() {
     let publicKeyPath: string | undefined;
     let privateKeyPath: string | undefined;
     let signaturePath: string | undefined;
+    let evmPrivateKeyPath: string | undefined;
     let dataDir = './data';
     let isHeadless = false;
     let roles: NodeRole[] = [NodeRole.ORIGINATOR, NodeRole.VALIDATOR, NodeRole.STORAGE];
@@ -67,6 +68,8 @@ async function main() {
             privateKeyPath = process.argv[++i];
         } else if (arg === '--signature-path' && i + 1 < process.argv.length) {
             signaturePath = process.argv[++i];
+        } else if (arg === '--evm-private-key-path' && i + 1 < process.argv.length) {
+            evmPrivateKeyPath = process.argv[++i];
         } else if (arg === '--data-dir' && i + 1 < process.argv.length) {
             dataDir = process.argv[++i];
         } else if (arg === '--roles' && i + 1 < process.argv.length) {
@@ -123,6 +126,7 @@ async function main() {
         publicKeyPath: credentials.peer?.publicKeyPath || publicKeyPath,
         privateKeyPath: credentials.peer?.privateKeyPath || privateKeyPath,
         signaturePath: credentials.peer?.signaturePath || signaturePath,
+        evmPrivateKeyPath: credentials.peer?.evmPrivateKeyPath || evmPrivateKeyPath,
     };
 
     // Initialize Node

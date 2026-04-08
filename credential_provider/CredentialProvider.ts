@@ -23,6 +23,8 @@ export interface PeerCredentials {
     publicKeyPath?: string;
     privateKeyPath?: string;
     signaturePath?: string;
+    evmPrivateKey?: string;
+    evmPrivateKeyPath?: string;
 }
 
 export interface Credentials {
@@ -86,7 +88,9 @@ export class CredentialProvider {
                     privateKeyPath: process.env.PEER_PRIVATE_KEY_PATH,
                     publicKeyPath: process.env.PEER_PUBLIC_KEY_PATH,
                     signaturePath: process.env.PEER_SIGNATURE_PATH,
-                    ringPublicKeyPath: process.env.RING_PUBLIC_KEY_PATH
+                    ringPublicKeyPath: process.env.RING_PUBLIC_KEY_PATH,
+                    evmPrivateKey: process.env.PEER_EVM_PRIVATE_KEY,
+                    evmPrivateKeyPath: process.env.PEER_EVM_PRIVATE_KEY_PATH
                 }
             } as Credentials;
         }

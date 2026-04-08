@@ -76,7 +76,8 @@ class PeerNode {
             ringPublicKeyPath: keyPaths.ringPublicKeyPath || 'keys/ring.ring.pub',
             publicKeyPath: keyPaths.publicKeyPath || `keys/peer_${this.port}.peer.pub`,
             privateKeyPath: keyPaths.privateKeyPath || `keys/peer_${this.port}.peer.pem`,
-            signaturePath: keyPaths.signaturePath || `keys/peer_${this.port}.peer.signature`
+            signaturePath: keyPaths.signaturePath || `keys/peer_${this.port}.peer.signature`,
+            evmPrivateKeyPath: keyPaths.evmPrivateKeyPath || `keys/peer_${this.port}.evm.key`
         };
 
         this.mempool = new Mempool();
@@ -143,8 +144,16 @@ class PeerNode {
         this.signature = this.keyPaths.signature || fs.readFileSync(this.keyPaths.signaturePath!, 'utf8');
 
         // Dynamically instantiate backend EVM wallet address explicitly used purely for checkpoint and systemic signing 
-        const hash = createHash('sha256').update(this.privateKey).digest('hex');
-        this.wallet = new ethers.Wallet('0x' + hash);
+        if (this.keyPaths.evmPrivateKey) {
+            this.wallet = new ethers.Wallet(this.keyPaths.evmPrivateKey);
+        } else if (this.keyPaths.evmPrivateKeyPath && fs.existsSync(this.keyPaths.evmPrivateKeyPath)) {
+            const pk = fs.readFileSync(this.keyPaths.evmPrivateKeyPath, 'utf8').trim();
+            this.wallet = new ethers.Wallet(pk);
+        } else {
+            // Deprecated fallback mapping securely bound originally
+            const hash = createHash('sha256').update(this.privateKey).digest('hex');
+            this.wallet = new ethers.Wallet('0x' + hash);
+        }
         this.walletAddress = this.wallet.address;
 
         // Setup Express API Server
