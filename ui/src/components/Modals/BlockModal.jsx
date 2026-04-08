@@ -21,11 +21,16 @@ const BlockModal = () => {
     const [isFetchingPayload, setIsFetchingPayload] = useState(false);
     const [payloadData, setPayloadData] = useState(null);
     const [payloadError, setPayloadError] = useState(false);
+    const [activeBlockMemo, setActiveBlockMemo] = useState(null);
     const fetchedHashRef = useRef(null);
 
     useEffect(() => {
         if (isModalOpen && selectedBlockHash) {
-            const pkg = blocks.find(b => b.hash === selectedBlockHash);
+            const found = blocks.find(b => b.hash === selectedBlockHash);
+            if (found) {
+                setActiveBlockMemo(found);
+            }
+            const pkg = found || activeBlockMemo;
             const isOwner = nodeConfig && nodeConfig.walletAddress === pkg?.signerAddress;
 
             if (pkg?.type === 'STORAGE_CONTRACT' && isOwner && fetchedHashRef.current !== selectedBlockHash) {
@@ -45,20 +50,21 @@ const BlockModal = () => {
                 });
             }
         }
-    }, [isModalOpen, selectedBlockHash, blocks, nodeConfig]);
+    }, [isModalOpen, selectedBlockHash, blocks, nodeConfig, activeBlockMemo]);
 
     const closeModal = () => {
         dispatch({ type: 'SET_MODAL_OPEN', payload: { isOpen: false, hash: null } });
         setPayloadData(null);
         setPayloadError(false);
         fetchedHashRef.current = null;
+        setActiveBlockMemo(null);
     };
 
     if (!isModalOpen || !selectedBlockHash) {
         return <div id="blockModal" className="modal hidden" style={{ display: 'none' }}></div>;
     }
 
-    const pkg = blocks.find(b => b.hash === selectedBlockHash);
+    const pkg = blocks.find(b => b.hash === selectedBlockHash) || activeBlockMemo;
     if (!pkg) return null;
 
     const formatDate = (isoString) => {
