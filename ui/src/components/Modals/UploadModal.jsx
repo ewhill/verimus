@@ -16,6 +16,7 @@ const UploadModal = () => {
     const [isDragOver, setIsDragOver] = useState(false);
     const [redundancy, setRedundancy] = useState(1);
     const [maxCost, setMaxCost] = useState(0.05);
+    const [targetDurationHours, setTargetDurationHours] = useState(24);
     const [marketLogs, setMarketLogs] = useState([]);
     const [cryptoLogs, setCryptoLogs] = useState([]);
 
@@ -62,6 +63,7 @@ const UploadModal = () => {
         setCryptoLogs([]);
         setRedundancy(1);
         setMaxCost(0.05);
+        setTargetDurationHours(24);
     };
 
     const handleSubmit = async (e) => {
@@ -142,6 +144,7 @@ const UploadModal = () => {
             // Triage Mapping Constraints natively bound organically
             formData.append('redundancy', String(redundancy));
             formData.append('maxCost', String(maxCost));
+            formData.append('targetDurationHours', String(targetDurationHours));
 
             const { ApiService } = await import('../../services/api');
             const res = await fetch(`${ApiService.activeProxyUrl}/api/upload`, {
@@ -261,6 +264,25 @@ const UploadModal = () => {
                                         borderRadius: '4px'
                                     }}
                                 />
+                            </div>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>Target Duration (Hours)</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={targetDurationHours}
+                                    onChange={(e) => setTargetDurationHours(e.target.value)}
+                                    style={{
+                                        background: 'transparent',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        color: 'white',
+                                        padding: '0.5rem',
+                                        borderRadius: '4px'
+                                    }}
+                                />
+                                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '-0.25rem' }}>
+                                    Estimated block timeline limit: ~{Math.ceil((targetDurationHours * 3600 * 1000) / 5000).toLocaleString()} blocks
+                                </span>
                             </div>
                         </div>
 
