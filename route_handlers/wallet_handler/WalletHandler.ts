@@ -1,3 +1,4 @@
+import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
 import { BLOCK_TYPES } from '../../constants';
@@ -14,7 +15,11 @@ export default class WalletHandler extends BaseHandler {
         try {
             let targetAddress = (req.query.address as string) || this.node.walletAddress;
             if (targetAddress && targetAddress.startsWith('0x')) {
-                targetAddress = targetAddress.toLowerCase();
+                try {
+                    targetAddress = ethers.getAddress(targetAddress);
+                } catch (_unusedErr) {
+                    return res.json({ success: false, message: 'Invalid identity struct provided' });
+                }
             }
             if (!targetAddress) {
                 return res.json({ success: false, message: 'Identity not initialized' });
