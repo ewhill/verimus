@@ -8,6 +8,8 @@ export interface StorageRequestOptions {
     requiredNodes: number;
     maxCostPerGB: number;
     senderAddress: string;
+    targetDurationBlocks?: number;
+    allocatedRestToll?: string;
 }
 
 export class StorageRequestMessage extends Message {
@@ -30,6 +32,12 @@ export class StorageRequestMessage extends Message {
 
         if (options.senderAddress !== undefined) this.senderAddress = options.senderAddress;
         else if (options.body?.senderAddress !== undefined) this.senderAddress = options.body.senderAddress;
+
+        if (options.targetDurationBlocks !== undefined) this.targetDurationBlocks = options.targetDurationBlocks;
+        else if (options.body?.targetDurationBlocks !== undefined) this.targetDurationBlocks = options.body.targetDurationBlocks;
+
+        if (options.allocatedRestToll !== undefined) this.allocatedRestToll = options.allocatedRestToll;
+        else if (options.body?.allocatedRestToll !== undefined) this.allocatedRestToll = options.body.allocatedRestToll;
     }
 
     get storageRequestId(): string { return this.body.storageRequestId; }
@@ -49,4 +57,10 @@ export class StorageRequestMessage extends Message {
 
     get senderAddress(): string { return this.body.senderAddress; }
     set senderAddress(value: string) { this.body = { ...this.body, senderAddress: value }; }
+
+    get targetDurationBlocks(): number | undefined { return this.body.targetDurationBlocks; }
+    set targetDurationBlocks(value: number | undefined) { this.body = { ...this.body, targetDurationBlocks: value }; }
+
+    get allocatedRestToll(): string | undefined { return this.body.allocatedRestToll; }
+    set allocatedRestToll(value: string | undefined) { this.body = { ...this.body, allocatedRestToll: value }; }
 }

@@ -1,3 +1,4 @@
+import { AVERAGE_BLOCK_TIME_MS } from '../../constants';
 import * as cryptoUtils from '../../crypto_utils/CryptoUtils';
 import logger from '../../logger/Logger';
 import { BlockSyncRequestMessage } from '../../messages/block_sync_request_message/BlockSyncRequestMessage';
@@ -185,7 +186,7 @@ class SyncEngine {
         }
     }
 
-    async orchestrateStorageMarket(requestId: string, fileSizeBytes: number, chunkSizeBytes: number, requiredNodes: number, maxCostPerGB: number): Promise<any[]> {
+    async orchestrateStorageMarket(requestId: string, fileSizeBytes: number, chunkSizeBytes: number, requiredNodes: number, maxCostPerGB: number, targetDurationBlocks: number, allocatedRestToll: string): Promise<any[]> {
         // Broadcast the limit order globally across the swarm
         this.activeStorageMarkets.set(requestId, {
             bids: [],
@@ -200,7 +201,9 @@ class SyncEngine {
             chunkSizeBytes,
             requiredNodes,
             maxCostPerGB,
-            senderAddress: this.node.walletAddress
+            senderAddress: this.node.walletAddress,
+            targetDurationBlocks,
+            allocatedRestToll
         });
         
         await this.node.peer!.broadcast(reqMsg);
@@ -237,6 +240,23 @@ class SyncEngine {
         // Check if we can beat the maxCost limit
         const egressCost = this.node.storageProvider?.getEgressCostPerGB ? this.node.storageProvider.getEgressCostPerGB() : 0.00;
         if (egressCost > msg.maxCostPerGB) return; // Drop request
+
+        // Validate continuous timeline restraints
+        if (msg.targetDurationBlocks !== undefined && msg.allocatedRestToll !== undefined) {
+            const expectedSizeGB = Math.max((msg.fileSizeBytes / (1024 * 1024 * 1024)), 0.000001);
+            const extConfig = this.node as any;
+            const restTollPerGBHour = extConfig.config?.pricing?.restTollPerGBHour || 1.5;
+            const targetDurationHours = (msg.targetDurationBlocks * AVERAGE_BLOCK_TIME_MS) / (3600 * 1000);
+            const expectedMinimumRestToll = Math.ceil(expectedSizeGB * restTollPerGBHour * targetDurationHours);
+            
+            const expectedWei = BigInt(expectedMinimumRestToll) * 1000000000000000000n;
+            const incomingWei = BigInt(msg.allocatedRestToll);
+            
+            if (incomingWei < expectedWei) {
+                logger.warn(`[Peer ${this.node.port}] Storage Bid validation failed: Incoming toll ${incomingWei} is less than required boundary ${expectedWei}`);
+                return;
+            }
+        }
 
         // Formulate returning Bid payload successfully 
         const bidMsg = new StorageBidMessage({

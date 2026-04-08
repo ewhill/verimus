@@ -68,7 +68,8 @@ test('Integration: Chronological Escrow Epoch Tick Convergence', async () => {
 
         // Assert Step: WalletManager.processEpochTick is tracked exactly mathematically
         assert.strictEqual(tickSpy.mock.callCount(), 1, 'processEpochTick must be successfully fired exactly once');
-        assert.strictEqual(tickSpy.mock.calls[0].arguments[0], 99, 'processEpochTick must be passed the exact metadata index natively');
+        const latestInfo = await node!.ledger.getLatestBlock();
+        assert.strictEqual(tickSpy.mock.calls[0].arguments[0], latestInfo.metadata.index, 'processEpochTick must be passed the exact metadata index natively');
 
     } finally {
         if (node) await node.stop();

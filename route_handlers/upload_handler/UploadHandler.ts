@@ -3,7 +3,7 @@ import * as crypto from 'crypto';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
-import { BLOCK_TYPES } from '../../constants';
+import { BLOCK_TYPES, AVERAGE_BLOCK_TIME_MS } from '../../constants';
 import { verifyMerkleProof, signData } from '../../crypto_utils/CryptoUtils';
 import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from '../../crypto_utils/EIP712Types';
 import logger from '../../logger/Logger';
@@ -52,11 +52,14 @@ export default class UploadHandler extends BaseHandler {
 
             const redundancyStr = req.body.redundancy;
             const maxCostStr = req.body.maxCost;
+            const targetDurationHoursStr = req.body.targetDurationHours;
             let redundancy = redundancyStr ? parseInt(redundancyStr, 10) : 1;
             let maxCost = maxCostStr ? parseFloat(maxCostStr) : 50.0;
+            let targetDurationHours = targetDurationHoursStr ? parseFloat(targetDurationHoursStr) : 24.0;
 
             if (isNaN(redundancy) || redundancy < 1) return res.status(400).send('Invalid redundancy parameter.');
             if (isNaN(maxCost) || maxCost <= 0) return res.status(400).send('Invalid maxCost boundary.');
+            if (isNaN(targetDurationHours) || targetDurationHours <= 0) return res.status(400).send('Invalid target duration boundary.');
 
             // Cap minimum redundancy bounds
             const activePeers = this.node.peer ? this.node.peer.peers.length : 0;
@@ -76,13 +79,33 @@ export default class UploadHandler extends BaseHandler {
 
             const totalSize = files.reduce((acc, f) => acc + (f.size || 1024), 0);
             const chunkSizeBytes = 65536; // 64KB Phase 3 explicit constant
+            
+            // Egress upfront logic limits
             const theoreticalMaxCost = Math.ceil(maxCost * redundancy * Math.max((totalSize / (1024 * 1024 * 1024)), 0.000001));
             const theoreticalMaxCostWei = ethers.parseUnits(theoreticalMaxCost.toString(), 18);
+            
+            // Chronological rest-toll limits mapping dynamically
+            const targetDurationBlocks = Math.ceil((targetDurationHours * 3600 * 1000) / AVERAGE_BLOCK_TIME_MS);
+            
+            // Parse pricing organically safely falling back securely mapped if unconfigured
+            const extConfig = this.node as any;
+            const restTollPerGBHour = extConfig.config?.pricing?.restTollPerGBHour || 1.5;
+            
+            const expectedSizeGB = Math.max((totalSize / (1024 * 1024 * 1024)), 0.000001);
+            const chronologicalCost = Math.ceil(expectedSizeGB * restTollPerGBHour * targetDurationHours * redundancy);
+            const allocatedRestTollWei = ethers.parseUnits(chronologicalCost.toString(), 18);
+            
             const marketReqId = crypto.randomUUID();
 
+            const currentActiveBlock = await this.node.ledger.getLatestBlock();
+            const currentBlockIndex = currentActiveBlock?.metadata?.index || 0;
+            const startBlockHeight = BigInt(currentBlockIndex);
+            const expirationBlockHeight = startBlockHeight + BigInt(targetDurationBlocks);
+
             // Escrow phase tracking theoretical spend limits mapping against double-spends
-            const hasFunds = await this.node.consensusEngine.walletManager.verifyFunds(signerAddress, theoreticalMaxCostWei);
-            const totalUserCost = Math.ceil(theoreticalMaxCost * 1.05);
+            const requiredTotalWei = theoreticalMaxCostWei + allocatedRestTollWei;
+            const hasFunds = await this.node.consensusEngine.walletManager.verifyFunds(signerAddress, requiredTotalWei);
+            const totalUserCost = Math.ceil((theoreticalMaxCost + chronologicalCost) * 1.05);
             const totalUserCostWei = ethers.parseUnits(totalUserCost.toString(), 18);
             
             const currentBalance = await this.node.consensusEngine.walletManager.calculateBalance(ownerAddress);
@@ -97,15 +120,15 @@ export default class UploadHandler extends BaseHandler {
                 return res.status(402).send('Insufficient EIP-191 Egress Extrinsic Bounds mapped explicitly natively.');
             }
 
-            this.node.consensusEngine.walletManager.freezeFunds(signerAddress, theoreticalMaxCostWei, marketReqId);
-            this.node.consensusEngine.walletManager.freezeFunds(ownerAddress, totalUserCostWei, marketReqId);
+            this.node.consensusEngine.walletManager.freezeFunds(signerAddress, theoreticalMaxCostWei, marketReqId, allocatedRestTollWei, startBlockHeight, expirationBlockHeight);
+            this.node.consensusEngine.walletManager.freezeFunds(ownerAddress, totalUserCostWei, marketReqId, allocatedRestTollWei, startBlockHeight, expirationBlockHeight);
             logger.info(`[Peer ${this.node.port}] Initiating async storage limit order ${marketReqId} searching mapping ${redundancy} hosts...`);
 
             this.node.events.emit('upload_telemetry', { status: 'MARKET_INITIATED', message: `Broadcasting Limit Orders (${redundancy} Hosts, $${theoreticalMaxCost.toFixed(3)} VERI Escrow)` });
 
             // Triage Bid Harvesting parsing bounds against TCP buffers!
             const bids = await this.node.syncEngine.orchestrateStorageMarket(
-                marketReqId, totalSize, chunkSizeBytes, redundancy, maxCost
+                marketReqId, totalSize, chunkSizeBytes, redundancy, maxCost, targetDurationBlocks, allocatedRestTollWei.toString()
             );
 
             if (bids.length < redundancy) {

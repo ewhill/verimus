@@ -353,7 +353,7 @@ describe('Backend: SyncEngine Integrity', () => {
         mockNode.peer!.broadcast = async (_unusedMsg: any) => { };
 
         // Let orchestrate storage market run, but we will fulfill the market manually simulating the network
-        const promise = syncEngine.orchestrateStorageMarket('req-1', 1000, 250, 2, 0.10);
+        const promise = syncEngine.orchestrateStorageMarket('req-1', 1000, 250, 2, 0.10, 17280, '1500000000000000000');
 
         // Before timeout, manually ingest 2 bids
         const market = syncEngine.activeStorageMarkets.get('req-1');
@@ -397,7 +397,7 @@ describe('Backend: SyncEngine Integrity', () => {
         // Mock setTimeout to immediately execute preventing async drift
         Object.assign(global, { setTimeout: (cb: Function) => { cb(); return originalSetTimeout(() => { }, 0); } });
 
-        const promise = syncEngine.orchestrateStorageMarket('req-timeout', 1000, 250, 5, 0.10);
+        const promise = syncEngine.orchestrateStorageMarket('req-timeout', 1000, 250, 5, 0.10, 17280, '1500000000000000000');
 
         // Inject 1 partial bid mapping
         const market = syncEngine.activeStorageMarkets.get('req-timeout');
