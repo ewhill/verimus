@@ -9,7 +9,7 @@ import type { TransactionPayload, StorageContractBlock, StorageContractPayload, 
 
 export default class WalletManager {
     private ledger: Ledger;
-    private frozenEscrows: Map<string, { address: string; amount: bigint }[]> = new Map();
+    private frozenEscrows: Map<string, { address: string; amount: bigint; allocatedRestToll?: bigint; startBlockHeight?: bigint; expirationBlockHeight?: bigint; }[]> = new Map();
 
     constructor(ledger: Ledger) {
         this.ledger = ledger;
@@ -21,6 +21,7 @@ export default class WalletManager {
         // Map deterministic async subscriber explicitly
         this.ledger.blockAddedSubscribers.push(async (block: Block) => {
             await this.updateIncrementalState(block);
+            await this.processEpochTick(block.metadata.index);
         });
     }
 
@@ -159,6 +160,9 @@ export default class WalletManager {
             for (const escrow of escrows) {
                 if (escrow.address === safeAddress) {
                     balance -= escrow.amount;
+                    if (escrow.allocatedRestToll) {
+                        balance -= escrow.allocatedRestToll;
+                    }
                 }
             }
         }
@@ -267,13 +271,13 @@ export default class WalletManager {
         return { stateMerkleRoot, activeContractsMerkleRoot };
     }
 
-    freezeFunds(address: string, amount: bigint, requestId: string): void {
+    freezeFunds(address: string, amount: bigint, requestId: string, allocatedRestToll: bigint = 0n, startBlockHeight: bigint = 0n, expirationBlockHeight: bigint = 0n): void {
         const safeAddr = address === ethers.ZeroAddress ? address : this.getAddressSafe(address);
         if (safeAddr === ethers.ZeroAddress) return;
         if (!this.frozenEscrows.has(requestId)) {
             this.frozenEscrows.set(requestId, []);
         }
-        this.frozenEscrows.get(requestId)!.push({ address: safeAddr, amount });
+        this.frozenEscrows.get(requestId)!.push({ address: safeAddr, amount, allocatedRestToll, startBlockHeight, expirationBlockHeight });
     }
 
     /**
@@ -291,5 +295,44 @@ export default class WalletManager {
      */
     commitFunds(requestId: string): void {
         this.frozenEscrows.delete(requestId);
+    }
+
+    async processEpochTick(currentBlockIndex: number): Promise<void> {
+        if (!this.ledger.activeContractsCollection || !this.ledger.balancesCollection) return;
+
+        const contracts = await this.ledger.activeContractsCollection.find({}).toArray();
+        for (const contract of contracts) {
+            const p = contract.payload as StorageContractPayload;
+            if (p.allocatedRestToll && p.expirationBlockHeight) {
+                const startHeight = contract.startBlockHeight !== undefined ? BigInt(contract.startBlockHeight) : BigInt(contract.index);
+                const expiryHeight = BigInt(p.expirationBlockHeight);
+                const restToll = BigInt(p.allocatedRestToll);
+                
+                if (restToll > 0n && expiryHeight > startHeight && BigInt(currentBlockIndex) <= expiryHeight) {
+                    const payoutWei = restToll / (expiryHeight - startHeight);
+                    
+                    if (payoutWei > 0n && p.fragmentMap && p.fragmentMap.length > 0) {
+                        const remaining = restToll - payoutWei;
+                        await this.ledger.activeContractsCollection.updateOne(
+                            { contractId: contract.contractId },
+                            { $set: { 
+                                  "payload.allocatedRestToll": remaining.toString(),
+                                  "startBlockHeight": currentBlockIndex.toString() 
+                              } 
+                            }
+                        );
+
+                        const nodeShare = payoutWei / BigInt(p.fragmentMap.length);
+                        if (nodeShare > 0n) {
+                            for (const frag of p.fragmentMap) {
+                                const fragId = frag.nodeId || '';
+                                const safeFragAddress = fragId.startsWith('0x') ? this.getAddressSafe(fragId) : fragId;
+                                await this.applyBalanceDelta(safeFragAddress, nodeShare, this.ledger.balancesCollection);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -56,6 +56,7 @@ export interface StorageContractPayload {
     encryptedIvBase64?: string;
     encryptedAuthTagBase64?: string;
     allocatedRestToll?: bigint;
+    expirationBlockHeight?: bigint;
     allocatedEgressEscrow?: bigint;
     remainingEgressEscrow?: bigint;
     marketId?: string;

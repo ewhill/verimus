@@ -23,6 +23,7 @@ export const BLOCK_TYPES = {
 } as const;
 
 export const EPOCH_LENGTH = 100;
+export const AVERAGE_BLOCK_TIME_MS = 5000;
 
 export const GENESIS_SEED_DATA = Buffer.from(JSON.stringify({
     version: "1.0.0",

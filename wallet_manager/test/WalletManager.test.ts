@@ -154,4 +154,80 @@ describe('WalletManager', () => {
         walletManager.commitFunds('contract-B');
         assert.strictEqual(await walletManager.calculateBalance(testWallet), 300n);
     });
+
+    it('Freezes funds calculating both egress cost and chronological rest-toll escrows', async () => {
+        const testWallet = ethers.Wallet.createRandom().address;
+        
+        const mockLedger = createMock<Ledger>({
+            balancesCollection: createMock<Collection<any>>({
+                findOne: mock.fn<(...args: any[]) => Promise<any>>(async () => ({ balance: "1000" }))
+            }),
+            events: { on: mock.fn() } as any,
+            blockAddedSubscribers: []
+        });
+
+        const walletManager = new WalletManager(mockLedger);
+        const initialBalance = await walletManager.calculateBalance(testWallet);
+        assert.strictEqual(initialBalance, 1000n);
+
+        walletManager.freezeFunds(testWallet, 200n, 'contract-chronological', 300n, 10n, 20n);
+        const activeBalance = await walletManager.calculateBalance(testWallet);
+        assert.strictEqual(activeBalance, 500n); 
+    });
+
+    it('Disburses fractional rest-toll funds symmetrically per epoch tick', async () => {
+        const testHost = ethers.Wallet.createRandom().address;
+        
+        let contractState = {
+            contractId: 'mock-contract-1',
+            index: 0,
+            startBlockHeight: 0,
+            payload: {
+                allocatedRestToll: '100',
+                expirationBlockHeight: '10',
+                fragmentMap: [{ nodeId: testHost, shardIndex: 0n, shardHash: 'abc' }]
+            }
+        };
+
+        let hostBalance = 0n;
+
+        const mockLedger = createMock<Ledger>({
+            activeContractsCollection: createMock<Collection<any>>({
+                find: mock.fn<(...args: any[]) => any>(() => ({
+                    toArray: async () => [ contractState ]
+                })),
+                updateOne: mock.fn<(...args: any[]) => Promise<any>>(async (query: any, update: any) => {
+                    const setObj = update.$set;
+                    if (setObj['payload.allocatedRestToll'] !== undefined) {
+                        contractState.payload.allocatedRestToll = setObj['payload.allocatedRestToll'];
+                    }
+                    if (setObj.startBlockHeight !== undefined) {
+                        contractState.startBlockHeight = parseInt(setObj.startBlockHeight);
+                    }
+                    return { modifiedCount: 1 };
+                })
+            }),
+            balancesCollection: createMock<Collection<any>>({
+                findOne: mock.fn<(...args: any[]) => Promise<any>>(async () => ({ balance: hostBalance.toString() })),
+                updateOne: mock.fn<(...args: any[]) => Promise<any>>(async (query: any, update: any) => {
+                    hostBalance = BigInt(update.$set.balance);
+                    return { modifiedCount: 1 };
+                })
+            }),
+            events: { on: mock.fn() } as any,
+            blockAddedSubscribers: []
+        });
+
+        const walletManager = new WalletManager(mockLedger);
+
+        // Call 10 times and assert exactly 10 wei per call reaches the host balance and zeroes out the escrow
+        for (let i = 1; i <= 10; i++) {
+            await walletManager.processEpochTick(i);
+            assert.strictEqual(hostBalance, BigInt(i * 10), `Host should receive 10 wei logically mapping iteration ${i}`);
+            const expectedRemaining = 100 - (i * 10);
+            assert.strictEqual(contractState.payload.allocatedRestToll, expectedRemaining.toString());
+        }
+        
+        assert.strictEqual(contractState.payload.allocatedRestToll, '0');
+    });
 });

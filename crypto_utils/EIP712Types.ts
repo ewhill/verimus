@@ -61,6 +61,7 @@ export const STORAGE_CONTRACT_PAYLOAD_SCHEMA = [
     { name: 'encryptedIvBase64', type: 'string' },
     { name: 'encryptedAuthTagBase64', type: 'string' },
     { name: 'allocatedRestToll', type: 'uint256' },
+    { name: 'expirationBlockHeight', type: 'uint256' },
     { name: 'allocatedEgressEscrow', type: 'uint256' },
     { name: 'remainingEgressEscrow', type: 'uint256' },
     { name: 'marketId', type: 'string' },
@@ -207,6 +208,7 @@ export const hydrateBlockBigInts = (block: Block): void => {
         if (p.allocatedEgressEscrow !== undefined) p.allocatedEgressEscrow = strictHydrateBigInt(p.allocatedEgressEscrow, 'allocatedEgressEscrow');
         if (p.remainingEgressEscrow !== undefined) p.remainingEgressEscrow = strictHydrateBigInt(p.remainingEgressEscrow, 'remainingEgressEscrow');
         if (p.allocatedRestToll !== undefined) p.allocatedRestToll = strictHydrateBigInt(p.allocatedRestToll, 'allocatedRestToll');
+        if (p.expirationBlockHeight !== undefined) p.expirationBlockHeight = strictHydrateBigInt(p.expirationBlockHeight, 'expirationBlockHeight');
         if (p.brokerFeePercentage !== undefined) p.brokerFeePercentage = strictHydrateBigInt(p.brokerFeePercentage, 'brokerFeePercentage');
         
         if (p.erasureParams) {
