@@ -82,7 +82,9 @@ export class CredentialProvider {
                     privateKeyPath: process.env.PEER_PRIVATE_KEY_PATH,
                     publicKeyPath: process.env.PEER_PUBLIC_KEY_PATH,
                     evmPrivateKey: process.env.PEER_EVM_PRIVATE_KEY,
-                    evmPrivateKeyPath: process.env.PEER_EVM_PRIVATE_KEY_PATH
+                    evmPrivateKeyPath: process.env.PEER_EVM_PRIVATE_KEY_PATH,
+                    httpsKeyPath: process.env.HTTPS_KEY_PATH,
+                    httpsCertPath: process.env.HTTPS_CERT_PATH
                 }
             } as Credentials;
         }
