@@ -158,9 +158,12 @@ class PeerNode {
 
         const app = setupExpressApp(this);
 
+        const httpsKeyPath = this.keyPaths.httpsKeyPath || 'https.key.pem';
+        const httpsCertPath = this.keyPaths.httpsCertPath || 'https.cert.pem';
+
         const httpServer = https.createServer({
-            key: fs.readFileSync('https.key.pem'),
-            cert: fs.readFileSync('https.cert.pem')
+            key: fs.readFileSync(httpsKeyPath),
+            cert: fs.readFileSync(httpsCertPath)
         }, app);
 
         const discoveryAddrs = this.discoverAddresses.filter(addr => addr !== `127.0.0.1:${this.port}`);

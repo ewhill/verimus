@@ -19,6 +19,8 @@ export interface PeerCredentials {
     privateKeyPath?: string;
     evmPrivateKey?: string;
     evmPrivateKeyPath?: string;
+    httpsKeyPath?: string;
+    httpsCertPath?: string;
 }
 
 export interface Credentials {

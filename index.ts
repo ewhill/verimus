@@ -35,6 +35,8 @@ async function main() {
     let publicKeyPath: string | undefined;
     let privateKeyPath: string | undefined;
     let evmPrivateKeyPath: string | undefined;
+    let httpsKeyPath: string | undefined;
+    let httpsCertPath: string | undefined;
     let dataDir = './data';
     let isHeadless = false;
     let roles: NodeRole[] = [NodeRole.ORIGINATOR, NodeRole.VALIDATOR, NodeRole.STORAGE];
@@ -64,6 +66,10 @@ async function main() {
             privateKeyPath = process.argv[++i];
         } else if (arg === '--evm-private-key-path' && i + 1 < process.argv.length) {
             evmPrivateKeyPath = process.argv[++i];
+        } else if (arg === '--https-key-path' && i + 1 < process.argv.length) {
+            httpsKeyPath = process.argv[++i];
+        } else if (arg === '--https-cert-path' && i + 1 < process.argv.length) {
+            httpsCertPath = process.argv[++i];
         } else if (arg === '--data-dir' && i + 1 < process.argv.length) {
             dataDir = process.argv[++i];
         } else if (arg === '--roles' && i + 1 < process.argv.length) {
@@ -117,6 +123,8 @@ async function main() {
         publicKeyPath: credentials.peer?.publicKeyPath || publicKeyPath,
         privateKeyPath: credentials.peer?.privateKeyPath || privateKeyPath,
         evmPrivateKeyPath: credentials.peer?.evmPrivateKeyPath || evmPrivateKeyPath,
+        httpsKeyPath: credentials.peer?.httpsKeyPath || httpsKeyPath,
+        httpsCertPath: credentials.peer?.httpsCertPath || httpsCertPath,
     };
 
     // Initialize Node
