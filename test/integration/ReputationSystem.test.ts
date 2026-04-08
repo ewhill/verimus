@@ -45,7 +45,6 @@ describe('Integration: Reputation System (5 Nodes)', () => {
             // Nodes sequentially connect to Node 1 (using ephemeral 0 originally)
             const trusted: string[] = []; // let discover bypass initially
             const keyPaths = {
-                publicKeyPath: path.join(tempDir, `node${i}.pub`),
                 privateKeyPath: path.join(tempDir, `node${i}.pem`)
             };
 

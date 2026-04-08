@@ -27,21 +27,18 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
         tmp1 = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
         // Node 1 (Partition A)
         node1 = new PeerNode(0, ['127.0.0.1:31002', '127.0.0.1:31003'], new MemoryStorageProvider(), new Bundler(tmp1), mongod1.getUri(), undefined, {
-            publicKeyPath: 'keys/peer_31001.peer.pub',
             privateKeyPath: 'keys/peer_31001.peer.pem'
         }, tmp1);
 
         tmp2 = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
         // Node 2 (Partition A)
         node2 = new PeerNode(0, ['127.0.0.1:31001', '127.0.0.1:31003'], new MemoryStorageProvider(), new Bundler(tmp2), mongod1.getUri(), undefined, {
-            publicKeyPath: 'keys/peer_31002.peer.pub',
             privateKeyPath: 'keys/peer_31002.peer.pem'
         }, tmp2);
 
         tmp3 = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
         // Node 3 (Partition B - Isolated DB and Network)
         node3 = new PeerNode(0, ['127.0.0.1:31001'], new MemoryStorageProvider(), new Bundler(tmp3), mongod2.getUri(), undefined, {
-            publicKeyPath: 'keys/peer_31003.peer.pub',
             privateKeyPath: 'keys/peer_31003.peer.pem'
         }, tmp3);
 

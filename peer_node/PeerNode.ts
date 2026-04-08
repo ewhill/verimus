@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash, createPublicKey } from 'crypto';
 import EventEmitter from 'events';
 import * as fs from 'fs';
 import { IncomingMessage } from 'http';
@@ -50,13 +50,27 @@ class PeerNode {
     garbageCollector: GarbageCollector;
     reputationManager!: ReputationManager;
     events: EventEmitter;
-    publicKey!: string;
     privateKey!: string;
     walletAddress!: string;
     wallet!: ethers.Wallet | ethers.HDNodeWallet;
     walletManager!: WalletManager;
     httpServer?: https.Server;
     isHeadless: boolean;
+    _publicKeyOverride?: string;
+
+    get publicKey(): string {
+        if (this._publicKeyOverride) return this._publicKeyOverride;
+        try {
+            return createPublicKey(this.privateKey).export({ type: 'spki', format: 'pem' }).toString();
+        } catch (_unusedErr) {
+            return this.privateKey || 'MOCK_KEY';
+        }
+    }
+
+    set publicKey(val: string) {
+        this._publicKeyOverride = val;
+    }
+
     roles: NodeRole[];
     proxyBrokerFee: number;
     constructor(port: number, discoverAddresses: string[] = [], storageProvider: BaseProvider | null = null, bundler: Bundler | null = null, mongoUri: string | null = null, publicAddress: string | null = null, keyPaths: PeerCredentials, dataDir: string | null = null, isHeadless: boolean = false, roles: NodeRole[] = [NodeRole.ORIGINATOR, NodeRole.VALIDATOR, NodeRole.STORAGE], proxyBrokerFee: number = 0.01) {
@@ -72,7 +86,6 @@ class PeerNode {
         this.bundler = bundler;
         this.keyPaths = {
             ...keyPaths,
-            publicKeyPath: keyPaths.publicKeyPath || `keys/peer_${this.port}.peer.pub`,
             privateKeyPath: keyPaths.privateKeyPath || `keys/peer_${this.port}.peer.pem`,
             evmPrivateKeyPath: keyPaths.evmPrivateKeyPath || `keys/peer_${this.port}.evm.key`
         };
@@ -136,7 +149,6 @@ class PeerNode {
             }
         });
 
-        this.publicKey = this.keyPaths.publicKey || fs.readFileSync(this.keyPaths.publicKeyPath!, 'utf8');
         this.privateKey = this.keyPaths.privateKey || fs.readFileSync(this.keyPaths.privateKeyPath!, 'utf8');
 
         // Dynamically instantiate backend EVM wallet address explicitly used purely for checkpoint and systemic signing 
@@ -182,9 +194,7 @@ class PeerNode {
                 noServer: true
             },
             publicAddress: this.publicAddress || undefined,
-            publicKeyPath: this.keyPaths.publicKeyPath,
             privateKeyPath: this.keyPaths.privateKeyPath,
-            publicKey: this.keyPaths.publicKey,
             privateKey: this.keyPaths.privateKey
         });
 

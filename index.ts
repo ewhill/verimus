@@ -32,7 +32,6 @@ async function main() {
     let port = 26780;
     let discoverAddresses = ['127.0.0.1:26781'];
     let publicAddress: string | undefined;
-    let publicKeyPath: string | undefined;
     let privateKeyPath: string | undefined;
     let evmPrivateKeyPath: string | undefined;
     let httpsKeyPath: string | undefined;
@@ -60,8 +59,6 @@ async function main() {
             });
         } else if (arg === '--public-address' && i + 1 < process.argv.length) {
             publicAddress = process.argv[++i];
-        } else if (arg === '--public-key-path' && i + 1 < process.argv.length) {
-            publicKeyPath = process.argv[++i];
         } else if (arg === '--private-key-path' && i + 1 < process.argv.length) {
             privateKeyPath = process.argv[++i];
         } else if (arg === '--evm-private-key-path' && i + 1 < process.argv.length) {
@@ -118,9 +115,7 @@ async function main() {
     const bundler = new Bundler(dataDir);
 
     const keyPaths: PeerCredentials = {
-        publicKey: credentials.peer?.publicKey,
         privateKey: credentials.peer?.privateKey,
-        publicKeyPath: credentials.peer?.publicKeyPath || publicKeyPath,
         privateKeyPath: credentials.peer?.privateKeyPath || privateKeyPath,
         evmPrivateKeyPath: credentials.peer?.evmPrivateKeyPath || evmPrivateKeyPath,
         httpsKeyPath: credentials.peer?.httpsKeyPath || httpsKeyPath,

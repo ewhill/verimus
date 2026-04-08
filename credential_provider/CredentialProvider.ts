@@ -13,9 +13,7 @@ export interface KeyPaths {
 }
 
 export interface PeerCredentials {
-    publicKey?: string;
     privateKey?: string;
-    publicKeyPath?: string;
     privateKeyPath?: string;
     evmPrivateKey?: string;
     evmPrivateKeyPath?: string;
@@ -78,9 +76,7 @@ export class CredentialProvider {
                 },
                 peer: {
                     privateKey: process.env.PEER_PRIVATE_KEY,
-                    publicKey: process.env.PEER_PUBLIC_KEY,
                     privateKeyPath: process.env.PEER_PRIVATE_KEY_PATH,
-                    publicKeyPath: process.env.PEER_PUBLIC_KEY_PATH,
                     evmPrivateKey: process.env.PEER_EVM_PRIVATE_KEY,
                     evmPrivateKeyPath: process.env.PEER_EVM_PRIVATE_KEY_PATH,
                     httpsKeyPath: process.env.HTTPS_KEY_PATH,

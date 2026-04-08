@@ -60,7 +60,6 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
 
         tmpLoad = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
         node = new PeerNode(0, [], new NullStorageProvider(), new Bundler(tmpLoad), mongod.getUri(), undefined, {
-            publicKeyPath: 'keys/peer_26780.peer.pub',
             privateKeyPath: 'keys/peer_26780.peer.pem'
         }, tmpLoad);
 

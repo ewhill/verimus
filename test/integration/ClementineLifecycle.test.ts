@@ -45,7 +45,6 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
             const dbUri = mongod.getUri(`node${i}`);
 
             const keyPaths = {
-                publicKeyPath: path.join(tempDir, `node${i}.pub`),
                 privateKeyPath: path.join(tempDir, `node${i}.pem`),
                 signaturePath: path.join(tempDir, `node${i}.sig`),
                 ringPublicKeyPath: path.join(tempDir, `ring.pub`)

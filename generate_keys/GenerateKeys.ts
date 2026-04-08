@@ -19,7 +19,6 @@ for (const port of PORTS) {
         console.log(`Generating keys for port ${port}...`);
         const peerKeyPair = RSAKeyPair.generate();
         fs.writeFileSync(`${baseKey}.peer.pem`, peerKeyPair.private);
-        fs.writeFileSync(`${baseKey}.peer.pub`, peerKeyPair.public);
 
         const evmWallet = ethers.Wallet.createRandom();
         fs.writeFileSync(`${baseKey}.evm.key`, evmWallet.privateKey);

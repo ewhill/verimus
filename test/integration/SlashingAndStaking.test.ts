@@ -29,9 +29,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
     try {
         mongod = await MongoMemoryServer.create();
         node = new PeerNode(0, [], null, null, mongod.getUri(), '127.0.0.1', {
-            publicKeyPath: join(testDir, 'peer.pub'),
             privateKeyPath: join(testDir, 'peer.pem'),
-            publicKey: keys.publicKey,
             privateKey: keys.privateKey
         }, testDir);
         await node.init();
@@ -142,9 +140,7 @@ test('Integration: Deterministic Auditor Verification (Phase 4 Chaos Overlap)', 
         try {
             mongod = await MongoMemoryServer.create();
         node = new PeerNode(0, [], null, null, mongod.getUri(), '127.0.0.1', {
-            publicKeyPath: join(testDir, 'peer.pub'),
             privateKeyPath: join(testDir, 'peer.pem'),
-            publicKey: keys.publicKey,
             privateKey: keys.privateKey
         }, testDir);
         

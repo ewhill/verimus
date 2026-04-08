@@ -30,21 +30,18 @@ async function runManualTest() {
     const tmp1 = fsLib.mkdtempSync(pathLib.join(osLib.tmpdir(), 'verimus-'));
     // Node 1
     const node1 = new PeerNode(26780, ['127.0.0.1:26781', '127.0.0.1:26782'], new MemoryStorageProvider(), new Bundler(tmp1), uri, undefined, {
-        publicKeyPath: 'keys/peer_26780.peer.pub',
         privateKeyPath: 'keys/peer_26780.peer.pem'
     }, tmp1);
 
     const tmp2 = fsLib.mkdtempSync(pathLib.join(osLib.tmpdir(), 'verimus-'));
     // Node 2
     const node2 = new PeerNode(26781, ['127.0.0.1:26780', '127.0.0.1:26782'], new MemoryStorageProvider(), new Bundler(tmp2), uri, undefined, {
-        publicKeyPath: 'keys/peer_26781.peer.pub',
         privateKeyPath: 'keys/peer_26781.peer.pem'
     }, tmp2);
 
     const tmp3 = fsLib.mkdtempSync(pathLib.join(osLib.tmpdir(), 'verimus-'));
     // Node 3
     const node3 = new PeerNode(26782, ['127.0.0.1:26780', '127.0.0.1:26781'], new MemoryStorageProvider(), new Bundler(tmp3), uri, undefined, {
-        publicKeyPath: 'keys/peer_26782.peer.pub',
         privateKeyPath: 'keys/peer_26782.peer.pem'
     }, tmp3);
 

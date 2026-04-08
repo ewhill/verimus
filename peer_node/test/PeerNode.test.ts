@@ -16,7 +16,6 @@ import { Block } from '../../types';
 import PeerNodeClass from '../PeerNode';
 
 const getMockCredentials = (): PeerCredentials => ({
-    publicKeyPath: 'peer.pub',
     privateKeyPath: 'peer.pem'
 });
 

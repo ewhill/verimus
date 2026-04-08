@@ -55,11 +55,9 @@ class Peer {
   constructor({
     // Required Parameters (Paths)
     privateKeyPath,
-    publicKeyPath,
 
     // Raw Key Overrides
     privateKey,
-    publicKey,
 
     // Optional / Configurable Parameters
     httpsServerConfig = {},
@@ -76,10 +74,8 @@ class Peer {
     logger = console,
   }) {
     this.privateKeyPath_ = privateKeyPath;
-    this.publicKeyPath_ = publicKeyPath;
 
     this.privateKey_ = privateKey;
-    this.publicKey_ = publicKey;
 
     this.httpsServerConfig_ = httpsServerConfig;
     this.wsServerConfig_ = { ...this.wsServerConfig_, ...wsServerConfig };
@@ -164,27 +160,13 @@ class Peer {
               this.privateKey_ = data;
             }) : Promise.resolve();
 
-        const readPeerPublicKeyPromise = (!this.publicKey_ && this.publicKeyPath_) ?
-          utils.readFileAsync(this.publicKeyPath_)
-            .then(data => {
-              this.publicKey_ = data;
-            })
-            .catch(err => {
-              if (!(err instanceof utils.NoSuchFileError) &&
-                !this.privateKeyPath_ && !this.privateKey_) {
-                throw err;
-              }
-            }) : Promise.resolve();
-
         return Promise.all([
-          readPeerPrivateKeyPromise,
-          readPeerPublicKeyPromise
+          readPeerPrivateKeyPromise
         ]);
       })
       .then(() => {
         this.peerRSAKeyPair_ = new RSAKeyPair({
           privateKeyBuffer: this.privateKey_,
-          publicKeyBuffer: this.publicKey_
         });
 
         this.logger_.log(`Peer identity derived.`);
@@ -892,9 +874,7 @@ class Peer {
   toString() {
     return JSON.stringify({
       privateKeyPath: this.privateKeyPath_,
-      publicKeyPath: this.publicKeyPath_,
       privateKey: (this.privateKey_ instanceof Buffer) ? this.privateKey_.toString('utf8') : this.privateKey_,
-      publicKey: (this.publicKey_ instanceof Buffer) ? this.publicKey_.toString('utf8') : this.publicKey_,
       discoveryConfig: this.discoveryConfig_,
       httpsServerConfig: this.server_.httpsConfig,
       wsServerConfig: this.server_.wsConfig,

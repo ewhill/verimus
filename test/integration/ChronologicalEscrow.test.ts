@@ -23,9 +23,7 @@ test('Integration: Chronological Escrow Epoch Tick Convergence', async () => {
     try {
         mongod = await MongoMemoryServer.create();
         node = new PeerNode(0, [], null, null, mongod.getUri(), '127.0.0.1', {
-            publicKeyPath: join(testDir, 'peer.pub'),
             privateKeyPath: join(testDir, 'peer.pem'),
-            publicKey: keys.publicKey,
             privateKey: keys.privateKey
         }, testDir);
         

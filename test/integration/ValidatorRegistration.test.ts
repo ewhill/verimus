@@ -24,9 +24,7 @@ describe('Integration: On-Chain Validator Registry Transitions', () => {
         try {
             const keys = generateRSAKeyPair();
             node = new PeerNode(32000, [], null, null, mongod.getUri(), '127.0.0.1', {
-                publicKeyPath: join(testDir, `peer.pub`),
                 privateKeyPath: join(testDir, `peer.pem`),
-                publicKey: keys.publicKey,
                 privateKey: keys.privateKey
             }, testDir, true, [NodeRole.ORIGINATOR, NodeRole.VALIDATOR]);
             
