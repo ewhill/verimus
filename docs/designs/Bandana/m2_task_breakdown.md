@@ -1,7 +1,8 @@
 # Project Bandana: Milestone 2 Task Breakdown
+
 **Market Negotiation & Storage Quota Orchestration**
 
-This document details the exact execution steps required to upgrade the localized P2P marketplace to cleanly parse, estimate, and structurally validate chronological "Rest-Toll" limits organically. 
+This document details the exact execution steps required to upgrade the localized P2P marketplace to cleanly parse, estimate, and structurally validate chronological "Rest-Toll" limits organically.
 
 ---
 
@@ -9,6 +10,7 @@ This document details the exact execution steps required to upgrade the localize
 
 **Scope**: Update the WebSocket protocol classes securely negotiating limit orders natively.
 **Instructions**:
+
 - Locate `messages/storage_market_request_message/StorageMarketRequestMessage.ts`.
 - Expand the message schema and property bindings to explicitly include two properties: `targetDurationBlocks: number` and `allocatedRestToll: string` (stringified to prevent precision loss across TCP buffers).
 - Update the class constructor and internal parsing/validation utilities matching the exact EIP-712 mappings logically.
@@ -21,6 +23,7 @@ This document details the exact execution steps required to upgrade the localize
 
 **Scope**: Update the REST API endpoint allocating explicitly bounded escrow limits using block timelines.
 **Instructions**:
+
 - Locate `route_handlers/upload_handler/UploadHandler.ts`.
 - Add parsing for the HTTP parameter `req.body.targetDurationHours`. Fallback dynamically to `24` hours if omitted.
 - Compute the `targetDurationBlocks` natively utilizing the formula: `(targetDurationHours * 3600 * 1000) / AVERAGE_BLOCK_TIME_MS`.
@@ -36,6 +39,7 @@ This document details the exact execution steps required to upgrade the localize
 
 **Scope**: Update the internal P2P sync logic managing decentralized market bid distributions.
 **Instructions**:
+
 - Locate `peer_handlers/sync_engine/SyncEngine.ts` and focus on the `orchestrateStorageMarket` method.
 - Update the function arguments to accept `targetDurationBlocks` and `allocatedRestTollWei`.
 - When constructing the outgoing `StorageMarketRequestMessage`, inject these precise chronological barriers directly into the TCP payload.
@@ -48,6 +52,7 @@ This document details the exact execution steps required to upgrade the localize
 
 **Scope**: Ensure targeted physical peers inherently evaluate and decline market limits failing minimum pricing.
 **Instructions**:
+
 - Locate the receiver sequence for `StorageMarketRequestMessage` natively bound inside `SyncEngine.ts` (the `.bind(StorageMarketRequestMessage)` block).
 - Calculate the physical constraints securely using the incoming limit: `expectedMinimumRestToll = (incomingSizeGB * config.restTollPerGBHour * targetDurationHours)`.
 - If the incoming `allocatedRestToll` is strictly lesser than the `expectedMinimumRestToll`, the host MUST terminate the handler early (`return;` or log standard warning), passively suppressing an outbound `StorageMarketResponseMessage` and efficiently dropping the bid request.
