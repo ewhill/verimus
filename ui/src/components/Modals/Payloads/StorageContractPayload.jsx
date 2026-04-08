@@ -1,8 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import PropertyValue from './PropertyValue';
 
 const StorageContractPayload = ({ block, payloadData, payloadError, handleSingleFileDownload, web3Account }) => {
     const publicPayload = block.payload || {};
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    useEffect(() => {
+        const fetchMetrics = async () => {
+            try {
+                const res = await fetch('/api/ledger/metrics');
+                if (res.ok) {
+                    const data = await res.json();
+                    setCurrentIndex(data.currentIndex || 0);
+                }
+            } catch (error) {
+                console.error("Failed to fetch ledger metrics", error);
+            }
+        };
+        fetchMetrics();
+    }, []);
 
     const isOwnerContext = web3Account && (
         web3Account.toLowerCase() === (publicPayload.ownerAddress || '').toLowerCase() ||
@@ -38,12 +54,29 @@ const StorageContractPayload = ({ block, payloadData, payloadError, handleSingle
         storageNodes = [...new Set(publicPayload.fragmentMap.map(f => f.nodeId))];
     }
 
-    // Abstracting out the synthetic generation since expiration is explicitly undefined natively.
-    // Expiration math mapped against bandwidth escrow digits was mathematically incoherent.
-    const durationDisplay = "Perpetual (No explicit timing limit resolved natively)";
+    const expirationHeight = safeBigInt(publicPayload.expirationBlockHeight);
+    let blocksRemaining = 0n;
+    if (expirationHeight > 0n && BigInt(currentIndex) > 0n) {
+        blocksRemaining = expirationHeight - BigInt(currentIndex);
+    }
+
+    const parseTimeRemaining = (remainingBlocks) => {
+        if (remainingBlocks <= 0n) return "Status: EXPIRED";
+        const totalMs = Number(remainingBlocks) * 5000;
+        const days = Math.floor(totalMs / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((totalMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        return `~${days} Days, ${hours} Hours`;
+    };
+
+    const durationDisplay = expirationHeight > 0n ? parseTimeRemaining(blocksRemaining) : "Perpetual";
 
     const renderPublicPrimaryData = () => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2rem' }}>
+            {expirationHeight > 0n && blocksRemaining > 0n && blocksRemaining < 17280n && (
+                <div style={{ padding: '0.85rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.5)', color: '#ef4444', fontSize: '0.85rem' }}>
+                    <strong style={{ fontWeight: 600 }}>Warning:</strong> Your chronological escrow completes within 24 hours. Data is scheduled for verifiable physical deletion.
+                </div>
+            )}
             <div style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(15, 23, 42, 0.5))', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
                 <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#06b6d4', display: 'block', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contract Bounds & Escrow</span>
 
