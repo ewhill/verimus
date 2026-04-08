@@ -13,10 +13,12 @@ Milestone 1 introduces chronological leasing. The protocol must map a defined ex
 The initial approach is to define an explicit `expirationTimestamp` (Unix epoch time) alongside `allocatedRestToll` within the `StorageContractPayload`. The `WalletManager` will validate the time passed relative to the Unix timestamp and deduct the toll linearly over the duration.
 
 ### Pros
+
 - **User Comprehension**: End-users understand clock time (e.g., "Expires in 30 days"). It maps directly to UI representations.
 - **Predictability**: Providers can calculate exact capacity timelines in standard time units.
 
 ### Cons
+
 - **Clock Drift**: Decentralized peer networks suffer from local clock drift. Consensus nodes may disagree on whether an exact Unix timestamp has passed, potentially causing timeline forks.
 - **Deduction Overhead**: Continuous or tick-based linear deductions in `WalletManager` based on time elapsed introduce high processing overhead on the consensus engine state.
 
@@ -27,10 +29,12 @@ The initial approach is to define an explicit `expirationTimestamp` (Unix epoch 
 Instead of a Unix timestamp, the contract expiration is tied to the Verimus ledger's absolute block index or epoch count (e.g., `expirationBlockHeight: 154000`). `WalletManager` divides `allocatedRestToll` uniformly across the block delta, transferring funds exactly once per block interval instead of relying on continuously shifting local computer clocks.
 
 ### Pros
+
 - **Absolute Determinism**: Block height is a universal truth shared across all consensus nodes. There is zero possibility for clock drift disagreements.
 - **Simplified Economics**: Math in the `WalletManager` becomes static (`allocatedRestToll` / `blockDuration` = cost per block).
 
 ### Cons
+
 - **Duration Fluctuations**: If block minting times slow down or speed up during network congestion, the literal real-world time the file remains stored will fluctuate. A target of 30 days might conclude in 28 or 35 days.
 
 ---
@@ -40,10 +44,12 @@ Instead of a Unix timestamp, the contract expiration is tied to the Verimus ledg
 Instead of upfront full-escrow locking (`allocatedRestToll`), the originator opens a continuous state channel that pipes micro-payments per GB per Hour directly to the active hosts. The contract lacks a hard expiration limit; expiration occurs organically when the channel exhausts its funds.
 
 ### Pros
+
 - **Elasticity**: Users can extend or terminate storage at arbitrary times simply by adding or removing funds from the channel.
 - **Zero Lock-in**: Users are not forced to lock massive capital sums upfront for long-term storage arrays.
 
 ### Cons
+
 - **High Complexity**: Tracking off-chain state channel micro-transactions introduces extreme overhead to the P2P networking layer.
 - **Capacity Guesswork**: Storage providers cannot accurately forecast storage quotas because clients can terminate the supply of tokens at any second with zero warning.
 
@@ -55,7 +61,7 @@ While **Unix Epoch Timestamps** offer the best user experience, enforcing them a
 
 **Final Decision: Adopt Epoch / Block Height Expiration (Alternative 1).**
 
-Industry-standard decentralized protocols (such as Filecoin) utilize epoch-based bounding to avoid timing disputes. Absolute determinism at the consensus layer must supersede perfect real-world clock mapping. We mitigate the "Duration Fluctuation" con by calculating a baseline average block duration (e.g. 5 seconds) and providing a UX layer on the frontend that estimates the target block height for the user (e.g., "30 Days ≈ 518,400 Blocks"). 
+Industry-standard decentralized protocols (such as Filecoin) utilize epoch-based bounding to avoid timing disputes. Absolute determinism at the consensus layer must supersede perfect real-world clock mapping. We mitigate the "Duration Fluctuation" con by calculating a baseline average block duration (e.g. 5 seconds) and providing a UX layer on the frontend that estimates the target block height for the user (e.g., "30 Days ≈ 518,400 Blocks").
 
 ---
 
