@@ -11,9 +11,23 @@ const StorageContractPayload = ({ block, payloadData, payloadError, handleSingle
 
     const ownerLabel = isOwnerContext ? 'You (Logged-In Wallet)' : (publicPayload.ownerAddress || block.signerAddress);
     
+    const safeBigInt = (val) => {
+        if (val == null) return 0n;
+        if (typeof val === 'object' && 'high' in val && 'low' in val) {
+            const hi = BigInt(val.high);
+            const lo = BigInt(val.low >>> 0); // Ensure unsigned 32-bit integer bits
+            return (hi << 32n) | lo;
+        }
+        try {
+            return BigInt(val);
+        } catch (e) {
+            return 0n;
+        }
+    };
+
     // Fallbacks and safe mathematical mappings for Escrow / Disbursements
-    const allocatedRaw = publicPayload.allocatedEgressEscrow ? BigInt(publicPayload.allocatedEgressEscrow) : 0n;
-    const remainingRaw = publicPayload.remainingEgressEscrow ? BigInt(publicPayload.remainingEgressEscrow) : 0n;
+    const allocatedRaw = safeBigInt(publicPayload.allocatedEgressEscrow);
+    const remainingRaw = safeBigInt(publicPayload.remainingEgressEscrow);
     const disbursedRaw = allocatedRaw - remainingRaw > 0n ? allocatedRaw - remainingRaw : 0n;
 
     // Active Storage Nodes
