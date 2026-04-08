@@ -4,7 +4,7 @@ import { BLOCK_TYPES } from '../constants';
 export interface PeerConnection {
     peerAddress: string;
     send(message: object): void;
-    remoteCredentials_?: { rsaKeyPair?: { public?: Buffer } };
+    remoteCredentials_?: { walletAddress?: string };
     roles?: NodeRole[]; // threaded role bounds per connection 
 }
 

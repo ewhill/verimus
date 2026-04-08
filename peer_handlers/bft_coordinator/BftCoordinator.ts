@@ -69,9 +69,9 @@ class BftCoordinator {
                 return;
             }
 
-            if (pendingEntry.verifications.has(connection.peerAddress)) return;
+            if (pendingEntry.verifications.has((connection.remoteCredentials_?.walletAddress || connection.peerAddress))) return;
 
-            pendingEntry.verifications.add(connection.peerAddress);
+            pendingEntry.verifications.add((connection.remoteCredentials_?.walletAddress || connection.peerAddress));
 
             const myAddress = `127.0.0.1:${this.node.port}`;
             if (!pendingEntry.verifications.has(myAddress)) {
@@ -205,9 +205,9 @@ class BftCoordinator {
             }
 
             const forkEntry = this.mempool.eligibleForks.get(forkId);
-            if (forkEntry!.proposals.has(connection.peerAddress)) return;
+            if (forkEntry!.proposals.has((connection.remoteCredentials_?.walletAddress || connection.peerAddress))) return;
 
-            forkEntry!.proposals.add(connection.peerAddress);
+            forkEntry!.proposals.add((connection.remoteCredentials_?.walletAddress || connection.peerAddress));
 
             const myAddress = `127.0.0.1:${this.node.port}`;
             if (!forkEntry!.proposals.has(myAddress)) {
@@ -311,11 +311,11 @@ class BftCoordinator {
 
             const settledEntry = this.mempool.settledForks.get(forkId);
             if (settledEntry!.finalTipHash !== finalTipHash) return;
-            if (settledEntry!.adoptions.has(connection.peerAddress)) return;
+            if (settledEntry!.adoptions.has((connection.remoteCredentials_?.walletAddress || connection.peerAddress))) return;
 
-            settledEntry!.adoptions.add(connection.peerAddress);
+            settledEntry!.adoptions.add((connection.remoteCredentials_?.walletAddress || connection.peerAddress));
 
-            if (this.node.peer && connection.peerAddress !== `127.0.0.1:${this.node.port}`) {
+            if (this.node.peer && (connection.remoteCredentials_?.walletAddress || connection.peerAddress) !== `127.0.0.1:${this.node.port}`) {
                 this.node.peer.broadcast(new AdoptForkMessage({ forkId, finalTipHash })).catch(() => {});
             }
 

@@ -93,12 +93,12 @@ class SyncEngine {
                 if (!this.node.ledger.peersCollection) return;
                 const peers = await this.node.ledger.peersCollection.find({}).toArray();
                 const score_payloads = peers.map(p => ({ operatorAddress: p.operatorAddress, publicKey: p.publicKey, score: p.score, roles: p.roles }));
-                
+
                 // Also broadcast our own native node roles mapped explicitly pinning RSA ties cleanly
                 const rsaKey = (this.node.peer as any)?.peerRSAKeyPair_?.public?.toString('utf8');
                 score_payloads.push({ operatorAddress: this.node.walletAddress, publicKey: rsaKey || this.node.publicKey, score: 100, roles: this.node.roles });
                 if (score_payloads.length > 0) {
-                    this.node.peer!.broadcast(new NetworkHealthSyncMessage({ score_payloads })).catch(() => {});
+                    this.node.peer!.broadcast(new NetworkHealthSyncMessage({ score_payloads })).catch(() => { });
                 }
             }, 60000);
         }
@@ -106,7 +106,7 @@ class SyncEngine {
 
     async handleNetworkHealthSync(score_payloads: { operatorAddress: string, publicKey?: string, score: number, roles?: NodeRole[] }[], _unusedConnection: PeerConnection) {
         if (!this.node.ledger.peersCollection) return;
-        
+
         for (const remoteScore of score_payloads) {
             const localPeer = await this.node.ledger.peersCollection.findOne({ operatorAddress: remoteScore.operatorAddress });
             if (localPeer) {
@@ -118,11 +118,11 @@ class SyncEngine {
 
                 // Assert aggregation ignoring 0 swings 
                 if (remoteScore.score === 0) continue;
-                
+
                 let updatedScore = Math.floor((localPeer.score + remoteScore.score) / 2);
                 if (updatedScore > 100) updatedScore = 100;
                 if (updatedScore < 0) updatedScore = 0;
-                
+
                 if (updatedScore !== localPeer.score || (remoteScore.roles && JSON.stringify(localPeer.roles) !== JSON.stringify(remoteScore.roles)) || (remoteScore.publicKey && localPeer.publicKey !== remoteScore.publicKey)) {
                     await this.node.ledger.peersCollection.updateOne(
                         { operatorAddress: remoteScore.operatorAddress },
@@ -132,30 +132,27 @@ class SyncEngine {
             } else if (remoteScore.score > 0) {
                 // ingest new metrics tracking
                 await this.node.ledger.peersCollection.insertOne({
-                     operatorAddress: remoteScore.operatorAddress,
-                     publicKey: remoteScore.publicKey,
-                     score: Math.min(remoteScore.score, 100),
-                     strikeCount: 0,
-                     isBanned: false,
-                     lastOffense: null,
-                     roles: remoteScore.roles || []
-                 });
+                    operatorAddress: remoteScore.operatorAddress,
+                    publicKey: remoteScore.publicKey,
+                    score: Math.min(remoteScore.score, 100),
+                    strikeCount: 0,
+                    isBanned: false,
+                    lastOffense: null,
+                    roles: remoteScore.roles || []
+                });
             }
         }
     }
 
     async handleChainStatusRequest(connection: PeerConnection) {
-        let pubKey = (connection.remoteCredentials_ as any)?.walletAddress || connection.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
-        console.log("=== SYNC ENGINE P2P SPAM PENALIZATION LOG ===");
-        console.log("extracted pubKey:", pubKey);
-        console.log("connection.remoteCredentials_:", connection.remoteCredentials_);
+        let pubKey = connection.remoteCredentials_?.walletAddress;
         if (pubKey) {
             const now = Date.now();
             let timestamps = this.spamTracker.get(pubKey) || [];
             timestamps = timestamps.filter(t => now - t < 5000); // keep requests within the last 5 seconds
             timestamps.push(now);
             this.spamTracker.set(pubKey, timestamps);
-            
+
             if (timestamps.length > 4) { // 5 requests within 5 seconds = spam
                 logger.warn(`[Peer ${this.node.port}] P2P Spam detected from ${connection.peerAddress}`);
                 await this.node.reputationManager.penalizeMinor(pubKey, "P2P Spam");
@@ -196,7 +193,7 @@ class SyncEngine {
             bids: [],
             requiredNodes,
             maxCostPerGB,
-            resolve: () => {}
+            resolve: () => { }
         });
 
         const reqMsg = new StorageRequestMessage({
@@ -209,12 +206,12 @@ class SyncEngine {
             targetDurationBlocks,
             allocatedRestToll
         });
-        
+
         await this.node.peer!.broadcast(reqMsg);
 
         return new Promise((resolve) => {
             const market = this.activeStorageMarkets.get(requestId)!;
-            
+
             let timer: NodeJS.Timeout | undefined;
 
             market.resolve = (bids: any) => {
@@ -233,7 +230,7 @@ class SyncEngine {
     }
 
     async handleStorageRequest(msg: StorageRequestMessage, connection: PeerConnection) {
-        if (this.node.peer) this.node.peer.broadcast(msg).catch(()=>{});
+        if (this.node.peer) this.node.peer.broadcast(msg).catch(() => { });
 
         // Only valid if this node operates the STORAGE role
         if (!this.node.roles.includes(NodeRole.STORAGE)) return;
@@ -252,10 +249,10 @@ class SyncEngine {
             const restTollPerGBHour = extConfig.config?.pricing?.restTollPerGBHour || 1.5;
             const targetDurationHours = (msg.targetDurationBlocks * AVERAGE_BLOCK_TIME_MS) / (3600 * 1000);
             const expectedMinimumRestToll = Math.ceil(expectedSizeGB * restTollPerGBHour * targetDurationHours);
-            
+
             const expectedWei = BigInt(expectedMinimumRestToll) * 1000000000000000000n;
             const incomingWei = BigInt(msg.allocatedRestToll);
-            
+
             if (incomingWei < expectedWei) {
                 logger.warn(`[Peer ${this.node.port}] Storage Bid validation failed: Incoming toll ${incomingWei} is less than required boundary ${expectedWei}`);
                 return;
@@ -290,8 +287,8 @@ class SyncEngine {
 
         // Triage Cutoff logic! If array hits 'N' required limit boundaries exactly stop the timer early!
         if (market.bids.length >= market.requiredNodes) {
-             market.resolve(market.bids);
-             this.activeStorageMarkets.delete(msg.storageRequestId);
+            market.resolve(market.bids);
+            this.activeStorageMarkets.delete(msg.storageRequestId);
         }
     }
 
@@ -300,7 +297,7 @@ class SyncEngine {
 
         try {
             const { physicalBlockId, writeStream } = this.node.storageProvider!.createBlockStream();
-            
+
             const buffer = Buffer.from(msg.shardDataBase64, 'base64');
             writeStream.end(buffer);
 
@@ -339,26 +336,26 @@ class SyncEngine {
             const result = await this.node.storageProvider!.getBlockReadStream(msg.physicalId);
             if (result.status !== 'available' || !result.stream) {
                 return connection.send(new StorageShardRetrieveResponseMessage({
-                     physicalId: msg.physicalId, marketId: msg.marketId, shardDataBase64: '', success: false
+                    physicalId: msg.physicalId, marketId: msg.marketId, shardDataBase64: '', success: false
                 }));
             }
             const chunks: Buffer[] = [];
             result.stream.on('data', (c: Buffer) => chunks.push(c));
             result.stream.on('error', () => {
                 connection.send(new StorageShardRetrieveResponseMessage({
-                     physicalId: msg.physicalId, marketId: msg.marketId, shardDataBase64: '', success: false
+                    physicalId: msg.physicalId, marketId: msg.marketId, shardDataBase64: '', success: false
                 }));
             });
             result.stream.on('end', () => {
                 const finalBuffer = Buffer.concat(chunks);
                 connection.send(new StorageShardRetrieveResponseMessage({
-                     physicalId: msg.physicalId, marketId: msg.marketId, shardDataBase64: finalBuffer.toString('base64'), success: true
+                    physicalId: msg.physicalId, marketId: msg.marketId, shardDataBase64: finalBuffer.toString('base64'), success: true
                 }));
             });
         } catch (error: any) {
             logger.error(`[Peer ${this.node.port}] Failed to retrieve shard physically mapping logic constraints: ${error.message}`);
             connection.send(new StorageShardRetrieveResponseMessage({
-                 physicalId: msg.physicalId, marketId: msg.marketId, shardDataBase64: '', success: false
+                physicalId: msg.physicalId, marketId: msg.marketId, shardDataBase64: '', success: false
             }));
         }
     }
@@ -377,7 +374,7 @@ class SyncEngine {
                     marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkDataBase64: '', merkleSiblings: [], success: false
                 }));
             }
-            
+
             const CHUNK_SIZE = 64 * 1024; // 64KB Merkle boundaries natively
             const chunks: Buffer[] = [];
             let currentChunk = Buffer.alloc(0);
@@ -403,7 +400,7 @@ class SyncEngine {
                 const { tree } = cryptoUtils.buildMerkleTree(chunks);
                 const merkleSiblings = cryptoUtils.getMerkleProof(tree, msg.targetChunkIndex);
                 const chunkDataBase64 = chunks[msg.targetChunkIndex].toString('base64');
-                
+
                 connection.send(new VerifyHandoffResponseMessage({
                     marketId: msg.marketId, physicalId: msg.physicalId, targetChunkIndex: msg.targetChunkIndex, chunkDataBase64, merkleSiblings, success: true
                 }));
@@ -429,7 +426,7 @@ class SyncEngine {
     }
 
     async handleMerkleProofChallengeRequest(msg: MerkleProofChallengeRequestMessage, _unusedConnection: PeerConnection) {
-        if (this.node.peer) this.node.peer.broadcast(msg).catch(()=>{});
+        if (this.node.peer) this.node.peer.broadcast(msg).catch(() => { });
         if (!this.node.roles.includes(NodeRole.STORAGE)) return;
 
         if (msg.targetNodeId && msg.targetNodeId !== this.node.walletAddress && msg.targetNodeId !== this.node.publicKey) {
@@ -442,7 +439,7 @@ class SyncEngine {
                 logger.warn(`[SyncEngine DEBUG] Missed challenge block physically missing! File not found in local disk bounds: ${msg.physicalId}`);
                 return;
             }
-            
+
             const CHUNK_SIZE = 64 * 1024;
             const chunks: Buffer[] = [];
             let currentChunk = Buffer.alloc(0);
@@ -464,19 +461,19 @@ class SyncEngine {
                     const respMsg = new MerkleProofChallengeResponseMessage({
                         contractId: msg.contractId, physicalId: msg.physicalId, auditorNodeId: msg.auditorNodeId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
                     });
-                    if (this.node.peer) this.node.peer.broadcast(respMsg).catch(()=>{});
+                    if (this.node.peer) this.node.peer.broadcast(respMsg).catch(() => { });
                     return;
                 }
 
                 const { tree } = cryptoUtils.buildMerkleTree(chunks);
                 const merkleSiblings = cryptoUtils.getMerkleProof(tree, msg.chunkIndex);
                 const chunkDataBase64 = chunks[msg.chunkIndex].toString('base64');
-                
+
                 logger.info(`[SyncEngine DEBUG] Assembled valid proof for shard chunk ${msg.chunkIndex}. Broadcasting true...`);
                 const respMsg = new MerkleProofChallengeResponseMessage({
                     contractId: msg.contractId, physicalId: msg.physicalId, auditorNodeId: msg.auditorNodeId, chunkDataBase64, merkleSiblings, computedRootMatch: true
                 });
-                if (this.node.peer) this.node.peer.broadcast(respMsg).catch(()=>{});
+                if (this.node.peer) this.node.peer.broadcast(respMsg).catch(() => { });
             };
 
             result.stream.on('end', flushAndResolve);
@@ -485,7 +482,7 @@ class SyncEngine {
                 const respMsg = new MerkleProofChallengeResponseMessage({
                     contractId: msg.contractId, physicalId: msg.physicalId, auditorNodeId: msg.auditorNodeId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
                 });
-                if (this.node.peer) this.node.peer.broadcast(respMsg).catch(()=>{});
+                if (this.node.peer) this.node.peer.broadcast(respMsg).catch(() => { });
             });
         } catch (error: any) {
             logger.error(`[Peer ${this.node.port}] Failed resolving verification handoff physically catching constraints: ${error.message}`);
@@ -493,7 +490,7 @@ class SyncEngine {
     }
 
     async handleMerkleProofChallengeResponse(msg: MerkleProofChallengeResponseMessage, _unusedConnection: PeerConnection) {
-        if (this.node.peer) this.node.peer.broadcast(msg).catch(()=>{});
+        if (this.node.peer) this.node.peer.broadcast(msg).catch(() => { });
         logger.info(`[Auditor DEBUG] Received response for contractId=${msg.contractId} physicalId=${msg.physicalId} computed=${msg.computedRootMatch} dataLength=${msg.chunkDataBase64?.length}`);
         this.node.events.emit(`merkle_audit_response:${msg.contractId}:${msg.physicalId}`, msg);
     }
@@ -605,8 +602,8 @@ class SyncEngine {
 
                     await this.node.ledger.addBlockToChain(mainBlock);
                     logger.info(`[Peer ${this.node.port}] Mathematical verification successful appending block [${i}] from source ${primaryHostConnection.peerAddress}`);
-                    
-                    let mainPubKey = primaryHostConnection.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
+
+                    let mainPubKey = primaryHostConnection.remoteCredentials_?.walletAddress;
                     if (mainPubKey) {
                         await this.node.reputationManager.rewardValidSync(mainPubKey);
                     }
@@ -631,7 +628,7 @@ class SyncEngine {
 
         // CRITICAL FIX: Awaken the consensus engine properly preventing deferred blocks from hanging indefinitely
         // if the buffer array happened to be barren during `isSyncing` boolean toggles organically natively.
-        this.node.consensusEngine._checkAndProposeFork().catch(() => {});
+        this.node.consensusEngine._checkAndProposeFork().catch(() => { });
     }
 }
 

@@ -1,4 +1,3 @@
-import { createHash, createPublicKey } from 'crypto';
 import EventEmitter from 'events';
 import * as fs from 'fs';
 import { IncomingMessage } from 'http';
@@ -15,7 +14,6 @@ import setupExpressApp from '../api_server/ApiServer';
 import Bundler from '../bundler/Bundler';
 import { GENESIS_SEED_DATA, IS_DEV_NETWORK } from '../constants';
 import { PeerCredentials } from '../credential_provider/CredentialProvider';
-import { signData } from '../crypto_utils/CryptoUtils';
 import Ledger from '../ledger/Ledger';
 import logger from '../logger/Logger';
 import Mempool from '../models/mempool/Mempool';
@@ -110,10 +108,10 @@ class PeerNode {
 
         this.reputationManager = new ReputationManager(this.ledger.peersCollection);
 
-        this.reputationManager.on('banned', async (pubKey: string) => {
+        this.reputationManager.on('banned', async (walletAddress: string) => {
             if (this.peer && this.peer.peers) {
                 // Find and disconnect the banned peer
-                const bannedClient = this.peer.peers.find((p: any) => p.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8') === pubKey);
+                const bannedClient = this.peer.peers.find((p: any) => p.remoteCredentials_?.walletAddress?.toLowerCase() === walletAddress.toLowerCase());
                 if (bannedClient && typeof bannedClient.close === 'function') {
                     logger.warn(`[Peer ${this.port}] terminating network pipeline for banned peer ${bannedClient.peerAddress}`);
                     bannedClient.close();
@@ -126,17 +124,17 @@ class PeerNode {
             try {
                 // If a peer is banned, we structurally trigger an internal proof of stake slashing sequence 
                 if (this.roles.includes(NodeRole.VALIDATOR)) {
-                    const slashStr = JSON.stringify({ penalizedAddress: pubKey, evidenceSignature: "SYSTEM_BANNED", burntAmount: Number(ethers.parseUnits("100", 18)) });
+                    const slashStr = JSON.stringify({ penalizedAddress: walletAddress, evidenceSignature: "SYSTEM_BANNED", burntAmount: Number(ethers.parseUnits("100", 18)) });
                     const slashSig = await this.wallet.signMessage(slashStr);
                     const slashBlock: import('../types').Block = {
                         metadata: { index: -1, timestamp: Date.now() },
                         type: 'SLASHING_TRANSACTION',
-                        payload: { penalizedAddress: pubKey, evidenceSignature: "SYSTEM_BANNED", burntAmount: ethers.parseUnits("100", 18) },
+                        payload: { penalizedAddress: walletAddress, evidenceSignature: "SYSTEM_BANNED", burntAmount: ethers.parseUnits("100", 18) },
                         signerAddress: this.walletAddress,
                         signature: slashSig
                     };
                     await this.consensusEngine.handlePendingBlock(slashBlock, { peerAddress: `127.0.0.1:${this.port}` } as any, Date.now());
-                    logger.warn(`[Peer ${this.port}] Issued localized SLASHING_TRANSACTION against BANNED entity ${pubKey.substring(0, 16)}...`);
+                    logger.warn(`[Peer ${this.port}] Issued localized SLASHING_TRANSACTION against BANNED entity ${walletAddress.substring(0, 16)}...`);
                 }
             } catch (err: any) {
                 logger.error(`[Peer ${this.port}] Failed emitting SLASHING_TRANSACTION autonomously: ${err.message}`);

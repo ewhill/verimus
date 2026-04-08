@@ -20,7 +20,7 @@ import { createMock } from '../../test/utils/TestUtils';
 test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async () => {
 
     const testDir = mkdtempSync(join(tmpdir(), 'verimus-slash-test-'));
-    const keys = generateRSAKeyPair();
+    const _unusedKeys = generateRSAKeyPair();
     const maliciousWallet = ethers.Wallet.createRandom();
     const wallet = ethers.Wallet.createRandom();
     let node: PeerNode | null = null;
@@ -29,8 +29,8 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
     try {
         mongod = await MongoMemoryServer.create();
         node = new PeerNode(0, [], null, null, mongod.getUri(), '127.0.0.1', {
-            privateKeyPath: join(testDir, 'peer.pem'),
-            privateKey: keys.privateKey
+            evmPrivateKeyPath: join(testDir, 'peer.evm.key'),
+            evmPrivateKey: ethers.Wallet.createRandom().privateKey
         }, testDir);
         await node.init();
         node.syncEngine.currentState = 'ACTIVE' as any;
@@ -133,15 +133,15 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
 test('Integration: Deterministic Auditor Verification (Phase 4 Chaos Overlap)', { timeout: 100000 }, async () => {
     try {
         const testDir = mkdtempSync(join(tmpdir(), 'verimus-slash-chaos-test-'));
-        const keys = generateRSAKeyPair();
+        const _unusedKeys = generateRSAKeyPair();
         let mongod: MongoMemoryServer | null = null;
         let node: PeerNode | null = null;
 
         try {
             mongod = await MongoMemoryServer.create();
         node = new PeerNode(0, [], null, null, mongod.getUri(), '127.0.0.1', {
-            privateKeyPath: join(testDir, 'peer.pem'),
-            privateKey: keys.privateKey
+            evmPrivateKeyPath: join(testDir, 'peer.evm.key'),
+            evmPrivateKey: ethers.Wallet.createRandom().privateKey
         }, testDir);
         
         node.wallet = ethers.Wallet.createRandom();
@@ -171,7 +171,7 @@ test('Integration: Deterministic Auditor Verification (Phase 4 Chaos Overlap)', 
         }
 
         node.peer = createMock<any>({
-            peers: [{ remoteCredentials_: { rsaKeyPair: { public: Buffer.from(node.walletAddress) } } }],
+            peers: [{ remoteCredentials_: { walletAddress: node.walletAddress } }],
             close: async () => {},
             broadcast: async (msg: any) => {
                 if (msg instanceof MerkleProofChallengeRequestMessage) {

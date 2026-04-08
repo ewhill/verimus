@@ -16,9 +16,7 @@ export class ReputationManager extends EventEmitter {
     private async executePeerUpsert(operatorAddress: string, scoreDelta: number, offense: string | null = null): Promise<PeerReputation | null> {
         if (!this.peersCollection) return null;
 
-        let peer: any = await this.peersCollection.findOne({ 
-            $or: [{ operatorAddress }, { publicKey: operatorAddress }] 
-        });
+        let peer: any = await this.peersCollection.findOne({ operatorAddress });
 
         let targetOperatorAddress = peer ? peer.operatorAddress : operatorAddress;
 
@@ -90,17 +88,13 @@ export class ReputationManager extends EventEmitter {
 
     async isBanned(operatorAddress: string): Promise<boolean> {
         if (!this.peersCollection) return false;
-        const peer = await this.peersCollection.findOne({ 
-            $or: [{ operatorAddress }, { publicKey: operatorAddress }] 
-        });
+        const peer = await this.peersCollection.findOne({ operatorAddress });
         return peer ? peer.isBanned : false;
     }
     
     async getScore(operatorAddress: string): Promise<number> {
         if (!this.peersCollection) return 100;
-        const peer = await this.peersCollection.findOne({ 
-            $or: [{ operatorAddress }, { publicKey: operatorAddress }] 
-        });
+        const peer = await this.peersCollection.findOne({ operatorAddress });
         return peer ? peer.score : 100;
     }
 }

@@ -7,6 +7,7 @@ import * as url from 'node:url';
 import os from 'os';
 import path from 'path';
 
+import { ethers } from 'ethers';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import Bundler from '../../bundler/Bundler';
@@ -14,7 +15,6 @@ import { BLOCK_TYPES } from '../../constants';
 import { hashData } from '../../crypto_utils/CryptoUtils';
 import { ChainStatusRequestMessage } from '../../messages/chain_status_request_message/ChainStatusRequestMessage';
 import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
-import RSAKeyPair from '../../p2p/lib/RSAKeyPair';
 import PeerNode from '../../peer_node/PeerNode';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
 import { createMock } from '../../test/utils/TestUtils';
@@ -35,17 +35,17 @@ describe('Integration: Reputation System (5 Nodes)', () => {
 
         // Spin up 5 Nodes
         for (let i = 0; i < 5; i++) {
-            const keys = RSAKeyPair.generate();
+            const evmWallet = ethers.Wallet.createRandom();
 
-            fs.writeFileSync(path.join(tempDir, `node${i}.pub`), keys.public);
-            fs.writeFileSync(path.join(tempDir, `node${i}.pem`), keys.private);
+            
+            fs.writeFileSync(path.join(tempDir, `node${i}.evm.key`), evmWallet.privateKey);
 
             const dbUri = mongod.getUri(`node${i}`);
 
             // Nodes sequentially connect to Node 1 (using ephemeral 0 originally)
             const trusted: string[] = []; // let discover bypass initially
             const keyPaths = {
-                privateKeyPath: path.join(tempDir, `node${i}.pem`)
+                evmPrivateKeyPath: path.join(tempDir, `node${i}.evm.key`)
             };
 
             const node = new PeerNode(0, trusted, new MemoryStorageProvider(), new Bundler(tempDir), dbUri, undefined, keyPaths, tempDir);
@@ -109,7 +109,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
             type: BLOCK_TYPES.STORAGE_CONTRACT,
             hash: 'wrong_hash',
             previousHash: 'fake',
-            signerAddress: node2.publicKey,
+            signerAddress: node2.walletAddress,
             payload: createMock<StorageContractPayload>({}),
             signature: 'fakesig'
         };
@@ -137,7 +137,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
             metadata: { index: 99, timestamp: Date.now() },
             type: BLOCK_TYPES.STORAGE_CONTRACT,
             previousHash: 'fake',
-            signerAddress: node3.publicKey,
+            signerAddress: node3.walletAddress,
             payload: {
                 encryptedPayloadBase64: 'enc',
                 encryptedKeyBase64: 'key',
@@ -157,7 +157,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
 
         await new Promise(r => setTimeout(r, 4000));
 
-        const node3ScoreRecord = await node1.ledger.peersCollection?.findOne({ operatorAddress: node3.publicKey });
+        const node3ScoreRecord = await node1.ledger.peersCollection?.findOne({ operatorAddress: node3.walletAddress });
         assert.strictEqual(node3ScoreRecord?.score, 0, 'Node 1 docked Node 3 dropping to 0');
         assert.strictEqual(node3ScoreRecord?.isBanned, true, 'Node 1 flagged node');
     });
