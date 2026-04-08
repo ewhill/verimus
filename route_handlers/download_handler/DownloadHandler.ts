@@ -90,7 +90,7 @@ export default class DownloadHandler extends BaseHandler {
                 }
                 readStream = readStreamResult.stream;
             } else {
-                const requiredK = payload.erasureParams.k;
+                const requiredK = Number(payload.erasureParams.k);
                 const marketId = crypto.randomBytes(16).toString('hex');
 
                 const fetchPromises = payload.fragmentMap!.map(async (mapping: any) => {
@@ -146,13 +146,13 @@ export default class DownloadHandler extends BaseHandler {
 
                 const rawResults = await Promise.all(fetchPromises);
 
-                const N = payload.erasureParams.n;
+                const N = Number(payload.erasureParams.n);
                 const shardsInput = new Array(N).fill(null);
                 let validCount = 0;
 
                 for (const res of rawResults) {
                     if (res.buffer) {
-                        shardsInput[res.shardIndex] = res.buffer;
+                        shardsInput[Number(res.shardIndex)] = res.buffer;
                         validCount++;
                     }
                 }
@@ -163,12 +163,12 @@ export default class DownloadHandler extends BaseHandler {
 
                 const reconstructed = await Bundler.reconstructErasureShards(
                     shardsInput,
-                    payload.erasureParams.k,
-                    payload.erasureParams.n,
-                    payload.erasureParams.originalSize
+                    Number(payload.erasureParams.k),
+                    Number(payload.erasureParams.n),
+                    Number(payload.erasureParams.originalSize)
                 );
 
-                readStream = Readable.from(reconstructed.subarray(0, payload.erasureParams.originalSize));
+                readStream = Readable.from(reconstructed.subarray(0, Number(payload.erasureParams.originalSize)));
             }
 
             res.setHeader('Content-disposition', `attachment; filename=block_${hash}.enc`);

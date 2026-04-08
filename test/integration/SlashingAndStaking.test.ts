@@ -219,11 +219,11 @@ test('Integration: Deterministic Auditor Verification (Phase 4 Chaos Overlap)', 
             payload: {
                 encryptedPayloadBase64: 'mock',
                 fragmentMap: [
-                    { nodeId: honestNodeId, shardIndex: 0, physicalId: 'phys_honest', shardHash: 'hash_hon' },
-                    { nodeId: maliciousNodeId, shardIndex: 1, physicalId: 'phys_malicious', shardHash: 'hash_mal' }
+                    { nodeId: honestNodeId, shardIndex: 0n, physicalId: 'phys_honest', shardHash: 'hash_hon' },
+                    { nodeId: maliciousNodeId, shardIndex: 1n, physicalId: 'phys_malicious', shardHash: 'hash_mal' }
                 ],
                 merkleRoots: [createHash('sha256').update(Buffer.from('HONEST_PAYLOAD')).digest('hex'), 'root_mal'],
-                erasureParams: { k: 1, n: 2, originalSize: 64 * 1024 }
+                erasureParams: { k: 1n, n: 2n, originalSize: BigInt(64 * 1024) }
             }
         });
 

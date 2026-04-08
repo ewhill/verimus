@@ -1,4 +1,5 @@
 import { BLOCK_TYPES } from '../constants';
+import logger from '../logger/Logger';
 import type { Block } from '../types';
 
 export const EIP712_DOMAIN = {
@@ -191,25 +192,48 @@ export const normalizeBlockForSignature = (block: Block): Record<string, any> =>
 /**
  * Hydrates deeply structured BigInt mathematical constants restoring strings efficiently dynamically correctly over native limits organically logically.
  */
+const strictHydrateBigInt = (val: any, fieldName: string): bigint => {
+    if (typeof val === 'number') {
+        logger.warn(`Security Violation: Field ${fieldName} must be stringified to prevent JS float truncation!`);
+        throw new Error('Invalid Payload');
+    }
+    if (typeof val === 'bigint') return val;
+    return BigInt(val);
+};
+
 export const hydrateBlockBigInts = (block: Block): void => {
     if (block.type === BLOCK_TYPES.STORAGE_CONTRACT) {
         const p = block.payload as any;
-        if (p.allocatedEgressEscrow !== undefined) p.allocatedEgressEscrow = BigInt(p.allocatedEgressEscrow.toString());
-        if (p.remainingEgressEscrow !== undefined) p.remainingEgressEscrow = BigInt(p.remainingEgressEscrow.toString());
-        if (p.allocatedRestToll !== undefined) p.allocatedRestToll = BigInt(p.allocatedRestToll.toString());
-        if (p.brokerFeePercentage !== undefined) p.brokerFeePercentage = BigInt(p.brokerFeePercentage.toString());
+        if (p.allocatedEgressEscrow !== undefined) p.allocatedEgressEscrow = strictHydrateBigInt(p.allocatedEgressEscrow, 'allocatedEgressEscrow');
+        if (p.remainingEgressEscrow !== undefined) p.remainingEgressEscrow = strictHydrateBigInt(p.remainingEgressEscrow, 'remainingEgressEscrow');
+        if (p.allocatedRestToll !== undefined) p.allocatedRestToll = strictHydrateBigInt(p.allocatedRestToll, 'allocatedRestToll');
+        if (p.brokerFeePercentage !== undefined) p.brokerFeePercentage = strictHydrateBigInt(p.brokerFeePercentage, 'brokerFeePercentage');
+        
+        if (p.erasureParams) {
+            if (p.erasureParams.n !== undefined) p.erasureParams.n = strictHydrateBigInt(p.erasureParams.n, 'n');
+            if (p.erasureParams.k !== undefined) p.erasureParams.k = strictHydrateBigInt(p.erasureParams.k, 'k');
+            if (p.erasureParams.originalSize !== undefined) p.erasureParams.originalSize = strictHydrateBigInt(p.erasureParams.originalSize, 'originalSize');
+        }
+        if (p.fragmentMap && Array.isArray(p.fragmentMap)) {
+            for (const map of p.fragmentMap) {
+                if (map.shardIndex !== undefined) map.shardIndex = strictHydrateBigInt(map.shardIndex, 'shardIndex');
+            }
+        }
     } else if (block.type === BLOCK_TYPES.TRANSACTION) {
         const p = block.payload as any;
-        if (p.amount !== undefined) p.amount = BigInt(p.amount.toString());
+        if (p.amount !== undefined) p.amount = strictHydrateBigInt(p.amount, 'amount');
     } else if (block.type === BLOCK_TYPES.STAKING_CONTRACT) {
         const p = block.payload as any;
-        if (p.collateralAmount !== undefined) p.collateralAmount = BigInt(p.collateralAmount.toString());
-        if (p.minEpochTimelineDays !== undefined) p.minEpochTimelineDays = BigInt(p.minEpochTimelineDays.toString());
+        if (p.collateralAmount !== undefined) p.collateralAmount = strictHydrateBigInt(p.collateralAmount, 'collateralAmount');
+        if (p.minEpochTimelineDays !== undefined) p.minEpochTimelineDays = strictHydrateBigInt(p.minEpochTimelineDays, 'minEpochTimelineDays');
     } else if (block.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
         const p = block.payload as any;
-        if (p.burntAmount !== undefined) p.burntAmount = BigInt(p.burntAmount.toString());
+        if (p.burntAmount !== undefined) p.burntAmount = strictHydrateBigInt(p.burntAmount, 'burntAmount');
     } else if (block.type === BLOCK_TYPES.VALIDATOR_REGISTRATION) {
         const p = block.payload as any;
-        if (p.stakeAmount !== undefined) p.stakeAmount = BigInt(p.stakeAmount.toString());
+        if (p.stakeAmount !== undefined) p.stakeAmount = strictHydrateBigInt(p.stakeAmount, 'stakeAmount');
+    } else if (block.type === BLOCK_TYPES.CHECKPOINT) {
+        const p = block.payload as any;
+        if (p.epochIndex !== undefined) p.epochIndex = strictHydrateBigInt(p.epochIndex, 'epochIndex');
     }
 };

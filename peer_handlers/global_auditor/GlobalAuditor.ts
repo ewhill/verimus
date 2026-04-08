@@ -162,11 +162,12 @@ class GlobalAuditor {
                 if (fragment.nodeId === this.node.walletAddress) continue;
                 if (fragment.nodeId === 'GENESIS_NODE') continue; // Never audit the static genesis node placeholder
 
-                const merkleRoot = contractPayload.merkleRoots[fragment.shardIndex];
+                const merkleRoot = contractPayload.merkleRoots[Number(fragment.shardIndex)];
 
                 const CHUNK_SIZE = 64 * 1024;
-                const K = contractPayload.erasureParams!.k;
-                const paddedSize = Math.ceil(contractPayload.erasureParams!.originalSize / K) * K;
+                const K = Number(contractPayload.erasureParams!.k);
+                const originalSizeNum = Number(contractPayload.erasureParams!.originalSize);
+                const paddedSize = Math.ceil(originalSizeNum / K) * K;
                 const shardSize = paddedSize / K;
                 const totalChunks = Math.ceil(shardSize / CHUNK_SIZE);
 

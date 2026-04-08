@@ -61,10 +61,10 @@ const contractBlockBase = {
         activeHosts: [],
         allocatedEgressEscrow: 0n,
         remainingEgressEscrow: 0n,
-        erasureParams: { k: 1, n: 1, originalSize: GENESIS_SEED_DATA.length },
+        erasureParams: { k: 1n, n: 1n, originalSize: BigInt(GENESIS_SEED_DATA.length) },
         fragmentMap: [{
             nodeId: 'GENESIS_NODE',
-            shardIndex: 0,
+            shardIndex: 0n,
             shardHash: crypto.createHash('sha256').update(GENESIS_SEED_DATA).digest('hex'),
             physicalId: 'GENESIS_PHYSICAL_ID'
         }],

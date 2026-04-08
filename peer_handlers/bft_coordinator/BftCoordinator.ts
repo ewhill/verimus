@@ -387,7 +387,7 @@ class BftCoordinator {
                         if (block.signerAddress === this.node.walletAddress) {
                             const stateRoots = await this.walletManager.buildStateRoot();
                             const checkpointPayload: CheckpointStatePayload = {
-                                epochIndex: Math.floor(block.metadata.index / EPOCH_SIZE),
+                                epochIndex: BigInt(Math.floor(block.metadata.index / EPOCH_SIZE)),
                                 startHash: ''.padStart(64, '0'),
                                 endHash: block.hash!,
                                 stateMerkleRoot: stateRoots.stateMerkleRoot,

@@ -243,7 +243,7 @@ class PeerNode {
                             const stakingBlock: Block = {
                                 metadata: { index: -1, timestamp: Date.now() },
                                 type: 'STAKING_CONTRACT',
-                                payload: { operatorAddress: this.walletAddress, collateralAmount: ethers.parseUnits("50000", 18), minEpochTimelineDays: 30 },
+                                payload: { operatorAddress: this.walletAddress, collateralAmount: ethers.parseUnits("50000", 18), minEpochTimelineDays: 30n },
                                 signerAddress: this.walletAddress,
                                 signature: sigStr
                             };

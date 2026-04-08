@@ -201,7 +201,7 @@ export default class UploadHandler extends BaseHandler {
                             try {
                                 fragmentMap.push({
                                     nodeId: bid.peerId,
-                                    shardIndex: i,
+                                    shardIndex: BigInt(i),
                                     shardHash: crypto.createHash('sha256').update(bundleResult.shards[i]).digest('hex'),
                                     physicalId: physicalId
                                 });
@@ -270,7 +270,7 @@ export default class UploadHandler extends BaseHandler {
                 activeHosts: bids.map((b: { peerId: string }) => b.peerId),
                 allocatedEgressEscrow: theoreticalMaxCostWei,
                 remainingEgressEscrow: theoreticalMaxCostWei,
-                erasureParams: { k: K, n: N, originalSize: bundleResult.originalSize! },
+                erasureParams: { k: BigInt(K), n: BigInt(N), originalSize: BigInt(bundleResult.originalSize!) },
                 fragmentMap: fragmentMap,
                 merkleRoots: bundleResult.merkleRoots,
                 ownerAddress: recoveredAddress,

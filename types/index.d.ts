@@ -38,14 +38,14 @@ export interface TransactionPayload {
 }
 
 export interface ErasureParameters {
-    n: number;
-    k: number;
-    originalSize: number;
+    n: bigint;
+    k: bigint;
+    originalSize: bigint;
 }
 
 export interface NodeShardMapping {
     nodeId: string;
-    shardIndex: number;
+    shardIndex: bigint;
     shardHash: string;
     physicalId?: string;
 }
@@ -71,7 +71,7 @@ export interface StorageContractPayload {
 export interface StakingContractPayload {
     operatorAddress: string;
     collateralAmount: bigint;
-    minEpochTimelineDays: number;
+    minEpochTimelineDays: bigint;
 }
 
 export interface ValidatorRegistrationPayload {
@@ -87,7 +87,7 @@ export interface SlashingPayload {
 }
 
 export interface CheckpointStatePayload {
-    epochIndex: number;
+    epochIndex: bigint;
     startHash: string;
     endHash: string;
     stateMerkleRoot: string;
