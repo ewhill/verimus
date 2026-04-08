@@ -4,6 +4,7 @@ var https = require('https');
 const test = require('node:test');
 const assert = require('node:assert');
 
+const mockKeys = require('./mockKeys.js');
 const { Peer, Message } = require('../index.js');
 const Server = require('../lib/Server');
 
@@ -34,8 +35,8 @@ test("PeerBYOHTTPSServerTest", async () => {
       server,
       mode: Server.MODES.PASS,
     },
-    publicKeyPath: "first.peer.pub",
-    privateKeyPath: "first.peer.pem",
+    publicKey: mockKeys.first.public,
+    privateKey: mockKeys.first.private,
     publicAddress: "127.0.0.1:48181",
     logger: fakeLogger,
   });
@@ -81,8 +82,8 @@ test("PeerBYOHTTPSServerTest", async () => {
     httpsServerConfig: {
       port: 49191,
     },
-    publicKeyPath: "second.peer.pub",
-    privateKeyPath: "second.peer.pem",
+    publicKey: mockKeys.second.public,
+    privateKey: mockKeys.second.private,
     discoveryConfig: {
       addresses: ["127.0.0.1"],
       range: {

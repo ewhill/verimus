@@ -3,6 +3,7 @@ const fs = require('fs');
 const test = require('node:test');
 const assert = require('node:assert');
 
+const mockKeys = require('./mockKeys.js');
 const { Peer, Message } = require('../index.js');
 
 // -----------------------------------------------------------------------------
@@ -36,8 +37,8 @@ test("PeerConstructor", async () => {
     httpsServerConfig: {
       port: 56788,
     },
-    publicKeyPath: "first.peer.pub",
-    privateKeyPath: "first.peer.pem",
+    publicKey: mockKeys.first.public,
+    privateKey: mockKeys.first.private,
     discoveryConfig: {
       addresses: ["127.0.0.1"],
       range: {
@@ -51,6 +52,7 @@ test("PeerConstructor", async () => {
 
   // Missing peer `privateKey`:
   let missingPrivateKeyOptions = copyConstructorOptions(constructorOptions);
+  delete missingPrivateKeyOptions.privateKey;
   delete missingPrivateKeyOptions.privateKeyPath;
   await constructorThrowsWithMessage(missingPrivateKeyOptions,
     "Invalid path!",
@@ -58,6 +60,7 @@ test("PeerConstructor", async () => {
 
   // Missing peer `publicKey`:
   let missingPublicKeyOptions = copyConstructorOptions(constructorOptions);
+  delete missingPublicKeyOptions.publicKey;
   delete missingPublicKeyOptions.publicKeyPath;
   const peer = new Peer(missingPublicKeyOptions);
   await peer.init();

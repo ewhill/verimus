@@ -2,6 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
+const mockKeys = require('./mockKeys.js');
 const { Peer, Message } = require('../index.js');
 
 let peer;
@@ -11,8 +12,8 @@ const before = async () => {
 	const fakeLogger = { error: sink, info: sink, log: sink, warn: sink };
 
 	peer = new Peer({
-		publicKeyPath: "first.peer.pub",
-		privateKeyPath: "first.peer.pem",
+		publicKey: mockKeys.first.public,
+		privateKey: mockKeys.first.private,
 		httpsServerConfig: {
 			port: 26780,
 		},

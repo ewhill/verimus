@@ -893,6 +893,8 @@ class Peer {
     return JSON.stringify({
       privateKeyPath: this.privateKeyPath_,
       publicKeyPath: this.publicKeyPath_,
+      privateKey: (this.privateKey_ instanceof Buffer) ? this.privateKey_.toString('utf8') : this.privateKey_,
+      publicKey: (this.publicKey_ instanceof Buffer) ? this.publicKey_.toString('utf8') : this.publicKey_,
       discoveryConfig: this.discoveryConfig_,
       httpsServerConfig: this.server_.httpsConfig,
       wsServerConfig: this.server_.wsConfig,

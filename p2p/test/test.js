@@ -2,6 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
+const mockKeys = require('./mockKeys.js');
 const { Peer, Message } = require('../index.js');
 
 class PingMessage extends Message {
@@ -29,24 +30,8 @@ const PongMessageHandler = (message, connection, logger = console) => {
 };
 
 
-const { generateKeyPairSync } = require('node:crypto');
-const fs = require('node:fs');
-
 test("PeerBYOHTTPSServerTest", async () => {
-	const fakeLogger = console;
-
-	const generateMockKeys = (prefix) => {
-		const { publicKey, privateKey } = generateKeyPairSync('rsa', {
-			modulusLength: 2048,
-			publicKeyEncoding: { type: 'spki', format: 'pem' },
-			privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
-		});
-		fs.writeFileSync(`${prefix}.peer.pub`, publicKey);
-		fs.writeFileSync(`${prefix}.peer.pem`, privateKey);
-	};
-
-	generateMockKeys('first');
-	generateMockKeys('second');
+    const fakeLogger = console;
 
 	const peer1 = new Peer({
 		httpsServerConfig: {
@@ -56,8 +41,8 @@ test("PeerBYOHTTPSServerTest", async () => {
 			},
 			port: 58780,
 		},
-		privateKeyPath: "first.peer.pem",
-		publicKeyPath: "first.peer.pub",
+		privateKey: mockKeys.first.private,
+		publicKey: mockKeys.first.public,
 		publicAddress: "127.0.0.1:58780",
 		logger: fakeLogger,
 	});
@@ -70,8 +55,8 @@ test("PeerBYOHTTPSServerTest", async () => {
 			},
 			port: 58781,
 		},
-		privateKeyPath: "second.peer.pem",
-		publicKeyPath: "second.peer.pub",
+		privateKey: mockKeys.second.private,
+		publicKey: mockKeys.second.public,
 		discoveryConfig: {
 			addresses: ["127.0.0.1:58780"]
 		},
