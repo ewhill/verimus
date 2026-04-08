@@ -59,6 +59,9 @@ class Peer {
     // Raw Key Overrides
     privateKey,
 
+    // Bound Network Identity Mappings
+    walletAddress,
+
     // Optional / Configurable Parameters
     httpsServerConfig = {},
     wsServerConfig = {},
@@ -76,6 +79,7 @@ class Peer {
     this.privateKeyPath_ = privateKeyPath;
 
     this.privateKey_ = privateKey;
+    this.walletAddress_ = walletAddress;
 
     this.httpsServerConfig_ = httpsServerConfig;
     this.wsServerConfig_ = { ...this.wsServerConfig_, ...wsServerConfig };
@@ -225,7 +229,8 @@ class Peer {
       connection,
       request,
       credentials: {
-        rsaKeyPair: this.peerRSAKeyPair_
+        rsaKeyPair: this.peerRSAKeyPair_,
+        walletAddress: this.walletAddress_
       },
       address: this.server_.publicAddress,
       peerAddress: utils.getXForwardedFor(request),
@@ -460,7 +465,8 @@ class Peer {
     const client = new Client({
       connection: new WebSocket(formattedAddress, []),
       credentials: {
-        rsaKeyPair: this.peerRSAKeyPair_
+        rsaKeyPair: this.peerRSAKeyPair_,
+        walletAddress: this.walletAddress_
       },
       address: this.server_.publicAddress,
       peerAddress: formattedAddress.replace(/^wss?:\/\//, ''),

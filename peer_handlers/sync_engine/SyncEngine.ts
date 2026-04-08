@@ -94,8 +94,9 @@ class SyncEngine {
                 const peers = await this.node.ledger.peersCollection.find({}).toArray();
                 const score_payloads = peers.map(p => ({ operatorAddress: p.operatorAddress, publicKey: p.publicKey, score: p.score, roles: p.roles }));
                 
-                // Also broadcast our own native node roles mapped
-                score_payloads.push({ operatorAddress: this.node.walletAddress, publicKey: this.node.publicKey, score: 100, roles: this.node.roles });
+                // Also broadcast our own native node roles mapped explicitly pinning RSA ties cleanly
+                const rsaKey = (this.node.peer as any)?.peerRSAKeyPair_?.public?.toString('utf8');
+                score_payloads.push({ operatorAddress: this.node.walletAddress, publicKey: rsaKey || this.node.publicKey, score: 100, roles: this.node.roles });
                 if (score_payloads.length > 0) {
                     this.node.peer!.broadcast(new NetworkHealthSyncMessage({ score_payloads })).catch(() => {});
                 }
@@ -144,7 +145,10 @@ class SyncEngine {
     }
 
     async handleChainStatusRequest(connection: PeerConnection) {
-        let pubKey = connection.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
+        let pubKey = (connection.remoteCredentials_ as any)?.walletAddress || connection.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
+        console.log("=== SYNC ENGINE P2P SPAM PENALIZATION LOG ===");
+        console.log("extracted pubKey:", pubKey);
+        console.log("connection.remoteCredentials_:", connection.remoteCredentials_);
         if (pubKey) {
             const now = Date.now();
             let timestamps = this.spamTracker.get(pubKey) || [];

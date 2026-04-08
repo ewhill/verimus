@@ -324,7 +324,7 @@ class BftCoordinator {
             const majority = this.node.getMajorityCount();
             if (settledEntry!.adoptions.size >= majority && !settledEntry!.committed) {
                 const forkEntry = this.mempool.eligibleForks.get(forkId);
-                if (forkEntry && forkEntry.computedBlocks) {
+                if (forkEntry && forkEntry.computedBlocks && forkEntry.computedBlocks.length > 0) {
                     await this._commitFork(forkId);
                 } else {
                     settledEntry!.pendingCommit = true;
@@ -338,7 +338,7 @@ class BftCoordinator {
     async _commitFork(forkId: string) {
         const settledEntry = this.mempool.settledForks.get(forkId);
         const forkEntry = this.mempool.eligibleForks.get(forkId);
-        if (!settledEntry || !forkEntry || !forkEntry.computedBlocks) return;
+        if (!settledEntry || !forkEntry || !forkEntry.computedBlocks || forkEntry.computedBlocks.length === 0) return;
 
         if (this.activeForkTimeouts.has(forkId)) {
             clearTimeout(this.activeForkTimeouts.get(forkId)!);

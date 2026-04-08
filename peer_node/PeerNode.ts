@@ -163,6 +163,11 @@ class PeerNode {
             this.wallet = new ethers.Wallet('0x' + hash);
         }
         this.walletAddress = this.wallet.address;
+        
+        // Propagate initialized wallet natively mapping explicitly down to P2P peer instance internally smoothly securely securely explicitly seamlessly.
+        if (this.peer) {
+            (this.peer as any).walletAddress_ = this.walletAddress;
+        }
 
         // Setup Express API Server
         await this.loadOwnedBlocksCache();
@@ -195,7 +200,8 @@ class PeerNode {
             },
             publicAddress: this.publicAddress || undefined,
             privateKeyPath: this.keyPaths.privateKeyPath,
-            privateKey: this.keyPaths.privateKey
+            privateKey: this.keyPaths.privateKey,
+            walletAddress: this.walletAddress
         });
 
         httpServer.on('upgrade', (request: IncomingMessage, socket: Socket, head: any) => {
@@ -221,9 +227,9 @@ class PeerNode {
                 const originalOnClientMessage = this.peer!.onClientMessage.bind(this.peer);
                 // @ts-ignore
                 this.peer!.onClientMessage = async (connection: any, type: string, message: any) => {
-                    let remotePubKey = connection.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
-                    if (remotePubKey) {
-                        const isBanned = await this.reputationManager.isBanned(remotePubKey);
+                    let remoteIdentity = connection.remoteCredentials_?.walletAddress || connection.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
+                    if (remoteIdentity) {
+                        const isBanned = await this.reputationManager.isBanned(remoteIdentity);
                         if (isBanned) {
                             logger.warn(`[Peer ${this.port}] Dropping packet from banned peer ${connection.peerAddress}`);
                             return;

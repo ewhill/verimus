@@ -19,7 +19,7 @@ test('StorageRequestMessage: serialization mappings strictly parse chronological
     assert.strictEqual(msg.allocatedRestToll, '15000000');
     assert.strictEqual(msg.storageRequestId, 'test-req-123');
 
-    const serialized = JSON.parse(JSON.stringify(msg));
+    const serialized = JSON.parse(msg.toString());
     assert.strictEqual(serialized.body.targetDurationBlocks, 17280);
     assert.strictEqual(serialized.body.allocatedRestToll, '15000000');
 

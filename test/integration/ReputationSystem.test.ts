@@ -123,7 +123,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
 
         await new Promise(r => setTimeout(r, 4000));
 
-        const node2ScoreRecord = await node1.ledger.peersCollection?.findOne({ operatorAddress: node2.publicKey });
+        const node2ScoreRecord = await node1.ledger.peersCollection?.findOne({ operatorAddress: node2.walletAddress });
         assert.ok(node2ScoreRecord, 'Node 1 created active reputation record');
         assert.strictEqual(node2ScoreRecord?.score, 90, 'Node 1 correctly docked Node 2 (-10)');
     });
@@ -190,7 +190,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
 
         await new Promise(r => setTimeout(r, 1000));
 
-        const node4ScoreRecord = await node1.ledger.peersCollection?.findOne({ operatorAddress: node4.publicKey });
+        const node4ScoreRecord = await node1.ledger.peersCollection?.findOne({ operatorAddress: node4.walletAddress });
         assert.strictEqual(node4ScoreRecord?.score, 99, 'Node 1 penalized node');
     });
 });

@@ -461,7 +461,7 @@ class Client {
 				}
 			};
 
-			this.logger_.log(`Sending message:\n`, data);
+			// this.logger_.log(`Sending message:\n`, data); // Removed due to disk space exhaustion
 
 			this.connection_.send(data, (err) => {
 				sendCallback(err, 5000, this.connection_, data);
@@ -487,8 +487,10 @@ class Client {
 			let helloMessage = new HelloMessage({
 				publicAddress: this.address,
 				publicKey: publicKeyStr,
-				nonce
+				nonce,
+				walletAddress: this.credentials_.walletAddress
 			});
+			console.log(`[helo] sending from client: params walletAddress=`, this.credentials_.walletAddress, 'body=', helloMessage.body.walletAddress);
 			helloMessage.header = {
 				signature: (this.credentials_.rsaKeyPair.sign(
 					JSON.stringify(helloMessage.body)))
@@ -578,8 +580,10 @@ class Client {
 			`\t-> Public key:\n\t\t${formattedPublicKey}`);
 
 		this.peerAddress_ = peerAddress;
+		console.log("[helo] received from client: message.walletAddress=", message.walletAddress, "message.body=", message.body);
 		this.remoteCredentials_ = {
-			rsaKeyPair: peerRsaKeyPair
+			rsaKeyPair: peerRsaKeyPair,
+			walletAddress: message.walletAddress
 		};
 
 		return this.receiveHeloPromiseResolve_();
