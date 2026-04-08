@@ -7,7 +7,7 @@ import RSAKeyPair from '../p2p/lib/RSAKeyPair';
 
 
 const PORTS = [26780, 26781, 26782, 26783, 26784];
-const KEYS_DIR = path.join(__dirname, 'keys');
+const KEYS_DIR = path.join(__dirname, '..', 'keys');
 
 if (!fs.existsSync(KEYS_DIR)) {
     fs.mkdirSync(KEYS_DIR);
@@ -23,6 +23,9 @@ for (const port of PORTS) {
         const evmWallet = ethers.Wallet.createRandom();
         fs.writeFileSync(`${baseKey}.evm.key`, evmWallet.privateKey);
         fs.writeFileSync(`${baseKey}.evm.address`, evmWallet.address);
+        if (evmWallet.mnemonic) {
+            fs.writeFileSync(`${baseKey}.evm.mnemonic`, evmWallet.mnemonic.phrase);
+        }
     }
 }
 

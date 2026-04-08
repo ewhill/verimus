@@ -138,6 +138,15 @@ echo "  Nodes are running and active!            "
 echo -e '===========================================\033[0m'
 for port in "${PORTS[@]}"; do
     echo -e "Node UI: \033[1;34mhttps://localhost:$port\033[0m"
+    if [ -f "$PROJECT_ROOT/keys/peer_${port}.evm.address" ]; then
+        ADDR=$(cat "$PROJECT_ROOT/keys/peer_${port}.evm.address")
+        MNEMONIC="[Not Stored]"
+        if [ -f "$PROJECT_ROOT/keys/peer_${port}.evm.mnemonic" ]; then
+           MNEMONIC=$(cat "$PROJECT_ROOT/keys/peer_${port}.evm.mnemonic")
+        fi
+        echo -e "  Wallet Address: \033[1;33m$ADDR\033[0m"
+        echo -e "  Seed Phrase: \033[1;30m$MNEMONIC\033[0m"
+    fi
 done
 echo "==========================================="
 echo -e "Press \033[1;33mCtrl-C\033[0m to stop all nodes and exit."
