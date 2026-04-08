@@ -169,6 +169,20 @@ class Ledger {
         return newBlock;
     }
 
+    async getExpiredContracts(currentIndex: number): Promise<Block[]> {
+        const cursor = this.collection!.find({ type: BLOCK_TYPES.STORAGE_CONTRACT });
+        const expiredBlocks: Block[] = [];
+        
+        for await (const block of cursor) {
+            hydrateBlockBigInts(block);
+            const payload = block.payload as any;
+            if (payload?.expirationBlockHeight !== undefined && BigInt(payload.expirationBlockHeight) <= BigInt(currentIndex)) {
+                expiredBlocks.push(block as unknown as Block);
+            }
+        }
+        return expiredBlocks;
+    }
+
     async isChainValid() {
         const cursor = this.collection!.find().sort({ "metadata.index": 1 });
         let previousBlock: any = null;

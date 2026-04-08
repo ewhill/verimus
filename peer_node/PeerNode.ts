@@ -22,6 +22,7 @@ import Mempool from '../models/mempool/Mempool';
 import { Peer } from '../p2p';
 import Server from '../p2p/lib/Server';
 import ConsensusEngine from '../peer_handlers/consensus_engine/ConsensusEngine';
+import GarbageCollector from '../peer_handlers/garbage_collector/GarbageCollector';
 import { ReputationManager } from '../peer_handlers/reputation_manager/ReputationManager';
 import SyncEngine from '../peer_handlers/sync_engine/SyncEngine';
 import BaseProvider from '../storage_providers/base_provider/BaseProvider';
@@ -46,6 +47,7 @@ class PeerNode {
     ownedBlocksCache: string[];
     consensusEngine: ConsensusEngine;
     syncEngine: SyncEngine;
+    garbageCollector: GarbageCollector;
     reputationManager!: ReputationManager;
     events: EventEmitter;
     publicKey!: string;
@@ -93,6 +95,7 @@ class PeerNode {
         this.events = new EventEmitter();
         this.consensusEngine = new ConsensusEngine(this);
         this.syncEngine = new SyncEngine(this);
+        this.garbageCollector = new GarbageCollector(this);
     }
 
     async init() {

@@ -5,7 +5,7 @@ import { ethers } from 'ethers';
 
 import { GENESIS_TIMESTAMP, BLOCK_TYPES, calculateAuditDecayInterval } from '../../constants';
 import { signData, verifyMerkleProof } from '../../crypto_utils/CryptoUtils';
-import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from '../../crypto_utils/EIP712Types';
+import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature, hydrateBlockBigInts } from '../../crypto_utils/EIP712Types';
 import logger from '../../logger/Logger';
 import { MerkleProofChallengeRequestMessage } from '../../messages/merkle_proof_challenge_request_message/MerkleProofChallengeRequestMessage';
 import PeerNode from '../../peer_node/PeerNode';
@@ -139,6 +139,14 @@ class GlobalAuditor {
         let hasAudited = false;
 
         for (const contract of contracts) {
+            hydrateBlockBigInts(contract as Block);
+            const payload = contract.payload as any;
+            if (payload?.expirationBlockHeight !== undefined) {
+                if (BigInt(payload.expirationBlockHeight) <= BigInt(latestBlock?.metadata?.index || 0)) {
+                    continue; // Skip auditing expired contracts protecting honest hosts
+                }
+            }
+
             if (!contract.hash) continue;
             const contractHash = contract.hash;
             const trackKey = `${contractHash}-${intervalBucket}`;

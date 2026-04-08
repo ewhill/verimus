@@ -58,6 +58,14 @@ abstract class BaseStorageProvider {
     }
 
     /**
+     * Deletes a physically stored block matching its ID.
+     * @param {string} physicalBlockId
+     */
+    async deleteBlock(_unusedPhysicalBlockId: string): Promise<void> {
+        throw new Error('deleteBlock not implemented globally natively');
+    }
+
+    /**
      * Creates a read stream for the encrypted block given its ID.
      * @param {string} physicalBlockId 
      * @returns {Promise<NodeJS.ReadableStream|object|null>}
