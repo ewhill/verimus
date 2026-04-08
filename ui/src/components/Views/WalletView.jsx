@@ -6,7 +6,8 @@ import FilesView from './FilesView/FilesView';
 const WalletView = () => {
     const activeTab = useStore(s => s.activeWalletTab);
     const web3Account = useStore(s => s.web3Account);
-    const [walletData, setWalletData] = useState({ balance: 0, emissionRate: 0, transactions: [] });
+    const [walletData, setWalletData] = useState({ balance: 0, emissionRate: 0, transactions: [], totalPages: 1 });
+    const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -16,13 +17,14 @@ const WalletView = () => {
         const fetchWalletStats = async () => {
             if (!web3Account) return;
             try {
-                const res = await fetch(`/api/wallet?address=${web3Account}`);
+                const res = await fetch(`/api/wallet?address=${web3Account}&page=${currentPage}&limit=25`);
                 const data = await res.json();
                 if (data.success && isMounted) {
                     setWalletData({
                         balance: data.balance || 0,
                         emissionRate: data.emissionRate || 0,
-                        transactions: data.transactions || []
+                        transactions: data.transactions || [],
+                        totalPages: data.totalPages || 1
                     });
                     setError(null);
                 } else if (!data.success && isMounted) {
@@ -42,7 +44,7 @@ const WalletView = () => {
              isMounted = false;
              clearInterval(intervalId);
         };
-    }, [web3Account]);
+    }, [web3Account, currentPage]);
 
     // Format helpers mapping raw blockchain precision from BigInt strings natively
     const formatVeri = (num) => parseFloat(ethers.formatUnits(num ? num.toString() : "0", 18)).toFixed(6) + ' $VERI';
@@ -136,6 +138,28 @@ const WalletView = () => {
                                             })}
                                         </tbody>
                                     </table>
+                                )}
+                                
+                                {walletData.totalPages > 1 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+                                        <button 
+                                            disabled={currentPage === 1} 
+                                            onClick={() => setCurrentPage(p => p - 1)}
+                                            style={{ padding: '0.75rem 1.5rem', background: currentPage === 1 ? 'rgba(255,255,255,0.05)' : 'rgba(192, 132, 252, 0.1)', color: currentPage === 1 ? '#64748b' : '#c084fc', border: 'none', borderRadius: '8px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', transition: 'all 0.2s', fontWeight: 'bold' }}
+                                        >
+                                            ← Previous Phase
+                                        </button>
+                                        <span style={{ color: '#94a3b8', fontSize: '0.9rem', letterSpacing: '0.05em' }}>
+                                            MATRIX PAGE <span style={{ color: '#f8fafc', fontWeight: 'bold' }}>{currentPage}</span> OF <span style={{ color: '#f8fafc', fontWeight: 'bold' }}>{walletData.totalPages}</span>
+                                        </span>
+                                        <button 
+                                            disabled={currentPage >= walletData.totalPages} 
+                                            onClick={() => setCurrentPage(p => p + 1)}
+                                            style={{ padding: '0.75rem 1.5rem', background: currentPage >= walletData.totalPages ? 'rgba(255,255,255,0.05)' : 'rgba(192, 132, 252, 0.1)', color: currentPage >= walletData.totalPages ? '#64748b' : '#c084fc', border: 'none', borderRadius: '8px', cursor: currentPage >= walletData.totalPages ? 'not-allowed' : 'pointer', transition: 'all 0.2s', fontWeight: 'bold' }}
+                                        >
+                                            Next Phase →
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </>

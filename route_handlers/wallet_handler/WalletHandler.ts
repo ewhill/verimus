@@ -36,14 +36,29 @@ export default class WalletHandler extends BaseHandler {
 
             // 3. Extract transaction ledger history locally
             let transactions: any[] = [];
+            let totalPages = 1;
+            
+            const page = parseInt(req.query.page as string) || 1;
+            const limit = parseInt(req.query.limit as string) || 25;
+            const skip = (page - 1) * limit;
+            
             if (this.node.ledger.collection) {
-                const txBlocks = await this.node.ledger.collection.find({
+                const query = {
                     type: BLOCK_TYPES.TRANSACTION,
                     $or: [
                         { 'payload.senderAddress': targetAddress },
                         { 'payload.recipientAddress': targetAddress }
                     ]
-                }).sort({ "metadata.index": -1 }).limit(100).toArray();
+                };
+                
+                const totalDocs = await this.node.ledger.collection.countDocuments(query);
+                totalPages = Math.ceil(totalDocs / limit) || 1;
+
+                const txBlocks = await this.node.ledger.collection.find(query)
+                    .sort({ "metadata.index": -1 })
+                    .skip(skip)
+                    .limit(limit)
+                    .toArray();
 
                 transactions = txBlocks.map((b: any) => ({
                     hash: b.hash,
@@ -58,7 +73,9 @@ export default class WalletHandler extends BaseHandler {
                 success: true,
                 balance,
                 emissionRate,
-                transactions
+                transactions,
+                totalPages,
+                currentPage: page
             });
         } catch (error: any) {
             console.error('[API Error] /api/wallet:', error);
