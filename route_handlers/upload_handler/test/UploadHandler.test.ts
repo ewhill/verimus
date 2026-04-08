@@ -65,7 +65,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
 
     it('Processes valid multipart file bundles orchestrating bundler streams', async () => {
         let blockHandled = false;
-        const { publicKey, privateKey } = generateRSAKeyPair();
+        const { publicKey, privateKey: _unusedPrivateKey } = generateRSAKeyPair();
         const buffer = Buffer.from('mock');
         const { tree, root } = buildMerkleTree([buffer]);
         const merkleSiblings = getMerkleProof(tree, 0);
@@ -73,7 +73,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             roles: [NodeRole.ORIGINATOR],
             port: 3000,
             publicKey: publicKey,
-            privateKey: privateKey,
+
             storageProvider: createMock<BaseProvider>({
                 createBlockStream: () => {
                     return {
@@ -221,14 +221,14 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
     });
 
     it('Maps custom string destination locations validating config fallback', async () => {
-        const { publicKey, privateKey } = generateRSAKeyPair();
+        const { publicKey, privateKey: _unusedPrivateKey } = generateRSAKeyPair();
         const buffer = Buffer.from('mock');
         const { tree, root } = buildMerkleTree([buffer]);
         const merkleSiblings = getMerkleProof(tree, 0);
         const mockNode: PeerNode = createMock<PeerNode>({
             roles: [NodeRole.ORIGINATOR],
             publicKey,
-            privateKey,
+
             port: 1234,
             storageProvider: createMock<BaseProvider>({
                 createBlockStream: () => ({
@@ -322,14 +322,14 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         } else {
             // fallback if mock is absent
         }
-        const { publicKey, privateKey } = generateRSAKeyPair();
+        const { publicKey, privateKey: _unusedPrivateKey } = generateRSAKeyPair();
         const buffer = Buffer.from('mock');
         const { tree, root } = buildMerkleTree([buffer]);
         const merkleSiblings = getMerkleProof(tree, 0);
         const mockNode: PeerNode = createMock<PeerNode>({
             roles: [NodeRole.ORIGINATOR],
             publicKey,
-            privateKey,
+
             port: 1234,
             storageProvider: createMock<BaseProvider>({
                 createBlockStream: () => ({
@@ -427,11 +427,11 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
 
     it('Penalizes and rejects storage market allocations returning invalid chunk maps', async () => {
         let penalizedNode = '';
-        const { publicKey, privateKey } = generateRSAKeyPair();
+        const { publicKey, privateKey: _unusedPrivateKey } = generateRSAKeyPair();
         const mockNode: PeerNode = createMock<PeerNode>({
             roles: [NodeRole.ORIGINATOR],
             publicKey,
-            privateKey,
+
             port: 1234,
             storageProvider: createMock<BaseProvider>({
                 createBlockStream: () => ({

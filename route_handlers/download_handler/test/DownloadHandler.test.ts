@@ -26,7 +26,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
     it('Returns HTTP 404 when requesting missing block hashes', async () => {
         const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
-            privateKey: 'PRIVKEY', 
+             
             walletAddress: 'MOCK_PUBKEY',
             ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [] })) as any }) }) 
          });
@@ -58,12 +58,12 @@ describe('Backend: downloadHandler Unit Tests', () => {
     });
 
     it('Rejects HTTP 403 on invalid remote signature validations restricting downloads', async () => {
-        const { publicKey, privateKey } = generateRSAKeyPair();
+        const { publicKey, privateKey: _unusedPrivateKey } = generateRSAKeyPair();
 
         const validHPayload = { encryptedPayloadBase64: Buffer.from(JSON.stringify({ physicalId: 'pid', location: { type: 'local' }, aesKey: '', aesIv: '', files: [] })).toString('base64'), encryptedKeyBase64: 'DEPRECATED_PHASE5', encryptedIvBase64: 'DEPRECATED_PHASE5', encryptedAuthTagBase64: 'DEPRECATED_PHASE5', ownerAddress: globalWallet.address };
         const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
-            privateKey: privateKey, 
+
             walletAddress: publicKey,
             ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [createMock<WithId<Block>>({ _id: new ObjectId('000000000000000000000001'), hash: 'validh', previousHash: 'prev', payload: validHPayload, signerAddress: publicKey, signature: 'bad_sig', type: 'STORAGE_CONTRACT', metadata: { index: 0, timestamp: 0 } })] })) as any }) }) 
          });
@@ -95,7 +95,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
     });
 
     it('Returns locally mapping Erasure Coded Shards via Reed-Solomon recombination', async () => {
-        const { publicKey, privateKey } = generateRSAKeyPair();
+        const { publicKey, privateKey: _unusedPrivateKey } = generateRSAKeyPair();
 
         const bundler = new Bundler('./test_data');
         const pt = new PassThrough();
@@ -127,7 +127,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
 
         const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
-            privateKey: privateKey, 
+
             publicKey: publicKey,
             walletAddress: publicKey,
             events: realEvents,
@@ -206,7 +206,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
     });
 
     it('Returns continuous bundled block stream upon valid parameters', async () => {
-        const { publicKey, privateKey } = generateRSAKeyPair();
+        const { publicKey, privateKey: _unusedPrivateKey } = generateRSAKeyPair();
 
         // 1. Create a real bundle stream
         const bundler = new Bundler('./test_data');
@@ -226,7 +226,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
 
         const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
-            privateKey: privateKey, 
+
             walletAddress: publicKey,
             ledger: createMock<import('../../../ledger/Ledger').default>({ collection: createMock<import('mongodb').Collection<import('../../../types').Block>>({ find: mock.fn<() => import('mongodb').FindCursor<import('mongodb').WithId<import('../../../types').Block>>>(() => createMock<import('mongodb').FindCursor<import('mongodb').WithId<import('../../../types').Block>>>({ toArray: async () => [signedBlockWithId] })) as any }) }) 
          });
@@ -277,7 +277,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
     });
 
     it('Intercepts active status tracking requests when statusOnly flag is flipped correctly cancelling full zip rendering', async () => {
-        const { publicKey, privateKey } = generateRSAKeyPair();
+        const { publicKey, privateKey: _unusedPrivateKey } = generateRSAKeyPair();
 
         // const _pt = new PassThrough();
         const priv = { key: 'a'.repeat(64), iv: 'b'.repeat(32), files: [], physicalId: 'pid', location: { type: 'local' } };
@@ -288,7 +288,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
         let streamDestroyed = false;
         const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
-            privateKey: privateKey, 
+
             walletAddress: publicKey,
             ledger: createMock<Ledger>({ collection: createMock<Collection<Block>>({ find: mock.fn<() => FindCursor<WithId<Block>>>(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [signedBlockWithId] })) as any }) }) 
          });
@@ -325,7 +325,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
     });
 
     it('Returns HTTP 404 on remote storage stream failures', async () => {
-        const { publicKey, privateKey } = generateRSAKeyPair();
+        const { publicKey, privateKey: _unusedPrivateKey } = generateRSAKeyPair();
         const priv = { key: 'GARBAGEKEY1234GARBAGEKEY1234GARB', iv: 'GARBAGEIV1234567', files: [], physicalId: 'pid', location: { type: 'local' } };
         const encPriv = { encryptedPayloadBase64: Buffer.from(JSON.stringify(priv)).toString('base64'), encryptedKeyBase64: 'DEPRECATED_PHASE5', encryptedIvBase64: 'DEPRECATED_PHASE5', encryptedAuthTagBase64: 'DEPRECATED_PHASE5', ownerAddress: globalWallet.address };
         const mockBlock = await createSignedMockBlock(globalWallet, 'STORAGE_CONTRACT', encPriv);
@@ -333,7 +333,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
 
         const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
-            privateKey: privateKey, 
+
             walletAddress: publicKey,
             ledger: createMock<import('../../../ledger/Ledger').default>({ collection: createMock<import('mongodb').Collection<import('../../../types').Block>>({ find: mock.fn<() => import('mongodb').FindCursor<import('mongodb').WithId<import('../../../types').Block>>>(() => createMock<import('mongodb').FindCursor<import('mongodb').WithId<import('../../../types').Block>>>({ toArray: async () => [signedBlockWithId] })) as any }) }) 
          });
@@ -371,7 +371,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
 
 
     it('Returns HTTP 500 on payload parsing logic failures', async () => {
-        const mockNode = createMock<PeerNode>({  roles: [NodeRole.STORAGE], privateKey: 'PRIV', walletAddress: 'MOCK_PUBKEY'  });
+        const mockNode = createMock<PeerNode>({  roles: [NodeRole.STORAGE],  walletAddress: 'MOCK_PUBKEY'  });
         (mockNode as any).walletManager = { deductEgressEscrow: async () => {} };
         Object.defineProperty(mockNode, 'ledger', { get: () => { throw new Error('Simulated null reference'); } });
         const handler = new DownloadHandler(mockNode);
@@ -400,7 +400,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
     });
 
     it('Intercepts node ReadStream exceptions emitting HTTP 500', async () => {
-        const { publicKey, privateKey } = generateRSAKeyPair();
+        const { publicKey, privateKey: _unusedPrivateKey } = generateRSAKeyPair();
 
         const priv = {
             key: crypto.randomBytes(32).toString('hex'),
@@ -413,7 +413,7 @@ describe('Backend: downloadHandler Unit Tests', () => {
 
         const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
-            privateKey: privateKey, 
+
             walletAddress: publicKey,
             ledger: createMock<import('../../../ledger/Ledger').default>({ collection: createMock<import('mongodb').Collection<import('../../../types').Block>>({ find: mock.fn<() => import('mongodb').FindCursor<import('mongodb').WithId<import('../../../types').Block>>>(() => createMock<import('mongodb').FindCursor<import('mongodb').WithId<import('../../../types').Block>>>({ toArray: async () => [signedBlockWithId] })) as any }) }) 
          });

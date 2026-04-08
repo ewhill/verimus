@@ -32,7 +32,7 @@ describe('BftCoordinator', () => {
             mempool: mempoolStore,
             ledger: mockLedger,
             events: events,
-            privateKey: keys.privateKey,
+
             port: 3000,
             getMajorityCount: mock.fn(() => 1) as any,
             peer: {

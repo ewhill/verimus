@@ -64,7 +64,7 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
         }, tmpLoad);
 
         node.publicKey = fs.readFileSync('keys/peer_26780.peer.pub', 'utf8');
-        node.privateKey = fs.readFileSync('keys/peer_26780.peer.pem', 'utf8');
+        fs.readFileSync('keys/peer_26780.peer.pem', 'utf8');
 
         const mockPeer = {
             peers: [{ id: 'mock-test' }],

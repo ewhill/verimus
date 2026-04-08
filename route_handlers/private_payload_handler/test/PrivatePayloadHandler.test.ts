@@ -135,7 +135,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
     });
 
     it('Returns 401 when signature is invalid', async () => {
-        const { publicKey, privateKey } = cryptoUtils.generateRSAKeyPair();
+        const { publicKey, privateKey: _unusedPrivateKey } = cryptoUtils.generateRSAKeyPair();
         const wallet = ethers.Wallet.createRandom();
         const timestamp = Date.now().toString();
         const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
@@ -151,7 +151,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const mockCollection = createMock<Collection<Block>>({ find: mockCollectionFind as any });
         const mockNode: PeerNode = createMock<PeerNode>({ 
             publicKey, 
-            privateKey,
+
             ledger: createMock<Ledger>({ collection: mockCollection })
         });
         const handler = new PrivatePayloadHandler(mockNode);
@@ -223,7 +223,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
     });
 
     it('Returns HTTP 200 returning deeply nested raw unencrypted private structures', async () => {
-        const { publicKey, privateKey } = cryptoUtils.generateRSAKeyPair();
+        const { publicKey, privateKey: _unusedPrivateKey } = cryptoUtils.generateRSAKeyPair();
         const wallet = ethers.Wallet.createRandom();
         const timestamp = Date.now().toString();
         const web3Sig = await wallet.signMessage(JSON.stringify({ action: 'download', blockHash: 'validh', timestamp }));
@@ -239,7 +239,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const mockCollection = createMock<Collection<Block>>({ find: mockCollectionFind as any });
         const mockNode: PeerNode = createMock<PeerNode>({ 
             publicKey, 
-            privateKey,
+
             ledger: createMock<Ledger>({ collection: mockCollection })
         });
         const handler = new PrivatePayloadHandler(mockNode);

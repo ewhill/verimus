@@ -2,7 +2,9 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const mockKeys = require('./mockKeys.js');
+const { ethers } = require('ethers');
+const mockWallet1 = ethers.Wallet.createRandom();
+const mockWallet2 = ethers.Wallet.createRandom();
 const { Peer, Message } = require('../index.js');
 
 class PingMessage extends Message {
@@ -41,8 +43,9 @@ test("PeerBYOHTTPSServerTest", async () => {
 			},
 			port: 58780,
 		},
-		privateKey: mockKeys.first.private,
-		publicKey: mockKeys.first.public,
+		evmPrivateKey: mockWallet1.privateKey,
+		walletAddress: mockWallet1.address,
+		
 		publicAddress: "127.0.0.1:58780",
 		logger: fakeLogger,
 	});
@@ -55,8 +58,9 @@ test("PeerBYOHTTPSServerTest", async () => {
 			},
 			port: 58781,
 		},
-		privateKey: mockKeys.second.private,
-		publicKey: mockKeys.second.public,
+		evmPrivateKey: mockWallet2.privateKey,
+		walletAddress: mockWallet2.address,
+		
 		discoveryConfig: {
 			addresses: ["127.0.0.1:58780"]
 		},

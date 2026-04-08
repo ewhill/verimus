@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 
 import { BLOCK_TYPES } from '../../constants';
-import { hashData, signData } from '../../crypto_utils/CryptoUtils';
+import { hashData } from '../../crypto_utils/CryptoUtils';
 import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from '../../crypto_utils/EIP712Types';
 import logger from '../../logger/Logger';
 import { AdoptForkMessage } from '../../messages/adopt_fork_message/AdoptForkMessage';
@@ -34,10 +34,9 @@ class BftCoordinator {
     start() {
         this.node.events.on('MEMPOOL:BLOCK_VERIFIED', async (blockId: string) => {
             try {
-                const privateKey = this.node.privateKey;
-                const myVerificationSig = signData(blockId, privateKey);
+                const myVerificationSig = await this.node.wallet.signMessage(blockId);
                 
-                await this.handleVerifyBlock(blockId, myVerificationSig as string, { peerAddress: `127.0.0.1:${this.node.port}` } as PeerConnection);
+                await this.handleVerifyBlock(blockId, myVerificationSig, { peerAddress: `127.0.0.1:${this.node.port}` } as PeerConnection);
 
                 if (this.mempool.orphanedVerifications.has(blockId)) {
                     const orphans = this.mempool.orphanedVerifications.get(blockId);
@@ -76,11 +75,10 @@ class BftCoordinator {
 
             const myAddress = `127.0.0.1:${this.node.port}`;
             if (!pendingEntry.verifications.has(myAddress)) {
-                const privateKey = this.node.privateKey;
-                const myVerificationSig = signData(blockId, privateKey);
+                const myVerificationSig = await this.node.wallet.signMessage(blockId);
                 pendingEntry.verifications.add(myAddress);
                 if (this.node.peer) {
-                    this.node.peer.broadcast(new VerifyBlockMessage({ blockId, signature: myVerificationSig as string })).catch(() => { });
+                    this.node.peer.broadcast(new VerifyBlockMessage({ blockId, signature: myVerificationSig })).catch(() => { });
                 }
             }
 
@@ -406,11 +404,7 @@ class BftCoordinator {
                             const valueObj = normalizeBlockForSignature(valBlock);
                             const schema = EIP712_SCHEMAS[BLOCK_TYPES.CHECKPOINT];
 
-                            if (this.node.wallet) {
-                                valBlock.signature = await this.node.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
-                            } else {
-                                valBlock.signature = signData(JSON.stringify(checkpointPayload), this.node.privateKey) as string;
-                            }
+                            valBlock.signature = await this.node.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
 
                             // Directly inject checkpoint as verified into bridge implicitly natively
                             this.node.events.emit('NETWORK:INBOUND_PENDING_BLOCK', valBlock);

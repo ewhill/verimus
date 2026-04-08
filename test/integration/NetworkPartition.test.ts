@@ -45,7 +45,7 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
         // We will mock keys internally for nodes to bypass generation overhead since the test relies on network topologies
         const mockKeys = (node: PeerNode) => {
              node.publicKey = 'PUB';
-             node.privateKey = 'PRIV';
+             'PRIV';
         };
         mockKeys(node1); mockKeys(node2); mockKeys(node3);
 

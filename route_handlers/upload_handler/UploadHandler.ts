@@ -4,7 +4,7 @@ import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
 import { BLOCK_TYPES, AVERAGE_BLOCK_TIME_MS } from '../../constants';
-import { verifyMerkleProof, signData } from '../../crypto_utils/CryptoUtils';
+import { verifyMerkleProof } from '../../crypto_utils/CryptoUtils';
 import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from '../../crypto_utils/EIP712Types';
 import logger from '../../logger/Logger';
 import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
@@ -45,7 +45,7 @@ export default class UploadHandler extends BaseHandler {
 
         try {
             const signerAddress = this.node.walletAddress;
-            const privateKey = this.node.privateKey;
+            // Removed unused RSA privateKey hook
 
             // 1 & 2 & 6. Stream zip and encode mathematically into parity boundary limits
             logger.info(`[Peer ${this.node.port}] Processing file upload structuring Erasure pipelines...`);
@@ -316,11 +316,7 @@ export default class UploadHandler extends BaseHandler {
             const valueObj = normalizeBlockForSignature(valBlock);
             const schema = EIP712_SCHEMAS[BLOCK_TYPES.STORAGE_CONTRACT];
             
-            if (this.node.wallet) {
-                valBlock.signature = await this.node.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
-            } else {
-                valBlock.signature = signData(JSON.stringify(payloadResult), privateKey) as string;
-            }
+            valBlock.signature = await this.node.wallet!.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
             
             const pendingBlock = valBlock;
 

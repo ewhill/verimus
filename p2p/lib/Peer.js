@@ -53,11 +53,8 @@ class Peer {
   };
 
   constructor({
-    // Required Parameters (Paths)
-    privateKeyPath,
-
     // Raw Key Overrides
-    privateKey,
+    evmPrivateKey,
 
     // Bound Network Identity Mappings
     walletAddress,
@@ -76,9 +73,7 @@ class Peer {
     publicAddress,
     logger = console,
   }) {
-    this.privateKeyPath_ = privateKeyPath;
-
-    this.privateKey_ = privateKey;
+    this.evmPrivateKey_ = evmPrivateKey;
     this.walletAddress_ = walletAddress;
 
     this.httpsServerConfig_ = httpsServerConfig;
@@ -145,35 +140,9 @@ class Peer {
 
     this.isInitializing_ = true;
 
-    const filesToCheck = [];
-    if (!this.privateKey_) filesToCheck.push({ description: "Peer Private Key", location: this.privateKeyPath_ });
-
-    const checkPromise = filesToCheck.length > 0
-      ? utils.checkFiles(filesToCheck, this.logger_)
-      : Promise.resolve();
-
-    this.initializationOperation_ = checkPromise
+    this.initializationOperation_ = Promise.resolve()
       .then(() => {
-        /* 
-         * NOTE: Peer public is optional, can be derrived from private if not 
-         * provided. All other files must exist in order to initialize peer.
-         */
-        const readPeerPrivateKeyPromise = !this.privateKey_ ?
-          utils.readFileAsync(this.privateKeyPath_)
-            .then(data => {
-              this.privateKey_ = data;
-            }) : Promise.resolve();
-
-        return Promise.all([
-          readPeerPrivateKeyPromise
-        ]);
-      })
-      .then(() => {
-        this.peerRSAKeyPair_ = new RSAKeyPair({
-          privateKeyBuffer: this.privateKey_,
-        });
-
-        this.logger_.log(`Peer identity derived.`);
+        this.logger_.log(`Peer identity bindings validated.`);
 
         this.server_ = new Server({
           httpsServerConfig: this.httpsServerConfig_,
@@ -229,7 +198,7 @@ class Peer {
       connection,
       request,
       credentials: {
-        rsaKeyPair: this.peerRSAKeyPair_,
+        evmPrivateKey: this.evmPrivateKey_,
         walletAddress: this.walletAddress_
       },
       address: this.server_.publicAddress,
@@ -465,7 +434,7 @@ class Peer {
     const client = new Client({
       connection: new WebSocket(formattedAddress, []),
       credentials: {
-        rsaKeyPair: this.peerRSAKeyPair_,
+        evmPrivateKey: this.evmPrivateKey_,
         walletAddress: this.walletAddress_
       },
       address: this.server_.publicAddress,

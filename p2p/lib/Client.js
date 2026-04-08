@@ -3,9 +3,9 @@ const crypto = require('crypto');
 const EventEmitter = require('events');
 const WebSocket = require('ws');
 
-const RSAKeyPair = require('./RSAKeyPair');
-const HelloMessage = require('./messages/HelloMessage');
-const SetupCipherMessage = require('./messages/SetupCipherMessage');
+const EphemeralExchangeMessage = require('./messages/EphemeralExchangeMessage');
+const { generateEphemeralSession, signEphemeralPayload, computeSessionSecret } = require('../../crypto_utils/CryptoUtils');
+const { ethers } = require('ethers');
 const RequestHandler = require('./RequestHandler');
 const ManagedTimeouts = require('./ManagedTimeouts');
 const Message = require('./Message');
@@ -64,10 +64,11 @@ class Client {
 		logger = this.logger_,
 	}) {
 
-		const { rsaKeyPair } = credentials;
-		if (!rsaKeyPair) {
-			throw new Error(`Invalid credentials!`);
+		const { evmPrivateKey } = credentials;
+		if (!evmPrivateKey) {
+			throw new Error(`Invalid credentials (requires evmPrivateKey)!`);
 		}
+		this.ephemeralWallet_ = generateEphemeralSession();
 
 		this.connection_ = connection;
 		this.credentials_ = credentials;
@@ -283,9 +284,13 @@ class Client {
 			}
 
 			// Check the message header's 'signature' validity...
-			const hasValidSignature =
-				this.remoteCredentials_.rsaKeyPair.verify(
-					decryptedMessageBody, messageSignature);
+			let hasValidSignature = false;
+			try {
+				const recoveredAddress = ethers.verifyMessage(decryptedMessageBody.toString('utf8'), Buffer.from(messageSignature, 'base64').toString('utf8'));
+				hasValidSignature = (recoveredAddress.toLowerCase() === this.remoteCredentials_.walletAddress.toLowerCase());
+			} catch (e) {
+				hasValidSignature = false;
+			}
 
 			if (hasValidSignature) {
 				try {
@@ -319,11 +324,9 @@ class Client {
 		if (this.requestHandlers_.hasOwnProperty(messageType)) {
 			const handler = this.requestHandlers_[messageType];
 			const messageObj = handler.upgrade(message);
-			const isHelloMessage = messageObj instanceof HelloMessage;
-			const isSetupCipherMessage =
-				messageObj instanceof SetupCipherMessage;
+			const isEphemeralMessage = messageObj instanceof EphemeralExchangeMessage;
 
-			if (!this.isTrusted && (isHelloMessage || isSetupCipherMessage)) {
+			if (!this.isTrusted && isEphemeralMessage) {
 				try {
 					handler.invoke(messageObj, this);
 				} catch (e) {
@@ -390,10 +393,9 @@ class Client {
 			}
 		}
 
-		const isHelloMessage = message instanceof HelloMessage;
-		const isCipherSetupMessage = message instanceof SetupCipherMessage;
+		const isEphemeralMessage = message instanceof EphemeralExchangeMessage;
 
-		if (!isHelloMessage && !isCipherSetupMessage && !this.isTrusted) {
+		if (!isEphemeralMessage && !this.isTrusted) {
 			this.logger_.warn(
 				`Attempted to send message before connection could be ` +
 				`upgraded: ${message}`);
@@ -408,9 +410,12 @@ class Client {
 
 		if (this.isTrusted) {
 			try {
-				const signature = message.header.signature ||
-					(this.credentials_.rsaKeyPair.sign(
-						JSON.stringify(message.body))).toString('base64');
+				let sigStr = message.header.signature;
+				if (!sigStr) {
+					const wallet = new ethers.Wallet(this.credentials_.evmPrivateKey);
+					sigStr = await wallet.signMessage(JSON.stringify(message.body));
+				}
+				const signature = Buffer.from(sigStr, 'utf8').toString('base64');
 				const iv = crypto.randomBytes(12);
 				const cipher = crypto.createCipheriv(
 					'aes-256-gcm', this.cipher_.key, iv);
@@ -469,217 +474,97 @@ class Client {
 		});
 	}
 
-	get sendHeloPromise() {
-		if (!this.isConnected) {
-			return Promise.reject(new Error(`Connection not open!`));
-		}
+	async sendEphemeralMessage() {
+		if (!this.isConnected) throw new Error(`Connection not open!`);
 
-		if (!this.hasSentHelo_) {
-			const publicKeyStr = this.credentials_.rsaKeyPair.public.toString('utf8');
-			let nonce = 0;
-			let hash = '';
-			const blockTime = Math.floor(Date.now() / 300000);
-			do {
-				nonce++;
-				hash = crypto.createHash('sha256').update(publicKeyStr + blockTime + nonce).digest('hex');
-			} while (!hash.startsWith('0000'));
+		const ephemeralPublicKey = this.ephemeralWallet_.publicKey;
+		const payload = JSON.stringify({ ePublicKey: ephemeralPublicKey, addr: this.credentials_.walletAddress, peerAddr: this.address });
+		const innerSignature = await signEphemeralPayload(this.credentials_.evmPrivateKey, payload);
 
-			let helloMessage = new HelloMessage({
-				publicAddress: this.address,
-				publicKey: publicKeyStr,
-				nonce,
-				walletAddress: this.credentials_.walletAddress
-			});
-			console.log(`[helo] sending from client: params walletAddress=`, this.credentials_.walletAddress, 'body=', helloMessage.body.walletAddress);
-			helloMessage.header = {
-				signature: (this.credentials_.rsaKeyPair.sign(
-					JSON.stringify(helloMessage.body)))
-					.toString('base64')
-			};
-			this.sendHeloPromise_ = this.send(helloMessage);
-			this.hasSentHelo_ = true;
-		}
+		const ephemeralMsg = new EphemeralExchangeMessage({
+			ephemeralPublicKey,
+			signature: innerSignature,
+			walletAddress: this.credentials_.walletAddress,
+			publicAddress: this.address
+		});
 
-		return this.sendHeloPromise_;
+		return this.send(ephemeralMsg);
 	}
 
-	get receiveHeloPromise() {
-		if (!this.isConnected) {
-			return Promise.reject(new Error(`Connection not open!`));
-		}
+	get receiveEphemeralPromise() {
+		if (!this.isConnected) return Promise.reject(new Error(`Connection not open!`));
 
-		if (!this.receiveHeloPromise_) {
-			this.receiveHeloPromise_ = new Promise((resolve, reject) => {
-				this.receiveHeloPromiseResolve_ = resolve;
-				this.receiveHeloPromiseReject_ = reject;
-				this.receiveHeloTimeout_ =
-					this.managedTimeouts_.setTimeout(reject, 4000);
-				this.bind_(HelloMessage).to((message, connection) => {
-					this.heloHandler(message, connection);
+		if (!this.receiveEphemeralPromise_) {
+			this.receiveEphemeralPromise_ = new Promise((resolve, reject) => {
+				this.receiveEphemeralPromiseResolve_ = resolve;
+				this.receiveEphemeralPromiseReject_ = reject;
+				this.receiveEphemeralTimeout_ = this.managedTimeouts_.setTimeout(reject, 6000);
+				
+				this.bind_(EphemeralExchangeMessage).to(async (message, connection) => {
+					await this.ephemeralExchangeHandler(message, connection);
 				});
 			}).then(() => {
-				this.managedTimeouts_.clearTimeout(
-					this.receiveHeloTimeout_);
-				this.unbind_(HelloMessage);
+				this.managedTimeouts_.clearTimeout(this.receiveEphemeralTimeout_);
+				this.unbind_(EphemeralExchangeMessage);
 			}).catch(err => {
-				this.managedTimeouts_.clearTimeout(
-					this.receiveHeloTimeout_);
-				this.unbind_(HelloMessage);
+				this.managedTimeouts_.clearTimeout(this.receiveEphemeralTimeout_);
+				this.unbind_(EphemeralExchangeMessage);
 				throw err;
 			});
 		}
 
-		return this.receiveHeloPromise_;
+		return this.receiveEphemeralPromise_;
 	}
 
-	heloHandler(message, connection) {
-		const blockTime = Math.floor(Date.now() / 300000);
-		let nonceHash = crypto.createHash('sha256')
-			.update(message.publicKey + blockTime + message.nonce).digest('hex');
-		
-		if (!nonceHash.startsWith('0000')) {
-			nonceHash = crypto.createHash('sha256')
-				.update(message.publicKey + (blockTime - 1) + message.nonce).digest('hex');
-		}
-
-		if (!nonceHash.startsWith('0000')) {
-			return this.receiveHeloPromiseReject_(new Error(`Invalid Hashcash nonce temporal bounds evaluated!`));
-		}
-
-		const peerAddress = message.publicAddress.toString('utf8');
-		const peerPublicKeyBuffer = Buffer.from(message.publicKey, 'utf8');
-		const peerRsaKeyPair =
-			new RSAKeyPair({ publicKeyBuffer: peerPublicKeyBuffer });
-
-		if (!peerRsaKeyPair) {
-			return this.receiveHeloPromiseReject_(new Error(
-				`Message did not contain credentials!`));
-		}
-
-		const ownPublicKey = this.credentials_.rsaKeyPair.public.toString('utf8');
-		const remotePublicKey = peerPublicKeyBuffer.toString('utf8');
-
-		if (ownPublicKey === remotePublicKey) {
-			return this.receiveHeloPromiseReject_(new Error(
-				`Received public key matching own public key from peer. ` +
-				`Closing connection so as to prevent potential connection to self.`));
-		}
-
-		if (this.expectedSignature_ && remotePublicKey !== this.expectedSignature_) {
-			return this.receiveHeloPromiseReject_(new Error(
-				`Received public key did not match expected pinned signature identity. ` +
-				`Dropping MITM socket.`));
-		}
-
-		const formattedPublicKey =
-			peerRsaKeyPair.public.toString('utf8')
-				.replace(new RegExp('\n', 'ig'), '\n\t\t');
-
-		this.logger_.log(
-			`Remote peer @ ${peerAddress}\n` +
-			`\t-> Public key:\n\t\t${formattedPublicKey}`);
-
-		this.peerAddress_ = peerAddress;
-		console.log("[helo] received from client: message.walletAddress=", message.walletAddress, "message.body=", message.body);
-		this.remoteCredentials_ = {
-			rsaKeyPair: peerRsaKeyPair,
-			walletAddress: message.walletAddress
-		};
-
-		return this.receiveHeloPromiseResolve_();
-	};
-
-	get heloPromise() {
-		if (!this.isConnected) {
-			return Promise.reject(new Error(`Connection not open!`));
-		}
-
-		if (!this.heloPromise_) {
-			this.heloPromise_ = Promise.all([
-				this.sendHeloPromise,
-				this.receiveHeloPromise
-			]);
-		}
-
-		return this.heloPromise_;
-	}
-
-	get sendSetupCipherPromise() {
-		if (!this.isConnected) {
-			return Promise.reject(new Error(`Connection not open!`));
-		}
-
-		if (!this.hasSentSetupCipher_) {
-			const encryptedKey =
-				this.remoteCredentials_.rsaKeyPair.encrypt(this.cipher_.key)
-					.toString('base64');
-			let setupCipherMessage = new SetupCipherMessage({
-				key: encryptedKey,
-			});
-			setupCipherMessage.header = {
-				signature: (this.credentials_.rsaKeyPair.sign(
-					JSON.stringify(setupCipherMessage.body)))
-					.toString('base64')
-			};
-
-			this.sendSetupCipherPromise_ = this.send(setupCipherMessage);
-			this.hasSentSetupCipher_ = true;
-		}
-
-		return this.sendSetupCipherPromise_;
-	}
-
-	get receiveSetupCipherPromise() {
-		if (!this.isConnected) {
-			return Promise.reject(new Error(`Connection not open!`));
-		}
-
-		if (!this.receiveSetupCipherPromise_) {
-			this.receiveSetupCipherPromise_ = new Promise((resolve, reject) => {
-				this.bind_(SetupCipherMessage).to((message, connection) => {
-					this.setupCipherHandler(message, connection);
-				});
-				this.setupCipherPromiseResolve_ = resolve;
-				this.setupCipherPromiseReject_ = reject;
-				this.receiveSetupCipherTimeout_ =
-					this.managedTimeouts_.setTimeout(reject, 4000);
-			}).then(() => {
-				this.managedTimeouts_.clearTimeout(
-					this.receiveSetupCipherTimeout_);
-				this.unbind_(SetupCipherMessage);
-			});
-		}
-
-		return this.receiveSetupCipherPromise_;
-	}
-
-	setupCipherHandler(message, connection) {
+	async ephemeralExchangeHandler(message, connection) {
 		try {
-			const key = this.credentials_.rsaKeyPair.decrypt(
-				Buffer.from(message.key, 'base64'));
-			this.remoteCipher_ = { key };
-		} catch (e) {
-			return this.setupCipherPromiseReject_(new Error(
-				`Could not decrypt encryption properties from SetupCipher ` +
-				`message!`));
-		}
+			const peerAddress = message.publicAddress;
+			if (!message.walletAddress || !message.ephemeralPublicKey || !message.signature) {
+				return this.receiveEphemeralPromiseReject_(new Error(`Invalid ephemeral structure!`));
+			}
 
-		return this.setupCipherPromiseResolve_();
+			const ePubKey = Buffer.from(message.ephemeralPublicKey, 'base64').toString('utf8');
+			const sig = Buffer.from(message.signature, 'base64').toString('utf8');
+			
+			const payload = JSON.stringify({ ePublicKey: ePubKey, addr: message.walletAddress, peerAddr: peerAddress });
+
+			const recoveredAddress = ethers.verifyMessage(payload, sig);
+			if (recoveredAddress.toLowerCase() !== message.walletAddress.toLowerCase()) {
+				return this.receiveEphemeralPromiseReject_(new Error(`Ephemeral signature failed EVM recovery bounds!`));
+			}
+
+			if (this.expectedSignature_ && message.walletAddress !== this.expectedSignature_) {
+				return this.receiveEphemeralPromiseReject_(new Error(`Connected wallet address did not match expected pinned identity. Dropping MITM socket.`));
+			}
+
+			this.peerAddress_ = peerAddress;
+			this.remoteCredentials_ = { walletAddress: message.walletAddress };
+
+			// Compute Session Secret Mutually
+			const symmetricBuf = Buffer.from(computeSessionSecret(this.ephemeralWallet_.privateKey, ePubKey), 'hex');
+			this.cipher_.key = symmetricBuf;
+			this.remoteCipher_ = { key: symmetricBuf };
+
+			// Teardown Memory Forward Secrecy Footprint
+			delete this.ephemeralWallet_;
+
+			this.receiveEphemeralPromiseResolve_();
+		} catch (err) {
+			this.receiveEphemeralPromiseReject_(err);
+		}
 	}
 
-	get setupCipherPromise() {
-		if (!this.isConnected) {
-			return Promise.reject(new Error(`Connection not open!`));
-		}
+	get ephemeralExchangePromise() {
+		if (!this.isConnected) return Promise.reject(new Error(`Connection not open!`));
 
-		if (!this.setupCipherPromise_) {
-			this.setupCipherPromise_ = Promise.all([
-				this.sendSetupCipherPromise,
-				this.receiveSetupCipherPromise
+		if (!this.ephemeralExchangePromise_) {
+			this.ephemeralExchangePromise_ = Promise.all([
+				this.sendEphemeralMessage(),
+				this.receiveEphemeralPromise
 			]);
 		}
 
-		return this.setupCipherPromise_;
+		return this.ephemeralExchangePromise_;
 	}
 
 	get address() {

@@ -50,7 +50,6 @@ class PeerNode {
     garbageCollector: GarbageCollector;
     reputationManager!: ReputationManager;
     events: EventEmitter;
-    privateKey!: string;
     walletAddress!: string;
     wallet!: ethers.Wallet | ethers.HDNodeWallet;
     walletManager!: WalletManager;
@@ -59,12 +58,7 @@ class PeerNode {
     _publicKeyOverride?: string;
 
     get publicKey(): string {
-        if (this._publicKeyOverride) return this._publicKeyOverride;
-        try {
-            return createPublicKey(this.privateKey).export({ type: 'spki', format: 'pem' }).toString();
-        } catch (_unusedErr) {
-            return this.privateKey || 'MOCK_KEY';
-        }
+        return this._publicKeyOverride || this.walletAddress;
     }
 
     set publicKey(val: string) {
@@ -133,7 +127,7 @@ class PeerNode {
                 // If a peer is banned, we structurally trigger an internal proof of stake slashing sequence 
                 if (this.roles.includes(NodeRole.VALIDATOR)) {
                     const slashStr = JSON.stringify({ penalizedAddress: pubKey, evidenceSignature: "SYSTEM_BANNED", burntAmount: Number(ethers.parseUnits("100", 18)) });
-                    const slashSig = signData(slashStr, this.privateKey) as string;
+                    const slashSig = await this.wallet.signMessage(slashStr);
                     const slashBlock: import('../types').Block = {
                         metadata: { index: -1, timestamp: Date.now() },
                         type: 'SLASHING_TRANSACTION',
@@ -149,8 +143,6 @@ class PeerNode {
             }
         });
 
-        this.privateKey = this.keyPaths.privateKey || fs.readFileSync(this.keyPaths.privateKeyPath!, 'utf8');
-
         // Dynamically instantiate backend EVM wallet address explicitly used purely for checkpoint and systemic signing 
         if (this.keyPaths.evmPrivateKey) {
             this.wallet = new ethers.Wallet(this.keyPaths.evmPrivateKey);
@@ -158,9 +150,7 @@ class PeerNode {
             const pk = fs.readFileSync(this.keyPaths.evmPrivateKeyPath, 'utf8').trim();
             this.wallet = new ethers.Wallet(pk);
         } else {
-            // Deprecated fallback mapping securely bound originally
-            const hash = createHash('sha256').update(this.privateKey).digest('hex');
-            this.wallet = new ethers.Wallet('0x' + hash);
+            this.wallet = ethers.Wallet.createRandom();
         }
         this.walletAddress = this.wallet.address;
         
@@ -199,8 +189,7 @@ class PeerNode {
                 noServer: true
             },
             publicAddress: this.publicAddress || undefined,
-            privateKeyPath: this.keyPaths.privateKeyPath,
-            privateKey: this.keyPaths.privateKey,
+            evmPrivateKey: this.wallet.privateKey,
             walletAddress: this.walletAddress
         });
 
@@ -266,7 +255,7 @@ class PeerNode {
                     if (this.roles.includes(NodeRole.ORIGINATOR) && !IS_DEV_NETWORK) {
                         try {
                             const stakeStr = JSON.stringify({ operatorAddress: this.walletAddress, collateralAmount: Number(ethers.parseUnits("50000", 18)), minEpochTimelineDays: 30 }); // Wait, stringify can't serialize BigInt. Let's use toString or I injected BigInt toJSON. We can just use big ints!
-                            const sigStr = signData(stakeStr, this.privateKey) as string;
+                            const sigStr = await this.wallet.signMessage(stakeStr);
                             const stakingBlock: Block = {
                                 metadata: { index: -1, timestamp: Date.now() },
                                 type: 'STAKING_CONTRACT',
@@ -284,7 +273,7 @@ class PeerNode {
                     if (this.roles.includes(NodeRole.VALIDATOR) && !IS_DEV_NETWORK) {
                         try {
                             const valStr = JSON.stringify({ validatorAddress: this.walletAddress, stakeAmount: Number(ethers.parseUnits("1000", 18)), action: 'STAKE' });
-                            const valSig = signData(valStr, this.privateKey) as string;
+                            const valSig = await this.wallet.signMessage(valStr);
                             const valBlock: Block = {
                                 metadata: { index: -1, timestamp: Date.now() },
                                 type: 'VALIDATOR_REGISTRATION',

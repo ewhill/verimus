@@ -102,7 +102,7 @@ export default class BlocksHandler extends BaseHandler {
 
             // Decrypt file names and filter based on 'q' parameter
             if (searchQuery) {
-                const privateKey = this.node.privateKey;
+                const privateKey = (this.node as any).wallet?.privateKey || 'MOCK_KEY';
                 const filteredBlocks: Block[] = [];
 
                 for (const block of combinedBlocks) {

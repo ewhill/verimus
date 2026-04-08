@@ -44,9 +44,11 @@
 2. Delete the mapping injecting `this.credentials_.walletAddress` into the outbound message arguments. The node must rely entirely on its `signature`.
 
 ### Task 4: Unit Test Parameter Scrubbing & Negative Security Assertions
+
 **Context:** The unit test validations must mirror the absence of JSON string assertions, proving that connections resolve based on signature derivations.
 **File:** `p2p/test/Client.test.js` (and associated `messages/test` boundaries)
 **Action:**
+
 1. Scrub the `walletAddress` JSON properties from all mock instantiation structures simulating inbound transport payloads. 
 2. Assert that the client processes the mock handshake mapping the simulated remote connection.
 3. Validate `connection.remoteCredentials_.walletAddress` matches the mock `ethers.Wallet` source used to sign the ephemeral key testing block.

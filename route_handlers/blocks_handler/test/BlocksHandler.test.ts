@@ -50,7 +50,7 @@ describe('Backend: blocksHandler Coverage', () => {
         mockNode = createMock<PeerNode>({
             walletAddress: 'testPubKey',
             publicKey: 'testPubKey',
-            privateKey: keys.privateKey,
+
             ledger: createMock<Ledger>({ collection: mockCollection }),
             mempool: createMock<Mempool>({ pendingBlocks: new Map() })
         });

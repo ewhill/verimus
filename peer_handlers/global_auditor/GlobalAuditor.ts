@@ -4,7 +4,7 @@ import { monitorEventLoopDelay } from 'node:perf_hooks';
 import { ethers } from 'ethers';
 
 import { GENESIS_TIMESTAMP, BLOCK_TYPES, calculateAuditDecayInterval } from '../../constants';
-import { signData, verifyMerkleProof } from '../../crypto_utils/CryptoUtils';
+import { verifyMerkleProof } from '../../crypto_utils/CryptoUtils';
 import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature, hydrateBlockBigInts } from '../../crypto_utils/EIP712Types';
 import logger from '../../logger/Logger';
 import { MerkleProofChallengeRequestMessage } from '../../messages/merkle_proof_challenge_request_message/MerkleProofChallengeRequestMessage';
@@ -202,11 +202,7 @@ class GlobalAuditor {
                         };
                         const valueObj = normalizeBlockForSignature(pendingBlock);
                         const schema = EIP712_SCHEMAS[BLOCK_TYPES.SLASHING_TRANSACTION];
-                        if (this.node.wallet) {
-                            pendingBlock.signature = await this.node.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
-                        } else {
-                            pendingBlock.signature = signData(JSON.stringify(slashPayload), this.node.privateKey) as string;
-                        }
+                        pendingBlock.signature = await this.node.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
                         
                         // Decoupled notification rather than direct execution
                         this.node.events.emit('AUDITOR:SLASHING_GENERATED', pendingBlock);
@@ -322,11 +318,7 @@ class GlobalAuditor {
                                 };
                                 const valueObj = normalizeBlockForSignature(b);
                                 const schema = EIP712_SCHEMAS[BLOCK_TYPES.TRANSACTION];
-                                if (this.node.wallet) {
-                                    b.signature = await this.node.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
-                                } else {
-                                    b.signature = signData(JSON.stringify(txPayload), this.node.privateKey) as string;
-                                }
+                                b.signature = await this.node.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
                                 
                                 // Route to component bus natively
                                 this.node.events.emit('AUDITOR:REWARD_GENERATED', b);

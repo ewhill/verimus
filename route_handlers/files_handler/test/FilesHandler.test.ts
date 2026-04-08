@@ -43,7 +43,7 @@ describe('Backend: filesHandler Coverage', () => {
         mockNode = createMock<PeerNode>({
             walletAddress: 'testPubKey',
             publicKey: 'testPubKey',
-            privateKey: keys.privateKey,
+
             ownedBlocksCache: [],
             ledger: createMock<Ledger>({
                 collection: createMock<Collection<Block>>({
