@@ -26,10 +26,8 @@ describe('Integration: On-Chain Validator Registry Transitions', () => {
             node = new PeerNode(32000, [], null, null, mongod.getUri(), '127.0.0.1', {
                 publicKeyPath: join(testDir, `peer.pub`),
                 privateKeyPath: join(testDir, `peer.pem`),
-                signaturePath: join(testDir, `peer.sig`),
                 publicKey: keys.publicKey,
-                privateKey: keys.privateKey,
-                signature: 'MOCK_SIG'
+                privateKey: keys.privateKey
             }, testDir, true, [NodeRole.ORIGINATOR, NodeRole.VALIDATOR]);
             
             node.consensusEngine.runGlobalAudit = async () => {};

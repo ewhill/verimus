@@ -30,28 +30,22 @@ async function runManualTest() {
     const tmp1 = fsLib.mkdtempSync(pathLib.join(osLib.tmpdir(), 'verimus-'));
     // Node 1
     const node1 = new PeerNode(26780, ['127.0.0.1:26781', '127.0.0.1:26782'], new MemoryStorageProvider(), new Bundler(tmp1), uri, undefined, {
-        ringPublicKeyPath: 'keys/ring.ring.pub',
         publicKeyPath: 'keys/peer_26780.peer.pub',
-        privateKeyPath: 'keys/peer_26780.peer.pem',
-        signaturePath: 'keys/peer_26780.peer.signature'
+        privateKeyPath: 'keys/peer_26780.peer.pem'
     }, tmp1);
 
     const tmp2 = fsLib.mkdtempSync(pathLib.join(osLib.tmpdir(), 'verimus-'));
     // Node 2
     const node2 = new PeerNode(26781, ['127.0.0.1:26780', '127.0.0.1:26782'], new MemoryStorageProvider(), new Bundler(tmp2), uri, undefined, {
-        ringPublicKeyPath: 'keys/ring.ring.pub',
         publicKeyPath: 'keys/peer_26781.peer.pub',
-        privateKeyPath: 'keys/peer_26781.peer.pem',
-        signaturePath: 'keys/peer_26781.peer.signature'
+        privateKeyPath: 'keys/peer_26781.peer.pem'
     }, tmp2);
 
     const tmp3 = fsLib.mkdtempSync(pathLib.join(osLib.tmpdir(), 'verimus-'));
     // Node 3
     const node3 = new PeerNode(26782, ['127.0.0.1:26780', '127.0.0.1:26781'], new MemoryStorageProvider(), new Bundler(tmp3), uri, undefined, {
-        ringPublicKeyPath: 'keys/ring.ring.pub',
         publicKeyPath: 'keys/peer_26782.peer.pub',
-        privateKeyPath: 'keys/peer_26782.peer.pem',
-        signaturePath: 'keys/peer_26782.peer.signature'
+        privateKeyPath: 'keys/peer_26782.peer.pem'
     }, tmp3);
 
     // Generate keys to prevent errors
@@ -60,20 +54,10 @@ async function runManualTest() {
 
         const baseKey = `keys/peer_2678${index}`;
         if (!fsLib.existsSync('keys')) fsLib.mkdirSync('keys');
-        if (!fsLib.existsSync('keys/ring.ring.pem')) {
-             const ringKeys = RSAKeyPair.generate();
-             fsLib.writeFileSync('keys/ring.ring.pem', ringKeys.private);
-             fsLib.writeFileSync('keys/ring.ring.pub', ringKeys.public);
-        }
         if (!fsLib.existsSync(`${baseKey}.peer.pem`)) {
             const peerKeyPair = RSAKeyPair.generate();
             fsLib.writeFileSync(`${baseKey}.peer.pem`, peerKeyPair.private);
             fsLib.writeFileSync(`${baseKey}.peer.pub`, peerKeyPair.public);
-            
-            const ringKeyPair = new RSAKeyPair({ privateKeyPath: 'keys/ring.ring.pem' });
-            const signature = ringKeyPair.sign(peerKeyPair.public);
-            
-            fsLib.writeFileSync(`${baseKey}.peer.signature`, signature);
         }
     });
 

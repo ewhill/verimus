@@ -54,7 +54,6 @@ class PeerNode {
     privateKey!: string;
     walletAddress!: string;
     wallet!: ethers.Wallet | ethers.HDNodeWallet;
-    signature!: string;
     walletManager!: WalletManager;
     httpServer?: https.Server;
     isHeadless: boolean;
@@ -73,10 +72,8 @@ class PeerNode {
         this.bundler = bundler;
         this.keyPaths = {
             ...keyPaths,
-            ringPublicKeyPath: keyPaths.ringPublicKeyPath || 'keys/ring.ring.pub',
             publicKeyPath: keyPaths.publicKeyPath || `keys/peer_${this.port}.peer.pub`,
             privateKeyPath: keyPaths.privateKeyPath || `keys/peer_${this.port}.peer.pem`,
-            signaturePath: keyPaths.signaturePath || `keys/peer_${this.port}.peer.signature`,
             evmPrivateKeyPath: keyPaths.evmPrivateKeyPath || `keys/peer_${this.port}.evm.key`
         };
 
@@ -101,7 +98,7 @@ class PeerNode {
 
     async init() {
         await this.ledger.init(this.port);
-        
+
         this.walletManager = new WalletManager(this.ledger);
 
         this.reputationManager = new ReputationManager(this.ledger.peersCollection);
@@ -141,7 +138,6 @@ class PeerNode {
 
         this.publicKey = this.keyPaths.publicKey || fs.readFileSync(this.keyPaths.publicKeyPath!, 'utf8');
         this.privateKey = this.keyPaths.privateKey || fs.readFileSync(this.keyPaths.privateKeyPath!, 'utf8');
-        this.signature = this.keyPaths.signature || fs.readFileSync(this.keyPaths.signaturePath!, 'utf8');
 
         // Dynamically instantiate backend EVM wallet address explicitly used purely for checkpoint and systemic signing 
         if (this.keyPaths.evmPrivateKey) {
@@ -163,8 +159,8 @@ class PeerNode {
         const app = setupExpressApp(this);
 
         const httpServer = https.createServer({
-            key: fs.readFileSync('myHttpsServer.key.pem'),
-            cert: fs.readFileSync('myHttpsServer.cert.pem')
+            key: fs.readFileSync('https.key.pem'),
+            cert: fs.readFileSync('https.cert.pem')
         }, app);
 
         const discoveryAddrs = this.discoverAddresses.filter(addr => addr !== `127.0.0.1:${this.port}`);
@@ -368,7 +364,7 @@ class PeerNode {
     getMajorityCount() {
         const activeValidators = this.ledger.activeValidatorCountCache;
         // In local mock tests or very early genesis spins where validation caching is 0, default strictly to 1 safely
-        const totalNodes = activeValidators > 0 ? activeValidators : 1; 
+        const totalNodes = activeValidators > 0 ? activeValidators : 1;
         return Math.floor(totalNodes / 2) + 1;
     }
 }

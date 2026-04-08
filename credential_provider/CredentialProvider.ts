@@ -8,21 +8,15 @@ import { S3Credentials } from '../storage_providers/s3_provider/S3Provider';
 import { SambaCredentials } from '../storage_providers/samba_provider/SambaProvider';
 
 export interface KeyPaths {
-    ringPublicKeyPath?: string;
     publicKeyPath?: string;
     privateKeyPath?: string;
-    signaturePath?: string;
 }
 
 export interface PeerCredentials {
-    ringPublicKey?: string;
     publicKey?: string;
     privateKey?: string;
-    signature?: string;
-    ringPublicKeyPath?: string;
     publicKeyPath?: string;
     privateKeyPath?: string;
-    signaturePath?: string;
     evmPrivateKey?: string;
     evmPrivateKeyPath?: string;
 }
@@ -83,12 +77,8 @@ export class CredentialProvider {
                 peer: {
                     privateKey: process.env.PEER_PRIVATE_KEY,
                     publicKey: process.env.PEER_PUBLIC_KEY,
-                    signature: process.env.PEER_SIGNATURE,
-                    ringPublicKey: process.env.RING_PUBLIC_KEY,
                     privateKeyPath: process.env.PEER_PRIVATE_KEY_PATH,
                     publicKeyPath: process.env.PEER_PUBLIC_KEY_PATH,
-                    signaturePath: process.env.PEER_SIGNATURE_PATH,
-                    ringPublicKeyPath: process.env.RING_PUBLIC_KEY_PATH,
                     evmPrivateKey: process.env.PEER_EVM_PRIVATE_KEY,
                     evmPrivateKeyPath: process.env.PEER_EVM_PRIVATE_KEY_PATH
                 }

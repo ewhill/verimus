@@ -18,13 +18,13 @@ In this approach, the Originator explicitly computes the chronological toll befo
 4. The requested duration and allocated `restToll` parameters are blanketly transmitted in the network request broadcast.
 5. Receiving hosts validate the broadcasted `restToll` parameter against their independent configuration settings. If the proposed toll falls below their minimum `restCostPerGBHour`, they immediately drop the request and refuse to broadcast an acceptance.
 
-### Pros
+### Initial Approach Pros
 
 - **Decoupled Architecture**: Highly performant. The originator node only executes a single network broadcast expecting passive validations instead of complex two-way bid aggregations.
 - **Fail-Fast**: Target hosts perform the mathematical validation locally without returning garbage data to the network.
 - **Simplicity**: Ties perfectly into the existing `verifyFunds` and `freezeFunds` methods as the exact cost is definitively estimated prior to execution limits.
 
-### Cons
+### Initial Approach Cons
 
 - **Static Market Fragmentation**: The originator essentially "guesses" the network cost using their own `restCostPerGBHour` metric. If the originator's configuration is lower than the network average, they will universally fail to secure quorum hosts without iterative attempts.
 - **Lost Arbitrage**: Hosts willing to store files for *less* than the originator's estimate still receive the higher payout rather than operating an efficient under-bid.
@@ -40,12 +40,12 @@ Instead of the originator pre-computing the exact escrow bounds, the originator 
 3. Hosts respond to the originator with their proposed custom quote.
 4. The originator's `SyncEngine` pools the incoming responses, selects the lowest `N` (redundancy) bids, dynamically sums up the combined custom quotes, and locks *that* precise amount into the `WalletManager` as the final `allocatedRestToll`.
 
-### Pros
+### Alternative 1 Pros
 
 - **True Free Market**: Nodes compete organically, creating efficient market equilibrium. The originator leverages cost savings by physically filtering the most aggressive, cheapest nodes on the network mathematically.
 - **No Guesswork**: Originator nodes don't need a perfectly calibrated universal `1GB/Hour` heuristic; the network resolves the metric individually.
 
-### Cons
+### Alternative 1 Cons
 
 - **Asynchronous Escrow Race Conditions**: Because `WalletManager` limits cannot be strictly frozen *before* the quotes are gathered, a user could drain their ledger balance in the milliseconds between the quote acquisition and the final contract signing sequence.
 - **Variable Node Compensation**: The exact disbursement tracking (`WalletManager.processEpochTick`) deployed in Milestone 1 expects symmetrical fractional disbursements mathematically mapping standard payouts. If nodes negotiate uniquely unequal `allocatedRestToll` fractions, the internal validation boundaries become exponentially harder to verify without per-node metadata tracking tracking disparate rates.
@@ -59,11 +59,11 @@ Nodes classify themselves into rigid tier models ("Archive Node" at 10 wei/epoch
 1. The originator specifically broadcasts target demands requesting exclusively a distinct tier model.
 2. The network bypasses dynamic calculations and universally expects the designated exact mapping.
 
-### Pros
+### Alternative 2 Pros
 
 - Extremely fast network consensus. Nodes don't run math on the fly matching precise decimals to durations.
 
-### Cons
+### Alternative 2 Cons
 
 - Restricts free market competition completely. Overly engineering for a simplified node architecture. Requires an arbitrary consensus to define distinct network "tiers" universally.
 

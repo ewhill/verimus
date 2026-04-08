@@ -31,10 +31,8 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
         node = new PeerNode(0, [], null, null, mongod.getUri(), '127.0.0.1', {
             publicKeyPath: join(testDir, 'peer.pub'),
             privateKeyPath: join(testDir, 'peer.pem'),
-            signaturePath: join(testDir, 'peer.sig'),
             publicKey: keys.publicKey,
-            privateKey: keys.privateKey,
-            signature: 'MOCK_SIG'
+            privateKey: keys.privateKey
         }, testDir);
         await node.init();
         node.syncEngine.currentState = 'ACTIVE' as any;
@@ -146,10 +144,8 @@ test('Integration: Deterministic Auditor Verification (Phase 4 Chaos Overlap)', 
         node = new PeerNode(0, [], null, null, mongod.getUri(), '127.0.0.1', {
             publicKeyPath: join(testDir, 'peer.pub'),
             privateKeyPath: join(testDir, 'peer.pem'),
-            signaturePath: join(testDir, 'peer.sig'),
             publicKey: keys.publicKey,
-            privateKey: keys.privateKey,
-            signature: 'MOCK_SIG'
+            privateKey: keys.privateKey
         }, testDir);
         
         node.wallet = ethers.Wallet.createRandom();

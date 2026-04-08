@@ -60,15 +60,12 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
 
         tmpLoad = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
         node = new PeerNode(0, [], new NullStorageProvider(), new Bundler(tmpLoad), mongod.getUri(), undefined, {
-            ringPublicKeyPath: 'keys/ring.ring.pub',
             publicKeyPath: 'keys/peer_26780.peer.pub',
-            privateKeyPath: 'keys/peer_26780.peer.pem',
-            signaturePath: 'keys/peer_26780.peer.signature'
+            privateKeyPath: 'keys/peer_26780.peer.pem'
         }, tmpLoad);
 
         node.publicKey = fs.readFileSync('keys/peer_26780.peer.pub', 'utf8');
         node.privateKey = fs.readFileSync('keys/peer_26780.peer.pem', 'utf8');
-        node.signature = fs.readFileSync('keys/peer_26780.peer.signature', 'utf8');
 
         const mockPeer = {
             peers: [{ id: 'mock-test' }],

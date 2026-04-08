@@ -27,35 +27,28 @@ describe('Integration: Network Partition Resiliency & Byzantine Fault Simulation
         tmp1 = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
         // Node 1 (Partition A)
         node1 = new PeerNode(0, ['127.0.0.1:31002', '127.0.0.1:31003'], new MemoryStorageProvider(), new Bundler(tmp1), mongod1.getUri(), undefined, {
-            ringPublicKeyPath: 'keys/ring.ring.pub',
             publicKeyPath: 'keys/peer_31001.peer.pub',
-            privateKeyPath: 'keys/peer_31001.peer.pem',
-            signaturePath: 'keys/peer_31001.peer.signature'
+            privateKeyPath: 'keys/peer_31001.peer.pem'
         }, tmp1);
 
         tmp2 = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
         // Node 2 (Partition A)
         node2 = new PeerNode(0, ['127.0.0.1:31001', '127.0.0.1:31003'], new MemoryStorageProvider(), new Bundler(tmp2), mongod1.getUri(), undefined, {
-            ringPublicKeyPath: 'keys/ring.ring.pub',
             publicKeyPath: 'keys/peer_31002.peer.pub',
-            privateKeyPath: 'keys/peer_31002.peer.pem',
-            signaturePath: 'keys/peer_31002.peer.signature'
+            privateKeyPath: 'keys/peer_31002.peer.pem'
         }, tmp2);
 
         tmp3 = fs.mkdtempSync(path.join(os.tmpdir(), 'verimus-'));
         // Node 3 (Partition B - Isolated DB and Network)
         node3 = new PeerNode(0, ['127.0.0.1:31001'], new MemoryStorageProvider(), new Bundler(tmp3), mongod2.getUri(), undefined, {
-            ringPublicKeyPath: 'keys/ring.ring.pub',
             publicKeyPath: 'keys/peer_31003.peer.pub',
-            privateKeyPath: 'keys/peer_31003.peer.pem',
-            signaturePath: 'keys/peer_31003.peer.signature'
+            privateKeyPath: 'keys/peer_31003.peer.pem'
         }, tmp3);
 
         // We will mock keys internally for nodes to bypass generation overhead since the test relies on network topologies
         const mockKeys = (node: PeerNode) => {
              node.publicKey = 'PUB';
              node.privateKey = 'PRIV';
-             node.signature = 'SIG';
         };
         mockKeys(node1); mockKeys(node2); mockKeys(node3);
 

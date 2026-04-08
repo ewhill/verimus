@@ -16,10 +16,8 @@ import { Block } from '../../types';
 import PeerNodeClass from '../PeerNode';
 
 const getMockCredentials = (): PeerCredentials => ({
-    ringPublicKeyPath: 'ring.pub',
     publicKeyPath: 'peer.pub',
-    privateKeyPath: 'peer.pem',
-    signaturePath: 'peer.sig'
+    privateKeyPath: 'peer.pem'
 });
 
 const createDummyBlock = (hash: string, pk: string = 'pk'): import('../../types').Block => ({

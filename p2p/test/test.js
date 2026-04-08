@@ -29,8 +29,24 @@ const PongMessageHandler = (message, connection, logger = console) => {
 };
 
 
+const { generateKeyPairSync } = require('node:crypto');
+const fs = require('node:fs');
+
 test("PeerBYOHTTPSServerTest", async () => {
 	const fakeLogger = console;
+
+	const generateMockKeys = (prefix) => {
+		const { publicKey, privateKey } = generateKeyPairSync('rsa', {
+			modulusLength: 2048,
+			publicKeyEncoding: { type: 'spki', format: 'pem' },
+			privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
+		});
+		fs.writeFileSync(`${prefix}.peer.pub`, publicKey);
+		fs.writeFileSync(`${prefix}.peer.pem`, privateKey);
+	};
+
+	generateMockKeys('first');
+	generateMockKeys('second');
 
 	const peer1 = new Peer({
 		httpsServerConfig: {

@@ -154,6 +154,7 @@ export const normalizeBlockForSignature = (block: Block): Record<string, any> =>
         p.encryptedIvBase64 = p.encryptedIvBase64 || "";
         p.encryptedAuthTagBase64 = p.encryptedAuthTagBase64 || "";
         p.allocatedRestToll = p.allocatedRestToll ? p.allocatedRestToll.toString() : "0";
+        p.expirationBlockHeight = p.expirationBlockHeight ? p.expirationBlockHeight.toString() : "0";
         p.allocatedEgressEscrow = p.allocatedEgressEscrow ? p.allocatedEgressEscrow.toString() : "0";
         p.remainingEgressEscrow = p.remainingEgressEscrow ? p.remainingEgressEscrow.toString() : "0";
         p.marketId = p.marketId || "";

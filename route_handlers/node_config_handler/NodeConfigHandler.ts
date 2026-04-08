@@ -10,7 +10,6 @@ export default class NodeConfigHandler extends BaseHandler {
             success: true,
             walletAddress: this.node.walletAddress,
             publicKey: this.node.publicKey,
-            signature: this.node.signature,
             port: this.node.port,
             roles: this.node.roles,
             proxyBrokerFee: this.node.proxyBrokerFee,

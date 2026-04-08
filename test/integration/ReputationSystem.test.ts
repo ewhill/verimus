@@ -33,18 +33,12 @@ describe('Integration: Reputation System (5 Nodes)', () => {
         mongod = await MongoMemoryServer.create();
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rep-test-'));
 
-
-        const ringKeys = RSAKeyPair.generate();
-        fs.writeFileSync(path.join(tempDir, 'ring.pub'), ringKeys.public);
-
         // Spin up 5 Nodes
         for (let i = 0; i < 5; i++) {
             const keys = RSAKeyPair.generate();
-            const signature = ringKeys.sign(keys.public).toString('hex');
 
             fs.writeFileSync(path.join(tempDir, `node${i}.pub`), keys.public);
             fs.writeFileSync(path.join(tempDir, `node${i}.pem`), keys.private);
-            fs.writeFileSync(path.join(tempDir, `node${i}.sig`), signature);
 
             const dbUri = mongod.getUri(`node${i}`);
 
@@ -52,9 +46,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
             const trusted: string[] = []; // let discover bypass initially
             const keyPaths = {
                 publicKeyPath: path.join(tempDir, `node${i}.pub`),
-                privateKeyPath: path.join(tempDir, `node${i}.pem`),
-                signaturePath: path.join(tempDir, `node${i}.sig`),
-                ringPublicKeyPath: path.join(tempDir, `ring.pub`)
+                privateKeyPath: path.join(tempDir, `node${i}.pem`)
             };
 
             const node = new PeerNode(0, trusted, new MemoryStorageProvider(), new Bundler(tempDir), dbUri, undefined, keyPaths, tempDir);

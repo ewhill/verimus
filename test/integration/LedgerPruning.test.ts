@@ -26,10 +26,8 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
         node = new PeerNode(0, [], null, null, mongod.getUri(), '127.0.0.1', {
             publicKeyPath: join(testDir, 'peer.pub'),
             privateKeyPath: join(testDir, 'peer.pem'),
-            signaturePath: join(testDir, 'peer.sig'),
             publicKey: keys.publicKey,
-            privateKey: keys.privateKey,
-            signature: 'MOCK_SIG'
+            privateKey: keys.privateKey
         }, testDir);
         await node.init();
         node.consensusEngine.runGlobalAudit = async () => {};

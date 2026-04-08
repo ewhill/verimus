@@ -32,10 +32,8 @@ async function main() {
     let port = 26780;
     let discoverAddresses = ['127.0.0.1:26781'];
     let publicAddress: string | undefined;
-    let ringPublicKeyPath: string | undefined;
     let publicKeyPath: string | undefined;
     let privateKeyPath: string | undefined;
-    let signaturePath: string | undefined;
     let evmPrivateKeyPath: string | undefined;
     let dataDir = './data';
     let isHeadless = false;
@@ -60,14 +58,10 @@ async function main() {
             });
         } else if (arg === '--public-address' && i + 1 < process.argv.length) {
             publicAddress = process.argv[++i];
-        } else if (arg === '--ring-public-key-path' && i + 1 < process.argv.length) {
-            ringPublicKeyPath = process.argv[++i];
         } else if (arg === '--public-key-path' && i + 1 < process.argv.length) {
             publicKeyPath = process.argv[++i];
         } else if (arg === '--private-key-path' && i + 1 < process.argv.length) {
             privateKeyPath = process.argv[++i];
-        } else if (arg === '--signature-path' && i + 1 < process.argv.length) {
-            signaturePath = process.argv[++i];
         } else if (arg === '--evm-private-key-path' && i + 1 < process.argv.length) {
             evmPrivateKeyPath = process.argv[++i];
         } else if (arg === '--data-dir' && i + 1 < process.argv.length) {
@@ -118,14 +112,10 @@ async function main() {
     const bundler = new Bundler(dataDir);
 
     const keyPaths: PeerCredentials = {
-        ringPublicKey: credentials.peer?.ringPublicKey,
         publicKey: credentials.peer?.publicKey,
         privateKey: credentials.peer?.privateKey,
-        signature: credentials.peer?.signature,
-        ringPublicKeyPath: credentials.peer?.ringPublicKeyPath || ringPublicKeyPath,
         publicKeyPath: credentials.peer?.publicKeyPath || publicKeyPath,
         privateKeyPath: credentials.peer?.privateKeyPath || privateKeyPath,
-        signaturePath: credentials.peer?.signaturePath || signaturePath,
         evmPrivateKeyPath: credentials.peer?.evmPrivateKeyPath || evmPrivateKeyPath,
     };
 

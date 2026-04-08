@@ -103,15 +103,8 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 for port in "${PORTS[@]}"; do
     for target_port in "${PORTS[@]}"; do
         EVM_ADDR_PATH="$PROJECT_ROOT/keys/peer_${target_port}.evm.address"
-        PRIV_KEY_PATH="$PROJECT_ROOT/keys/peer_${target_port}.peer.pem"
-        
-        if [ -f "$EVM_ADDR_PATH" ]; then
-            NODE_ADDR_CHECKSUM=$(cat "$EVM_ADDR_PATH")
-            mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ walletAddress: '$NODE_ADDR_CHECKSUM' }, { \$set: { balance: \"500000000000000000000000\" } }, { upsert: true });" > /dev/null 2>&1
-        elif [ -f "$PRIV_KEY_PATH" ]; then
-            NODE_ADDR_CHECKSUM=$(node -e "const {ethers} = require('ethers'); const crypto = require('crypto'); const fs = require('fs'); const priv = fs.readFileSync('$PRIV_KEY_PATH', 'utf8'); const hash = crypto.createHash('sha256').update(priv).digest('hex'); console.log(new ethers.Wallet('0x'+hash).address)")
-            mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ walletAddress: '$NODE_ADDR_CHECKSUM' }, { \$set: { balance: \"500000000000000000000000\" } }, { upsert: true });" > /dev/null 2>&1
-        fi
+        NODE_ADDR_CHECKSUM=$(cat "$EVM_ADDR_PATH")
+        mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ walletAddress: '$NODE_ADDR_CHECKSUM' }, { \$set: { balance: \"500000000000000000000000\" } }, { upsert: true });" > /dev/null 2>&1
     done
     if [ -n "$SEED_WALLET" ]; then
         SEED_WALLET_CHECKSUM=$(node -e "const {ethers} = require('ethers'); console.log(ethers.getAddress('$SEED_WALLET'))")

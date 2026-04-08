@@ -12,7 +12,6 @@ describe('Backend: nodeConfigHandler Integrity', () => {
     it('Responds with active node configuration parameters globally', async () => {
         const mockPeerNode = createMock<PeerNode>({
             publicKey: 'pub',
-            signature: 'sig',
             port: 1234,
             roles: [NodeRole.ORIGINATOR],
             storageProvider: null
@@ -29,7 +28,6 @@ describe('Backend: nodeConfigHandler Integrity', () => {
         const data = mockResponseJson.mock.calls.pop()?.arguments[0];
         assert.strictEqual(data.success, true);
         assert.strictEqual(data.publicKey, 'pub');
-        assert.strictEqual(data.signature, 'sig');
         assert.strictEqual(data.port, 1234);
     });
 });

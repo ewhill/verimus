@@ -29,10 +29,8 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
 
             // Create an actual node locally interacting using an ephemeral port
             node = new PeerNode(0, [], new MemoryStorageProvider(), new Bundler(mockDataDir), mongoUri, undefined, {
-                ringPublicKeyPath: 'keys/ring.ring.pub',
                 publicKeyPath: 'keys/peer_26780.peer.pub',
-                privateKeyPath: 'keys/peer_26780.peer.pem',
-                signaturePath: 'keys/peer_26780.peer.signature'
+                privateKeyPath: 'keys/peer_26780.peer.pem'
             }, mockDataDir);
 
             await node.init();

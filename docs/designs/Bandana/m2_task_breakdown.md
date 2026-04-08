@@ -1,6 +1,6 @@
 # Project Bandana: Milestone 2 Task Breakdown
 
-**Market Negotiation & Storage Quota Orchestration**
+## Market Negotiation & Storage Quota Orchestration
 
 This document details the exact execution steps required to upgrade the localized P2P marketplace to cleanly parse, estimate, and structurally validate chronological "Rest-Toll" limits organically.
 
