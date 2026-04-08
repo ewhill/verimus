@@ -38,29 +38,9 @@ const StorageContractPayload = ({ block, payloadData, payloadError, handleSingle
         storageNodes = [...new Set(publicPayload.fragmentMap.map(f => f.nodeId))];
     }
 
-    // Extract deterministic Expiration Bounds dynamically mapping structural heuristics organically
-    const generateSyntheticExpiration = (amtRaw) => {
-        if (amtRaw === 0n) return "Expired (No constraints loaded)";
-        // Temporary synthetic parsing since Phase2B Pricing Expiration bounds aren't directly injected natively yet
-        const hrs = parseInt(amtRaw.toString().substring(0, 4) || '120');
-        const y = Math.floor(hrs / 8760);
-        let remFn = hrs % 8760;
-        const mo = Math.floor(remFn / 730);
-        remFn = remFn % 730;
-        const d = Math.floor(remFn / 24);
-        const h = remFn % 24;
-        const m = Math.floor(Math.random() * 60);
-
-        let parts = [];
-        if (y > 0) parts.push(`${y} years`);
-        if (mo > 0) parts.push(`${mo} months`);
-        if (d > 0) parts.push(`${d} days`);
-        if (h > 0) parts.push(`${h} hours`);
-        parts.push(`${m} minutes`);
-        return `Expires in ${parts.join(', ')}`;
-    };
-
-    const durationDisplay = generateSyntheticExpiration(remainingRaw);
+    // Abstracting out the synthetic generation since expiration is explicitly undefined natively.
+    // Expiration math mapped against bandwidth escrow digits was mathematically incoherent.
+    const durationDisplay = "Perpetual (No explicit timing limit resolved natively)";
 
     const renderPublicPrimaryData = () => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2rem' }}>
