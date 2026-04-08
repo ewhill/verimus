@@ -3,9 +3,10 @@ const Message = require('../Message');
 class EphemeralExchangeMessage extends Message {
 	constructor(options = {}) {
 		super();
-		const { ephemeralPublicKey, signature } = options;
+		const { ephemeralPublicKey, signature, publicAddress } = options;
 		this.ephemeralPublicKey = ephemeralPublicKey;
 		this.signature = signature;
+		this.publicAddress = publicAddress;
 	}
 
 	get ephemeralPublicKey() {
@@ -20,6 +21,13 @@ class EphemeralExchangeMessage extends Message {
 	}
 	set signature(signature) {
 		this.body.signature = signature;
+	}
+
+	get publicAddress() {
+		return this.body.publicAddress;
+	}
+	set publicAddress(publicAddress) {
+		this.body.publicAddress = publicAddress;
 	}
 }
 

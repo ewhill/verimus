@@ -167,8 +167,7 @@ class Client {
 							`Timeout occurred waiting for upgrade!`));
 					}, 6000);
 
-				this.heloPromise
-					.then(() => this.setupCipherPromise)
+				this.ephemeralExchangePromise
 					.then(() => resolve())
 					.catch(err => reject(err));
 			}).then(() => {
@@ -477,14 +476,13 @@ class Client {
 	async sendEphemeralMessage() {
 		if (!this.isConnected) throw new Error(`Connection not open!`);
 
-		const ephemeralPublicKey = this.ephemeralWallet_.publicKey;
-		const payload = JSON.stringify({ ePublicKey: ephemeralPublicKey, addr: this.credentials_.walletAddress, peerAddr: this.address });
+		const ephemeralPublicKey = this.ephemeralWallet_.ephemeralPublicKey;
+		const payload = JSON.stringify({ ePublicKey: ephemeralPublicKey, peerAddr: this.address });
 		const innerSignature = await signEphemeralPayload(this.credentials_.evmPrivateKey, payload);
 
 		const ephemeralMsg = new EphemeralExchangeMessage({
 			ephemeralPublicKey,
 			signature: innerSignature,
-			walletAddress: this.credentials_.walletAddress,
 			publicAddress: this.address
 		});
 
@@ -519,29 +517,26 @@ class Client {
 	async ephemeralExchangeHandler(message, connection) {
 		try {
 			const peerAddress = message.publicAddress;
-			if (!message.walletAddress || !message.ephemeralPublicKey || !message.signature) {
+			if (!message.ephemeralPublicKey || !message.signature) {
 				return this.receiveEphemeralPromiseReject_(new Error(`Invalid ephemeral structure!`));
 			}
 
-			const ePubKey = Buffer.from(message.ephemeralPublicKey, 'base64').toString('utf8');
-			const sig = Buffer.from(message.signature, 'base64').toString('utf8');
+			const ePubKey = message.ephemeralPublicKey;
+			const sig = message.signature;
 			
-			const payload = JSON.stringify({ ePublicKey: ePubKey, addr: message.walletAddress, peerAddr: peerAddress });
+			const payload = JSON.stringify({ ePublicKey: ePubKey, peerAddr: peerAddress });
 
 			const recoveredAddress = ethers.verifyMessage(payload, sig);
-			if (recoveredAddress.toLowerCase() !== message.walletAddress.toLowerCase()) {
-				return this.receiveEphemeralPromiseReject_(new Error(`Ephemeral signature failed EVM recovery bounds!`));
-			}
 
-			if (this.expectedSignature_ && message.walletAddress !== this.expectedSignature_) {
+			if (this.expectedSignature_ && recoveredAddress.toLowerCase() !== this.expectedSignature_.toLowerCase()) {
 				return this.receiveEphemeralPromiseReject_(new Error(`Connected wallet address did not match expected pinned identity. Dropping MITM socket.`));
 			}
 
 			this.peerAddress_ = peerAddress;
-			this.remoteCredentials_ = { walletAddress: message.walletAddress };
+			this.remoteCredentials_ = { walletAddress: recoveredAddress };
 
 			// Compute Session Secret Mutually
-			const symmetricBuf = Buffer.from(computeSessionSecret(this.ephemeralWallet_.privateKey, ePubKey), 'hex');
+			const symmetricBuf = Buffer.from(computeSessionSecret(this.ephemeralWallet_.ephemeralPrivateKey, ePubKey), 'hex');
 			this.cipher_.key = symmetricBuf;
 			this.remoteCipher_ = { key: symmetricBuf };
 
