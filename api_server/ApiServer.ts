@@ -20,6 +20,7 @@ import NodeConfigHandler from '../route_handlers/node_config_handler/NodeConfigH
 import UpdateNodeConfigHandler from '../route_handlers/node_config_handler/UpdateNodeConfigHandler';
 import PeersHandler from '../route_handlers/peers_handler/PeersHandler';
 import PrivatePayloadHandler from '../route_handlers/private_payload_handler/PrivatePayloadHandler';
+import TransactionsHandler from '../route_handlers/transactions_handler/TransactionsHandler';
 import UploadEventsHandler from '../route_handlers/upload_events_handler/UploadEventsHandler';
 import UploadHandler from '../route_handlers/upload_handler/UploadHandler';
 import WalletHandler from '../route_handlers/wallet_handler/WalletHandler';
@@ -75,6 +76,7 @@ export default function setupExpressApp(peerNode: PeerNode) {
     app.get('/api/consensus', new ConsensusHandler(peerNode).handle);
     app.get('/api/contracts', new ContractsHandler(peerNode).handle);
     app.post('/api/upload', upload.array('files'), new UploadHandler(peerNode).handle);
+    app.post('/api/transactions', new TransactionsHandler(peerNode).handle);
     app.get('/api/download/:hash', new DownloadHandler(peerNode).handle);
     app.get('/api/download/:hash/file/:filename', new DownloadFileHandler(peerNode).handle);
     app.get('/api/blocks/:hash/private', new PrivatePayloadHandler(peerNode).handle);

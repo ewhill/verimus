@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
 import { useStore } from '../../store';
 import FilesView from './FilesView/FilesView';
+import TransferModal from '../Modals/TransferModal';
 
 const WalletView = () => {
     const activeTab = useStore(s => s.activeWalletTab);
@@ -10,6 +11,7 @@ const WalletView = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
 
     // Bounding 5 second continuous intervals ensuring O(1) float updates
     useEffect(() => {
@@ -63,6 +65,14 @@ const WalletView = () => {
                 <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                         <h1 style={{ fontSize: '2rem', color: '#c084fc', textShadow: '0 0 20px rgba(192, 132, 252, 0.3)' }}>Decentralized Wallet</h1>
+                        <button onClick={() => setIsTransferModalOpen(true)} style={{
+                            padding: '0.8rem 1.5rem', background: '#38bdf8', color: '#fff', border: 'none',
+                            borderRadius: '100px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s',
+                            boxShadow: '0 0 15px rgba(56,189,248,0.4)', display: 'flex', alignItems: 'center', gap: '0.5rem'
+                        }} onMouseOver={(e) => e.currentTarget.style.boxShadow = '0 0 25px rgba(56,189,248,0.6)'} onMouseOut={(e) => e.currentTarget.style.boxShadow = '0 0 15px rgba(56,189,248,0.4)'}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                            Transfer Protocol
+                        </button>
                     </div>
 
                     {loading ? (
@@ -166,6 +176,12 @@ const WalletView = () => {
                     )}
                 </div>
             )}
+            
+            <TransferModal 
+                isOpen={isTransferModalOpen} 
+                onClose={() => setIsTransferModalOpen(false)} 
+                balance={walletData.balance ? parseFloat(ethers.formatUnits(walletData.balance.toString(), 18)).toFixed(6) : '0'} 
+            />
         </div>
     );
 };
