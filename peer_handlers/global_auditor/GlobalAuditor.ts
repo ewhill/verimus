@@ -168,7 +168,6 @@ class GlobalAuditor {
 
             for (const fragment of contractPayload.fragmentMap) {
                 if (fragment.nodeId === this.node.walletAddress) continue;
-                if (fragment.nodeId === 'GENESIS_NODE') continue; // Never audit the static genesis node placeholder
 
                 const merkleRoot = contractPayload.merkleRoots[Number(fragment.shardIndex)];
 
@@ -245,7 +244,7 @@ class GlobalAuditor {
                         
                         if (currentAttempt < MAX_RETRIES) {
                             currentAttempt++;
-                            logger.info(`[Peer ${this.node.port}] P2P Timeout resolving Merkle sequence. Exponential backoff retry ${currentAttempt}/${MAX_RETRIES} for host ${fragment.nodeId.slice(0, 8)}...`);
+                            logger.info(`[Peer ${this.node.port}] P2P Timeout resolving Merkle sequence. Exponential backoff retry ${currentAttempt}/${MAX_RETRIES} for host ${fragment.nodeId}...`);
                             attemptChallenge();
                         } else {
                             if (isResolved) return;
@@ -261,10 +260,15 @@ class GlobalAuditor {
 
                             isResolved = true;
                             this.node.events.off(`merkle_audit_response:${auditId}:${fragment.physicalId}`, responseHandler);
-                            if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(fragment.nodeId, "Audit Timeout Offense");
-                            logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof for physicalId=${fragment.physicalId} auditId=${auditId}! Penalty mapped.`);
-                            this.node.events.emit('audit_telemetry', { status: 'SLASHING_EXECUTED', message: `Host ${fragment.nodeId.slice(0, 8)} failed to return Merkle proof. Executing Slashing...`, targetPeer: fragment.nodeId });
-                            await executeSlashing(fragment.nodeId, "TIMEOUT");
+                            if (fragment.nodeId !== 'GENESIS_NODE') {
+                                if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(fragment.nodeId, "Audit Timeout Offense");
+                                logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId} failed to return Merkle proof for physicalId=${fragment.physicalId} auditId=${auditId}! Penalty mapped.`);
+                                this.node.events.emit('audit_telemetry', { status: 'SLASHING_EXECUTED', message: `Host ${fragment.nodeId} failed to return Merkle proof. Executing Slashing...`, targetPeer: fragment.nodeId });
+                                await executeSlashing(fragment.nodeId, "TIMEOUT");
+                            } else {
+                                logger.warn(`[Peer ${this.node.port}] GENESIS audit broadcast timed out. No honest hosts responded within the matrix limit.`);
+                                this.node.events.emit('audit_telemetry', { status: 'AUDIT_TIMEOUT', message: `GENESIS audit broadcast dropped. Waiting for reliable host response in future bucket bounds...`, targetPeer: fragment.nodeId });
+                            }
                         }
                     }, backoffTimeout);
                     this.pendingChallenges.add(currentTimeoutRef);
@@ -287,14 +291,19 @@ class GlobalAuditor {
                     }
 
                     if (!isValid) {
-                        if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(fragment.nodeId, "Proof of Spacetime Forgery");
-                        logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} explicitly failed mathematical audit! Banned!`);
-                        this.node.events.emit('audit_telemetry', { status: 'SLASHING_EXECUTED', message: `Host ${fragment.nodeId.slice(0, 8)} explicitly failed mathematical audit! Banned!`, targetPeer: fragment.nodeId });
-                        await executeSlashing(fragment.nodeId, "FORGERY_INVALID_BOUNDS");
+                        const targetSlashNode = resMsg.responderNodeId || fragment.nodeId;
+                        if (targetSlashNode !== 'GENESIS_NODE') {
+                            if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(targetSlashNode, "Proof of Spacetime Forgery");
+                            logger.warn(`[Peer ${this.node.port}] Host ${targetSlashNode} explicitly failed mathematical audit! Banned!`);
+                            this.node.events.emit('audit_telemetry', { status: 'SLASHING_EXECUTED', message: `Host ${targetSlashNode} explicitly failed mathematical audit! Banned!`, targetPeer: targetSlashNode });
+                            await executeSlashing(targetSlashNode, "FORGERY_INVALID_BOUNDS");
+                        }
                     } else {
-                        if (this.node.reputationManager) await this.node.reputationManager.rewardHonestProposal(fragment.nodeId);
-                        logger.info(`[Peer ${this.node.port}] Host ${fragment.nodeId.slice(0, 8)} perfectly mapped rigorous spacetime boundaries!`);
-                        this.node.events.emit('audit_telemetry', { status: 'AUDIT_SUCCESS', message: `Host ${fragment.nodeId.slice(0, 8)} perfectly mapped rigorous spacetime boundaries!`, targetPeer: fragment.nodeId });
+                        const targetRewardNode = resMsg.responderNodeId || fragment.nodeId;
+                        if (targetRewardNode === 'GENESIS_NODE') return; // Absolute mathematical edge guard preventing ghost allocation arrays strictly
+                        if (this.node.reputationManager) await this.node.reputationManager.rewardHonestProposal(targetRewardNode);
+                        logger.info(`[Peer ${this.node.port}] Host ${targetRewardNode} perfectly mapped rigorous spacetime boundaries!`);
+                        this.node.events.emit('audit_telemetry', { status: 'AUDIT_SUCCESS', message: `Host ${targetRewardNode} perfectly mapped rigorous spacetime boundaries!`, targetPeer: targetRewardNode });
 
                         const reward = WalletManager.calculateSystemReward(Date.now(), GENESIS_TIMESTAMP);
                         const hostReward = (reward * 90n) / 100n;
@@ -302,7 +311,7 @@ class GlobalAuditor {
 
                         try {
                             const [hostTx, auditorTx] = await Promise.all([
-                                this.walletManager.allocateFunds(ethers.ZeroAddress, fragment.nodeId, hostReward, 'SYSTEM_SIG'),
+                                this.walletManager.allocateFunds(ethers.ZeroAddress, targetRewardNode, hostReward, 'SYSTEM_SIG'),
                                 this.walletManager.allocateFunds(ethers.ZeroAddress, this.node.walletAddress, auditorReward, 'SYSTEM_SIG')
                             ]);
 

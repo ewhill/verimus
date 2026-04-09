@@ -443,7 +443,7 @@ class SyncEngine {
         if (this.node.peer) this.node.peer.broadcast(msg).catch(() => { });
         if (!this.node.roles.includes(NodeRole.STORAGE)) return;
 
-        if (msg.targetNodeId && msg.targetNodeId !== this.node.walletAddress && msg.targetNodeId !== this.node.publicKey) {
+        if (msg.targetNodeId && msg.targetNodeId !== this.node.walletAddress && msg.targetNodeId !== this.node.publicKey && msg.targetNodeId !== 'GENESIS_NODE') {
             return; // Not the targeted storage host for this geometric validation iteration
         }
 
@@ -473,7 +473,7 @@ class SyncEngine {
                 if (chunks.length === 0 || msg.chunkIndex >= chunks.length) {
                     logger.info(`[SyncEngine DEBUG] Missing or Out-Of-Bounds chunk index req: ${msg.chunkIndex} >= ${chunks.length}. Broadcasting false.`);
                     const respMsg = new MerkleProofChallengeResponseMessage({
-                        contractId: msg.contractId, physicalId: msg.physicalId, auditorNodeId: msg.auditorNodeId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
+                        contractId: msg.contractId, physicalId: msg.physicalId, auditorNodeId: msg.auditorNodeId, responderNodeId: this.node.walletAddress, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
                     });
                     if (this.node.peer) this.node.peer.broadcast(respMsg).catch(() => { });
                     return;
@@ -485,7 +485,7 @@ class SyncEngine {
 
                 logger.info(`[SyncEngine DEBUG] Assembled valid proof for shard chunk ${msg.chunkIndex}. Broadcasting true...`);
                 const respMsg = new MerkleProofChallengeResponseMessage({
-                    contractId: msg.contractId, physicalId: msg.physicalId, auditorNodeId: msg.auditorNodeId, chunkDataBase64, merkleSiblings, computedRootMatch: true
+                    contractId: msg.contractId, physicalId: msg.physicalId, auditorNodeId: msg.auditorNodeId, responderNodeId: this.node.walletAddress, chunkDataBase64, merkleSiblings, computedRootMatch: true
                 });
                 if (this.node.peer) this.node.peer.broadcast(respMsg).catch(() => { });
             };
@@ -494,7 +494,7 @@ class SyncEngine {
 
             result.stream.on('error', () => {
                 const respMsg = new MerkleProofChallengeResponseMessage({
-                    contractId: msg.contractId, physicalId: msg.physicalId, auditorNodeId: msg.auditorNodeId, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
+                    contractId: msg.contractId, physicalId: msg.physicalId, auditorNodeId: msg.auditorNodeId, responderNodeId: this.node.walletAddress, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
                 });
                 if (this.node.peer) this.node.peer.broadcast(respMsg).catch(() => { });
             });

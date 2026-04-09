@@ -5,6 +5,7 @@ export interface MerkleProofChallengeResponseOptions {
     contractId: string;
     physicalId: string;
     auditorNodeId: string;
+    responderNodeId: string;
     chunkDataBase64: string; 
     merkleSiblings: string[];
     computedRootMatch: boolean;
@@ -22,6 +23,9 @@ export class MerkleProofChallengeResponseMessage extends Message {
 
         if (options.auditorNodeId !== undefined) this.auditorNodeId = options.auditorNodeId;
         else if (options.body?.auditorNodeId !== undefined) this.auditorNodeId = options.body.auditorNodeId;
+
+        if (options.responderNodeId !== undefined) this.responderNodeId = options.responderNodeId;
+        else if (options.body?.responderNodeId !== undefined) this.responderNodeId = options.body.responderNodeId;
 
         if (options.chunkDataBase64 !== undefined) this.chunkDataBase64 = options.chunkDataBase64;
         else if (options.body?.chunkDataBase64 !== undefined) this.chunkDataBase64 = options.body.chunkDataBase64;
@@ -41,6 +45,9 @@ export class MerkleProofChallengeResponseMessage extends Message {
 
     get auditorNodeId(): string { return this.body.auditorNodeId; }
     set auditorNodeId(value: string) { this.body = { ...this.body, auditorNodeId: value }; }
+
+    get responderNodeId(): string { return this.body.responderNodeId; }
+    set responderNodeId(value: string) { this.body = { ...this.body, responderNodeId: value }; }
 
     get chunkDataBase64(): string { return this.body.chunkDataBase64; }
     set chunkDataBase64(value: string) { this.body = { ...this.body, chunkDataBase64: value }; }
