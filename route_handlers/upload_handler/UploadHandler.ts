@@ -61,13 +61,12 @@ export default class UploadHandler extends BaseHandler {
             if (isNaN(maxCost) || maxCost <= 0) return res.status(400).send('Invalid maxCost boundary.');
             if (isNaN(targetDurationHours) || targetDurationHours <= 0) return res.status(400).send('Invalid target duration boundary.');
 
-            // Cap minimum redundancy bounds
+            // Cap minimum redundancy bounds natively mathematically isolating physical vectors
             const activePeers = this.node.peer ? this.node.peer.peers.length : 0;
             if (activePeers < 1) {
                 return res.status(503).send('No peers connected to natively fulfill limit orders.');
             }
-            const absoluteMax = Math.min(5, activePeers);
-            if (redundancy > absoluteMax) redundancy = absoluteMax;
+            if (redundancy > 20) redundancy = 20;
 
             let paths: string[] = [];
             try {
@@ -168,7 +167,7 @@ export default class UploadHandler extends BaseHandler {
             this.node.events.emit('upload_telemetry', { status: 'SHARDS_DISPATCHING', message: `Distributing K/N Parity fragments securely across matrices.` });
 
             // Transmit each shard mapping physically limiting loops Native WebSocket Protocol
-            const shardDispatchPromises = bids.map(async (bid: { peerId: string, connection: any }, i: number) => {
+            const shardDispatchPromises = bids.slice(0, redundancy).map(async (bid: { peerId: string, connection: any }, i: number) => {
                 const shardBase64 = bundleResult.shards[i].toString('base64');
                 const message = new StorageShardTransferMessage({
                     marketId: marketReqId,

@@ -271,8 +271,10 @@ class SyncEngine {
     }
 
     async handleStorageBid(msg: StorageBidMessage, connection: PeerConnection) {
+        if (this.node.peer) this.node.peer.broadcast(msg).catch(() => { });
+
         const market = this.activeStorageMarkets.get(msg.storageRequestId);
-        if (!market) return; // Invalid or expired order
+        if (!market) return; // Silent eviction if proxy relay only
 
         // If cost exceeds our strict ceiling limit order mappings drop it
         if (msg.proposedCostPerGB > market.maxCostPerGB) return;
@@ -339,6 +341,8 @@ class SyncEngine {
     }
 
     async handleStorageShardRetrieveRequest(msg: StorageShardRetrieveRequestMessage, connection: PeerConnection) {
+        if (this.node.peer) this.node.peer.broadcast(msg).catch(() => { });
+
         if (!this.node.roles.includes(NodeRole.STORAGE)) return;
 
         try {
@@ -370,6 +374,7 @@ class SyncEngine {
     }
 
     async handleStorageShardRetrieveResponse(msg: StorageShardRetrieveResponseMessage, _unusedConnection: PeerConnection) {
+        if (this.node.peer) this.node.peer.broadcast(msg).catch(() => { });
         this.node.events.emit(`shard_retrieve:${msg.marketId}:${msg.physicalId}`, msg);
     }
 

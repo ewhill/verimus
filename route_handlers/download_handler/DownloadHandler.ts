@@ -127,13 +127,13 @@ export default class DownloadHandler extends BaseHandler {
                                 });
                             } else {
                                 const reqMsg = new StorageShardRetrieveRequestMessage({ marketId, physicalId: mapping.physicalId });
-                                const activeConnection = this.node.peer!.connectedPeers.find(c => c.remotePublicKey === mapping.nodeId);
+                                const activeConnection = this.node.peer!.peers.find((p: any) => p.remoteCredentials_?.walletAddress?.toLowerCase() === mapping.nodeId.toLowerCase());
                                 if (activeConnection) activeConnection.send(reqMsg);
                                 else {
-                                    if (this.node.peer!.connectedPeers.length === 0) {
+                                    if (this.node.peer!.peers.length === 0) {
                                         this.node.events.emit(`shard_retrieve:${marketId}:${mapping.physicalId}`, { success: false });
                                     } else {
-                                        clearTimeout(timeout); resReq({ shardIndex: mapping.shardIndex, buffer: null });
+                                        this.node.peer!.broadcast(reqMsg).catch(() => {});
                                     }
                                 }
                             }
