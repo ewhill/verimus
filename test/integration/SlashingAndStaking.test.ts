@@ -70,6 +70,11 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
         const testBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousWallet.address);
         assert.strictEqual(testBalance, -ethers.parseEther('50000'), '50000 collateral effectively tracked removing liquid boundaries');
 
+        // Assert Step: Verify the storage nodes mapped seamlessly natively into the Ledger registry bounds
+        const cacheRecord = await node.ledger.activeStorageProvidersCollection!.findOne({ operatorAddress: maliciousWallet.address });
+        assert.ok(cacheRecord, 'Operator successfully tracked in active storage bounds limits');
+        assert.strictEqual(cacheRecord!.collateralAmount, ethers.parseEther('50000').toString(), 'Tracking state properly tracked amount');
+
         // Stage 2: Intercept global mathematical failure! Injecting native Slashing penalty!
         const invalidSlashPayload = {
             penalizedAddress: maliciousWallet.address,
@@ -114,6 +119,10 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
         // Finalize state limits natively executing collateral mathematical checks limits
         const postSlashBalance = await node.consensusEngine.walletManager.calculateBalance(maliciousWallet.address);
         assert.strictEqual(postSlashBalance, -ethers.parseEther('100000'), 'Collateral slashed resulting in an immutable zeroed sum loss mathematically');
+
+        // Assert Step: Validate Node was actively purged natively from storage limits map because of burn executing metrics limits natively precisely cleanly
+        const postSlashCache = await node.ledger.activeStorageProvidersCollection!.findOne({ operatorAddress: maliciousWallet.address });
+        assert.strictEqual(postSlashCache, null, 'Node was fully isolated and purged upon catastrophic evidence limits limits flawlessly seamlessly cleanly effectively logical');
 
     } finally {
         if (node) {

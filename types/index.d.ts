@@ -15,6 +15,12 @@ export interface Validator {
     stakeAmount: string;
 }
 
+export interface StorageProvider {
+    operatorAddress: string;
+    collateralAmount: string;
+    minEpochTimelineDays: string;
+}
+
 export interface PeerReputation {
     operatorAddress: string;
     publicKey?: string;

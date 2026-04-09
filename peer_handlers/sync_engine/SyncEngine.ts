@@ -277,6 +277,15 @@ class SyncEngine {
         // If cost exceeds our strict ceiling limit order mappings drop it
         if (msg.proposedCostPerGB > market.maxCostPerGB) return;
 
+        // Evaluate tokenomic stake limit bounding 5000 VERI natively
+        if (this.node.ledger.activeStorageProvidersCollection) {
+            const providerRecord = await this.node.ledger.activeStorageProvidersCollection.findOne({ operatorAddress: msg.storageHostId });
+            if (!providerRecord) return; // Silent eviction on Sybil
+            const stakedAmount = BigInt(providerRecord.collateralAmount);
+            const minimumStake = 5000000000000000000000n; // 5000 VERI
+            if (stakedAmount < minimumStake) return; 
+        }
+
         // Record the limit order bid
         market.bids.push({
             peerId: msg.storageHostId,

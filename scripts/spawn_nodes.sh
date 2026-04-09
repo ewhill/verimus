@@ -101,11 +101,8 @@ DUMMY_SIG="0x5d3b8b5e7b333b6a6e9bb6f93191c2b8428a06ba2459ee2bbc3620294a138e01000
 echo "4. Injecting Baseline Escrow Funding via MongoDB..."
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 for port in "${PORTS[@]}"; do
-    for target_port in "${PORTS[@]}"; do
-        EVM_ADDR_PATH="$PROJECT_ROOT/keys/peer_${target_port}.evm.address"
-        NODE_ADDR_CHECKSUM=$(cat "$EVM_ADDR_PATH")
-        mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ walletAddress: '$NODE_ADDR_CHECKSUM' }, { \$set: { balance: \"500000000000000000000000\" } }, { upsert: true });" > /dev/null 2>&1
-    done
+    # Let the network bootstrap inherently organically...
+    # Exclude seeding nodes natively, let them mine Proof-of-Spacetime intrinsically.
     if [ -n "$SEED_WALLET" ]; then
         SEED_WALLET_CHECKSUM=$(node -e "const {ethers} = require('ethers'); console.log(ethers.getAddress('$SEED_WALLET'))")
         mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ walletAddress: '$SEED_WALLET_CHECKSUM' }, { \$set: { balance: \"50000000000000000000000\" } }, { upsert: true });" > /dev/null 2>&1
@@ -114,24 +111,25 @@ for port in "${PORTS[@]}"; do
 done
 echo "✅ Baseline balances physically synchronized to DB natively!"
 
-echo "5. Seeding 5 blocks..."
-for i in {1..5}; do
-    FILE="dummy_seed_$i.txt"
-    echo "Seed data for block $i - Timestamp: $(date)" > "$FILE"
-    # Rotate target nodes for uploads
-    TARGET_PORT=${PORTS[$(( (i-1) % 5 ))]}
-    
-    ABS_PATH="$PWD/$FILE"
-    RESPONSE=$(curl -s -k -X POST -F "files=@$FILE" -F "paths=[\"$ABS_PATH\"]" -F "ownerAddress=$DUMMY_WALLET" -F "ownerSignature=$DUMMY_SIG" -F "timestamp=$DUMMY_TIMESTAMP" "https://127.0.0.1:$TARGET_PORT/api/upload")
-    
-    if [[ $RESPONSE == *"success\":true"* ]]; then
-        echo "✅ Seeded block $i via node on port $TARGET_PORT"
-    else
-        echo "❌ Failed to seed block $i via node on port $TARGET_PORT"
-        echo "Response: $RESPONSE"
-    fi
-    rm "$FILE"
-done
+# echo "5. Seeding 5 blocks..."
+# for i in {1..5}; do
+#     FILE="dummy_seed_$i.txt"
+#     echo "Seed data for block $i - Timestamp: $(date)" > "$FILE"
+#     # Rotate target nodes for uploads
+#     TARGET_PORT=${PORTS[$(( (i-1) % 5 ))]}
+#     
+#     ABS_PATH="$PWD/$FILE"
+#     RESPONSE=$(curl -s -k -X POST -F "files=@$FILE" -F "paths=[\"$ABS_PATH\"]" -F "ownerAddress=$DUMMY_WALLET" -F "ownerSignature=$DUMMY_SIG" -F "timestamp=$DUMMY_TIMESTAMP" "https://127.0.0.1:$TARGET_PORT/api/upload")
+#     
+#     if [[ $RESPONSE == *"success\":true"* ]]; then
+#         echo "✅ Seeded block $i via node on port $TARGET_PORT"
+#     else
+#         echo "❌ Failed to seed block $i via node on port $TARGET_PORT"
+#         echo "Response: $RESPONSE"
+#     fi
+#     rm "$FILE"
+# done
+echo "5. [Skipped] Seeding 5 test blocks... (Network requires organic PoSt limits scaling natively)"
 
 echo -e '\n\033[1;32m==========================================='
 echo "  Nodes are running and active!            "

@@ -100,6 +100,17 @@ export default class WalletManager {
             const colAmt = BigInt(p.collateralAmount);
             if (colAmt > 0n) {
                 await this.applyBalanceDelta(p.operatorAddress, -colAmt, balances);
+                if (this.ledger.activeStorageProvidersCollection) {
+                    const record = await this.ledger.activeStorageProvidersCollection.findOne({ operatorAddress: p.operatorAddress });
+                    const currentAmt = record ? BigInt(record.collateralAmount) : 0n;
+                    const newTotal = currentAmt + colAmt;
+                    
+                    await this.ledger.activeStorageProvidersCollection.updateOne(
+                        { operatorAddress: p.operatorAddress },
+                        { $set: { collateralAmount: newTotal.toString(), minEpochTimelineDays: p.minEpochTimelineDays.toString() } },
+                        { upsert: true }
+                    );
+                }
             }
         } else if (block.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
             const p = block.payload as SlashingPayload;
@@ -108,6 +119,21 @@ export default class WalletManager {
                 await this.applyBalanceDelta(p.penalizedAddress, -burnAmt, balances);
                 if (activeValidators) {
                     await activeValidators.deleteOne({ validatorAddress: p.penalizedAddress });
+                }
+                if (this.ledger.activeStorageProvidersCollection) {
+                    const record = await this.ledger.activeStorageProvidersCollection.findOne({ operatorAddress: p.penalizedAddress });
+                    if (record) {
+                        const currentAmt = BigInt(record.collateralAmount);
+                        const newAmt = currentAmt - burnAmt;
+                        if (newAmt < ethers.parseUnits("5000", 18)) {
+                            await this.ledger.activeStorageProvidersCollection.deleteOne({ operatorAddress: p.penalizedAddress });
+                        } else {
+                            await this.ledger.activeStorageProvidersCollection.updateOne(
+                                { operatorAddress: p.penalizedAddress },
+                                { $set: { collateralAmount: newAmt.toString() } }
+                            );
+                        }
+                    }
                 }
             }
         } else if (block.type === BLOCK_TYPES.VALIDATOR_REGISTRATION) {

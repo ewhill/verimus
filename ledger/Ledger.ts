@@ -17,6 +17,7 @@ class Ledger {
     balancesCollection: Collection<any> | null;
     activeContractsCollection: Collection<any> | null;
     activeValidatorsCollection: Collection<Validator> | null;
+    activeStorageProvidersCollection: Collection<import('../types').StorageProvider> | null;
     orphanBlocksCollection: Collection<any> | null;
     activeValidatorCountCache: number = 0;
     events: EventEmitter;
@@ -37,6 +38,7 @@ class Ledger {
         this.balancesCollection = null;
         this.activeContractsCollection = null;
         this.activeValidatorsCollection = null;
+        this.activeStorageProvidersCollection = null;
         this.orphanBlocksCollection = null;
         this.events = new EventEmitter();
     }
@@ -50,6 +52,7 @@ class Ledger {
         this.balancesCollection = this.db.collection('balances');
         this.activeContractsCollection = this.db.collection('activeContracts');
         this.activeValidatorsCollection = this.db.collection('activeValidators');
+        this.activeStorageProvidersCollection = this.db.collection('activeStorageProviders');
         this.orphanBlocksCollection = this.db.collection('orphanBlocks');
 
         // Enforce strict mathematical sequence indexing to prevent silent ledger race bounds mapping identical heights 
@@ -57,6 +60,7 @@ class Ledger {
 
         // Ensure peer lookups by publicKey are bound mathematically O(1) matching uniquely
         await this.peersCollection.createIndex({ "operatorAddress": 1 }, { unique: true });
+        await this.activeStorageProvidersCollection.createIndex({ "operatorAddress": 1 }, { unique: true });
         await this.ownedBlocksCollection.createIndex({ hash: 1 }, { unique: true });
         await this.balancesCollection.createIndex({ "walletAddress": 1 }, { unique: true });
         await this.activeContractsCollection.createIndex({ contractId: 1 }, { unique: true });
