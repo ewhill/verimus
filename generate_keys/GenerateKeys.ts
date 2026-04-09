@@ -3,7 +3,7 @@ import * as path from 'path';
 
 import { ethers } from 'ethers';
 
-import RSAKeyPair from '../p2p/lib/RSAKeyPair';
+
 
 
 const PORTS = [26780, 26781, 26782, 26783, 26784];
@@ -15,10 +15,8 @@ if (!fs.existsSync(KEYS_DIR)) {
 
 for (const port of PORTS) {
     const baseKey = path.join(KEYS_DIR, `peer_${port}`);
-    if (!fs.existsSync(`${baseKey}.peer.pem`)) {
+    if (!fs.existsSync(`${baseKey}.evm.key`)) {
         console.log(`Generating keys for port ${port}...`);
-        const peerKeyPair = RSAKeyPair.generate();
-        fs.writeFileSync(`${baseKey}.peer.pem`, peerKeyPair.private);
 
         const evmWallet = ethers.Wallet.createRandom();
         fs.writeFileSync(`${baseKey}.evm.key`, evmWallet.privateKey);

@@ -12,7 +12,6 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import Bundler from '../../bundler/Bundler';
 import { BLOCK_TYPES } from '../../constants';
 import { hashData } from '../../crypto_utils/CryptoUtils';
-import RSAKeyPair from '../../p2p/lib/RSAKeyPair';
 import PeerNode from '../../peer_node/PeerNode';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
 import { createSignedMockBlock } from '../../test/utils/EIP712Mock';
@@ -31,21 +30,18 @@ describe('Integration: Clementine Master Lifecycle (E2E Phase 0-6)', () => {
         mongod = await MongoMemoryServer.create();
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'clementine-master-'));
 
-        const ringKeys = RSAKeyPair.generate();
-        fs.writeFileSync(path.join(tempDir, 'ring.pub'), ringKeys.public);
-
+        const ringWallet = ethers.Wallet.createRandom();
         for (let i = 0; i < 5; i++) {
-            const keys = RSAKeyPair.generate();
-            const signature = ringKeys.sign(keys.public).toString('hex');
+            const nodeWallet = ethers.Wallet.createRandom();
+            const signature = await ringWallet.signMessage(nodeWallet.address);
 
-            fs.writeFileSync(path.join(tempDir, `node${i}.pub`), keys.public);
-            fs.writeFileSync(path.join(tempDir, `node${i}.pem`), keys.private);
+            fs.writeFileSync(path.join(tempDir, `node${i}.evm.key`), nodeWallet.privateKey);
             fs.writeFileSync(path.join(tempDir, `node${i}.sig`), signature);
 
             const dbUri = mongod.getUri(`node${i}`);
 
             const keyPaths = {
-                privateKeyPath: path.join(tempDir, `node${i}.pem`),
+                evmPrivateKeyPath: path.join(tempDir, `node${i}.evm.key`),
                 signaturePath: path.join(tempDir, `node${i}.sig`),
                 ringPublicKeyPath: path.join(tempDir, `ring.pub`)
             };

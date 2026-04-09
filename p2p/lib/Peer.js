@@ -15,7 +15,6 @@ const Client = require('./Client');
 const ManagedTimeouts = require('./ManagedTimeouts');
 const Message = require('./Message');
 const RequestHandler = require('./RequestHandler');
-const RSAKeyPair = require('./RSAKeyPair');
 const Server = require('./Server');
 const utils = require('./utils');
 

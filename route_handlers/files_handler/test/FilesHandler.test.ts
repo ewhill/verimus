@@ -35,11 +35,11 @@ describe('Backend: filesHandler Coverage', () => {
     let res: Response;
     let mockStatus: import('node:test').Mock<any>;
     let mockJson: import('node:test').Mock<any>;
-    let keys: any;
+    let _unusedKeys: any;
     const mockCollectionFind = mock.fn<() => FindCursor<WithId<Block>>>();
 
     beforeEach(() => {
-        keys = generateRSAKeyPair();
+        _unusedKeys = generateRSAKeyPair();
         mockNode = createMock<PeerNode>({
             walletAddress: 'testPubKey',
             publicKey: 'testPubKey',

@@ -26,7 +26,7 @@ describe('BftCoordinator', () => {
             blockAddedSubscribers: []
         });
 
-        const keys = generateRSAKeyPair();
+        const _unusedKeys = generateRSAKeyPair();
 
         const mockPeerNode = createMock<PeerNode>({
             mempool: mempoolStore,

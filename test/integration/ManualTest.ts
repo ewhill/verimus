@@ -10,7 +10,6 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import setupExpressApp from '../../api_server/ApiServer';
 import Bundler from '../../bundler/Bundler';
-import RSAKeyPair from '../../p2p/lib/RSAKeyPair';
 import PeerNode from '../../peer_node/PeerNode';
 import MemoryStorageProvider from '../../storage_providers/memory_provider/MemoryProvider';
 
@@ -30,19 +29,19 @@ async function runManualTest() {
     const tmp1 = fsLib.mkdtempSync(pathLib.join(osLib.tmpdir(), 'verimus-'));
     // Node 1
     const node1 = new PeerNode(26780, ['127.0.0.1:26781', '127.0.0.1:26782'], new MemoryStorageProvider(), new Bundler(tmp1), uri, undefined, {
-        privateKeyPath: 'keys/peer_26780.peer.pem'
+        evmPrivateKeyPath: 'keys/peer_26780.evm.key'
     }, tmp1);
 
     const tmp2 = fsLib.mkdtempSync(pathLib.join(osLib.tmpdir(), 'verimus-'));
     // Node 2
     const node2 = new PeerNode(26781, ['127.0.0.1:26780', '127.0.0.1:26782'], new MemoryStorageProvider(), new Bundler(tmp2), uri, undefined, {
-        privateKeyPath: 'keys/peer_26781.peer.pem'
+        evmPrivateKeyPath: 'keys/peer_26781.evm.key'
     }, tmp2);
 
     const tmp3 = fsLib.mkdtempSync(pathLib.join(osLib.tmpdir(), 'verimus-'));
     // Node 3
     const node3 = new PeerNode(26782, ['127.0.0.1:26780', '127.0.0.1:26781'], new MemoryStorageProvider(), new Bundler(tmp3), uri, undefined, {
-        privateKeyPath: 'keys/peer_26782.peer.pem'
+        evmPrivateKeyPath: 'keys/peer_26782.evm.key'
     }, tmp3);
 
     // Generate keys to prevent errors
@@ -51,10 +50,9 @@ async function runManualTest() {
 
         const baseKey = `keys/peer_2678${index}`;
         if (!fsLib.existsSync('keys')) fsLib.mkdirSync('keys');
-        if (!fsLib.existsSync(`${baseKey}.peer.pem`)) {
-            const peerKeyPair = RSAKeyPair.generate();
-            fsLib.writeFileSync(`${baseKey}.peer.pem`, peerKeyPair.private);
-            fsLib.writeFileSync(`${baseKey}.peer.pub`, peerKeyPair.public);
+        if (!fsLib.existsSync(`${baseKey}.evm.key`)) {
+            const nodeWallet = ethers.Wallet.createRandom();
+            fsLib.writeFileSync(`${baseKey}.evm.key`, nodeWallet.privateKey);
         }
     });
 
