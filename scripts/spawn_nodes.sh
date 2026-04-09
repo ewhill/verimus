@@ -94,23 +94,6 @@ if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     echo -e "\033[1;33mWarning: Network did not fully converge within the time limit. Seeding might fail.\033[0m"
 fi
 
-DUMMY_WALLET="0xf29CeF8D4dFaBAa1C2d6813561c9AeaF3f97230f"
-DUMMY_TIMESTAMP="1775344694641"
-DUMMY_SIG="0x5d3b8b5e7b333b6a6e9bb6f93191c2b8428a06ba2459ee2bbc3620294a138e01000c09c47284b918a7da0844e044cea9ae310001108b886922cb500bc07c79e51c"
-
-echo "4. Injecting Baseline Escrow Funding via MongoDB..."
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-for port in "${PORTS[@]}"; do
-    # Let the network bootstrap inherently organically...
-    # Exclude seeding nodes natively, let them mine Proof-of-Spacetime intrinsically.
-    if [ -n "$SEED_WALLET" ]; then
-        SEED_WALLET_CHECKSUM=$(node -e "const {ethers} = require('ethers'); console.log(ethers.getAddress('$SEED_WALLET'))")
-        mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ walletAddress: '$SEED_WALLET_CHECKSUM' }, { \$set: { balance: \"50000000000000000000000\" } }, { upsert: true });" > /dev/null 2>&1
-    fi
-    mongosh "mongodb://127.0.0.1:27018/secure_storage_db_${port}" --eval "db.balances.updateOne({ walletAddress: '$DUMMY_WALLET' }, { \$set: { balance: \"500000000000000000000000\" } }, { upsert: true });" > /dev/null 2>&1
-done
-echo "✅ Baseline balances physically synchronized to DB natively!"
-
 # echo "5. Seeding 5 blocks..."
 # for i in {1..5}; do
 #     FILE="dummy_seed_$i.txt"
