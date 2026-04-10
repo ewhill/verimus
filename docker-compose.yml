@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  verimus-node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: verimus-node:latest
+    container_name: verimus-node
+    ports:
+      - "26780:26780"
+    environment:
+      # Automatically enabled natively inside docker-entrypoint.sh 
+      # STORAGE_CREDS_ACTIVE: "true"
+      
+      # Option 1: Provide an explicit Private Key
+      # PEER_EVM_PRIVATE_KEY: "0x..."
+      
+      # Option 2: Provide an explicit Seed Phrase. The container will automatically recover the private key.
+      # EVM_WALLET_MNEMONIC: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+      
+      # Option 3: Leave both commented out. The node will organically generate an ephemeral wallet and print it to the CLI.
+      
+      # Network configs
+      MONGO_HOST: "mongo"
+      MONGO_PORT: "27017"
+    depends_on:
+      - mongo
+    volumes:
+      - verimus-node-data:/app/data
+    command: >
+      --mongo-host mongo 
+      --mongo-port 27017 
+      --port 26780 
+      --headless
+
+  mongo:
+    image: mongo:7.0
+    container_name: verimus-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - verimus-mongo-data:/data/db
+
+volumes:
+  verimus-node-data:
+  verimus-mongo-data:
