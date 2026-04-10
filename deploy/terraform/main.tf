@@ -115,8 +115,8 @@ resource "aws_security_group" "verimus_sg" {
   
   ingress {
     description = "P2P and UI Node Ingress"
-    from_port   = 26780
-    to_port     = 26780
+    from_port   = 443
+    to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -190,6 +190,8 @@ resource "aws_instance" "verimus_node" {
               version: '3.8'
               services:
                 verimus-node:
+                  ports:
+                    - "443:443"
                   environment:
                     NODE_ENV: production
                   command:
@@ -198,11 +200,11 @@ resource "aws_instance" "verimus_node" {
                     - "--mongo-port"
                     - "27017"
                     - "--port"
-                    - "26780"
+                    - "443"
                     - "--public-address"
-                    - "node${count.index}.verimus.io:26780"
+                    - "node${count.index}.verimus.io:443"
                     - "--discover"
-                    - "${join(",", [for i in range(var.node_count) : "node$${i}.verimus.io:26780"])}"
+                    - "${join(",", [for i in range(var.node_count) : "node$${i}.verimus.io:443"])}"
               COMPOSE
 
               # Evolve storage-type cleanly seamlessly targeting IAM profiles (no raw keys needed)
