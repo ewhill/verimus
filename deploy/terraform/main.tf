@@ -240,7 +240,8 @@ resource "aws_eip_association" "eip_assoc" {
 # --- AWS Route53 Public DNS Automated Integration ---
 
 data "aws_route53_zone" "verimus" {
-  name = "verimus.io."
+  name         = "verimus.io."
+  private_zone = false
 }
 
 resource "aws_route53_record" "node_record" {
