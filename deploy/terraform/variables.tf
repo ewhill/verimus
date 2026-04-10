@@ -20,3 +20,9 @@ variable "repo_clone_url" {
   type        = string
   default     = "https://github.com/ewhill/verimus.git"
 }
+
+variable "node_count" {
+  description = "Number of Verimus nodes natively bound"
+  type        = number
+  default     = 1
+}

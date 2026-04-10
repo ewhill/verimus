@@ -13,10 +13,11 @@ provider "aws" {
 
 # Provide an Elastic IP for deterministic node connectivity
 resource "aws_eip" "node_static_ip" {
+  count  = var.node_count
   domain = "vpc"
   
   tags = {
-    Name = "Verimus-Node-Static-IP"
+    Name = "Verimus-Node-Static-IP-${count.index}"
   }
 }
 
@@ -139,6 +140,7 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_instance" "verimus_node" {
+  count         = var.node_count
   ami           = data.aws_ami.ubuntu.id
   instance_type = var.instance_type
 
@@ -160,6 +162,21 @@ resource "aws_instance" "verimus_node" {
               git clone https://github.com/ewhill/verimus.git
               cd verimus
               
+              cat << 'COMPOSE' > docker-compose.override.yml
+              version: '3.8'
+              services:
+                verimus-node:
+                  command:
+                    - "--mongo-host"
+                    - "mongo"
+                    - "--mongo-port"
+                    - "27017"
+                    - "--port"
+                    - "26780"
+                    - "--discover"
+                    - "${join(",", [for ip in aws_eip.node_static_ip : "${ip.public_ip}:26780"])}"
+              COMPOSE
+
               # Evolve storage-type cleanly seamlessly targeting IAM profiles (no raw keys needed)
               export STORAGE_CREDS_ACTIVE="true" 
               export S3_BUCKET="${var.s3_bucket_name}"
@@ -185,6 +202,7 @@ resource "aws_instance" "verimus_node" {
 }
 
 resource "aws_eip_association" "eip_assoc" {
-  instance_id   = aws_instance.verimus_node.id
-  allocation_id = aws_eip.node_static_ip.id
+  count         = var.node_count
+  instance_id   = aws_instance.verimus_node[count.index].id
+  allocation_id = aws_eip.node_static_ip[count.index].id
 }
