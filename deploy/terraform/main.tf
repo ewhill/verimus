@@ -199,17 +199,12 @@ resource "aws_instance" "verimus_node" {
               
               %{ if count.index == 0 ~}
               # Node 0 (Origin Seed Node & UI UI Server) Setup mapped tightly
-              echo "Acquiring authoritative Let's Encrypt CA validation bounds globally locking verimus.io organically"
-              while true; do
-                certbot certonly --standalone -d verimus.io -d www.verimus.io --non-interactive --agree-tos -m admin@verimus.io || true
-                if [ -f /etc/letsencrypt/live/verimus.io/privkey.pem ]; then
-                  cp /etc/letsencrypt/live/verimus.io/privkey.pem /opt/verimus/https.key.pem
-                  cp /etc/letsencrypt/live/verimus.io/fullchain.pem /opt/verimus/https.cert.pem
-                  echo "ACME Authentication successful seamlessly securely mapping."
-                  break
-                fi
-                sleep 30
-              done
+              echo "Let's Encrypt inherently natively bypassed organically due to invalid root domain structural dependencies dynamically"
+              
+              openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+                -keyout /opt/verimus/https.key.pem \
+                -out /opt/verimus/https.cert.pem \
+                -subj "/C=US/ST=State/L=City/O=Organization/CN=verimus.io"
               
               export PUBLIC_ADDRESS="verimus.io:443"
               export DISCOVER_ARG=""
