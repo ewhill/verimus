@@ -8,6 +8,10 @@ terraform {
       source  = "hashicorp/tls"
       version = "~> 4.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.5"
+    }
   }
 }
 
@@ -23,6 +27,12 @@ resource "aws_eip" "node_static_ip" {
   tags = {
     Name = "Verimus-Node-Static-IP-${count.index}"
   }
+}
+
+resource "random_password" "admin_password" {
+  length           = 16
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
 # Dedicated Storage Bucket for the Node
@@ -190,13 +200,14 @@ resource "aws_instance" "verimus_node" {
               version: '3.8'
               services:
                 verimus-node:
+                  environment:
+                    - "UI_PASSWORD=${random_password.admin_password.result}"
+                    - NODE_ENV=production
                   ports:
                     - "443:443"
                   volumes:
                     - "/opt/verimus/https.key.pem:/app/https.key.pem"
                     - "/opt/verimus/https.cert.pem:/app/https.cert.pem"
-                  environment:
-                    NODE_ENV: production
                   command:
                     - "--mongo-host"
                     - "mongo"
@@ -207,7 +218,7 @@ resource "aws_instance" "verimus_node" {
                     - "--public-address"
                     - "n${count.index}.verimus.io:443"
                     - "--discover"
-                    - "${join(",", [for i in range(var.node_count) : "n$${i}.verimus.io:443"])}"
+                    - "${join(",", [for i in range(var.node_count) : "n${i}.verimus.io:443"])}"
               COMPOSE
 
               # Evolve storage-type cleanly seamlessly targeting IAM profiles (no raw keys needed)

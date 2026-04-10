@@ -17,3 +17,9 @@ output "verimus_hosted_zone_nameservers" {
   description = "CRITICAL: The explicit Route53 Name Servers bound strictly to your active Hosted Zone natively securely flawlessly dynamically correctly organically"
   value       = data.aws_route53_zone.verimus.name_servers
 }
+
+output "verimus_ui_admin_password" {
+  description = "The dynamic randomized UI strictly mapped admin password natively."
+  value       = random_password.admin_password.result
+  sensitive   = true
+}
