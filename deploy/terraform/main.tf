@@ -12,13 +12,8 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.5"
     }
-    acme = {
-      source  = "vancluever/acme"
-      version = "~> 2.11"
-    }
   }
 }
-
 
 provider "aws" {
   region = var.aws_region
@@ -31,28 +26,6 @@ resource "aws_eip" "node_static_ip" {
   
   tags = {
     Name = "Verimus-Node-Static-IP-${count.index}"
-  }
-}
-
-provider "acme" {
-  server_url = "https://acme-v02.api.letsencrypt.org/directory"
-}
-
-resource "tls_private_key" "acme_reg_key" {
-  algorithm = "RSA"
-}
-
-resource "acme_registration" "reg" {
-  account_key_pem = tls_private_key.acme_reg_key.private_key_pem
-  email_address   = "admin@verimus.io"
-}
-
-resource "acme_certificate" "wildcard_cert" {
-  account_key_pem           = acme_registration.reg.account_key_pem
-  common_name               = "*.verimus.io"
-
-  dns_challenge {
-    provider = "route53"
   }
 }
 
@@ -210,12 +183,18 @@ resource "aws_instance" "verimus_node" {
               git clone https://github.com/ewhill/verimus.git
               cd verimus
               
-              cat << 'CERT' > /opt/verimus/https.cert.pem
-${acme_certificate.wildcard_cert.certificate_pem}${acme_certificate.wildcard_cert.issuer_pem}
-CERT
-              cat << 'KEY' > /opt/verimus/https.key.pem
-${acme_certificate.wildcard_cert.private_key_pem}
-KEY
+              # Strictly halt Node bootstrapping mathematically entirely until Let's encrypt HTTP-01 bounds successfully authenticate and sign securely
+              echo "Awaiting authoritative ACME TLS Signing bounds natively mapping Route53..."
+              while true; do
+                certbot certonly --standalone -d node$${count.index}.verimus.io --non-interactive --agree-tos -m admin@verimus.io || true
+                if [ -f /etc/letsencrypt/live/node$${count.index}.verimus.io/privkey.pem ]; then
+                  cp /etc/letsencrypt/live/node$${count.index}.verimus.io/privkey.pem /opt/verimus/https.key.pem
+                  cp /etc/letsencrypt/live/node$${count.index}.verimus.io/fullchain.pem /opt/verimus/https.cert.pem
+                  echo "ACME Authentication successful seamlessly securely mapping."
+                  break
+                fi
+                sleep 30
+              done
               
               cat << 'COMPOSE' > docker-compose.override.yml
               version: '3.8'
@@ -237,10 +216,11 @@ KEY
                     - "--port"
                     - "443"
                     - "--public-address"
-                    - "n${count.index}.verimus.io:443"
+                    - "node${count.index}.verimus.io:443"
                     - "--discover"
-                    - "${join(",", [for i in range(var.node_count) : "n${i}.verimus.io:443"])}"
+                    - "${join(",", [for i in range(var.node_count) : "node${i}.verimus.io:443"])}"
               COMPOSE
+
 
               # Evolve storage-type cleanly seamlessly targeting IAM profiles (no raw keys needed)
               export STORAGE_CREDS_ACTIVE="true" 
@@ -286,7 +266,7 @@ data "aws_route53_zone" "verimus" {
 resource "aws_route53_record" "node_record" {
   count   = var.node_count
   zone_id = data.aws_route53_zone.verimus.zone_id
-  name    = "n${count.index}.verimus.io"
+  name    = "node${count.index}.verimus.io"
   type    = "A"
   ttl     = "300"
   records = [aws_eip.node_static_ip[count.index].public_ip]
