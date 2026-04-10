@@ -253,17 +253,20 @@ class PeerNode {
                     // --- Phase 6: Originator Staking Boot Sequence ---
                     if (this.roles.includes(NodeRole.ORIGINATOR) && !IS_DEV_NETWORK) {
                         try {
-                            const stakingBlock: Block = {
-                                metadata: { index: -1, timestamp: Date.now() },
-                                type: 'STAKING_CONTRACT',
-                                payload: { operatorAddress: this.walletAddress, collateralAmount: ethers.parseUnits("50000", 18), minEpochTimelineDays: 30n },
-                                signerAddress: this.walletAddress,
-                                signature: ''
-                            };
-                            const valueObj = normalizeBlockForSignature(stakingBlock);
-                            const schema = EIP712_SCHEMAS['STAKING_CONTRACT'];
-                            stakingBlock.signature = await this.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
-                            await this.consensusEngine.handlePendingBlock(stakingBlock, { peerAddress: `127.0.0.1:${this.port}` } as any, Date.now());
+                            const existingStaking = await this.ledger.collection!.findOne({ type: 'STAKING_CONTRACT', 'payload.operatorAddress': this.walletAddress });
+                            if (!existingStaking) {
+                                const stakingBlock: Block = {
+                                    metadata: { index: -1, timestamp: Date.now() },
+                                    type: 'STAKING_CONTRACT',
+                                    payload: { operatorAddress: this.walletAddress, collateralAmount: ethers.parseUnits("50000", 18), minEpochTimelineDays: 30n },
+                                    signerAddress: this.walletAddress,
+                                    signature: ''
+                                };
+                                const valueObj = normalizeBlockForSignature(stakingBlock);
+                                const schema = EIP712_SCHEMAS['STAKING_CONTRACT'];
+                                stakingBlock.signature = await this.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
+                                await this.consensusEngine.handlePendingBlock(stakingBlock, { peerAddress: `127.0.0.1:${this.port}` } as any, Date.now());
+                            }
                         } catch (err: any) {
                             logger.warn(`[Peer ${this.port}] Failed to emit initial Proof-of-Stake STAKING_CONTRACT dynamically: ${err.message}`);
                         }
@@ -272,17 +275,20 @@ class PeerNode {
                     // --- Phase 7: Validator Registry Boot Sequence ---
                     if (this.roles.includes(NodeRole.VALIDATOR) && !IS_DEV_NETWORK) {
                         try {
-                            const valBlock: Block = {
-                                metadata: { index: -1, timestamp: Date.now() },
-                                type: 'VALIDATOR_REGISTRATION',
-                                payload: { validatorAddress: this.walletAddress, stakeAmount: ethers.parseUnits("1000", 18), action: 'STAKE' },
-                                signerAddress: this.walletAddress,
-                                signature: ''
-                            };
-                            const valValueObj = normalizeBlockForSignature(valBlock);
-                            const valSchema = EIP712_SCHEMAS['VALIDATOR_REGISTRATION'];
-                            valBlock.signature = await this.wallet.signTypedData(EIP712_DOMAIN, valSchema, valValueObj.payload ? valValueObj : valValueObj);
-                            await this.consensusEngine.handlePendingBlock(valBlock, { peerAddress: `127.0.0.1:${this.port}` } as any, Date.now());
+                            const existingValidator = await this.ledger.collection!.findOne({ type: 'VALIDATOR_REGISTRATION', 'payload.validatorAddress': this.walletAddress });
+                            if (!existingValidator) {
+                                const valBlock: Block = {
+                                    metadata: { index: -1, timestamp: Date.now() },
+                                    type: 'VALIDATOR_REGISTRATION',
+                                    payload: { validatorAddress: this.walletAddress, stakeAmount: ethers.parseUnits("1000", 18), action: 'STAKE' },
+                                    signerAddress: this.walletAddress,
+                                    signature: ''
+                                };
+                                const valValueObj = normalizeBlockForSignature(valBlock);
+                                const valSchema = EIP712_SCHEMAS['VALIDATOR_REGISTRATION'];
+                                valBlock.signature = await this.wallet.signTypedData(EIP712_DOMAIN, valSchema, valValueObj.payload ? valValueObj : valValueObj);
+                                await this.consensusEngine.handlePendingBlock(valBlock, { peerAddress: `127.0.0.1:${this.port}` } as any, Date.now());
+                            }
                         } catch (err: any) {
                             logger.warn(`[Peer ${this.port}] Failed to emit initial VALIDATOR_REGISTRATION dynamically: ${err.message}`);
                         }

@@ -16,29 +16,37 @@ if [ ! -z "$EVM_WALLET_MNEMONIC" ] && [ -z "$PEER_EVM_PRIVATE_KEY" ]; then
 fi
 
 if [ -z "$PEER_EVM_PRIVATE_KEY" ]; then
-    echo "[!] No PEER_EVM_PRIVATE_KEY or EVM_WALLET_MNEMONIC set in environment."
-    echo "[*] Generating a new ephemeral wallet for testing purposes..."
-    
-    # Generate wallet safely and output it
-    NEW_WALLET_JSON=$(node -e "
-        const { Wallet } = require('ethers');
-        const w = Wallet.createRandom();
-        console.log(JSON.stringify({ address: w.address, mnemonic: w.mnemonic.phrase, privateKey: w.privateKey }));
-    ")
-    
-    export PEER_EVM_PRIVATE_KEY=$(node -e "console.log(JSON.parse(process.argv[1]).privateKey)" "$NEW_WALLET_JSON")
-    
-    MNEMONIC=$(node -e "console.log(JSON.parse(process.argv[1]).mnemonic)" "$NEW_WALLET_JSON")
-    ADDRESS=$(node -e "console.log(JSON.parse(process.argv[1]).address)" "$NEW_WALLET_JSON")
+    if [ -f "/app/data/ephemeral_wallet.json" ]; then
+        echo "[*] Recovering locally generated ephemeral wallet bounded strictly into physical memory..."
+        export PEER_EVM_PRIVATE_KEY=$(node -e "console.log(JSON.parse(require('fs').readFileSync('/app/data/ephemeral_wallet.json')).privateKey)")
+    else
+        echo "[!] No PEER_EVM_PRIVATE_KEY or EVM_WALLET_MNEMONIC set in environment."
+        echo "[*] Generating a new ephemeral wallet for testing purposes..."
+        
+        # Generate wallet safely and output it
+        NEW_WALLET_JSON=$(node -e "
+            const { Wallet } = require('ethers');
+            const w = Wallet.createRandom();
+            console.log(JSON.stringify({ address: w.address, mnemonic: w.mnemonic.phrase, privateKey: w.privateKey }));
+        ")
+        
+        mkdir -p /app/data
+        echo "$NEW_WALLET_JSON" > /app/data/ephemeral_wallet.json
+        
+        export PEER_EVM_PRIVATE_KEY=$(node -e "console.log(JSON.parse(process.argv[1]).privateKey)" "$NEW_WALLET_JSON")
+        
+        MNEMONIC=$(node -e "console.log(JSON.parse(process.argv[1]).mnemonic)" "$NEW_WALLET_JSON")
+        ADDRESS=$(node -e "console.log(JSON.parse(process.argv[1]).address)" "$NEW_WALLET_JSON")
 
-    echo -e "\n==========================================="
-    echo "       ✨ NEW WALLET GENERATED ✨          "
-    echo "==========================================="
-    echo "Address:     $ADDRESS"
-    echo "Seed Phrase: $MNEMONIC"
-    echo "Private Key: $PEER_EVM_PRIVATE_KEY"
-    echo "==========================================="
-    echo -e "SAVE THIS SEED PHRASE. IT WILL NOT BE SHOWN AGAIN.\n"
+        echo -e "\n==========================================="
+        echo "       ✨ NEW WALLET GENERATED ✨          "
+        echo "==========================================="
+        echo "Address:     $ADDRESS"
+        echo "Seed Phrase: $MNEMONIC"
+        echo "Private Key: $PEER_EVM_PRIVATE_KEY"
+        echo "==========================================="
+        echo -e "SAVE THIS SEED PHRASE. IT WILL NOT BE SHOWN AGAIN.\n"
+    fi
 fi
 
 # Natively synthesize self-signed EC bounds gracefully bypassing GitHub explicit '.pem' tracking exclusions
