@@ -36,7 +36,6 @@ services:
       - "27017"
       - "--port"
       - "26780"
-      - "--headless"
 
   mongo:
     image: mongo:7.0
