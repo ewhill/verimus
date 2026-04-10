@@ -10,7 +10,7 @@ output "verimus_dashboard_url" {
 
 output "s3_bucket_mapped" {
   description = "Elastic isolated payload array"
-  value       = aws_s3_bucket.verimus_storage.bucket
+  value       = aws_s3_bucket.verimus_storage[*].bucket
 }
 
 output "verimus_hosted_zone_nameservers" {

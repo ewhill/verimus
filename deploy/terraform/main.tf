@@ -50,27 +50,30 @@ resource "random_password" "admin_password" {
   override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
-# Dedicated Storage Bucket for the Node
+# Dedicated Storage Bucket for the Node explicitly decoupled naturally
 resource "aws_s3_bucket" "verimus_storage" {
-  bucket        = var.s3_bucket_name
+  count         = var.node_count
+  bucket        = "${var.s3_bucket_name}-n${count.index}"
   force_destroy = true
 
   tags = {
-    Name = "VerimusNodeStorage"
+    Name = "VerimusNodeStorage-n${count.index}"
   }
 }
 
-# Enforce Append-Only Immutable Resiliency Matrix
+# Enforce Append-Only Immutable Resiliency Matrix natively 
 resource "aws_s3_bucket_versioning" "verimus_storage_versioning" {
-  bucket = aws_s3_bucket.verimus_storage.id
+  count  = var.node_count
+  bucket = aws_s3_bucket.verimus_storage[count.index].id
   versioning_configuration {
     status = "Enabled"
   }
 }
 
-# Enforce At-Rest AES256 Physical Hardware Encryption
+# Enforce At-Rest AES256 Physical Hardware Encryption flawlessly
 resource "aws_s3_bucket_server_side_encryption_configuration" "verimus_storage_encryption" {
-  bucket = aws_s3_bucket.verimus_storage.id
+  count  = var.node_count
+  bucket = aws_s3_bucket.verimus_storage[count.index].id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -80,9 +83,10 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "verimus_storage_e
   }
 }
 
-# Ensure Public Access is completely blocked securely natively
+# Ensure Public Access is completely blocked securely natively intrinsically
 resource "aws_s3_bucket_public_access_block" "verimus_storage_block" {
-  bucket = aws_s3_bucket.verimus_storage.id
+  count  = var.node_count
+  bucket = aws_s3_bucket.verimus_storage[count.index].id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -90,14 +94,14 @@ resource "aws_s3_bucket_public_access_block" "verimus_storage_block" {
   restrict_public_buckets = true
 }
 
-# Minimalist IAM Policy mapping
+# Minimalist IAM Policy mapping securely binding ALL nodes to ALL dynamically populated explicit isolated buckets implicitly smoothly
 data "aws_iam_policy_document" "s3_access_policy" {
   statement {
     actions   = ["s3:PutObject", "s3:GetObject", "s3:ListBucket", "s3:DeleteObject"]
-    resources = [
-      aws_s3_bucket.verimus_storage.arn,
-      "${aws_s3_bucket.verimus_storage.arn}/*"
-    ]
+    resources = concat(
+      [for bucket in aws_s3_bucket.verimus_storage : bucket.arn],
+      [for bucket in aws_s3_bucket.verimus_storage : "${bucket.arn}/*"]
+    )
   }
 }
 
@@ -252,10 +256,10 @@ resource "aws_instance" "verimus_node" {
 
               # Evolve storage-type cleanly seamlessly targeting IAM profiles (no raw keys needed)
               export STORAGE_CREDS_ACTIVE="true" 
-              export S3_BUCKET="${var.s3_bucket_name}"
+              export S3_BUCKET="${var.s3_bucket_name}-n${count.index}"
               
               export STORAGE_CREDS_ACTIVE="true" 
-              export S3_BUCKET="${var.s3_bucket_name}"
+              export S3_BUCKET="${var.s3_bucket_name}-n${count.index}"
               
               docker-compose up --build -d
               EOF
