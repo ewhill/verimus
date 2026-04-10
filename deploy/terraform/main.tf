@@ -157,7 +157,7 @@ resource "aws_instance" "verimus_node" {
               systemctl start docker
               
               cd /opt
-              git clone https://github.com/erichill/verimus.git
+              git clone https://github.com/ewhill/verimus.git
               cd verimus
               
               # Evolve storage-type cleanly seamlessly targeting IAM profiles (no raw keys needed)

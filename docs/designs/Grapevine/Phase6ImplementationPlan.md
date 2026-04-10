@@ -25,35 +25,35 @@ This fee will be embedded natively into the `StorageContractPayload` at the poin
 
 ### config & peer_node
 
-#### [MODIFY] [peer_node/PeerNode.ts](file:///Users/erichill/Documents/Code/verimus/peer_node/PeerNode.ts)
+#### [MODIFY] [peer_node/PeerNode.ts](../../peer_node/PeerNode.ts)
 *   **Dynamic configuration:** Integrate a new `proxyBrokerFee` property natively into the `PeerNode` logic. Allow nodes to pass this as a constructor variable defaulting implicitly to `0.01` (1% markup), as origination is a lightweight process computationally.
 *   **Originator Staking Boot Sequence:** Because Originators must now hold a valid `STAKING_CONTRACT` constraint to pass Consensus bounds, `PeerNode.ts` must execute an explicit orchestration loop during `init()`. If the Node contains the `NodeRole.ORIGINATOR` role, it will structurally mint and broadcast a `STAKING_CONTRACT` payload (locking $VERI collateral) to the network, verifying its network identity securely directly on boot.
 
-#### [MODIFY] [route_handlers/node_config_handler/NodeConfigHandler.ts](file:///Users/erichill/Documents/Code/verimus/route_handlers/node_config_handler/NodeConfigHandler.ts)
+#### [MODIFY] [route_handlers/node_config_handler/NodeConfigHandler.ts](../../route_handlers/node_config_handler/NodeConfigHandler.ts)
 *   Surface the active Node's `proxyBrokerFee` visually through the `/api/node/config` REST mapping allowing the UI to instantly calculate Limit Order boundaries efficiently.
 
 ### payload & wallet_manager
 
-#### [MODIFY] [types/index.d.ts](file:///Users/erichill/Documents/Code/verimus/types/index.d.ts)
+#### [MODIFY] [types/index.d.ts](../../types/index.d.ts)
 *   Inject an optional `brokerFeePercentage?: number` attribute explicitly onto the `StorageContractPayload` TypeScript boundaries.
 
-#### [MODIFY] [route_handlers/upload_handler/UploadHandler.ts](file:///Users/erichill/Documents/Code/verimus/route_handlers/upload_handler/UploadHandler.ts)
+#### [MODIFY] [route_handlers/upload_handler/UploadHandler.ts](../../route_handlers/upload_handler/UploadHandler.ts)
 *   Dynamically enforce tracking the node's individual `this.node.proxyBrokerFee` natively, embedding it explicitly into the `StorageContractPayload` during file assimilation. 
 
-#### [MODIFY] [wallet_manager/WalletManager.ts](file:///Users/erichill/Documents/Code/verimus/wallet_manager/WalletManager.ts)
+#### [MODIFY] [wallet_manager/WalletManager.ts](../../wallet_manager/WalletManager.ts)
 *   Locate the legacy `const findersFee = Math.max(0.000001, escrowToDeduct * 0.05);` mathematical bounds inside the `commit` limit orders.
 *   Transition this algorithm dynamically: `const feeRate = p.brokerFeePercentage ?? 0.01;` ensuring correct limits are applied independently based off isolated `StorageContractPayload` boundaries.
 
 ### frontend components
 
-#### [MODIFY] [ui/src/services/api.js](file:///Users/erichill/Documents/Code/verimus/ui/src/services/api.js) | [ui/src/components/Modals/UploadModal.jsx](file:///Users/erichill/Documents/Code/verimus/ui/src/components/Modals/UploadModal.jsx)
+#### [MODIFY] [ui/src/services/api.js](../../ui/src/services/api.js) | [ui/src/components/Modals/UploadModal.jsx](../../ui/src/components/Modals/UploadModal.jsx)
 *   **Market Discovery:** Implement a routine in the UI that fetches `ApiService.getPeers()`, iterates over the returned peer IPs, and queries their external `node/config` endpoints directly to find the lowest `proxyBrokerFee`.
 *   **Dynamic Re-routing:** Allow the user to select or automatically auto-route to the cheapest Originator by switching the frontend's underlying REST `baseUrl`.
 *   **Visual Transparency:** Document the exact proxy markup fee securely in `UploadModal.jsx` before submitting the payload, highlighting both the Storage Cost and Originator Fee clearly.
 
 ### consensus_engine
 
-#### [MODIFY] [peer_handlers/consensus_engine/ConsensusEngine.ts](file:///Users/erichill/Documents/Code/verimus/peer_handlers/consensus_engine/ConsensusEngine.ts)
+#### [MODIFY] [peer_handlers/consensus_engine/ConsensusEngine.ts](../../peer_handlers/consensus_engine/ConsensusEngine.ts)
 *   **Sane Maximums:** Enforce a hard max ceiling inside `handlePendingBlock` (or equivalent validations for `STORAGE_CONTRACT`): block `STORAGE_CONTRACT` formations dynamically if `payload.brokerFeePercentage > 0.15`.
 *   **Proof-of-Stake Originator Validation:** Implement industry-standard Sybil protection by explicitly querying the `WalletManager` (or Ledger's active contract mappings) to verify the Originator (`block.publicKey`) holds a valid, mathematically locked `STAKING_CONTRACT` before permitting them to broker a `STORAGE_CONTRACT`. If unstaked, the block is rejected.
 

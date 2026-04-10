@@ -5,7 +5,7 @@ This blueprint governs the sequential implementation parameters for creating dyn
 ## Proposed Changes
 
 ### Backend Operations
-#### [MODIFY] [storage_providers/base_provider/BaseProvider.ts](file:///Users/erichill/Documents/Code/verimus/storage_providers/base_provider/BaseProvider.ts)
+#### [MODIFY] [storage_providers/base_provider/BaseProvider.ts](../../storage_providers/base_provider/BaseProvider.ts)
 - **Context:** The `getCostPerGB()` and `getEgressCostPerGB()` methods are currently `abstract` returning static hardcoded floats across sub-classes.
 - **Action:** 
   1. Remove `abstract` constraints from the cost getters. 
@@ -13,7 +13,7 @@ This blueprint governs the sequential implementation parameters for creating dyn
   3. Create setters `public setCostPerGB(cost: number)` and `public setEgressCostPerGB(cost: number)` natively allowing hot-swapping.
   4. Ensure sub-classes (like `LocalFileStorageProvider.ts`) drop their rigid overrides returning to the dynamic base definitions seamlessly.
 
-#### [NEW] [route_handlers/node_config_handler/UpdateNodeConfigHandler.ts](file:///Users/erichill/Documents/Code/verimus/route_handlers/node_config_handler/UpdateNodeConfigHandler.ts)
+#### [NEW] [route_handlers/node_config_handler/UpdateNodeConfigHandler.ts](../../route_handlers/node_config_handler/UpdateNodeConfigHandler.ts)
 - **Context:** Currently, `/api/node/config` only mounts a GET resolver statically.
 - **Action:** Create a matching `UpdateNodeConfigHandler` enforcing a `POST` definition. 
   0. **SECURITY REQUIREMENT:** Explicitly verify `req.ip` evaluating strictly against `127.0.0.1`, `::1`, or `::ffff:127.0.0.1`. Automatically reject foreign modifications mapping `403 Forbidden` protecting dynamic pricing from external exploit vectors.
@@ -23,14 +23,14 @@ This blueprint governs the sequential implementation parameters for creating dyn
   4. Bind this securely via `app.post('/api/node/config', new UpdateNodeConfigHandler(peerNode).handle)` inside `api_server/ApiServer.ts`.
 
 ### Frontend Overhaul
-#### [NEW] [ui/src/components/Modals/NodeConfigModal.jsx](file:///Users/erichill/Documents/Code/verimus/ui/src/components/Modals/NodeConfigModal.jsx)
+#### [NEW] [ui/src/components/Modals/NodeConfigModal.jsx](../../ui/src/components/Modals/NodeConfigModal.jsx)
 - **Component Design:** Build an interactive `glass-panel` overlay bridging local configurations.
   - **Mount Lifecycle:** Query `GET /api/node/config` caching active `roles` and `storageConfig` bounds flawlessly.
   - **Inputs:** Implement clean native checkbox toggles mapping the `STORAGE`, `ORIGINATOR`, and `VALIDATOR` strings.
   - **Financial Setters:** Inject numerical input fields dynamically allowing modifications to the exact `$VERI` cost constraints explicitly.
   - **Save Sequence:** Executing `<button>Apply Configurations</button>` initiates an authenticated `POST /api/node/config` overriding the background instances securely.
 
-#### [MODIFY] [ui/src/components/Layout/Header.jsx](file:///Users/erichill/Documents/Code/verimus/ui/src/components/Layout/Header.jsx)
+#### [MODIFY] [ui/src/components/Layout/Header.jsx](../../ui/src/components/Layout/Header.jsx)
 - Map the global `0x...` Identity block (`<div className="logo-titles">`) securely assigning an `onClick` parameter mounting the exact `NodeConfigModal.jsx` natively onto the UI!
 
 ## Verification Plan

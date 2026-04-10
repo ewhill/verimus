@@ -6,7 +6,7 @@ We are upgrading the `LedgerGrid` and `BlockModal` components to securely visual
 
 ### UI Components
 
-#### [MODIFY] [LedgerGrid.jsx](file:///Users/erichill/Documents/Code/verimus/ui/src/components/Views/LedgerGrid.jsx)
+#### [MODIFY] [LedgerGrid.jsx](../../ui/src/components/Views/LedgerGrid.jsx)
 - **Type Display**: Enhance the grid and list rendering mappings by reading `pkg.type`.
 - **Icon / Color Implementation**: Create a centralized mapping block representing different consensus events:
   - `STORAGE_CONTRACT`: 🟦 Blue Theme + `<svg>` Database icon
@@ -16,7 +16,7 @@ We are upgrading the `LedgerGrid` and `BlockModal` components to securely visual
   - `SLASHING_TRANSACTION`: 🟥 Red Theme + `<svg>` Exclamation Warning icon
 - These badges will append either beneath the hash ID or right next to the Index counters on the global layout natively.
 
-#### [MODIFY] [BlockModal.jsx](file:///Users/erichill/Documents/Code/verimus/ui/src/components/Modals/BlockModal.jsx)
+#### [MODIFY] [BlockModal.jsx](../../ui/src/components/Modals/BlockModal.jsx)
 - **Modular Payload Rendering**: Segregate `fetchPrivatePayload()` exclusively behind a `pkg.type === 'STORAGE_CONTRACT'` guard conditional wrapper.
 - **Native Block Payloads**: If a block is _not_ a `STORAGE_CONTRACT`, securely fetch its native `pkg.payload` object instead of pinging the AES decryption endpoints sequentially:
   - `TRANSACTION`: Render sender/recipient mappings natively + network amounts.

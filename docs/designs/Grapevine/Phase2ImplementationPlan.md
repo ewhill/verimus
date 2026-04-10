@@ -13,26 +13,26 @@ Phase 2 of the Grapevine Roadmap structurally integrates Metamask into the React
 
 ### UI Core & State Dependencies
 
-#### [MODIFY] [package.json](file:///Users/erichill/Documents/Code/verimus/ui/package.json)
+#### [MODIFY] [package.json](../../ui/package.json)
 Install `ethers` (for Ethereum address management and eventual personal signature verification utilities) and `@metamask/eth-sig-util` (for manual Javascript asymmetric encryption of the AES string limiting using the user's Metamask-provided public key seamlessly).
 
-#### [MODIFY] [store/index.js](file:///Users/erichill/Documents/Code/verimus/ui/src/store/index.js)
+#### [MODIFY] [store/index.js](../../ui/src/store/index.js)
 Introduce `web3Account: null` mapping to the global Zustand state block. Attach a `SET_WEB3_ACCOUNT` dispatch mutation to track the connected Web3 user identity natively, and map this payload structure into the `partialize` whitelist strictly persisting identity across page reloads contextually.
 
 ### Web3 Utilities & Connections
 
-#### [NEW] [utils/web3.js](file:///Users/erichill/Documents/Code/verimus/ui/src/utils/web3.js)
+#### [NEW] [utils/web3.js](../../ui/src/utils/web3.js)
 Construct explicit interface logic binding to `window.ethereum` structurally. Expose explicit hooks for standard `eth_requestAccounts`, `eth_getEncryptionPublicKey`, and `eth_decrypt`. In addition, create a `signOriginatorProxyMessage` utility forcing Metamask to evaluate an EIP-191 personal signature (e.g. `Approve Verimus Originator proxy for data struct <timestamp>`) proving active execution correctly.
 
-#### [NEW] [components/Wallet/WalletConnection.jsx](file:///Users/erichill/Documents/Code/verimus/ui/src/components/Wallet/WalletConnection.jsx)
+#### [NEW] [components/Wallet/WalletConnection.jsx](../../ui/src/components/Wallet/WalletConnection.jsx)
 Build a modular React component that interfaces dynamically with `web3.js`, presenting the connection status globally (mapping the truncated 0x user-address UI interfaces) and attaching logical fallback listeners explicitly mapping DOM `accountsChanged` / `chainChanged` limitations. We will inject this cleanly into the overarching UI Navigation or Sidebar dynamically limiting context.
 
 ### Cryptographic UI Redirection
 
-#### [MODIFY] [UploadModal.jsx](file:///Users/erichill/Documents/Code/verimus/ui/src/components/Modals/UploadModal.jsx)
+#### [MODIFY] [UploadModal.jsx](../../ui/src/components/Modals/UploadModal.jsx)
 Halt the Phase 1 process where the application organically prompts users to download a native `.key` blob. Instead, dynamically intercept the generated random 32-byte AES string, fetch the user's Metamask encryption public key organically, and perform pure offline asymmetric curve encryptions limiting using `@metamask/eth-sig-util` natively. Submit the *encrypted* `aesKey` hex alongside the requested Metamask proxy signature explicitly into the `/api/upload` form fields correctly limiting structurally mimicking Phase 3 logic limits natively.
 
-#### [MODIFY] [FileGrid.jsx](file:///Users/erichill/Documents/Code/verimus/ui/src/components/Views/FilesView/FileGrid.jsx) & [BlockModal.jsx](file:///Users/erichill/Documents/Code/verimus/ui/src/components/Modals/BlockModal.jsx)
+#### [MODIFY] [FileGrid.jsx](../../ui/src/components/Views/FilesView/FileGrid.jsx) & [BlockModal.jsx](../../ui/src/components/Modals/BlockModal.jsx)
 Override the manual Javascript `prompt()` execution loops mathematically requesting pasted JSON key strings. Structure the pipeline dynamically mapping the extracted Web3 Account Address: verify the encrypted hexadecimal strings natively mapping embedded into the `BlockPrivate` attributes explicitly, then trigger `eth_decrypt` strictly resolving the pure AES plaintext seamlessly into the pre-existing Phase 1 `decryptAndUnzip` buffer sequences securely avoiding manual extraction boundaries contextually limiting.
 
 ## Open Questions

@@ -23,7 +23,7 @@ This phase finalizes the backend proxy framework established in Phase 3 by intro
 
 ### wallet_manager/WalletManager.ts
 
-#### [MODIFY] [WalletManager.ts](file:///Users/erichill/Documents/Code/verimus/wallet_manager/WalletManager.ts)
+#### [MODIFY] [WalletManager.ts](../../wallet_manager/WalletManager.ts)
 *   **Refactor `frozenEscrows` structure:** Change `frozenEscrows` from `Map<string, { peerId: string; amount: number }>` to `Map<string, { peerId: string; amount: number }[]>`.
 *   **Update Limit Modifiers:** 
     *   Update `freezeFunds(peerId, amount, requestId)` to append identically to the array instead of overwriting mathematically. 
@@ -38,7 +38,7 @@ This phase finalizes the backend proxy framework established in Phase 3 by intro
 
 ### peer_handlers/consensus_engine/ConsensusEngine.ts
 
-#### [MODIFY] [ConsensusEngine.ts](file:///Users/erichill/Documents/Code/verimus/peer_handlers/consensus_engine/ConsensusEngine.ts)
+#### [MODIFY] [ConsensusEngine.ts](../../peer_handlers/consensus_engine/ConsensusEngine.ts)
 *   **Expand validations bounds in `handlePendingBlock`:**
     *   Add a mathematical hook natively evaluating `BLOCK_TYPES.STORAGE_CONTRACT`.
     *   Assert `this.walletManager.verifyFunds(block.payload.ownerAddress, block.payload.allocatedEgressEscrow)`.
@@ -49,7 +49,7 @@ This phase finalizes the backend proxy framework established in Phase 3 by intro
 
 ### route_handlers/upload_handler/UploadHandler.ts
 
-#### [MODIFY] [UploadHandler.ts](file:///Users/erichill/Documents/Code/verimus/route_handlers/upload_handler/UploadHandler.ts)
+#### [MODIFY] [UploadHandler.ts](../../route_handlers/upload_handler/UploadHandler.ts)
 *    **Refactor Initial Balance Validations:**
      *   Assert identically strict `await this.node.consensusEngine.walletManager.verifyFunds(ownerAddress, theoreticalMaxCost * 1.05)` dynamically terminating with 402 traces seamlessly natively capturing the 5% finder's fee markup logically. 
 *    **Dual Temporary Hooks:**

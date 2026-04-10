@@ -4,7 +4,7 @@
 This blueprint directs the automated implementation of the Genesis Bootstrapping Resolution. The objective is to hardcode a static `STORAGE_CONTRACT` into the genesis initialization and implement an exponentially decaying mathematical cadence for Proof of Spacetime network audits.
 
 ## Phase 1: Deterministic Genesis Protocol
-### [MODIFY] [`ledger/Ledger.ts`](file:///Users/erichill/Documents/Code/verimus/ledger/Ledger.ts)
+### [MODIFY] [`ledger/Ledger.ts`](../../ledger/Ledger.ts)
 - **Context:** The `createGenesisBlock()` method currently constructs a single base `TRANSACTION` block securing `SYSTEM` bounds.
 - **Action:** Refactor `init()` and `createGenesisBlock()` to construct **two** base blocks:
   1. The original Index `0` monetary supply Genesis block.
@@ -22,7 +22,7 @@ This blueprint directs the automated implementation of the Genesis Bootstrapping
     ```
   - Calculate deterministic `merkleRoots`, set `erasureParams.k = 1`, `erasureParams.n = 1` for simplicity, and insert a universal physical identifier into the `fragmentMap` so the entire peer array validates it natively.
 
-### [MODIFY] [`peer_node/PeerNode.ts`](file:///Users/erichill/Documents/Code/verimus/peer_node/PeerNode.ts)
+### [MODIFY] [`peer_node/PeerNode.ts`](../../peer_node/PeerNode.ts)
 - **Context:** Nodes initialize physical storage via their abstract `this.storageProvider` but do not currently inject default ledger blocks.
 - **Action:** Inside the `start()` configuration sequence, nodes must query `this.ledger` for the Index `1` Genesis block. 
 - **Requirements:** 
@@ -30,7 +30,7 @@ This blueprint directs the automated implementation of the Genesis Bootstrapping
   - This ensures every host participant physically holds the exact spacetime fragments required to pass instantaneous Merkle proofs during the bootstrapping hours.
 
 ## Phase 2: Exponential Audit Decay Modification
-### [MODIFY] [`peer_handlers/consensus_engine/ConsensusEngine.ts`](file:///Users/erichill/Documents/Code/verimus/peer_handlers/consensus_engine/ConsensusEngine.ts)
+### [MODIFY] [`peer_handlers/consensus_engine/ConsensusEngine.ts`](../../peer_handlers/consensus_engine/ConsensusEngine.ts)
 - **Context:** The `runGlobalAudit()` function locks challenge sequences behind static one-hour interval buckets: `Math.floor(Date.now() / (1000 * 60 * 60))`.
 - **Action:** Replace the static epoch mapping with a continuous mathematical decay bounded against genesis timestamps.
 - **Algorithm:**

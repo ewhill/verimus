@@ -422,6 +422,12 @@ class Peer {
    * @param  {[type]} parsedAddress 
    *         The parsed address containing information extracted from the 
    *         original address, such as scheme, address, port, hash, etc.
+   * @param  {string} expectedSignature 
+   *         The expected signature of the peer.
+   * @param  {number} retries 
+   *         The number of times to retry the connection.
+   * @param  {number} backoffMs 
+   *         The amount of time to wait between retries.
    * @return {Promise} 
    *         A promise which resolves or rejects based on result of the 
    *         attempted connection.
@@ -459,8 +465,8 @@ class Peer {
       if (retries < maxRetries) {
         this.logger_.warn(`[${formattedAddress}] Connection failed (${e.message}). Retrying in ${backoffMs}ms... (Attempt ${retries + 1}/${maxRetries})`);
         // Clean up client resources before retry if necessary
-        try { client.close(); } catch(_e) {}
-        
+        try { client.close(); } catch (_e) { }
+
         return new Promise(resolve => {
           this.managedTimeouts_.setTimeout(() => {
             resolve(this.attemptConnection({ originalAddress, parsedAddress, expectedSignature }, retries + 1, backoffMs * 1.5));
@@ -542,7 +548,7 @@ class Peer {
     if (!Array.isArray(peers) || !peers.length) {
       return;
     }
-    
+
     if (peers.length > 100) {
       peers = peers.slice(0, 100);
     }

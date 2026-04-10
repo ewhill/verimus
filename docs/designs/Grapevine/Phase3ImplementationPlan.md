@@ -13,29 +13,29 @@ Phase 3 transitions the Verimus node's underlying `UploadHandler.ts` to authenti
 
 ### Backend Dependencies & Type Structs
 
-#### [MODIFY] [package.json](file:///Users/erichill/Documents/Code/verimus/package.json)
+#### [MODIFY] [package.json](../../package.json)
 Install standard `ethers` globally into the backend `package.json` to expose the execution of `ethers.verifyMessage()` inherently capable of parsing Ethereum Signed messages securely.
 
-#### [MODIFY] [types/index.d.ts](file:///Users/erichill/Documents/Code/verimus/types/index.d.ts)
+#### [MODIFY] [types/index.d.ts](../../types/index.d.ts)
 Overhaul the `StorageContractPayload` and `BlockPrivate` interfaces completely:
 - Inject `ownerAddress?: string` and `ownerSignature?: string` into the global `StorageContractPayload` natively bounding public logical identity to the Merkle structural limits.
 - Inject `encryptedAesKey?: string` into the `BlockPrivate` structure explicitly matching the exact Metamask payload bounds retrieved in Phase 2.
 
 ### Cryptographic Handlers & Gateways
 
-#### [MODIFY] [route_handlers/upload_handler/UploadHandler.ts](file:///Users/erichill/Documents/Code/verimus/route_handlers/upload_handler/UploadHandler.ts)
+#### [MODIFY] [route_handlers/upload_handler/UploadHandler.ts](../../route_handlers/upload_handler/UploadHandler.ts)
 Refactor the upload ingress mapping explicitly natively evaluating EIP-191 strings:
 - Intercept `ownerAddress`, `ownerSignature`, `timestamp`, and `encryptedAesKey` directly from the multipart `FormData` boundary.
 - Construct the expected proxy payload `Approve Verimus Originator proxy for data struct <authTagHex>\nTimestamp: <timestamp>` natively mapping Phase 2 logic visually.
 - Evaluate `ethers.verifyMessage(proxyMessage, ownerSignature)`. Reject bounds terminating via 401 if discrepancies occur recursively comparing against `ownerAddress`.
 - Pass these variables safely mimicking into the `StorageContractPayload` mapping strictly.
 
-#### [MODIFY] [ui/src/components/Modals/UploadModal.jsx](file:///Users/erichill/Documents/Code/verimus/ui/src/components/Modals/UploadModal.jsx)
+#### [MODIFY] [ui/src/components/Modals/UploadModal.jsx](../../ui/src/components/Modals/UploadModal.jsx)
 Append `timestamp` dynamically as part of the `FormData` arrays guaranteeing the backend node can flawlessly reconstruct the deterministic EIP-191 message structurally generated locally inherently.
 
 ### Tests & Infrastructure
 
-#### [MODIFY] [route_handlers/upload_handler/test/UploadHandler.test.ts](file:///Users/erichill/Documents/Code/verimus/route_handlers/upload_handler/test/UploadHandler.test.ts)
+#### [MODIFY] [route_handlers/upload_handler/test/UploadHandler.test.ts](../../route_handlers/upload_handler/test/UploadHandler.test.ts)
 Architect a strict hermetic mocking sequence utilizing `ethers.Wallet.createRandom()` mathematically drafting real physical Web3 identities inside the Node.js unit tests natively avoiding dependencies on real browsers. Ensure signatures are structurally embedded into the mocked `FormData` seamlessly parsing successfully against `UploadHandler.ts` assertions inherently.
 
 ## Open Questions

@@ -7,7 +7,7 @@ This plan is explicitly formulated so an isolated AI Agent can execute the bound
 ## Proposed Changes
 
 ### Backend Telemetry Extractor
-#### [MODIFY] [PeersHandler.ts](file:///Users/erichill/Documents/Code/verimus/route_handlers/peers_handler/PeersHandler.ts)
+#### [MODIFY] [PeersHandler.ts](../../route_handlers/peers_handler/PeersHandler.ts)
 - **Context:** The frontend inherently relies on `GET /api/peers`.
 - **Action:** Before building the UI layer, investigate if the handler explicitly returns Epidemic Routing telemetry. You must augment the JSON payload to include:
   1. The global `messageCache` size (reflecting LRU dropped tracking).
@@ -15,15 +15,15 @@ This plan is explicitly formulated so an isolated AI Agent can execute the bound
   3. Individual peer flags tracking whether they were mapped via active *Discovery (PEX)* vs native *Bootstrap*.
 
 ### Frontend Application Layer
-#### [MODIFY] [api.js](file:///Users/erichill/Documents/Code/verimus/ui/src/services/api.js)
+#### [MODIFY] [api.js](../../ui/src/services/api.js)
 - Update the internal polling boundaries to parse the newly mapped `gossipTelemetry` objects retrieved by the backend modifications above securely. Bridge this JSON state cleanly through the Zustand `store`.
 
-#### [NEW] [GossipStatsPanel.jsx](file:///Users/erichill/Documents/Code/verimus/ui/src/components/Views/Network/GossipStatsPanel.jsx)
+#### [NEW] [GossipStatsPanel.jsx](../../ui/src/components/Views/Network/GossipStatsPanel.jsx)
 - Formulate a brand new aesthetic component specifically displaying network engine health:
   - **Metrics:** Total Messages Cached, Epidemic TTL Bounds, and active connection saturation.
   - **Design:** Rely strictly on the preexisting standard `glass-panel` div classes avoiding unapproved CSS frameworks (Tailwind is disallowed).
 
-#### [MODIFY] [PeersView.jsx](file:///Users/erichill/Documents/Code/verimus/ui/src/components/Views/PeersView.jsx)
+#### [MODIFY] [PeersView.jsx](../../ui/src/components/Views/PeersView.jsx)
 - **Context:** Currently maps a static radial array parsing `peer.status`.
 - **Action:** Refactor the internal HTML5 `<canvas>` render loop explicitly:
   - **Animation Injection:** Synthesize particle animations or dynamic pulsing vectors bouncing between interconnected bounds visualizing active message propagation (`NetworkHealthSyncMessage` strikes).

@@ -19,7 +19,7 @@ This phase finalizes the Web3 Metamask Identity infrastructure. We will formally
 
 ### route_handlers/download_handler/DownloadHandler.ts
 
-#### [MODIFY] [DownloadHandler.ts](file:///Users/erichill/Documents/Code/verimus/route_handlers/download_handler/DownloadHandler.ts)
+#### [MODIFY] [DownloadHandler.ts](../../route_handlers/download_handler/DownloadHandler.ts)
 *   **Remove Legacy Decryption**: Fully excise the `decryptPrivatePayload` dependencies gracefully.
 *   **Inject Guardrails**: Dynamically extract `x-web3-address`, `x-web3-timestamp`, and `x-web3-signature` from standard Express HTTP headers accurately. 
 *   **Verify Constraints**: 
@@ -31,13 +31,13 @@ This phase finalizes the Web3 Metamask Identity infrastructure. We will formally
 
 ### route_handlers/private_payload_handler/PrivatePayloadHandler.ts
 
-#### [MODIFY] [PrivatePayloadHandler.ts](file:///Users/erichill/Documents/Code/verimus/route_handlers/private_payload_handler/PrivatePayloadHandler.ts)
+#### [MODIFY] [PrivatePayloadHandler.ts](../../route_handlers/private_payload_handler/PrivatePayloadHandler.ts)
 *   **Identical Header Asserts**: Port the identical timestamp/EVM signature verification limits exactly mapping `DownloadHandler` logic natively matching exactly accurately cleanly strictly logically smoothly properly.
 *   **Obsolete Key Matching**: Strip out the logical block rejecting operations missing `targetBlock.publicKey !== this.node.publicKey`. Replace this mechanically validating the Web3 `ownerAddress` natively explicitly instead!
 
 ### ui/src/services/api.js & ui/src/utils/web3.js
 
-#### [MODIFY] [api.js](file:///Users/erichill/Documents/Code/verimus/ui/src/services/api.js) | [web3.js](file:///Users/erichill/Documents/Code/verimus/ui/src/utils/web3.js)
+#### [MODIFY] [api.js](../../ui/src/services/api.js) | [web3.js](../../ui/src/utils/web3.js)
 *   **Web3 EVM Prompts**: Implement `generateDownloadAuthHeaders(hash)` natively inside `web3.js` prompting Metamask for a fresh `personal_sign` explicitly mapping the `JSON.stringify({ action: 'download', blockHash: hash, timestamp: timestamp })` configuration.
 *   **Decryption Execution**: Implement `executeMetamaskDecryption(encryptedAesHex)` cleanly triggering `window.ethereum.request({ method: 'eth_decrypt' })`.
 *   **Header Injection**: Overhaul `fetchPrivatePayload` and `downloadFile` logically inside `api.js` to unconditionally accept and append the natively generated Web3 headers dynamically via standard `fetch` variables preventing 401 bounds natively!
@@ -46,7 +46,7 @@ This phase finalizes the Web3 Metamask Identity infrastructure. We will formally
 
 ### test/integration/CriticalUserJourneys.test.ts
 
-#### [MODIFY] [CriticalUserJourneys.test.ts](file:///Users/erichill/Documents/Code/verimus/test/integration/CriticalUserJourneys.test.ts)
+#### [MODIFY] [CriticalUserJourneys.test.ts](../../test/integration/CriticalUserJourneys.test.ts)
 *   **Append Auth Headers**: Map the Web3 signature generator dynamically explicitly creating the native EVM headers intuitively mapped against `/api/download/:hash` testing requests gracefully resolving `200 OK` traces flawlessly dynamically cleanly mapping the EIP limits inherently!
 
 ## Open Questions

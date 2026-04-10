@@ -18,5 +18,5 @@ variable "s3_bucket_name" {
 variable "repo_clone_url" {
   description = "Secure git binding URL seamlessly syncing instance source mapping"
   type        = string
-  default     = "https://github.com/erichill/verimus.git"
+  default     = "https://github.com/ewhill/verimus.git"
 }
