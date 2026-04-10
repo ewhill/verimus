@@ -5,7 +5,7 @@ output "verimus_static_eip" {
 
 output "verimus_dashboard_url" {
   description = "Physical UI portal bounding HTTPS endpoint dynamically"
-  value       = [for ip in aws_eip.node_static_ip : "https://${ip.public_ip}:26780/"]
+  value       = [for i in range(length(aws_eip.node_static_ip)) : "https://node${i}.verimus.io:26780/"]
 }
 
 output "s3_bucket_mapped" {
