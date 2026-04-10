@@ -86,7 +86,9 @@ class Client {
 			this.isConnecting_ = true;
 
 			this.connectPromise_ = new Promise((resolve, reject) => {
+				let connectTimeout;
 				const connectCleanup = () => {
+					if (connectTimeout) this.managedTimeouts_.clearTimeout(connectTimeout);
 					this.isConnecting_ = false;
 					this.connection_.removeEventListener(
 						'error', onConnectError);
@@ -95,6 +97,12 @@ class Client {
 					this.connection_.removeEventListener(
 						'close', onConnectClose);
 				};
+
+				connectTimeout = this.managedTimeouts_.setTimeout(() => {
+					connectCleanup();
+					try { this.connection_.terminate(); } catch (e) {}
+					return reject(new Error(`WebSocket connection timeout forcefully triggered mapping bounds explicitly`));
+				}, 10000);
 
 				const onConnectError = (e) => {
 					connectCleanup();
@@ -455,10 +463,14 @@ class Client {
 					}
 
 					this.managedTimeouts_.setTimeout(() => {
-						this.connection_.send(data, (err) => {
-							sendCallback(
-								err, backoff, this.connection_, data);
-						});
+						try {
+							this.connection_.send(data, (err) => {
+								sendCallback(
+									err, backoff, this.connection_, data);
+							});
+						} catch(e) {
+							sendCallback(e, backoff, this.connection_, data);
+						}
 					}, backoff);
 				} else {
 					return resolve({ message });
@@ -467,9 +479,13 @@ class Client {
 
 			// this.logger_.log(`Sending message:\n`, data); // Removed due to disk space exhaustion
 
-			this.connection_.send(data, (err) => {
-				sendCallback(err, 5000, this.connection_, data);
-			});
+			try {
+				this.connection_.send(data, (err) => {
+					sendCallback(err, 5000, this.connection_, data);
+				});
+			} catch(e) {
+				sendCallback(e, 5000, this.connection_, data);
+			}
 		});
 	}
 
@@ -553,10 +569,11 @@ class Client {
 		if (!this.isConnected) return Promise.reject(new Error(`Connection not open!`));
 
 		if (!this.ephemeralExchangePromise_) {
-			this.ephemeralExchangePromise_ = Promise.all([
-				this.sendEphemeralMessage(),
-				this.receiveEphemeralPromise
-			]);
+            const p1 = this.sendEphemeralMessage();
+            const p2 = this.receiveEphemeralPromise;
+            p1.catch(() => {});
+            p2.catch(() => {});
+			this.ephemeralExchangePromise_ = Promise.all([p1, p2]);
 		}
 
 		return this.ephemeralExchangePromise_;
