@@ -4,6 +4,14 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.4"
+    }
   }
 }
 
@@ -162,6 +170,15 @@ resource "aws_instance" "verimus_node" {
               git clone https://github.com/ewhill/verimus.git
               cd verimus
               
+              cat << 'CERT_KEY' > https.key.pem
+${tls_private_key.node[count.index].private_key_pem}
+CERT_KEY
+
+              cat << 'CERT_PEM' > https.cert.pem
+${tls_locally_signed_cert.node[count.index].cert_pem}
+CERT_PEM
+
+              
               cat << 'COMPOSE' > docker-compose.override.yml
               version: '3.8'
               services:
@@ -209,4 +226,69 @@ resource "aws_eip_association" "eip_assoc" {
   count         = var.node_count
   instance_id   = aws_instance.verimus_node[count.index].id
   allocation_id = aws_eip.node_static_ip[count.index].id
+}
+
+# --- TLS Certificate Authority (CA) Generation ---
+
+resource "tls_private_key" "ca" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "tls_self_signed_cert" "ca" {
+  private_key_pem   = tls_private_key.ca.private_key_pem
+  is_ca_certificate = true
+
+  subject {
+    common_name  = "Verimus Terraform CA"
+    organization = "Verimus Network"
+  }
+
+  validity_period_hours = 87600
+  allowed_uses          = ["cert_signing", "crl_signing"]
+}
+
+# Save CA Certificate locally so the administrator can trust it in their system/browser
+resource "local_file" "ca_cert" {
+  content  = tls_self_signed_cert.ca.cert_pem
+  filename = "${path.module}/verimus_ca.crt"
+}
+
+# --- Node-Specific TLS Certificate Generation ---
+
+resource "tls_private_key" "node" {
+  count     = var.node_count
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "tls_cert_request" "node" {
+  count           = var.node_count
+  private_key_pem = tls_private_key.node[count.index].private_key_pem
+
+  subject {
+    common_name  = aws_eip.node_static_ip[count.index].public_ip
+    organization = "Verimus Peer Node"
+  }
+
+  ip_addresses = [
+    aws_eip.node_static_ip[count.index].public_ip,
+    aws_eip.node_static_ip[count.index].private_ip,
+    "127.0.0.1"
+  ]
+}
+
+resource "tls_locally_signed_cert" "node" {
+  count              = var.node_count
+  cert_request_pem   = tls_cert_request.node[count.index].cert_request_pem
+  ca_private_key_pem = tls_private_key.ca.private_key_pem
+  ca_cert_pem        = tls_self_signed_cert.ca.cert_pem
+
+  validity_period_hours = 87600
+  allowed_uses = [
+    "key_encipherment",
+    "digital_signature",
+    "server_auth",
+    "client_auth",
+  ]
 }
