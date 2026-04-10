@@ -31,7 +31,9 @@ class MempoolManager {
             hydrateBlockBigInts(block);
 
             if (this.node.syncEngine && (this.node.syncEngine.currentState === SyncState.SYNCING_HEADERS || this.node.syncEngine.currentState === SyncState.SYNCING_BLOCKS)) {
-                await this.node.ledger.orphanBlocksCollection?.insertOne({ type: 'PendingBlock', block, connection, timestamp: headerTimestamp });
+                const orphanDoc = { type: 'PendingBlock', block, connection, timestamp: headerTimestamp };
+                const safelySerializedOrphan = JSON.parse(JSON.stringify(orphanDoc, (_, v) => typeof v === 'bigint' ? v.toString() : v));
+                await this.node.ledger.orphanBlocksCollection?.insertOne(safelySerializedOrphan);
                 return;
             }
 

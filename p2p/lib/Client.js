@@ -412,7 +412,7 @@ class Client {
 				let sigStr = message.header.signature;
 				if (!sigStr) {
 					const wallet = new ethers.Wallet(this.credentials_.evmPrivateKey);
-					sigStr = await wallet.signMessage(JSON.stringify(message.body));
+					sigStr = await wallet.signMessage(JSON.stringify(message.body, (_, v) => typeof v === 'bigint' ? v.toString() : v));
 				}
 				const signature = Buffer.from(sigStr, 'utf8').toString('base64');
 				const iv = crypto.randomBytes(12);
@@ -420,7 +420,7 @@ class Client {
 					'aes-256-gcm', this.cipher_.key, iv);
 
 				const messageBodyBuffer =
-					Buffer.from(JSON.stringify(message.body));
+					Buffer.from(JSON.stringify(message.body, (_, v) => typeof v === 'bigint' ? v.toString() : v));
 				const encryptedMessageBodyBuffer =
 					Buffer.concat([cipher.update(messageBodyBuffer),
 					cipher.final()]);

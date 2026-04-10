@@ -160,7 +160,8 @@ class Ledger {
         };
         newBlock.hash = hashData(JSON.stringify(newBlock, (_, v) => typeof v === 'bigint' ? v.toString() : v));
         const doc = { ...newBlock, _id: newBlock.hash };
-        await this.collection!.insertOne(doc as any);
+        const safelySerializedDoc = JSON.parse(JSON.stringify(doc, (_, v) => typeof v === 'bigint' ? v.toString() : v));
+        await this.collection!.insertOne(safelySerializedDoc);
 
         if (newBlock.metadata.index % EPOCH_LENGTH === 0) {
             await this.syncValidatorCache();

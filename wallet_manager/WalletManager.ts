@@ -67,7 +67,7 @@ export default class WalletManager {
                 await activeContracts.updateOne(
                     { contractId: block.hash }, 
                     { $set: { 
-                        payload: p, 
+                        payload: JSON.parse(JSON.stringify(p, (_, v) => typeof v === 'bigint' ? v.toString() : v)), 
                         signerAddress: this.getAddressSafe(block.signerAddress),
                         index: block.metadata?.index || -1,
                         timestamp: block.metadata?.timestamp || new Date().toISOString()

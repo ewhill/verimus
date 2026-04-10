@@ -72,7 +72,7 @@ For actual public or staging deployments, the environment natively connects to y
 # Instantiate a genesis seed node natively binding standard ports over an SSD-level MongoDB
 ./scripts/start.sh --mongo --port 26780
 
-# Instantiate a satellite node resolving an external master node IP
+# Instantiate a satellite node resolving an external master IP
 ./scripts/start.sh --port 26781 --discover <remote_seed_ip>:26780
 ```
 
@@ -81,6 +81,20 @@ For actual public or staging deployments, the environment natively connects to y
 ```bash
 npx tsx index.ts --port 26780 --storage-type local --data-dir ./data
 ```
+
+### 4. Docker Container Deployment
+
+For isolated containerized execution, we support a fully scripted `docker-compose.yml` array that spins up an internal MongoDB daemon and Verimus Node. The Docker layer intrinsically supports dynamic wallet generation.
+
+```bash
+# Run the node. If no EVM_WALLET_MNEMONIC is mapped, a new ephemeral wallet seed phrase will be printed automatically inside the CLI log output.
+docker-compose up --build
+```
+To supply a deterministic wallet, pass the limits as local environment variables natively to the Docker socket:
+```bash
+EVM_WALLET_MNEMONIC="abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about" docker-compose up
+```
+
 
 ## System Configuration & Interfaces
 
