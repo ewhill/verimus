@@ -12,6 +12,10 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.5"
     }
+    acme = {
+      source  = "vancluever/acme"
+      version = "~> 2.11"
+    }
   }
 }
 
@@ -27,6 +31,10 @@ resource "aws_eip" "node_static_ip" {
   tags = {
     Name = "Verimus-Entrypoint-Static-IP"
   }
+}
+
+provider "acme" {
+  server_url = "https://acme-v02.api.letsencrypt.org/directory"
 }
 
 # --- AWS Route53 Public DNS Automated Integration ---
