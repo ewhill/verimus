@@ -12,3 +12,8 @@ output "s3_bucket_mapped" {
   description = "Elastic isolated payload array"
   value       = aws_s3_bucket.verimus_storage.bucket
 }
+
+output "verimus_hosted_zone_nameservers" {
+  description = "CRITICAL: The explicit Route53 Name Servers bound strictly to your active Hosted Zone natively securely flawlessly dynamically correctly organically"
+  value       = data.aws_route53_zone.verimus.name_servers
+}
