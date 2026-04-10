@@ -426,7 +426,7 @@ class Peer {
    *         A promise which resolves or rejects based on result of the 
    *         attempted connection.
    */
-  async attemptConnection({ originalAddress, parsedAddress, expectedSignature }) {
+  async attemptConnection({ originalAddress, parsedAddress, expectedSignature }, retries = 0, backoffMs = 2000) {
     const formattedAddress = url.format(parsedAddress);
 
     this.logger_.log(`Attempting connection to ${formattedAddress}`);
@@ -455,6 +455,19 @@ class Peer {
 
       await this.setupClient(client);
     } catch (e) {
+      const maxRetries = 5;
+      if (retries < maxRetries) {
+        this.logger_.warn(`[${formattedAddress}] Connection failed (${e.message}). Retrying in ${backoffMs}ms... (Attempt ${retries + 1}/${maxRetries})`);
+        // Clean up client resources before retry if necessary
+        try { client.close(); } catch(_e) {}
+        
+        return new Promise(resolve => {
+          this.managedTimeouts_.setTimeout(() => {
+            resolve(this.attemptConnection({ originalAddress, parsedAddress, expectedSignature }, retries + 1, backoffMs * 1.5));
+          }, backoffMs);
+        });
+      }
+      this.logger_.error(`[${formattedAddress}] Exhausted retries attempting to connect.`);
       this.logger_.log(e.stack);
     }
   }
