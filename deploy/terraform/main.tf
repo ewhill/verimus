@@ -172,14 +172,19 @@ resource "aws_instance" "verimus_node" {
               git clone https://github.com/ewhill/verimus.git
               cd verimus
               
-              # Delay slightly allowing AWS Route53 DNS caches FQDN propagations natively globally
-              sleep 45
-              
-              # Acquire Let's Encrypt organically automatically structurally bounding FQDN validation bounds
-              certbot certonly --standalone -d node${count.index}.verimus.io --non-interactive --agree-tos -m admin@verimus.io
-              
-              cp /etc/letsencrypt/live/node${count.index}.verimus.io/privkey.pem ./https.key.pem
-              cp /etc/letsencrypt/live/node${count.index}.verimus.io/fullchain.pem ./https.cert.pem
+              # Background ACME validation looping until AWS Route53 DNS seamlessly propagates successfully organically natively
+              (
+                while true; do
+                  certbot certonly --standalone -d node${count.index}.verimus.io --non-interactive --agree-tos -m admin@verimus.io
+                  if [ -f /etc/letsencrypt/live/node${count.index}.verimus.io/privkey.pem ]; then
+                    cp /etc/letsencrypt/live/node${count.index}.verimus.io/privkey.pem /opt/verimus/https.key.pem
+                    cp /etc/letsencrypt/live/node${count.index}.verimus.io/fullchain.pem /opt/verimus/https.cert.pem
+                    cd /opt/verimus && docker-compose restart verimus-node
+                    break
+                  fi
+                  sleep 45
+                done
+              ) &
               
               cat << 'COMPOSE' > docker-compose.override.yml
               version: '3.8'
