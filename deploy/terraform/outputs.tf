@@ -5,7 +5,7 @@ output "verimus_static_eip" {
 
 output "verimus_dashboard_url" {
   description = "Physical UI portal bounding HTTPS endpoint dynamically"
-  value       = [for ip in aws_eip.node_static_ip : "https://${replace(ip.public_ip, ".", "-")}.nip.io/"]
+  value       = [for i in range(length(aws_eip.node_static_ip)) : "https://node${i}.verimus.io/"]
 }
 
 output "s3_bucket_mapped" {
@@ -13,3 +13,7 @@ output "s3_bucket_mapped" {
   value       = aws_s3_bucket.verimus_storage.bucket
 }
 
+output "verimus_hosted_zone_nameservers" {
+  description = "CRITICAL: The explicit Route53 Name Servers bound strictly to your active Hosted Zone natively securely flawlessly dynamically correctly organically"
+  value       = data.aws_route53_zone.verimus.name_servers
+}
