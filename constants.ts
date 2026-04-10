@@ -47,7 +47,7 @@ const fundingBlockBase = {
         senderSignature: ''
     },
     signerAddress: ethers.ZeroAddress,
-    signature: 'sys_sig'
+    signature: 'GENESIS_SIG'
 };
 
 const contractBlockBase = {
