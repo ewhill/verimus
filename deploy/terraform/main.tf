@@ -12,8 +12,13 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.5"
     }
+    acme = {
+      source  = "vancluever/acme"
+      version = "~> 2.11"
+    }
   }
 }
+
 
 provider "aws" {
   region = var.aws_region
@@ -28,6 +33,30 @@ resource "aws_eip" "node_static_ip" {
     Name = "Verimus-Node-Static-IP-${count.index}"
   }
 }
+
+provider "acme" {
+  server_url = "https://acme-v02.api.letsencrypt.org/directory"
+}
+
+resource "tls_private_key" "acme_reg_key" {
+  algorithm = "RSA"
+}
+
+resource "acme_registration" "reg" {
+  account_key_pem = tls_private_key.acme_reg_key.private_key_pem
+  email_address   = "admin@verimus.io"
+}
+
+resource "acme_certificate" "node_certs" {
+  count                     = var.node_count
+  account_key_pem           = acme_registration.reg.account_key_pem
+  common_name               = "n${count.index}.verimus.io"
+
+  dns_challenge {
+    provider = "route53"
+  }
+}
+
 
 resource "random_password" "admin_password" {
   length           = 16
@@ -182,19 +211,12 @@ resource "aws_instance" "verimus_node" {
               git clone https://github.com/ewhill/verimus.git
               cd verimus
               
-              # Background ACME validation looping until AWS Route53 DNS seamlessly propagates successfully organically natively
-              (
-                while true; do
-                  certbot certonly --standalone -d n${count.index}.verimus.io --non-interactive --agree-tos -m admin@verimus.io
-                  if [ -f /etc/letsencrypt/live/n${count.index}.verimus.io/privkey.pem ]; then
-                    cp /etc/letsencrypt/live/n${count.index}.verimus.io/privkey.pem /opt/verimus/https.key.pem
-                    cp /etc/letsencrypt/live/n${count.index}.verimus.io/fullchain.pem /opt/verimus/https.cert.pem
-                    cd /opt/verimus && docker-compose restart verimus-node
-                    break
-                  fi
-                  sleep 45
-                done
-              ) &
+              cat << 'CERT' > /opt/verimus/https.cert.pem
+${acme_certificate.node_certs[count.index].certificate_pem}${acme_certificate.node_certs[count.index].issuer_pem}
+CERT
+              cat << 'KEY' > /opt/verimus/https.key.pem
+${acme_certificate.node_certs[count.index].private_key_pem}
+KEY
               
               cat << 'COMPOSE' > docker-compose.override.yml
               version: '3.8'
@@ -225,12 +247,9 @@ resource "aws_instance" "verimus_node" {
               export STORAGE_CREDS_ACTIVE="true" 
               export S3_BUCKET="${var.s3_bucket_name}"
               
-              # Fallback TLS instantly structurally mapped securely preventing crashes cleanly
-              openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-                -keyout /opt/verimus/https.key.pem \
-                -out /opt/verimus/https.cert.pem \
-                -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
-                
+              export STORAGE_CREDS_ACTIVE="true" 
+              export S3_BUCKET="${var.s3_bucket_name}"
+              
               docker-compose up --build -d
               EOF
 
