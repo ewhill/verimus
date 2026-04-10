@@ -28,11 +28,14 @@ services:
       - mongo
     volumes:
       - verimus-node-data:/app/data
-    command: >
-      --mongo-host mongo 
-      --mongo-port 27017 
-      --port 26780 
-      --headless
+    command:
+      - "--mongo-host"
+      - "mongo"
+      - "--mongo-port"
+      - "27017"
+      - "--port"
+      - "26780"
+      - "--headless"
 
   mongo:
     image: mongo:7.0
