@@ -47,10 +47,9 @@ resource "acme_registration" "reg" {
   email_address   = "admin@verimus.io"
 }
 
-resource "acme_certificate" "node_certs" {
-  count                     = var.node_count
+resource "acme_certificate" "wildcard_cert" {
   account_key_pem           = acme_registration.reg.account_key_pem
-  common_name               = "n${count.index}.verimus.io"
+  common_name               = "*.verimus.io"
 
   dns_challenge {
     provider = "route53"
@@ -212,10 +211,10 @@ resource "aws_instance" "verimus_node" {
               cd verimus
               
               cat << 'CERT' > /opt/verimus/https.cert.pem
-${acme_certificate.node_certs[count.index].certificate_pem}${acme_certificate.node_certs[count.index].issuer_pem}
+${acme_certificate.wildcard_cert.certificate_pem}${acme_certificate.wildcard_cert.issuer_pem}
 CERT
               cat << 'KEY' > /opt/verimus/https.key.pem
-${acme_certificate.node_certs[count.index].private_key_pem}
+${acme_certificate.wildcard_cert.private_key_pem}
 KEY
               
               cat << 'COMPOSE' > docker-compose.override.yml
