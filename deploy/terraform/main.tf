@@ -173,6 +173,8 @@ resource "aws_instance" "verimus_node" {
                     - "27017"
                     - "--port"
                     - "26780"
+                    - "--public-address"
+                    - "${aws_eip.node_static_ip[count.index].public_ip}:26780"
                     - "--discover"
                     - "${join(",", [for ip in aws_eip.node_static_ip : "${ip.public_ip}:26780"])}"
               COMPOSE

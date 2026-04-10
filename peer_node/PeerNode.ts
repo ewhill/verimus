@@ -171,7 +171,7 @@ class PeerNode {
             cert: fs.readFileSync(httpsCertPath)
         }, app);
 
-        const discoveryAddrs = this.discoverAddresses.filter(addr => addr !== `127.0.0.1:${this.port}`);
+        const discoveryAddrs = this.discoverAddresses.filter(addr => addr !== `127.0.0.1:${this.port}` && addr !== this.publicAddress);
 
         this.peer = new Peer({
             discoveryConfig: {
