@@ -36,7 +36,7 @@ class GlobalAuditor {
         this.isRunning = true;
         this.eventLoopMonitor.enable();
 
-        this.auditTimer = setInterval(async () => {
+        const auditTask = async () => {
             const release = await this.mutex.acquire('global_audit');
             try {
                 await this.runGlobalAudit();
@@ -45,7 +45,12 @@ class GlobalAuditor {
             } finally {
                 release();
             }
-        }, 30000);
+        };
+
+        // Trigger rapid initial audit capturing bootstrapping genesis limits natively preventing starvation mappings
+        setTimeout(auditTask, 15000);
+
+        this.auditTimer = setInterval(auditTask, 30000);
         this.auditTimer.unref();
     }
 
@@ -102,7 +107,7 @@ class GlobalAuditor {
 
         if (this.node.peer && this.node.peer.peers) {
             for (const p of this.node.peer.peers) {
-                const pubKeyRaw = p.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
+                const pubKeyRaw = p.remoteCredentials_?.walletAddress || p.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
                 if (pubKeyRaw) {
                     const cleanPeerId = sanitizeKey(pubKeyRaw);
                     const peerHashHex = crypto.createHash('sha256').update(cleanPeerId).digest('hex');

@@ -241,11 +241,11 @@ class PeerNode {
                     if (this.storageProvider) {
                         const genContract = await this.ledger.getBlockByIndex(1);
                         if (genContract && genContract.type === 'STORAGE_CONTRACT') {
-                            // Map physical boundaries strictly using the contract's _id aligning loosely with ConsensusEngine bounds
-                            const physicalId = genContract._id ? genContract._id.toString() : 'GENESIS_PHYSICAL_ID';
-                            await this.storageProvider.storeShard(physicalId, GENESIS_SEED_DATA);
+                            // Map physical boundaries strictly matching the true inner mapping bounds avoiding block ID mismatches gracefully securely
+                            const innerPhysicalId = (genContract.payload as any)?.fragmentMap?.[0]?.physicalId || 'GENESIS_PHYSICAL_ID';
+                            await this.storageProvider.storeShard(innerPhysicalId, GENESIS_SEED_DATA);
 
-                            logger.info(`[Peer ${this.port}] Synchronized and physicalized Genesis seed mapping ${physicalId.slice(0, 8)} natively!`);
+                            logger.info(`[Peer ${this.port}] Synchronized and physicalized Genesis seed mapping ${innerPhysicalId.slice(0, 8)} natively!`);
                         }
                     }
 

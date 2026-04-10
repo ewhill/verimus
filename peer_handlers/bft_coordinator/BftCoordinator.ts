@@ -256,7 +256,7 @@ class BftCoordinator {
                     } as Block;
 
                     const blockToHash = { ...newBlock };
-                    const strToHash = JSON.stringify(blockToHash);
+                    const strToHash = JSON.stringify(blockToHash, (_, v) => typeof v === 'bigint' ? v.toString() : v);
                     newBlock.hash = crypto.createHash('sha256').update(strToHash).digest('hex');
                     previousHash = newBlock.hash!;
                     finalTipHash = newBlock.hash!;
@@ -365,7 +365,7 @@ class BftCoordinator {
                     delete blockToHash.hash;
                     // @ts-ignore
                     delete blockToHash._id;
-                    const recalculatedHash = hashData(JSON.stringify(blockToHash));
+                    const recalculatedHash = hashData(JSON.stringify(blockToHash, (_, v) => typeof v === 'bigint' ? v.toString() : v));
 
                     const pEntry = this.mempool.pendingBlocks.get(recalculatedHash);
                     if (pEntry) pEntry.committed = true;

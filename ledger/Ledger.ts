@@ -126,7 +126,7 @@ class Ledger {
 
     async addBlockToChain(block: Block) {
         const doc = { ...block, _id: block.hash };
-        const safelySerializedDoc = JSON.parse(JSON.stringify(doc));
+        const safelySerializedDoc = JSON.parse(JSON.stringify(doc, (_, v) => typeof v === 'bigint' ? v.toString() : v));
         await this.collection!.insertOne(safelySerializedDoc);
         
         if (block.metadata.index % EPOCH_LENGTH === 0) {
@@ -158,7 +158,7 @@ class Ledger {
             payload: privatePayload,
             signature: signatureStr
         };
-        newBlock.hash = hashData(JSON.stringify(newBlock));
+        newBlock.hash = hashData(JSON.stringify(newBlock, (_, v) => typeof v === 'bigint' ? v.toString() : v));
         const doc = { ...newBlock, _id: newBlock.hash };
         await this.collection!.insertOne(doc as any);
 
@@ -200,7 +200,7 @@ class Ledger {
                 // @ts-ignore
                 delete (blockToHash as any)._id; // Ensure MongoDB internal ID isn't hashed
 
-                const recalculatedHash = hashData(JSON.stringify(blockToHash));
+                const recalculatedHash = hashData(JSON.stringify(blockToHash, (_, v) => typeof v === 'bigint' ? v.toString() : v));
 
                 if (currentBlock.hash !== recalculatedHash) {
                     return false;
