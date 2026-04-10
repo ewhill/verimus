@@ -120,7 +120,9 @@ export const ApiService = {
 
     checkAdminPrivileges: async (dispatch) => {
         try {
-            const res = await fetch(`${ApiService.activeProxyUrl}/api/node/auth`);
+            const auth = localStorage.getItem('verimus_admin_auth');
+            const headers = auth ? { 'Authorization': `Basic ${auth}` } : {};
+            const res = await fetch(`${ApiService.activeProxyUrl}/api/node/auth`, { headers });
             const currentState = useStore.getState().nodeConfig || {};
             dispatch({ type: 'SET_NODE_CONFIG', payload: { ...currentState, isAdmin: res.ok } });
         } catch(e) {

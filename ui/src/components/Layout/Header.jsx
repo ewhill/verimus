@@ -192,9 +192,20 @@ const Header = () => {
                                 <path d="M12 6L18 12L12 18L6 12L12 6Z" fill="#ffffff" />
                             </svg>
                         </div>
-                        <div className={`logo-titles ${nodeConfig?.isAdmin ? 'node-identity-trigger' : ''}`} onClick={() => nodeConfig?.isAdmin && dispatch({ type: 'SET_NODE_CONFIG_MODAL_OPEN', payload: true })} style={{ cursor: nodeConfig?.isAdmin ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-sm)', transition: 'background 0.2s', margin: '-0.2rem -0.5rem' }} onMouseOver={(e) => nodeConfig?.isAdmin && (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'} title={nodeConfig?.isAdmin ? "Configure Node Settings" : ""}>
-                            <h1 style={{ cursor: nodeConfig?.isAdmin ? 'pointer' : 'default' }}>{title}</h1>
-                            <div className="node-status" style={{ cursor: nodeConfig?.isAdmin ? 'pointer' : 'default' }}>
+                        <div className={`logo-titles ${nodeConfig?.isAdmin ? 'node-identity-trigger' : 'node-identity-trigger'}`} onClick={() => {
+                            if (nodeConfig?.isAdmin) {
+                                dispatch({ type: 'SET_NODE_CONFIG_MODAL_OPEN', payload: true });
+                            } else {
+                                const pass = window.prompt("Enter Node Admin Password:");
+                                if (pass) {
+                                    const b64 = window.btoa(`admin:${pass}`);
+                                    localStorage.setItem('verimus_admin_auth', b64);
+                                    window.location.reload();
+                                }
+                            }
+                        }} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-sm)', transition: 'background 0.2s', margin: '-0.2rem -0.5rem' }} onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'} title="Configure Node Settings">
+                            <h1 style={{ cursor: 'pointer' }}>{title}</h1>
+                            <div className="node-status" style={{ cursor: 'pointer' }}>
                                 <span className={`status-indicator ${error ? 'offline' : 'active'}`}></span> {error ? 'Node Offline' : 'Node Online'}
                             </div>
                         </div>

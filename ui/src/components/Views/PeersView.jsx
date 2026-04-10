@@ -14,7 +14,9 @@ const PeersView = () => {
 
     const fetchPeers = async () => {
         try {
-            const response = await fetch('/api/peers');
+            const auth = localStorage.getItem('verimus_admin_auth');
+            const headers = auth ? { 'Authorization': `Basic ${auth}` } : {};
+            const response = await fetch('/api/peers', { headers });
             const data = await response.json();
             if (data.success) {
                 setPeers(data.peers);

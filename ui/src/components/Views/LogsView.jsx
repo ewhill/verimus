@@ -7,7 +7,9 @@ const LogsView = () => {
 
     const fetchLogs = async () => {
         try {
-            const res = await fetch('/api/logs');
+            const auth = localStorage.getItem('verimus_admin_auth');
+            const headers = auth ? { 'Authorization': `Basic ${auth}` } : {};
+            const res = await fetch('/api/logs', { headers });
             if (res.ok) {
                 const data = await res.json();
                 setLogs(data);

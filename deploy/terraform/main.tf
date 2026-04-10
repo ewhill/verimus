@@ -166,6 +166,8 @@ resource "aws_instance" "verimus_node" {
               version: '3.8'
               services:
                 verimus-node:
+                  environment:
+                    NODE_ENV: production
                   command:
                     - "--mongo-host"
                     - "mongo"
