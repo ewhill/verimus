@@ -5,7 +5,7 @@ import { ethers } from 'ethers';
 
 import type { Block } from './types';
 
-export const GENESIS_TIMESTAMP = process.env.VERIMUS_GENESIS_TIMESTAMP ? parseInt(process.env.VERIMUS_GENESIS_TIMESTAMP) : 1774828800000; // March 30, 2026 00:00:00 UTC
+export const GENESIS_TIMESTAMP = process.env.VERIMUS_GENESIS_TIMESTAMP ? parseInt(process.env.VERIMUS_GENESIS_TIMESTAMP) : 1775779200000; // April 10, 2026 00:00:00 UTC
 
 export const IS_DEV_NETWORK = process.env.NODE_ENV !== 'production';
 
