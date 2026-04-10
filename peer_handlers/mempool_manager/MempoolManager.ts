@@ -114,7 +114,7 @@ class MempoolManager {
                 if (!IS_DEV_NETWORK) {
                     const activeContractsCollection = this.node.ledger.activeContractsCollection;
                     if (activeContractsCollection) {
-                        const stakingLog = await this.node.ledger.collection!.findOne({ type: BLOCK_TYPES.STAKING_CONTRACT, 'payload.operatorPublicKey': block.signerAddress });
+                        const stakingLog = await this.node.ledger.collection!.findOne({ type: BLOCK_TYPES.STAKING_CONTRACT, 'payload.operatorAddress': block.signerAddress });
                         if (!stakingLog) {
                             logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Originator ${block.signerAddress.slice(0, 8)} possesses NO valid Proof-of-Stake STAKING_CONTRACT collateral!`);
                             return;
