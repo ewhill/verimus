@@ -122,7 +122,7 @@ resource "aws_security_group" "verimus_sg" {
   }
 
   ingress {
-    description = "Let's Encrypt HTTP Challenge"
+    description = "Lets Encrypt HTTP Challenge"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
