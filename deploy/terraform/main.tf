@@ -175,10 +175,10 @@ resource "aws_instance" "verimus_node" {
               # Background ACME validation looping until AWS Route53 DNS seamlessly propagates successfully organically natively
               (
                 while true; do
-                  certbot certonly --standalone -d node${count.index}.verimus.io --non-interactive --agree-tos -m admin@verimus.io
-                  if [ -f /etc/letsencrypt/live/node${count.index}.verimus.io/privkey.pem ]; then
-                    cp /etc/letsencrypt/live/node${count.index}.verimus.io/privkey.pem /opt/verimus/https.key.pem
-                    cp /etc/letsencrypt/live/node${count.index}.verimus.io/fullchain.pem /opt/verimus/https.cert.pem
+                  certbot certonly --standalone -d n${count.index}.verimus.io --non-interactive --agree-tos -m admin@verimus.io
+                  if [ -f /etc/letsencrypt/live/n${count.index}.verimus.io/privkey.pem ]; then
+                    cp /etc/letsencrypt/live/n${count.index}.verimus.io/privkey.pem /opt/verimus/https.key.pem
+                    cp /etc/letsencrypt/live/n${count.index}.verimus.io/fullchain.pem /opt/verimus/https.cert.pem
                     cd /opt/verimus && docker-compose restart verimus-node
                     break
                   fi
@@ -205,9 +205,9 @@ resource "aws_instance" "verimus_node" {
                     - "--port"
                     - "443"
                     - "--public-address"
-                    - "node${count.index}.verimus.io:443"
+                    - "n${count.index}.verimus.io:443"
                     - "--discover"
-                    - "${join(",", [for i in range(var.node_count) : "node$${i}.verimus.io:443"])}"
+                    - "${join(",", [for i in range(var.node_count) : "n$${i}.verimus.io:443"])}"
               COMPOSE
 
               # Evolve storage-type cleanly seamlessly targeting IAM profiles (no raw keys needed)
@@ -257,7 +257,7 @@ data "aws_route53_zone" "verimus" {
 resource "aws_route53_record" "node_record" {
   count   = var.node_count
   zone_id = data.aws_route53_zone.verimus.zone_id
-  name    = "node${count.index}.verimus.io"
+  name    = "n${count.index}.verimus.io"
   type    = "A"
   ttl     = "300"
   records = [aws_eip.node_static_ip[count.index].public_ip]
