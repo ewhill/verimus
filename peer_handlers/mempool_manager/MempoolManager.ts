@@ -161,7 +161,7 @@ class MempoolManager {
                     originalTimestamp: headerTimestamp ? new Date(headerTimestamp).getTime() : Date.now()
                 });
                 
-                if (this.node.peer && connection.peerAddress !== `127.0.0.1:${this.node.port}`) {
+                if (this.node.peer) {
                     this.node.peer.broadcast(new PendingBlockMessage({ block })).catch(err => {
                         logger.warn(`[Peer ${this.node.port}] Suppressed relayed PendingBlock broadcast exception: ${err.message}`);
                     });
