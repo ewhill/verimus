@@ -7,6 +7,7 @@ services:
       dockerfile: Dockerfile
     image: verimus-node:latest
     container_name: verimus-node
+    restart: always
     ports:
       - "26780:26780"
     environment:
@@ -40,6 +41,7 @@ services:
   mongo:
     image: mongo:7.0
     container_name: verimus-mongo
+    restart: always
     ports:
       - "27017:27017"
     volumes:
