@@ -12,10 +12,6 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.5"
     }
-    acme = {
-      source  = "vancluever/acme"
-      version = "~> 2.11"
-    }
   }
 }
 
@@ -23,28 +19,14 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Provide an Elastic IP for deterministic node connectivity
+# Provide an Elastic IP exclusively strictly targeting the origin seed node seamlessly
 resource "aws_eip" "node_static_ip" {
-  count  = var.node_count
+  count  = 1
   domain = "vpc"
   
   tags = {
-    Name = "Verimus-Node-Static-IP-${count.index}"
+    Name = "Verimus-Entrypoint-Static-IP"
   }
-}
-
-
-provider "acme" {
-  server_url = "https://acme-v02.api.letsencrypt.org/directory"
-}
-
-resource "tls_private_key" "acme_reg_key" {
-  algorithm = "RSA"
-}
-
-resource "acme_registration" "reg" {
-  account_key_pem = tls_private_key.acme_reg_key.private_key_pem
-  email_address   = "admin@verimus.io"
 }
 
 # --- AWS Route53 Public DNS Automated Integration ---
@@ -52,20 +34,6 @@ resource "acme_registration" "reg" {
 data "aws_route53_zone" "verimus" {
   name         = "verimus.io."
   private_zone = false
-}
-
-resource "acme_certificate" "wildcard_cert" {
-  account_key_pem           = acme_registration.reg.account_key_pem
-  common_name               = "*.verimus.io"
-
-  dns_challenge {
-    provider = "route53"
-    config   = {
-      AWS_HOSTED_ZONE_ID      = data.aws_route53_zone.verimus.zone_id
-      AWS_PROPAGATION_TIMEOUT = "1200"
-      AWS_POLLING_INTERVAL    = "30"
-    }
-  }
 }
 
 resource "random_password" "admin_password" {
@@ -221,12 +189,37 @@ resource "aws_instance" "verimus_node" {
               git clone https://github.com/ewhill/verimus.git
               cd verimus
               
-              cat << 'CERT' > /opt/verimus/https.cert.pem
-${acme_certificate.wildcard_cert.certificate_pem}${acme_certificate.wildcard_cert.issuer_pem}
-CERT
-              cat << 'KEY' > /opt/verimus/https.key.pem
-${acme_certificate.wildcard_cert.private_key_pem}
-KEY
+              %{ if count.index == 0 ~}
+              # Node 0 (Origin Seed Node & UI UI Server) Setup mapped tightly
+              echo "Acquiring authoritative Let's Encrypt CA validation bounds globally locking verimus.io organically"
+              while true; do
+                certbot certonly --standalone -d verimus.io -d www.verimus.io --non-interactive --agree-tos -m admin@verimus.io || true
+                if [ -f /etc/letsencrypt/live/verimus.io/privkey.pem ]; then
+                  cp /etc/letsencrypt/live/verimus.io/privkey.pem /opt/verimus/https.key.pem
+                  cp /etc/letsencrypt/live/verimus.io/fullchain.pem /opt/verimus/https.cert.pem
+                  echo "ACME Authentication successful seamlessly securely mapping."
+                  break
+                fi
+                sleep 30
+              done
+              
+              export PUBLIC_ADDRESS="verimus.io:443"
+              export DISCOVER_ARG=""
+              export HEADLESS_ARG=""
+              %{ else ~}
+              # Nodes 1-4 (Headless Workers) dynamically routing natively locally sidestepping CA boundaries intrinsically
+              openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+                -keyout /opt/verimus/https.key.pem \
+                -out /opt/verimus/https.cert.pem \
+                -subj "/C=US/ST=State/L=City/O=Organization/CN=headless"
+                
+              TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" -s || echo "")
+              PUBLIC_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/public-ipv4 || echo "127.0.0.1")
+              
+              export PUBLIC_ADDRESS="$PUBLIC_IP:443"
+              export DISCOVER_ARG="--discover verimus.io:443"
+              export HEADLESS_ARG="--headless"
+              %{ endif ~}
               
               cat << 'COMPOSE' > docker-compose.override.yml
               version: '3.8'
@@ -248,9 +241,9 @@ KEY
                     - "--port"
                     - "443"
                     - "--public-address"
-                    - "node${count.index}.verimus.io:443"
-                    - "--discover"
-                    - "${join(",", [for i in range(var.node_count) : "node${i}.verimus.io:443"])}"
+                    - "$PUBLIC_ADDRESS"
+                    $DISCOVER_ARG
+                    $HEADLESS_ARG
               COMPOSE
 
 
@@ -283,17 +276,27 @@ KEY
 }
 
 resource "aws_eip_association" "eip_assoc" {
-  count         = var.node_count
-  instance_id   = aws_instance.verimus_node[count.index].id
-  allocation_id = aws_eip.node_static_ip[count.index].id
+  count         = 1
+  instance_id   = aws_instance.verimus_node[0].id
+  allocation_id = aws_eip.node_static_ip[0].id
 }
 
 resource "aws_route53_record" "node_record" {
-  count   = var.node_count
+  count   = 1
   zone_id = data.aws_route53_zone.verimus.zone_id
-  name    = "node${count.index}.verimus.io"
+  name    = "verimus.io"
   type    = "A"
   ttl     = "300"
-  records = [aws_eip.node_static_ip[count.index].public_ip]
+  records = [aws_eip.node_static_ip[0].public_ip]
 }
+
+resource "aws_route53_record" "www_node_record" {
+  count   = 1
+  zone_id = data.aws_route53_zone.verimus.zone_id
+  name    = "www.verimus.io"
+  type    = "A"
+  ttl     = "300"
+  records = [aws_eip.node_static_ip[0].public_ip]
+}
+
 

@@ -437,7 +437,7 @@ class Peer {
 
     this.logger_.log(`Attempting connection to ${formattedAddress}`);
     const client = new Client({
-      connection: new WebSocket(formattedAddress, []),
+      connection: new WebSocket(formattedAddress, [], { rejectUnauthorized: false }),
       credentials: {
         evmPrivateKey: this.evmPrivateKey_,
         walletAddress: this.walletAddress_
