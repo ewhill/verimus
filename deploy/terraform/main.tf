@@ -228,7 +228,31 @@ resource "aws_instance" "verimus_node" {
               export HEADLESS_ARG="--headless"
               %{ endif ~}
               
-              cat << 'COMPOSE' > docker-compose.override.yml
+              %{ if count.index == 0 ~}
+              cat << COMPOSE > docker-compose.override.yml
+              version: '3.8'
+              services:
+                verimus-node:
+                  environment:
+                    - "UI_PASSWORD=${random_password.admin_password.result}"
+                    - NODE_ENV=production
+                  ports:
+                    - "443:443"
+                  volumes:
+                    - "/opt/verimus/https.key.pem:/app/https.key.pem"
+                    - "/opt/verimus/https.cert.pem:/app/https.cert.pem"
+                  command:
+                    - "--mongo-host"
+                    - "mongo"
+                    - "--mongo-port"
+                    - "27017"
+                    - "--port"
+                    - "443"
+                    - "--public-address"
+                    - "verimus.io:443"
+              COMPOSE
+              %{ else ~}
+              cat << COMPOSE > docker-compose.override.yml
               version: '3.8'
               services:
                 verimus-node:
@@ -249,9 +273,11 @@ resource "aws_instance" "verimus_node" {
                     - "443"
                     - "--public-address"
                     - "$PUBLIC_ADDRESS"
-                    $DISCOVER_ARG
-                    $HEADLESS_ARG
+                    - "--discover"
+                    - "verimus.io:443"
+                    - "--headless"
               COMPOSE
+              %{ endif ~}
 
 
               # Evolve storage-type cleanly seamlessly targeting IAM profiles (no raw keys needed)
