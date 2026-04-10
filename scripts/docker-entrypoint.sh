@@ -41,6 +41,13 @@ if [ -z "$PEER_EVM_PRIVATE_KEY" ]; then
     echo -e "SAVE THIS SEED PHRASE. IT WILL NOT BE SHOWN AGAIN.\n"
 fi
 
+# Natively synthesize self-signed EC bounds gracefully bypassing GitHub explicit '.pem' tracking exclusions
+if [ ! -f "https.key.pem" ] || [ ! -f "https.cert.pem" ]; then
+    echo "[*] Natively generating ephemeral physical TLS certificates securely for TCP 26780 bindings..."
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout https.key.pem -out https.cert.pem -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
+    echo "[*] TLS configuration mapped structurally!"
+fi
+
 # Enable environment injections naturally for CredentialProvider mappings
 export STORAGE_CREDS_ACTIVE="true"
 

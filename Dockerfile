@@ -3,7 +3,7 @@ FROM node:23-alpine
 WORKDIR /app
 
 # Install native compilation dependencies for cryptographic modules and bash
-RUN apk add --no-cache python3 make g++ bash git
+RUN apk add --no-cache python3 make g++ bash git openssl
 
 COPY package*.json ./
 # Install UI dependencies exactly matching the package-lock configuration
