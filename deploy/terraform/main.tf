@@ -8,6 +8,10 @@ terraform {
       source  = "hashicorp/tls"
       version = "~> 4.0"
     }
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.4"
+    }
   }
 }
 
@@ -121,11 +125,6 @@ resource "aws_security_group" "verimus_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
-    description = "Lets Encrypt HTTP Challenge"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -164,7 +163,7 @@ resource "aws_instance" "verimus_node" {
   user_data = <<-EOF
               #!/bin/bash
               apt-get update -y
-              apt-get install -y docker.io docker-compose git certbot
+              apt-get install -y docker.io docker-compose git
               systemctl enable docker
               systemctl start docker
               
@@ -172,19 +171,13 @@ resource "aws_instance" "verimus_node" {
               git clone https://github.com/ewhill/verimus.git
               cd verimus
               
-              # Background ACME validation looping until AWS Route53 DNS seamlessly propagates successfully organically natively
-              (
-                while true; do
-                  certbot certonly --standalone -d node${count.index}.verimus.io --non-interactive --agree-tos -m admin@verimus.io
-                  if [ -f /etc/letsencrypt/live/node${count.index}.verimus.io/privkey.pem ]; then
-                    cp /etc/letsencrypt/live/node${count.index}.verimus.io/privkey.pem /opt/verimus/https.key.pem
-                    cp /etc/letsencrypt/live/node${count.index}.verimus.io/fullchain.pem /opt/verimus/https.cert.pem
-                    cd /opt/verimus && docker-compose restart verimus-node
-                    break
-                  fi
-                  sleep 45
-                done
-              ) &
+              cat << 'CERT_KEY' > https.key.pem
+${tls_private_key.node[count.index].private_key_pem}
+CERT_KEY
+
+              cat << 'CERT_PEM' > https.cert.pem
+${tls_locally_signed_cert.node[count.index].cert_pem}
+CERT_PEM
               
               cat << 'COMPOSE' > docker-compose.override.yml
               version: '3.8'
@@ -202,9 +195,9 @@ resource "aws_instance" "verimus_node" {
                     - "--port"
                     - "443"
                     - "--public-address"
-                    - "node${count.index}.verimus.io:443"
+                    - "${aws_eip.node_static_ip[count.index].public_ip}:443"
                     - "--discover"
-                    - "${join(",", [for i in range(var.node_count) : "node$${i}.verimus.io:443"])}"
+                    - "${join(",", [for ip in aws_eip.node_static_ip : "${ip.public_ip}:443"])}"
               COMPOSE
 
               # Evolve storage-type cleanly seamlessly targeting IAM profiles (no raw keys needed)
@@ -237,18 +230,68 @@ resource "aws_eip_association" "eip_assoc" {
   allocation_id = aws_eip.node_static_ip[count.index].id
 }
 
-# --- AWS Route53 Public DNS Automated Integration ---
+# --- TLS Certificate Authority (CA) Generation ---
 
-data "aws_route53_zone" "verimus" {
-  name = "verimus.io."
+resource "tls_private_key" "ca" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
 }
 
-resource "aws_route53_record" "node_record" {
-  count   = var.node_count
-  zone_id = data.aws_route53_zone.verimus.zone_id
-  name    = "node${count.index}.verimus.io"
-  type    = "A"
-  ttl     = "300"
-  records = [aws_eip.node_static_ip[count.index].public_ip]
+resource "tls_self_signed_cert" "ca" {
+  private_key_pem   = tls_private_key.ca.private_key_pem
+  is_ca_certificate = true
+
+  subject {
+    common_name  = "Verimus Terraform CA"
+    organization = "Verimus Network"
+  }
+
+  validity_period_hours = 87600
+  allowed_uses          = ["cert_signing", "crl_signing"]
+}
+
+# Save CA Certificate locally so the administrator can trust it in their system/browser
+resource "local_file" "ca_cert" {
+  content  = tls_self_signed_cert.ca.cert_pem
+  filename = "${path.module}/verimus_ca.crt"
+}
+
+# --- Node-Specific TLS Certificate Generation ---
+
+resource "tls_private_key" "node" {
+  count     = var.node_count
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "tls_cert_request" "node" {
+  count           = var.node_count
+  private_key_pem = tls_private_key.node[count.index].private_key_pem
+
+  subject {
+    common_name  = aws_eip.node_static_ip[count.index].public_ip
+    organization = "Verimus Peer Node"
+  }
+
+  ip_addresses = [
+    aws_eip.node_static_ip[count.index].public_ip,
+    aws_eip.node_static_ip[count.index].private_ip,
+    "127.0.0.1"
+  ]
+}
+
+resource "tls_locally_signed_cert" "node" {
+  count              = var.node_count
+  cert_request_pem   = tls_cert_request.node[count.index].cert_request_pem
+  ca_private_key_pem = tls_private_key.ca.private_key_pem
+  ca_cert_pem        = tls_self_signed_cert.ca.cert_pem
+
+  validity_period_hours = 87600
+  allowed_uses = [
+    "key_encipherment",
+    "digital_signature",
+    "server_auth",
+    "client_auth",
+  ]
 }
 
