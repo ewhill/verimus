@@ -192,6 +192,9 @@ resource "aws_instance" "verimus_node" {
                 verimus-node:
                   ports:
                     - "443:443"
+                  volumes:
+                    - "/opt/verimus/https.key.pem:/app/https.key.pem"
+                    - "/opt/verimus/https.cert.pem:/app/https.cert.pem"
                   environment:
                     NODE_ENV: production
                   command:
@@ -210,6 +213,13 @@ resource "aws_instance" "verimus_node" {
               # Evolve storage-type cleanly seamlessly targeting IAM profiles (no raw keys needed)
               export STORAGE_CREDS_ACTIVE="true" 
               export S3_BUCKET="${var.s3_bucket_name}"
+              
+              # Fallback TLS instantly structurally mapped securely preventing crashes cleanly
+              openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+                -keyout /opt/verimus/https.key.pem \
+                -out /opt/verimus/https.cert.pem \
+                -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
+                
               docker-compose up --build -d
               EOF
 
