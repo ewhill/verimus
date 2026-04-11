@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
 import { BLOCK_TYPES } from '../../constants';
+import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from '../../crypto_utils/EIP712Types';
 import logger from '../../logger/Logger';
 import type { Block, TransactionPayload } from '../../types';
 import BaseHandler from '../base_handler/BaseHandler';
@@ -46,18 +47,25 @@ export default class TransactionsHandler extends BaseHandler {
                 amount: parsedAmount
             };
 
-            const block: Block = {
+            const tempBlock: Block = {
                 type: BLOCK_TYPES.TRANSACTION,
                 payload,
                 signerAddress: this.node.walletAddress,
-                signature: await this.node.wallet.signMessage(JSON.stringify(payload, (_, v) => typeof v === 'bigint' ? v.toString() : v)),
+                signature: '',
                 metadata: {
                     index: -1,
                     timestamp: Date.now()
                 }
             };
             
-            block.hash = crypto.createHash('sha256').update(JSON.stringify(block.payload, (_, v) => typeof v === 'bigint' ? v.toString() : v) + block.signature).digest('hex');
+            const valueObj = normalizeBlockForSignature(tempBlock);
+            const schema = EIP712_SCHEMAS[BLOCK_TYPES.TRANSACTION];
+            tempBlock.signature = await this.node.wallet.signTypedData(EIP712_DOMAIN, schema, valueObj.payload ? valueObj : valueObj);
+            
+            const strToHash = JSON.stringify(tempBlock, (_, v) => typeof v === 'bigint' ? v.toString() : v);
+            tempBlock.hash = crypto.createHash('sha256').update(strToHash).digest('hex');
+            
+            const block = tempBlock;
 
             logger.info(`[Peer ${this.node.port}] Constructing natively injected target TRANSACTION proxy bounds.`);
             this.node.consensusEngine.handlePendingBlock(block, { peerAddress: 'api-proxy' } as any, Date.now()).catch(err => {

@@ -19,10 +19,10 @@ for (const port of PORTS) {
         console.log(`Generating keys for port ${port}...`);
 
         const evmWallet = ethers.Wallet.createRandom();
-        fs.writeFileSync(`${baseKey}.evm.key`, evmWallet.privateKey);
-        fs.writeFileSync(`${baseKey}.evm.address`, evmWallet.address);
+        fs.writeFileSync(`${baseKey}.evm.key`, evmWallet.privateKey, { mode: 0o600 });
+        fs.writeFileSync(`${baseKey}.evm.address`, evmWallet.address); // public key ok
         if (evmWallet.mnemonic) {
-            fs.writeFileSync(`${baseKey}.evm.mnemonic`, evmWallet.mnemonic.phrase);
+            fs.writeFileSync(`${baseKey}.evm.mnemonic`, evmWallet.mnemonic.phrase, { mode: 0o600 });
         }
     }
 }

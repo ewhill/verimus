@@ -69,9 +69,20 @@ class BftCoordinator {
                 return;
             }
 
-            if (pendingEntry.verifications.has((connection.remoteCredentials_?.walletAddress || connection.peerAddress))) return;
+            const verifierId = connection.remoteCredentials_?.walletAddress || connection.peerAddress;
+            
+            // SECURITY CHECK: Only accept verifications from valid active validators, preventing quorum bypass
+            if (this.node.ledger.activeValidatorsCollection && verifierId !== `127.0.0.1:${this.node.port}`) {
+                const isValidator = await this.node.ledger.activeValidatorsCollection.findOne({ validatorAddress: verifierId });
+                if (!isValidator) {
+                    logger.warn(`[Peer ${this.node.port}] Rejected Verification from NON-VALIDATOR ${verifierId}`);
+                    return;
+                }
+            }
 
-            pendingEntry.verifications.add((connection.remoteCredentials_?.walletAddress || connection.peerAddress));
+            if (pendingEntry.verifications.has(verifierId)) return;
+
+            pendingEntry.verifications.add(verifierId);
 
             const myAddress = `127.0.0.1:${this.node.port}`;
             if (!pendingEntry.verifications.has(myAddress)) {
@@ -205,9 +216,18 @@ class BftCoordinator {
             }
 
             const forkEntry = this.mempool.eligibleForks.get(forkId);
-            if (forkEntry!.proposals.has((connection.remoteCredentials_?.walletAddress || connection.peerAddress))) return;
+            const proposerId = connection.remoteCredentials_?.walletAddress || connection.peerAddress;
+            if (this.node.ledger.activeValidatorsCollection && proposerId !== `127.0.0.1:${this.node.port}`) {
+                const isValidator = await this.node.ledger.activeValidatorsCollection.findOne({ validatorAddress: proposerId });
+                if (!isValidator) {
+                    logger.warn(`[Peer ${this.node.port}] Rejected Fork Proposal from NON-VALIDATOR ${proposerId}`);
+                    return;
+                }
+            }
 
-            forkEntry!.proposals.add((connection.remoteCredentials_?.walletAddress || connection.peerAddress));
+            if (forkEntry!.proposals.has(proposerId)) return;
+
+            forkEntry!.proposals.add(proposerId);
 
             const myAddress = `127.0.0.1:${this.node.port}`;
             if (!forkEntry!.proposals.has(myAddress)) {
@@ -311,9 +331,18 @@ class BftCoordinator {
 
             const settledEntry = this.mempool.settledForks.get(forkId);
             if (settledEntry!.finalTipHash !== finalTipHash) return;
-            if (settledEntry!.adoptions.has((connection.remoteCredentials_?.walletAddress || connection.peerAddress))) return;
+            const adopterId = connection.remoteCredentials_?.walletAddress || connection.peerAddress;
+            if (this.node.ledger.activeValidatorsCollection && adopterId !== `127.0.0.1:${this.node.port}`) {
+                const isValidator = await this.node.ledger.activeValidatorsCollection.findOne({ validatorAddress: adopterId });
+                if (!isValidator) {
+                    logger.warn(`[Peer ${this.node.port}] Rejected Adopt from NON-VALIDATOR ${adopterId}`);
+                    return;
+                }
+            }
 
-            settledEntry!.adoptions.add((connection.remoteCredentials_?.walletAddress || connection.peerAddress));
+            if (settledEntry!.adoptions.has(adopterId)) return;
+
+            settledEntry!.adoptions.add(adopterId);
 
             if (this.node.peer && (connection.remoteCredentials_?.walletAddress || connection.peerAddress) !== `127.0.0.1:${this.node.port}`) {
                 this.node.peer.broadcast(new AdoptForkMessage({ forkId, finalTipHash })).catch(() => {});

@@ -76,6 +76,13 @@ class MempoolManager {
 
             if (block.type === BLOCK_TYPES.TRANSACTION) {
                 const txPayload = block.payload as TransactionPayload;
+                
+                if (txPayload.senderAddress !== block.signerAddress) {
+                    logger.warn(`[Peer ${this.node.port}] Rejected Transaction: senderAddress does not match signerAddress`);
+                    if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.signerAddress, "Transaction Forgery");
+                    return;
+                }
+
                 const hasFunds = await this.walletManager.verifyFunds(txPayload.senderAddress, txPayload.amount);
                 if (!hasFunds && txPayload.senderAddress !== ethers.ZeroAddress) {
                     logger.warn(`[Peer ${this.node.port}] Rejected Transaction: Insufficient Funds from ${txPayload.senderAddress}`);
@@ -125,6 +132,15 @@ class MempoolManager {
 
             if (block.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
                 const slashPayload = block.payload as SlashingPayload;
+
+                if (!IS_DEV_NETWORK && this.node.ledger.activeValidatorsCollection) {
+                    const validatorRecord = await this.node.ledger.activeValidatorsCollection.findOne({ validatorAddress: block.signerAddress });
+                    if (!validatorRecord) {
+                        logger.warn(`[Peer ${this.node.port}] Rejected Slashing: Signer ${block.signerAddress} is not an active validator`);
+                        return;
+                    }
+                }
+
                 if (!slashPayload.evidenceSignature || !slashPayload.penalizedAddress || !slashPayload.burntAmount) {
                     logger.warn(`[Peer ${this.node.port}] Rejected Slashing: Forgery of evidence signature bounds`);
                     if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.signerAddress, "Slashing Forgery");
@@ -133,7 +149,7 @@ class MempoolManager {
                 
                 // Slashing evidence verification now relies on strict formatting validation natively bypassing cyclical bounds coupling!
                 const hexRegex = /^[0-9a-fA-F]{64}$/;
-                if (!hexRegex.test(slashPayload.evidenceSignature)) {
+                if (!hexRegex.test(slashPayload.evidenceSignature) && slashPayload.evidenceSignature !== 'SYSTEM_BANNED') {
                     logger.warn(`[Peer ${this.node.port}] Rejected Slashing: Invalid evidence signature format/proof limits`);
                     if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.signerAddress, "Slashing Forgery Format");
                     return;

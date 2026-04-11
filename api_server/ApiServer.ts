@@ -1,10 +1,13 @@
+import crypto from 'crypto';
 import os from 'os';
 import path from 'path';
+
 
 import express from 'express';
 import multer from 'multer';
 
 import { IS_DEV_NETWORK } from '../constants';
+import logger from '../logger/Logger';
 import PeerNode from '../peer_node/PeerNode';
 import AuditEventsHandler from '../route_handlers/audit_events_handler/AuditEventsHandler';
 import BlocksHandler from '../route_handlers/blocks_handler/BlocksHandler';
@@ -29,16 +32,18 @@ export default function setupExpressApp(peerNode: PeerNode) {
     const app = express();
     const upload = multer({ dest: os.tmpdir() });
 
-    const checkAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-        const ip = req.ip || req.socket.remoteAddress || '';
-
-        if ((ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') && IS_DEV_NETWORK) {
-            return next();
+    let expectedUser = process.env.UI_USERNAME || 'admin';
+    let expectedPass = process.env.UI_PASSWORD;
+    if (!process.env.UI_PASSWORD) {
+        if (IS_DEV_NETWORK) {
+            expectedPass = 'admin';
+        } else {
+            expectedPass = crypto.randomBytes(16).toString('hex');
+            logger.info(`[Auth] No UI_PASSWORD set in production. Generated secure password for ${expectedUser}: ${expectedPass}`);
         }
+    }
 
-        const expectedUser = process.env.UI_USERNAME || 'admin';
-        const expectedPass = process.env.UI_PASSWORD || 'admin';
-
+    const checkAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
         const authHeader = req.headers.authorization || '';
         if (authHeader.startsWith('Basic ')) {
             const b64auth = authHeader.split(' ')[1] || '';

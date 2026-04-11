@@ -32,6 +32,12 @@ class RemoteFSStorageProvider extends BaseStorageProvider {
 
 
 
+    private assertValidBlockId(physicalBlockId: string) {
+        if (!/^[a-zA-Z0-9_-]+$/.test(physicalBlockId)) {
+            throw new Error(`Invalid physicalBlockId format correctly blocked remote path traversal attempt.`);
+        }
+    }
+
     getLocation() {
         return {
             type: 'remote-fs',
@@ -66,6 +72,7 @@ class RemoteFSStorageProvider extends BaseStorageProvider {
     }
 
     async storeShard(physicalBlockId: string, encryptedData: Buffer | string): Promise<void> {
+        this.assertValidBlockId(physicalBlockId);
         const sftp = await this._getSftp();
         const remotePath = `${this.remoteDir}/${physicalBlockId}.pkg`;
         try {
@@ -100,6 +107,7 @@ class RemoteFSStorageProvider extends BaseStorageProvider {
 
     async getBlockReadStream(physicalBlockId: string): Promise<GetBlockReadStreamResult> {
         try {
+            this.assertValidBlockId(physicalBlockId);
             const sftp = await this._getSftp();
             const remotePath = `${this.remoteDir}/${physicalBlockId}.pkg`;
 

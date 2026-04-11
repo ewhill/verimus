@@ -18,7 +18,8 @@ export default class BlocksHandler extends BaseHandler {
             const query: any = { "metadata.index": { $gt: 0 } };
             if (req.query.own === 'true') {
                 if (req.query.address) {
-                    query["payload.ownerAddress"] = { $regex: new RegExp(`^${req.query.address as string}$`, 'i') };
+                    const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    query["payload.ownerAddress"] = { $regex: new RegExp(`^${escapeRegExp(req.query.address as string)}$`, 'i') };
                 } else {
                     query.signerAddress = this.node.walletAddress;
                 }

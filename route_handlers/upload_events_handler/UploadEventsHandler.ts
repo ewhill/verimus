@@ -9,8 +9,6 @@ export default class UploadEventsHandler extends BaseHandler {
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
 
-        // Allow frontend to read natively without CORS tracking
-        res.setHeader('Access-Control-Allow-Origin', '*');
 
         // Flush boundaries enforcing immediate TCP resolution
         res.flushHeaders();

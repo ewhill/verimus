@@ -43,6 +43,10 @@ export default class WalletManager {
         const record = await balancesCol.findOne({ walletAddress: safeAddress });
         let current = record && record.balance !== undefined ? BigInt(record.balance) : 0n;
         current += deltaWei;
+        if (current < 0n) {
+            logger.warn(`[WalletManager] Prevented balance underflow for ${safeAddress}. Clamping to 0 instead of ${current} (delta: ${deltaWei})`);
+            current = 0n;
+        }
         await balancesCol.updateOne({ walletAddress: safeAddress }, { $set: { balance: current.toString() } }, { upsert: true });
     }
 
@@ -166,9 +170,8 @@ export default class WalletManager {
             safeAddress = this.getAddressSafe(address);
         }
 
-        // Ensure new organic users receive the required 50.0 EIP-191 bound natively across ALL peers, 
-        // resolving the mempool rejection state divergence observed when only ORIGINATORs fund users.
-        let balance = ethers.parseUnits("50", 18);
+        // Default balance is 0 for unrecorded addresses to prevent unlimited value minting
+        let balance = 0n;
 
         try {
             if (this.ledger.balancesCollection) {

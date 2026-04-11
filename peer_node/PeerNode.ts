@@ -12,9 +12,9 @@ import { WebSocket } from 'ws';
 
 import setupExpressApp from '../api_server/ApiServer';
 import Bundler from '../bundler/Bundler';
-import { BLOCK_TYPES, GENESIS_SEED_DATA, IS_DEV_NETWORK } from '../constants';
-import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from '../crypto_utils/EIP712Types';
+import { GENESIS_SEED_DATA, IS_DEV_NETWORK } from '../constants';
 import { PeerCredentials } from '../credential_provider/CredentialProvider';
+import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from '../crypto_utils/EIP712Types';
 import Ledger from '../ledger/Ledger';
 import logger from '../logger/Logger';
 import Mempool from '../models/mempool/Mempool';
@@ -206,8 +206,9 @@ class PeerNode {
         this.consensusEngine.bindHandlers();
 
         await new Promise<void>((resolve) => {
-            httpServer.listen(this.port, '0.0.0.0', async () => {
-                logger.info(`[Peer ${this.port}] HTTPS Server Listening on ${this.port}`);
+            const bindAddress = process.env.API_BIND_ADDRESS || '127.0.0.1';
+            httpServer.listen(this.port, bindAddress, async () => {
+                logger.info(`[Peer ${this.port}] HTTPS Server Listening on ${bindAddress}:${this.port}`);
                 await this.peer!.init();
 
                 // Inject Banishment Filtering (Early Return)

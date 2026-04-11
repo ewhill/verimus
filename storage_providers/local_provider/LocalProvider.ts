@@ -22,6 +22,12 @@ class LocalFileStorageProvider extends BaseStorageProvider {
 
 
 
+    private assertValidBlockId(physicalBlockId: string) {
+        if (!/^[a-zA-Z0-9_-]+$/.test(physicalBlockId)) {
+            throw new Error(`Invalid physicalBlockId format correctly blocked path traversal attempt.`);
+        }
+    }
+
     getLocation() {
         return {
             type: 'local',
@@ -42,6 +48,7 @@ class LocalFileStorageProvider extends BaseStorageProvider {
     }
 
     async storeShard(physicalBlockId: string, encryptedData: Buffer | string): Promise<void> {
+        this.assertValidBlockId(physicalBlockId);
         const filePath = path.join(this.storageDir, `${physicalBlockId}.pkg`);
         fs.writeFileSync(filePath, encryptedData);
     }
@@ -53,6 +60,7 @@ class LocalFileStorageProvider extends BaseStorageProvider {
     }
 
     async getBlockReadStream(physicalBlockId: string): Promise<GetBlockReadStreamResult> {
+        this.assertValidBlockId(physicalBlockId);
         const filePath = path.join(this.storageDir, `${physicalBlockId}.pkg`);
         if (!fs.existsSync(filePath)) return { status: 'not_found' };
         return { status: 'available', stream: fs.createReadStream(filePath) };

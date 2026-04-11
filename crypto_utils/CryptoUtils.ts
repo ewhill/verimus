@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 
 import { ethers } from 'ethers';
 
+import logger from '../logger/Logger';
 import type { Block } from '../types';
 import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from './EIP712Types';
 
@@ -256,7 +257,7 @@ function verifyEIP712BlockSignature(block: Block): boolean {
 
         return recoveredAddr.toLowerCase() === block.signerAddress.toLowerCase();
     } catch ( e: any ) {
-        console.error("EIP712 VERIFY ERROR:", e);
+        logger.error(`EIP712 VERIFY ERROR for block type ${block.type}: ${e.stack || e.message || e}`);
         return false;
     }
 }

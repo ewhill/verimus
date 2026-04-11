@@ -1,7 +1,5 @@
 "use strict";
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
-
 const { Buffer } = require('buffer');
 const crypto = require('crypto');
 const EventEmitter = require('events');
@@ -437,7 +435,7 @@ class Peer {
 
     this.logger_.log(`Attempting connection to ${formattedAddress}`);
     const client = new Client({
-      connection: new WebSocket(formattedAddress, [], { rejectUnauthorized: false }),
+      connection: new WebSocket(formattedAddress, [], { rejectUnauthorized: process.env.IS_DEV_NETWORK !== 'true' && process.env.NODE_ENV !== 'test' && process.env.NODE_ENV !== 'development' }),
       credentials: {
         evmPrivateKey: this.evmPrivateKey_,
         walletAddress: this.walletAddress_
