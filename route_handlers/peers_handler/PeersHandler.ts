@@ -17,12 +17,12 @@ export default class PeersHandler extends BaseHandler {
         }
 
         const peers = (this.node.peer.peers || []).map(conn => {
-            const pubKey = conn.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
-            const pg = mongoPeers.find(p => p.publicKey === pubKey);
+            const walletId = conn.remoteCredentials_?.walletAddress;
+            const pg = mongoPeers.find(p => p.operatorAddress === walletId);
             return {
                 address: conn.peerAddress || 'unknown',
-                walletAddress: pg ? pg.operatorAddress : null,
-                signature: pubKey ? Buffer.from(pubKey).toString('base64').slice(-16) : null,
+                walletAddress: walletId || (pg ? pg.operatorAddress : null),
+                signature: walletId ? Buffer.from(walletId).toString('base64').slice(-16) : null,
                 status: conn.isConnected ? (conn.isTrusted ? 'connected' : 'upgrading') : 'disconnected',
                 score: pg ? pg.score : 100,
                 isBanned: pg ? pg.isBanned : false,

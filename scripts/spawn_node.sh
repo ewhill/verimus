@@ -23,6 +23,8 @@ echo "==========================================="
 echo "       Spawning Verimus Node               "
 echo "==========================================="
 
+export PATH=$PATH:/opt/homebrew/bin:/opt/homebrew/opt/node/bin
+
 if [ "$WATCH_MODE" = true ]; then
     echo "Starting in WATCH mode (auto-refresh enabled)..."
     if [ "$HEADLESS" != true ] && [ "$SKIP_UI" != true ]; then
@@ -45,7 +47,7 @@ if [ "$WATCH_MODE" = true ]; then
         fi
     done
     
-    npm run watch:node -- "${EXTRA_ARGS[@]}" > "/tmp/watch_node_${PORT_VAL}.log" 2>&1 &
+    NODE_ENV=development npm run watch:node -- "${EXTRA_ARGS[@]}" > "/tmp/watch_node_${PORT_VAL}.log" 2>&1 &
     NODE_PID=$!
     
     # Trap Ctrl-C to cleanly kill background watchers without zombie processes
@@ -66,5 +68,5 @@ else
     fi
 
     echo "[2/2] Starting Peer Node..."
-    npm run start:node -- "${EXTRA_ARGS[@]}"
+    NODE_ENV=development npm run start:node -- "${EXTRA_ARGS[@]}"
 fi

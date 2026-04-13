@@ -62,6 +62,14 @@ describe('Integration: Reputation System (5 Nodes)', () => {
             node.port = (node.httpServer!.address() as AddressInfo).port;
             Object.assign(node.peer || {}, { publicAddress_: `127.0.0.1:${node.port}` });
 
+            if (node.walletAddress) {
+                await node.ledger.balancesCollection!.updateOne(
+                    { walletAddress: node.walletAddress },
+                    { $inc: { balance: ethers.parseUnits('500', 18) } },
+                    { upsert: true }
+                );
+            }
+
             nodes.push(node);
         }
 

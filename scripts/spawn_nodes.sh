@@ -39,6 +39,7 @@ done
 sleep 1
 
 echo "2. Validating and generating keys..."
+export PATH=$PATH:/opt/homebrew/bin:/opt/homebrew/opt/node/bin
 npm run keygen
 
 echo "Starting Native Hermetic Memory MongoDB (Port 27018 RAM) and Seeding Limits..."
@@ -74,7 +75,7 @@ RETRY_COUNT=0
 # Wait until the seed node (port 26780) sees 4 connected peers.
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     # Suppress output, ignore self-signed certs, extract connectedCount
-    CONNECTED_COUNT=$(curl -s -k "https://127.0.0.1:${PORTS[0]}/api/peers" | grep -o '"connectedCount":[0-9]*' | cut -d ':' -f 2)
+    CONNECTED_COUNT=$(curl -s -k -u "admin:admin" "https://127.0.0.1:${PORTS[0]}/api/peers" | grep -o '"connectedCount":[0-9]*' | cut -d ':' -f 2)
     
     # If the endpoint returns empty (e.g. server starting up), default to 0
     if [ -z "$CONNECTED_COUNT" ]; then

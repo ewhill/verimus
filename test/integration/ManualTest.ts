@@ -87,6 +87,11 @@ async function runManualTest() {
         signerAddress: ethers.ZeroAddress,
         signature: 'SYSTEM_MINT'
     });
+    await node1.ledger.balancesCollection!.updateOne(
+        { walletAddress: node1.walletAddress },
+        { $inc: { balance: ethers.parseUnits("50000", 18) } },
+        { upsert: true }
+    );
     // Let wallet manager refresh queries organically
     await new Promise(r => setTimeout(r, 100));
 

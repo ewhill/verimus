@@ -34,6 +34,15 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
 
             await node.init();
 
+            // Pre-fund the test node to satisfy bundler storage transaction boundaries
+            if (node.walletAddress) {
+                await node.ledger.balancesCollection!.updateOne(
+                    { walletAddress: node.walletAddress },
+                    { $inc: { balance: ethers.parseEther('500') } },
+                    { upsert: true }
+                );
+            }
+
             // Create a local map tracking the physical Shard limits for valid mathematical verification 
             const globalIntegrationShards: { [marketReqId: string]: Buffer } = {};
 

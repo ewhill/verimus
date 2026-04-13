@@ -38,6 +38,9 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
 
         node.publicKey = wallet.address;
 
+        await node.ledger.balancesCollection!.updateOne({ walletAddress: maliciousWallet.address }, { $inc: { balance: ethers.parseUnits("50000", 18) } }, { upsert: true });
+        await node.ledger.balancesCollection!.updateOne({ walletAddress: wallet.address }, { $inc: { balance: ethers.parseUnits("50000", 18) } }, { upsert: true });
+
         // Stage 1: Scaffold Initial Staking Collateral internally mapping Phase 5b
         const stakingLockPayload = {
             amount: ethers.parseUnits("50000", 18),

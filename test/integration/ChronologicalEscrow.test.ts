@@ -31,6 +31,8 @@ test('Integration: Chronological Escrow Epoch Tick Convergence', async () => {
         node.syncEngine.currentState = 'ACTIVE' as any;
         node.consensusEngine.runGlobalAudit = async () => {};
 
+        await node.ledger.balancesCollection!.updateOne({ walletAddress: wallet.address }, { $inc: { balance: ethers.parseUnits('500', 18) } }, { upsert: true });
+
         // Mock processEpochTick explicitly to assert tracking
         const tickSpy = mock.method(node.walletManager, 'processEpochTick');
 
@@ -67,6 +69,9 @@ test('Integration: Chronological Escrow Epoch Tick Convergence', async () => {
         const latestInfo = await node!.ledger.getLatestBlock();
         assert.strictEqual(tickSpy.mock.calls[0].arguments[0], latestInfo.metadata.index, 'processEpochTick must be passed the exact metadata index natively');
 
+    } catch (e: any) {
+        console.error('CRITICAL TEST ERROR:', e);
+        throw e;
     } finally {
         if (node) await node.stop();
         if (mongod) await mongod.stop();
