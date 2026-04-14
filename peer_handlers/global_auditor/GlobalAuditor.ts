@@ -155,11 +155,18 @@ class GlobalAuditor {
             if (!contract.hash) continue;
             const contractHash = contract.hash;
             const trackKey = `${contractHash}-${intervalBucket}`;
-            if (this.auditedIntervals.has(trackKey)) continue;
+            
+            logger.warn(`[DEBUG AUDIT] TimeSinceGenesis: ${timeSinceGenesis}, BucketMs: ${intervalBucketMs}, Bucket: ${intervalBucket}, trackKey: ${trackKey}`);
+
+            if (this.auditedIntervals.has(trackKey)) {
+                // logger.warn(`[DEBUG AUDIT] Skipping already audited bucket`);
+                continue;
+            }
 
             this.auditedIntervals.set(trackKey, intervalBucket);
 
             const isElected = this.computeDeterministicAuditor(contractHash, latestBlockHash, intervalBucket);
+            logger.warn(`[DEBUG AUDIT] Contract hash: ${contractHash}, isElected: ${isElected}`);
             if (!isElected) continue;
 
             if (!hasAudited) {
@@ -190,9 +197,10 @@ class GlobalAuditor {
                 this.node.events.emit('audit_telemetry', { status: 'CHALLENGE_DISPATCHED', message: `Dispatching Merkle challenge targeting Shard ${fragment.shardIndex} at Chunk Index ${targetIndex}...`, targetPeer: fragment.nodeId });
 
                 const executeSlashing = async (nodeId: string, reason: string) => {
-                    logger.warn(`[Peer ${this.node.port}] Executing slashing for ${nodeId} due to: ${reason}`);
+                    const penalizedAddress = ethers.isAddress(nodeId) ? nodeId : ethers.ZeroAddress;
+                    logger.warn(`[Peer ${this.node.port}] Executing slashing for ${penalizedAddress} due to: ${reason}`);
                     const slashPayload = {
-                        penalizedAddress: nodeId,
+                        penalizedAddress: penalizedAddress,
                         evidenceSignature: crypto.createHash('sha256').update(`${contractHash}:${fragment.physicalId}:${targetIndex}:${reason}`).digest('hex'),
                         burntAmount: ethers.parseUnits("50000", 18)
                     };
