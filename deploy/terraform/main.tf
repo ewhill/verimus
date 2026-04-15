@@ -60,9 +60,9 @@ data "aws_route53_zone" "verimus" {
 }
 
 resource "random_password" "admin_password" {
-  length           = 16
+  length           = 20
   special          = true
-  override_special = "!#$%&*()-_=+[]{}<>:?"
+  override_special = "-"
 }
 
 # Dedicated Storage Bucket for the Node explicitly decoupled naturally
@@ -319,7 +319,6 @@ resource "aws_instance" "verimus_node" {
                 echo "[*] Wildcard cert provisioned and cached to S3."
               fi
 
-              export PUBLIC_ADDRESS="verimus.io:443"
               export DISCOVER_ARG=""
               export HEADLESS_ARG=""
               %{ else ~}
@@ -337,19 +336,21 @@ resource "aws_instance" "verimus_node" {
                 sleep 15
               done
 
-              export PUBLIC_ADDRESS="node${count.index}.verimus.io:443"
               export DISCOVER_ARG="--discover verimus.io:443"
               export HEADLESS_ARG="--headless"
               %{ endif ~}
               
               %{ if count.index == 0 ~}
-              cat << COMPOSE > docker-compose.override.yml
+              cat << 'COMPOSE' > docker-compose.override.yml
               version: '3.8'
               services:
                 verimus-node:
                   environment:
                     - "UI_PASSWORD=${random_password.admin_password.result}"
                     - "EVM_WALLET_MNEMONIC=${local.node_keys[count.index].mnemonic}"
+                    - "S3_BUCKET=${local.storage_bucket_prefix}-n${count.index}"
+                    - "S3_REGION=${var.aws_region}"
+                    - "STORAGE_CREDS_ACTIVE=true"
                     - NODE_ENV=production
                   ports:
                     - "443:443"
@@ -365,15 +366,20 @@ resource "aws_instance" "verimus_node" {
                     - "443"
                     - "--public-address"
                     - "verimus.io:443"
+                    - "--storage-type"
+                    - "s3"
               COMPOSE
               %{ else ~}
-              cat << COMPOSE > docker-compose.override.yml
+              cat << 'COMPOSE' > docker-compose.override.yml
               version: '3.8'
               services:
                 verimus-node:
                   environment:
                     - "UI_PASSWORD=${random_password.admin_password.result}"
                     - "EVM_WALLET_MNEMONIC=${local.node_keys[count.index].mnemonic}"
+                    - "S3_BUCKET=${local.storage_bucket_prefix}-n${count.index}"
+                    - "S3_REGION=${var.aws_region}"
+                    - "STORAGE_CREDS_ACTIVE=true"
                     - NODE_ENV=production
                   ports:
                     - "443:443"
@@ -388,10 +394,12 @@ resource "aws_instance" "verimus_node" {
                     - "--port"
                     - "443"
                     - "--public-address"
-                    - "$PUBLIC_ADDRESS"
+                    - "node${count.index}.verimus.io:443"
                     - "--discover"
                     - "verimus.io:443"
                     - "--headless"
+                    - "--storage-type"
+                    - "s3"
               COMPOSE
               %{ endif ~}
 
