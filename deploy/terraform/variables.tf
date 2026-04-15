@@ -38,3 +38,14 @@ variable "keys_dir" {
   default     = "../../keys"
 }
 
+variable "certs_bucket_name" {
+  description = <<-EOT
+    Name of the stable S3 bucket used to cache the wildcard Let's Encrypt TLS certificate.
+    This bucket should persist across 'terraform destroy' cycles to avoid hitting Let's Encrypt
+    rate limits (50 certs/week per domain). Create it once; do not include it in terraform destroy.
+    The seed node (node 0) provisions the cert and writes it here; workers read from it.
+  EOT
+  type        = string
+  default     = "verimus-wildcard-tls-cache"
+}
+

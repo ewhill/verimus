@@ -91,7 +91,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "verimus_storage_e
   }
 }
 
-# Ensure Public Access is completely blocked securely natively intrinsically
+# Ensure Public Access is completely blocked securely
 resource "aws_s3_bucket_public_access_block" "verimus_storage_block" {
   count  = var.node_count
   bucket = aws_s3_bucket.verimus_storage[count.index].id
@@ -102,7 +102,44 @@ resource "aws_s3_bucket_public_access_block" "verimus_storage_block" {
   restrict_public_buckets = true
 }
 
-# Minimalist IAM Policy mapping securely binding ALL nodes to ALL dynamically populated explicit isolated buckets implicitly smoothly
+# Wildcard TLS cert cache — persists across terraform destroy cycles to avoid Let's Encrypt rate limits.
+# Hardened to match the storage bucket security posture: private, encrypted, versioned.
+resource "aws_s3_bucket" "verimus_certs" {
+  bucket        = var.certs_bucket_name
+  force_destroy = false
+
+  tags = {
+    Name = "VerimusCertCache"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "verimus_certs_versioning" {
+  bucket = aws_s3_bucket.verimus_certs.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "verimus_certs_encryption" {
+  bucket = aws_s3_bucket.verimus_certs.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+    bucket_key_enabled = true
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "verimus_certs_block" {
+  bucket = aws_s3_bucket.verimus_certs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# IAM policy — storage buckets, wildcard TLS cert S3 cache, and Route53 DNS-01 for certbot
 data "aws_iam_policy_document" "s3_access_policy" {
   statement {
     actions   = ["s3:PutObject", "s3:GetObject", "s3:ListBucket", "s3:DeleteObject"]
@@ -110,6 +147,31 @@ data "aws_iam_policy_document" "s3_access_policy" {
       [for bucket in aws_s3_bucket.verimus_storage : bucket.arn],
       [for bucket in aws_s3_bucket.verimus_storage : "${bucket.arn}/*"]
     )
+  }
+
+  # Certs bucket — seed writes the wildcard cert; workers read it. No CreateBucket needed (Terraform manages it).
+  statement {
+    actions   = ["s3:PutObject", "s3:GetObject", "s3:ListBucket"]
+    resources = [
+      aws_s3_bucket.verimus_certs.arn,
+      "${aws_s3_bucket.verimus_certs.arn}/*"
+    ]
+  }
+
+  # Route53 DNS-01 challenge — scoped to the minimum required resources.
+  # ChangeResourceRecordSets and ListResourceRecordSets are zone-scoped.
+  statement {
+    actions = [
+      "route53:ChangeResourceRecordSets",
+      "route53:ListResourceRecordSets"
+    ]
+    resources = ["arn:aws:route53:::hostedzone/${data.aws_route53_zone.verimus.zone_id}"]
+  }
+
+  # GetChange is change-set scoped; ListHostedZones has no resource-level support.
+  statement {
+    actions   = ["route53:GetChange", "route53:ListHostedZones"]
+    resources = ["*"]
   }
 }
 
@@ -201,7 +263,7 @@ resource "aws_instance" "verimus_node" {
   user_data = <<-EOF
               #!/bin/bash
               apt-get update -y
-              apt-get install -y docker.io docker-compose git certbot
+              apt-get install -y docker.io docker-compose git certbot python3-certbot-dns-route53
               systemctl enable docker
               systemctl start docker
               
@@ -210,28 +272,55 @@ resource "aws_instance" "verimus_node" {
               cd verimus
               
               %{ if count.index == 0 ~}
-              # Node 0 (Origin Seed Node & UI UI Server) Setup mapped tightly
-              echo "Let's Encrypt inherently natively bypassed organically due to invalid root domain structural dependencies dynamically"
-              
-              openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-                -keyout /opt/verimus/https.key.pem \
-                -out /opt/verimus/https.cert.pem \
-                -subj "/C=US/ST=State/L=City/O=Organization/CN=verimus.io"
-              
+              # Seed node: provision *.verimus.io wildcard cert via certbot DNS-01 + Route53.
+              # Caches cert to S3 so subsequent redeploys skip Let's Encrypt entirely.
+              mkdir -p /opt/verimus
+              CERT_VALID=false
+              if aws s3 ls s3://${var.certs_bucket_name}/certs/fullchain.pem > /dev/null 2>&1; then
+                aws s3 cp s3://${var.certs_bucket_name}/certs/fullchain.pem /opt/verimus/https.cert.pem
+                aws s3 cp s3://${var.certs_bucket_name}/certs/privkey.pem /opt/verimus/https.key.pem
+                if openssl x509 -checkend 2592000 -noout -in /opt/verimus/https.cert.pem 2>/dev/null; then
+                  echo "[*] Reusing cached wildcard cert (>30 days remaining). Skipping Let's Encrypt."
+                  CERT_VALID=true
+                else
+                  echo "[!] Cached cert expiring within 30 days — requesting renewal."
+                fi
+              fi
+              if [ "$CERT_VALID" = "false" ]; then
+                certbot certonly \
+                  --dns-route53 \
+                  --dns-route53-propagation-seconds 60 \
+                  -d verimus.io \
+                  -d "*.verimus.io" \
+                  --non-interactive \
+                  --agree-tos \
+                  --email admin@verimus.io
+                cp /etc/letsencrypt/live/verimus.io/fullchain.pem /opt/verimus/https.cert.pem
+                cp /etc/letsencrypt/live/verimus.io/privkey.pem /opt/verimus/https.key.pem
+                aws s3 cp /opt/verimus/https.cert.pem s3://${var.certs_bucket_name}/certs/fullchain.pem
+                aws s3 cp /opt/verimus/https.key.pem s3://${var.certs_bucket_name}/certs/privkey.pem
+                echo "[*] Wildcard cert provisioned and cached to S3."
+              fi
+
               export PUBLIC_ADDRESS="verimus.io:443"
               export DISCOVER_ARG=""
               export HEADLESS_ARG=""
               %{ else ~}
-              # Nodes 1-4 (Headless Workers) dynamically routing natively locally sidestepping CA boundaries intrinsically
-              openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-                -keyout /opt/verimus/https.key.pem \
-                -out /opt/verimus/https.cert.pem \
-                -subj "/C=US/ST=State/L=City/O=Organization/CN=headless"
-                
-              TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" -s || echo "")
-              PUBLIC_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/public-ipv4 || echo "127.0.0.1")
-              
-              export PUBLIC_ADDRESS="$PUBLIC_IP:443"
+              # Worker nodes: download the shared wildcard cert from S3 (written by seed node).
+              mkdir -p /opt/verimus
+              MAX_CERT_RETRIES=40
+              for attempt in $(seq 1 $MAX_CERT_RETRIES); do
+                if aws s3 ls s3://${var.certs_bucket_name}/certs/fullchain.pem > /dev/null 2>&1; then
+                  aws s3 cp s3://${var.certs_bucket_name}/certs/fullchain.pem /opt/verimus/https.cert.pem
+                  aws s3 cp s3://${var.certs_bucket_name}/certs/privkey.pem /opt/verimus/https.key.pem
+                  echo "[*] Wildcard cert downloaded from S3 (attempt $attempt)."
+                  break
+                fi
+                echo "[...] Cert not yet in S3 (attempt $attempt/$MAX_CERT_RETRIES). Retrying in 15s..."
+                sleep 15
+              done
+
+              export PUBLIC_ADDRESS="node${count.index}.verimus.io:443"
               export DISCOVER_ARG="--discover verimus.io:443"
               export HEADLESS_ARG="--headless"
               %{ endif ~}
@@ -355,4 +444,22 @@ resource "aws_route53_record" "www_node_record" {
   records = [aws_eip.node_static_ip[0].public_ip]
 }
 
+# node0.verimus.io — seed node, pinned to the Elastic IP for DNS stability
+resource "aws_route53_record" "node0_record" {
+  zone_id = data.aws_route53_zone.verimus.zone_id
+  name    = "node0.verimus.io"
+  type    = "A"
+  ttl     = "300"
+  records = [aws_eip.node_static_ip[0].public_ip]
+}
 
+# node1.verimus.io ... nodeN.verimus.io — headless worker subdomains
+# All are covered by the *.verimus.io wildcard cert provisioned by node 0
+resource "aws_route53_record" "worker_node_record" {
+  count   = var.node_count - 1
+  zone_id = data.aws_route53_zone.verimus.zone_id
+  name    = "node${count.index + 1}.verimus.io"
+  type    = "A"
+  ttl     = "300"
+  records = [aws_instance.verimus_node[count.index + 1].public_ip]
+}
