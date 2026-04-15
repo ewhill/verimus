@@ -272,7 +272,7 @@ class GlobalAuditor {
                             }
 
                             isResolved = true;
-                            this.node.events.off(`merkle_audit_response:${auditId}:${fragment.physicalId}`, responseHandler);
+                            this.node.events.off(`audit_response:${auditId}:${fragment.physicalId}`, responseHandler);
                             if (fragment.nodeId !== 'GENESIS_NODE') {
                                 if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(fragment.nodeId, "Audit Timeout Offense");
                                 logger.warn(`[Peer ${this.node.port}] Host ${fragment.nodeId} failed to return Merkle proof for physicalId=${fragment.physicalId} auditId=${auditId}! Penalty mapped.`);
@@ -291,9 +291,11 @@ class GlobalAuditor {
                     if (isResolved) return;
                     if (resMsg.auditorNodeId && resMsg.auditorNodeId !== this.node.walletAddress) return;
 
+                    logger.warn(`[DEBUG AUDIT] responseHandler executing for ${resMsg.responderNodeId} physicalId ${resMsg.physicalId}`);
+
                     isResolved = true;
                     clearTimeout(currentTimeoutRef);
-                    this.node.events.off(`merkle_audit_response:${auditId}:${fragment.physicalId}`, responseHandler);
+                    this.node.events.off(`audit_response:${auditId}:${fragment.physicalId}`, responseHandler);
 
                     let isValid = false;
                     if (resMsg.computedRootMatch && resMsg.chunkDataBase64 && resMsg.merkleSiblings) {
@@ -354,7 +356,7 @@ class GlobalAuditor {
                     }
                 };
 
-                this.node.events.on(`merkle_audit_response:${auditId}:${fragment.physicalId}`, responseHandler);
+                this.node.events.on(`audit_response:${auditId}:${fragment.physicalId}`, responseHandler);
                 attemptChallenge();
             }
         }

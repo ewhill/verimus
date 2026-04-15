@@ -23,6 +23,14 @@ provider "aws" {
   region = var.aws_region
 }
 
+# Read pre-generated node key files produced by 'npm run keygen'.
+# Each keys/node_N.json holds { node, port, address, mnemonic }.
+locals {
+  node_keys = [
+    for i in range(var.node_count) : jsondecode(file("${path.root}/${var.keys_dir}/node_${i}.json"))
+  ]
+}
+
 # Provide an Elastic IP exclusively strictly targeting the origin seed node seamlessly
 resource "aws_eip" "node_static_ip" {
   count  = 1
@@ -235,6 +243,7 @@ resource "aws_instance" "verimus_node" {
                 verimus-node:
                   environment:
                     - "UI_PASSWORD=${random_password.admin_password.result}"
+                    - "EVM_WALLET_MNEMONIC=${local.node_keys[count.index].mnemonic}"
                     - NODE_ENV=production
                   ports:
                     - "443:443"
@@ -258,6 +267,7 @@ resource "aws_instance" "verimus_node" {
                 verimus-node:
                   environment:
                     - "UI_PASSWORD=${random_password.admin_password.result}"
+                    - "EVM_WALLET_MNEMONIC=${local.node_keys[count.index].mnemonic}"
                     - NODE_ENV=production
                   ports:
                     - "443:443"
@@ -280,13 +290,26 @@ resource "aws_instance" "verimus_node" {
               %{ endif ~}
 
 
-              # Evolve storage-type cleanly seamlessly targeting IAM profiles (no raw keys needed)
-              export STORAGE_CREDS_ACTIVE="true" 
+              # Deduplicate storage export
+              export STORAGE_CREDS_ACTIVE="true"
               export S3_BUCKET="${var.s3_bucket_name}-n${count.index}"
-              
-              export STORAGE_CREDS_ACTIVE="true" 
-              export S3_BUCKET="${var.s3_bucket_name}-n${count.index}"
-              
+
+              %{ if count.index > 0 ~}
+              # Worker nodes wait for the seed node to be fully reachable before joining.
+              # This breaks the race condition between EC2 boot time and network convergence.
+              echo "[*] Waiting for seed node verimus.io:443 to become reachable..."
+              MAX_RETRIES=40
+              for attempt in $(seq 1 $MAX_RETRIES); do
+                STATUS=$(curl -sk --max-time 10 -o /dev/null -w "%{http_code}" "https://verimus.io/health" 2>/dev/null || echo "000")
+                if [ "$STATUS" = "200" ]; then
+                  echo "[✓] Seed node is healthy (attempt $attempt). Proceeding..."
+                  break
+                fi
+                echo "[...] Attempt $attempt/$MAX_RETRIES — seed returned HTTP $STATUS. Retrying in 30s..."
+                sleep 30
+              done
+              %{ endif ~}
+
               docker-compose up --build -d
               EOF
 
@@ -304,8 +327,12 @@ resource "aws_instance" "verimus_node" {
   }
 
   tags = {
-    Name = "Verimus-Node"
+    Name = "Verimus-Node-${count.index}"
   }
+
+  # Workers depend on the seed EIP association so the seed has a stable
+  # public IP before workers boot and begin polling verimus.io/health.
+  depends_on = [aws_eip_association.eip_assoc]
 }
 
 resource "aws_eip_association" "eip_assoc" {

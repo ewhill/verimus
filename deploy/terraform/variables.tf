@@ -22,7 +22,19 @@ variable "repo_clone_url" {
 }
 
 variable "node_count" {
-  description = "Number of Verimus nodes natively bound"
+  description = "Number of Verimus nodes to deploy"
   type        = number
-  default     = 1
+  default     = 5
 }
+
+variable "keys_dir" {
+  description = <<-EOT
+    Path to the directory containing pre-generated node key files (node_0.json ... node_N.json).
+    Run 'npm run keygen' from the project root to generate these before deploying.
+    Each file holds { node, port, address, mnemonic } for that node index.
+    This directory is excluded from git via .gitignore.
+  EOT
+  type        = string
+  default     = "../../keys"
+}
+

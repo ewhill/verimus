@@ -82,7 +82,7 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
         CONNECTED_COUNT=0
     fi
 
-    if [ "$CONNECTED_COUNT" == "4" ]; then
+    if [ "$CONNECTED_COUNT" -ge 4 ]; then
         echo "✅ Network converged! All nodes are connected."
         break
     fi
@@ -94,26 +94,6 @@ done
 if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     echo -e "\033[1;33mWarning: Network did not fully converge within the time limit. Seeding might fail.\033[0m"
 fi
-
-# echo "5. Seeding 5 blocks..."
-# for i in {1..5}; do
-#     FILE="dummy_seed_$i.txt"
-#     echo "Seed data for block $i - Timestamp: $(date)" > "$FILE"
-#     # Rotate target nodes for uploads
-#     TARGET_PORT=${PORTS[$(( (i-1) % 5 ))]}
-#     
-#     ABS_PATH="$PWD/$FILE"
-#     RESPONSE=$(curl -s -k -X POST -F "files=@$FILE" -F "paths=[\"$ABS_PATH\"]" -F "ownerAddress=$DUMMY_WALLET" -F "ownerSignature=$DUMMY_SIG" -F "timestamp=$DUMMY_TIMESTAMP" "https://127.0.0.1:$TARGET_PORT/api/upload")
-#     
-#     if [[ $RESPONSE == *"success\":true"* ]]; then
-#         echo "✅ Seeded block $i via node on port $TARGET_PORT"
-#     else
-#         echo "❌ Failed to seed block $i via node on port $TARGET_PORT"
-#         echo "Response: $RESPONSE"
-#     fi
-#     rm "$FILE"
-# done
-echo "5. [Skipped] Seeding 5 test blocks... (Network requires organic PoSt limits scaling natively)"
 
 echo -e '\n\033[1;32m==========================================='
 echo "  Nodes are running and active!            "

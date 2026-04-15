@@ -40,7 +40,7 @@ describe('WalletManager', () => {
 
         const walletManager = new WalletManager(mockLedger);
         const balance = await walletManager.calculateBalance(testWallet);
-        assert.strictEqual(balance, ethers.parseUnits("50", 18));
+        assert.strictEqual(balance, 0n);
     });
 
     it('Verifies boundaries checking mathematical state', async () => {

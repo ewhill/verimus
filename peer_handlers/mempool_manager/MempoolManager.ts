@@ -7,7 +7,7 @@ import logger from '../../logger/Logger';
 import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
 import Mempool from '../../models/mempool/Mempool';
 import PeerNode from '../../peer_node/PeerNode';
-import type { Block, PeerConnection, TransactionPayload, StorageContractPayload, SlashingPayload, CheckpointStatePayload } from '../../types';
+import type { Block, PeerConnection, TransactionPayload, StorageContractPayload, SlashingPayload, CheckpointStatePayload, StakingContractPayload, ValidatorRegistrationPayload } from '../../types';
 import { SyncState } from '../../types/SyncState';
 import KeyedMutex from '../../utils/KeyedMutex';
 
@@ -77,7 +77,9 @@ class MempoolManager {
             if (block.type === BLOCK_TYPES.TRANSACTION) {
                 const txPayload = block.payload as TransactionPayload;
                 
-                if (txPayload.senderAddress !== block.signerAddress) {
+                const isSystemMint = txPayload.senderAddress === ethers.ZeroAddress && txPayload.senderSignature === 'SYSTEM_SIG';
+                
+                if (!isSystemMint && txPayload.senderAddress !== block.signerAddress) {
                     logger.warn(`[Peer ${this.node.port}] Rejected Transaction: senderAddress does not match signerAddress`);
                     if (this.node.reputationManager) await this.node.reputationManager.penalizeCritical(block.signerAddress, "Transaction Forgery");
                     return;
@@ -126,6 +128,44 @@ class MempoolManager {
                             logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Originator ${block.signerAddress.slice(0, 8)} possesses NO valid Proof-of-Stake STAKING_CONTRACT collateral!`);
                             return;
                         }
+                    }
+                }
+            }
+
+            if (block.type === BLOCK_TYPES.STAKING_CONTRACT) {
+                const scPayload = block.payload as StakingContractPayload;
+                if (!scPayload.operatorAddress || scPayload.operatorAddress !== block.signerAddress) {
+                    logger.warn(`[Peer ${this.node.port}] Rejected STAKING_CONTRACT: operatorAddress does not match signerAddress`);
+                    return;
+                }
+                const colAmt = BigInt(scPayload.collateralAmount);
+                if (colAmt <= 0n) {
+                    logger.warn(`[Peer ${this.node.port}] Rejected STAKING_CONTRACT: Invalid collateralAmount`);
+                    return;
+                }
+                const hasFunds = await this.walletManager.verifyFunds(scPayload.operatorAddress, colAmt);
+                if (!hasFunds) {
+                    logger.warn(`[Peer ${this.node.port}] Rejected STAKING_CONTRACT: Insufficient Funds from ${scPayload.operatorAddress}`);
+                    return;
+                }
+            }
+
+            if (block.type === BLOCK_TYPES.VALIDATOR_REGISTRATION) {
+                const vPayload = block.payload as ValidatorRegistrationPayload;
+                if (!vPayload.validatorAddress || vPayload.validatorAddress !== block.signerAddress) {
+                    logger.warn(`[Peer ${this.node.port}] Rejected VALIDATOR_REGISTRATION: validatorAddress does not match signerAddress`);
+                    return;
+                }
+                if (vPayload.action === 'STAKE') {
+                    const stakeAmt = BigInt(vPayload.stakeAmount);
+                    if (stakeAmt <= 0n) {
+                        logger.warn(`[Peer ${this.node.port}] Rejected VALIDATOR_REGISTRATION: Invalid stakeAmount`);
+                        return;
+                    }
+                    const hasFunds = await this.walletManager.verifyFunds(vPayload.validatorAddress, stakeAmt);
+                    if (!hasFunds) {
+                        logger.warn(`[Peer ${this.node.port}] Rejected VALIDATOR_REGISTRATION: Insufficient Funds from ${vPayload.validatorAddress}`);
+                        return;
                     }
                 }
             }

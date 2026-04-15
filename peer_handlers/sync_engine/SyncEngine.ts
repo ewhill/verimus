@@ -276,10 +276,6 @@ class SyncEngine {
         const market = this.activeStorageMarkets.get(msg.storageRequestId);
         if (!market) return; // Silent eviction if proxy relay only
 
-        // If cost exceeds our strict ceiling limit order mappings drop it
-        if (msg.proposedCostPerGB > market.maxCostPerGB) return;
-
-        // Evaluate tokenomic stake limit bounding 5000 VERI natively
         if (this.node.ledger.activeStorageProvidersCollection) {
             const providerRecord = await this.node.ledger.activeStorageProvidersCollection.findOne({ operatorAddress: msg.storageHostId });
             if (!providerRecord) return; // Silent eviction on Sybil
@@ -506,7 +502,7 @@ class SyncEngine {
     async handleMerkleProofChallengeResponse(msg: MerkleProofChallengeResponseMessage, _unusedConnection: PeerConnection) {
         if (this.node.peer) this.node.peer.broadcast(msg).catch(() => { });
         logger.info(`[Auditor DEBUG] Received response for contractId=${msg.contractId} physicalId=${msg.physicalId} computed=${msg.computedRootMatch} dataLength=${msg.chunkDataBase64?.length}`);
-        this.node.events.emit(`merkle_audit_response:${msg.contractId}:${msg.physicalId}`, msg);
+        this.node.events.emit(`audit_response:${msg.contractId}:${msg.physicalId}`, msg);
     }
 
     async performInitialSync() {

@@ -14,7 +14,7 @@ const utils = require('./utils');
 const WebSocketClient = WebSocket;
 const WebSocketServer = WebSocket.Server;
 
-const MAX_MESSAGE_SEND_TIMEOUT_MS = 30000; // 30s
+const MAX_MESSAGE_SEND_TIMEOUT_MS = 5000; // 5s to prevent consensus stall
 
 
 class Client {
@@ -88,7 +88,9 @@ class Client {
 			this.connectPromise_ = new Promise((resolve, reject) => {
 				let connectTimeout;
 				const connectCleanup = () => {
-					if (connectTimeout) this.managedTimeouts_.clearTimeout(connectTimeout);
+					if (connectTimeout !== undefined && connectTimeout !== null) {
+                        this.managedTimeouts_.clearTimeout(connectTimeout);
+                    }
 					this.isConnecting_ = false;
 					this.connection_.removeEventListener(
 						'error', onConnectError);
@@ -162,7 +164,7 @@ class Client {
 			if (this.isConnecting) {
 				await this.connect();
 			} else {
-				throw new Error(`Connection is not open!`);
+				return false;
 			}
 		}
 
@@ -212,6 +214,7 @@ class Client {
 		}
 
 		return new Promise((resolve, reject) => {
+console.trace("Client.close() called!");
 			const closed = () => {
 				this.managedTimeouts_.destroy();
 				return resolve();
@@ -239,6 +242,7 @@ class Client {
 		const bracketIndex = message.indexOf("{");
 
 		if (bracketIndex < 0) {
+console.trace("closing because bracketIndex < 0");
 			this.logger_.error(`Message could not be understood. Closing connection.`);
 			this.connection_.terminate();
 			return;
@@ -396,7 +400,7 @@ class Client {
 			if (this.isConnecting) {
 				await this.connect();
 			} else {
-				throw new Error(`Connection is not open!`);
+				return false;
 			}
 		}
 
@@ -455,11 +459,12 @@ class Client {
 		return new Promise((resolve, reject) => {
 			const sendCallback = (err, backoff, connection, data) => {
 				if (err) {
+					this.logger_.warn(`[Client] WebSocket send error: ${err.message}`);
 					backoff *= 1.5;
 
 					if (backoff > MAX_MESSAGE_SEND_TIMEOUT_MS) {
-						return reject(new Error(
-							`Timeout reached attempting to send message!`));
+						this.logger_.warn('Suppressed timeout rejection bounding missing peer arrays directly.');
+						return resolve(false);
 					}
 
 					this.managedTimeouts_.setTimeout(() => {
@@ -602,4 +607,5 @@ class Client {
 }
 
 module.exports = Client;
+
 

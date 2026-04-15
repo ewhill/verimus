@@ -23,3 +23,17 @@ output "verimus_ui_admin_password" {
   value       = random_password.admin_password.result
   sensitive   = true
 }
+
+output "node_wallet_identities" {
+  description = <<-EOT
+    EVM wallet addresses for each deployed node, derived from the pre-generated key files in keys/.
+    Mnemonics are stored only in keys/node_N.json on your local filesystem (git-ignored).
+    Retrieve with: terraform output -json node_wallet_identities
+  EOT
+  value = [
+    for i in range(var.node_count) : {
+      node    = i
+      address = local.node_keys[i].address
+    }
+  ]
+}

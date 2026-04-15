@@ -5,9 +5,10 @@ import { ethers } from 'ethers';
 
 import type { Block } from './types';
 
-export const GENESIS_TIMESTAMP = process.env.VERIMUS_GENESIS_TIMESTAMP ? parseInt(process.env.VERIMUS_GENESIS_TIMESTAMP) : 1776038400000; // April 13, 2026 00:00:00 UTC
+export const GENESIS_TIMESTAMP = process.env.VERIMUS_GENESIS_TIMESTAMP ? parseInt(process.env.VERIMUS_GENESIS_TIMESTAMP) : 1776220873710;
 
 export const IS_DEV_NETWORK = process.env.NODE_ENV !== 'production';
+export const IS_TEST_NETWORK = process.env.NODE_ENV === 'test';
 
 if (!('toJSON' in BigInt.prototype)) {
     (BigInt.prototype as any).toJSON = function () { return this.toString(); };

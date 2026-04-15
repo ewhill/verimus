@@ -64,6 +64,12 @@ export default function setupExpressApp(peerNode: PeerNode) {
     }
     app.use(express.json());
 
+    // Lightweight health check endpoint — no auth, no DB dependency.
+    // Used by headless workers to poll seed node readiness before joining the P2P network.
+    app.get('/health', (_unusedReq, res) => {
+        res.status(200).json({ status: 'ok', port: peerNode.port });
+    });
+
     // Public Node Config (Allows clients to discover fee / roles)
     app.get('/api/node/config', new NodeConfigHandler(peerNode).handle);
 
