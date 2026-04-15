@@ -263,7 +263,7 @@ resource "aws_instance" "verimus_node" {
   user_data = <<-EOF
               #!/bin/bash
               apt-get update -y
-              apt-get install -y docker.io docker-compose git certbot python3-certbot-dns-route53
+              apt-get install -y docker.io docker-compose git python3-pip
               systemctl enable docker
               systemctl start docker
               
@@ -274,6 +274,12 @@ resource "aws_instance" "verimus_node" {
               %{ if count.index == 0 ~}
               # Seed node: provision *.verimus.io wildcard cert via certbot DNS-01 + Route53.
               # Caches cert to S3 so subsequent redeploys skip Let's Encrypt entirely.
+              #
+              # Use pip3 to install certbot — the Ubuntu 22.04 apt packages (certbot 1.21 +
+              # python3-certbot-dns-route53 1.3) are version-mismatched. pip3 always resolves
+              # the latest compatible plugin alongside certbot.
+              pip3 install --quiet certbot certbot-dns-route53
+
               mkdir -p /opt/verimus
               CERT_VALID=false
               if aws s3 ls s3://${var.certs_bucket_name}/certs/fullchain.pem > /dev/null 2>&1; then
@@ -294,7 +300,11 @@ resource "aws_instance" "verimus_node" {
                   -d "*.verimus.io" \
                   --non-interactive \
                   --agree-tos \
-                  --email admin@verimus.io
+                  --email admin@verimus.io || {
+                    echo "[ERROR] certbot provisioning failed. Letsencrypt log:"
+                    cat /var/log/letsencrypt/letsencrypt.log 2>/dev/null || true
+                    exit 1
+                  }
                 cp /etc/letsencrypt/live/verimus.io/fullchain.pem /opt/verimus/https.cert.pem
                 cp /etc/letsencrypt/live/verimus.io/privkey.pem /opt/verimus/https.key.pem
                 aws s3 cp /opt/verimus/https.cert.pem s3://${var.certs_bucket_name}/certs/fullchain.pem
