@@ -813,11 +813,11 @@ class Peer {
    *         Whether the given signature matches this peer's signature.
    */
   isOwnSignature(signature) {
-    if (signature) {
+    if (signature && this.walletAddress_) {
       if (Buffer.isBuffer(signature)) {
-        return signature.toString('utf8') === this.publicKey_.toString('utf8');
+        return signature.toString('utf8').toLowerCase() === this.walletAddress_.toLowerCase();
       }
-      return signature === this.publicKey_.toString('utf8');
+      return signature.toLowerCase() === this.walletAddress_.toLowerCase();
     }
     return false;
   }

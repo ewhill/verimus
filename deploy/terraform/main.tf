@@ -269,7 +269,7 @@ resource "aws_instance" "verimus_node" {
   # Provision EC2 automatically mounting Docker environment
   user_data = <<-EOF
               #!/bin/bash
-              # Force Build Ref: Client Memory Fix
+              # Force Build Ref: Client Memory Fix 2
               apt-get update -y
               apt-get install -y docker.io docker-compose git python3-pip unzip
               systemctl enable docker
