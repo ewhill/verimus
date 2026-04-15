@@ -300,7 +300,7 @@ resource "aws_instance" "verimus_node" {
               echo "[*] Waiting for seed node verimus.io:443 to become reachable..."
               MAX_RETRIES=40
               for attempt in $(seq 1 $MAX_RETRIES); do
-                STATUS=$(curl -sk --max-time 10 -o /dev/null -w "%{http_code}" "https://verimus.io/health" 2>/dev/null || echo "000")
+                STATUS=$(curl -sk --max-time 10 -o /dev/null -w "%%{http_code}" "https://verimus.io/health" 2>/dev/null || echo "000")
                 if [ "$STATUS" = "200" ]; then
                   echo "[✓] Seed node is healthy (attempt $attempt). Proceeding..."
                   break
@@ -329,10 +329,6 @@ resource "aws_instance" "verimus_node" {
   tags = {
     Name = "Verimus-Node-${count.index}"
   }
-
-  # Workers depend on the seed EIP association so the seed has a stable
-  # public IP before workers boot and begin polling verimus.io/health.
-  depends_on = [aws_eip_association.eip_assoc]
 }
 
 resource "aws_eip_association" "eip_assoc" {
