@@ -596,7 +596,7 @@ console.trace("closing because bracketIndex < 0");
 	}
 
 	get created() { return this.created_ };
-	get on() { return this.connection_.on; }
+	get on() { return this.connection_.on.bind(this.connection_); }
 	get isConnected() { return this.isConnected_; }
 	get isConnecting() { return this.isConnecting_; }
 	get isUpgrading() { return this.isUpgrading_; }

@@ -269,10 +269,15 @@ resource "aws_instance" "verimus_node" {
   # Provision EC2 automatically mounting Docker environment
   user_data = <<-EOF
               #!/bin/bash
+              # Force Build Ref: Client Memory Fix
               apt-get update -y
-              apt-get install -y docker.io docker-compose git python3-pip
+              apt-get install -y docker.io docker-compose git python3-pip unzip
               systemctl enable docker
               systemctl start docker
+              
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              unzip -q awscliv2.zip
+              ./aws/install
               
               cd /opt
               git clone https://github.com/ewhill/verimus.git
@@ -334,6 +339,11 @@ resource "aws_instance" "verimus_node" {
                 echo "[...] Cert not yet in S3 (attempt $attempt/$MAX_CERT_RETRIES). Retrying in 15s..."
                 sleep 15
               done
+
+              if [ ! -f "/opt/verimus/https.cert.pem" ]; then
+                echo "[ERROR] Failed to download wildcard cert from S3 after $MAX_CERT_RETRIES attempts. Aborting."
+                exit 1
+              fi
 
               export DISCOVER_ARG="--discover verimus.io:443"
               export HEADLESS_ARG="--headless"
