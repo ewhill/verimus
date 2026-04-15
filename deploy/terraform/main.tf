@@ -23,12 +23,19 @@ provider "aws" {
   region = var.aws_region
 }
 
+# Derive storage bucket names from the AWS account ID so they are globally unique
+# without requiring a manually-managed timestamp suffix.
+data "aws_caller_identity" "current" {}
+
 # Read pre-generated node key files produced by 'npm run keygen'.
 # Each keys/node_N.json holds { node, port, address, mnemonic }.
 locals {
   node_keys = [
     for i in range(var.node_count) : jsondecode(file("${path.root}/${var.keys_dir}/node_${i}.json"))
   ]
+
+  # Stable, globally-unique S3 prefix: <base>-<account_id>-n<index>
+  storage_bucket_prefix = "${var.s3_bucket_name}-${data.aws_caller_identity.current.account_id}"
 }
 
 # Provide an Elastic IP exclusively strictly targeting the origin seed node seamlessly
@@ -61,7 +68,7 @@ resource "random_password" "admin_password" {
 # Dedicated Storage Bucket for the Node explicitly decoupled naturally
 resource "aws_s3_bucket" "verimus_storage" {
   count         = var.node_count
-  bucket        = "${var.s3_bucket_name}-n${count.index}"
+  bucket        = "${local.storage_bucket_prefix}-n${count.index}"
   force_destroy = true
 
   tags = {
@@ -391,7 +398,7 @@ resource "aws_instance" "verimus_node" {
 
               # Deduplicate storage export
               export STORAGE_CREDS_ACTIVE="true"
-              export S3_BUCKET="${var.s3_bucket_name}-n${count.index}"
+              export S3_BUCKET="${local.storage_bucket_prefix}-n${count.index}"
 
               %{ if count.index > 0 ~}
               # Worker nodes wait for the seed node to be fully reachable before joining.

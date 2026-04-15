@@ -11,8 +11,13 @@ variable "instance_type" {
 }
 
 variable "s3_bucket_name" {
-  description = "The precise name mapped structurally to your elastic S3 limits (Must be globally unique!)"
+  description = <<-EOT
+    Base prefix for per-node S3 storage bucket names. The AWS account ID is appended
+    at plan time (via locals.storage_bucket_prefix) to guarantee global uniqueness.
+    Rarely needs to be overridden.
+  EOT
   type        = string
+  default     = "verimus-node-storage"
 }
 
 variable "repo_clone_url" {
