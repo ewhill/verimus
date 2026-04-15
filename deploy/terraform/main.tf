@@ -302,7 +302,6 @@ resource "aws_instance" "verimus_node" {
               if [ "$CERT_VALID" = "false" ]; then
                 certbot certonly \
                   --dns-route53 \
-                  --dns-route53-propagation-seconds 60 \
                   -d verimus.io \
                   -d "*.verimus.io" \
                   --non-interactive \
