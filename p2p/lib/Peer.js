@@ -298,11 +298,11 @@ class Peer {
 
       for (let port of ports) {
         const address = url.format({ ...parsedAddress, port });
-        addresses.push({ address, signature: null });
+        addresses.push({ address, signature: peer.signature || null });
       }
     } else {
       const address = url.format(parsedAddress);
-      addresses = [{ address, signature: null }];
+      addresses = [{ address, signature: peer.signature || null }];
     }
 
     for (let i = addresses.length - 1; i >= 0; i--) {
