@@ -830,11 +830,11 @@ class Peer {
    * @return {Boolean}
    *         Whether this peer is connected to the given {Client}.
    */
-  isConnectedTo({ publicKey }) {
-    if (!publicKey) return false;
-    return this.connectedPeers
-      .map(peer => peer.remotePublicKey)
-      .includes(publicKey);
+  isConnectedTo(peerObj) {
+    const pubKey = peerObj.publicKey || peerObj.signature;
+    if (pubKey && this.connectedPeers.map(peer => peer.remotePublicKey).includes(pubKey)) return true;
+    if (peerObj.address && this.connectedPeers.map(peer => peer.peerAddress).includes(peerObj.address)) return true;
+    return false;
   }
 
   /**

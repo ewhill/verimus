@@ -602,8 +602,8 @@ console.trace("closing because bracketIndex < 0");
 	get isUpgrading() { return this.isUpgrading_; }
 	get isTrusted() { return this.isTrusted_; }
 	get isTrusted() { return this.isTrusted_; }
-	get remotePublicKey() { return this.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8'); }
-	get remoteSignature() { return this.remotePublicKey; }
+	get remotePublicKey() { return this.remoteCredentials_?.walletAddress; }
+	get remoteSignature() { return this.remoteCredentials_?.walletAddress; }
 }
 
 module.exports = Client;

@@ -24,13 +24,15 @@ class S3StorageProvider extends BaseStorageProvider {
         super();
         this.bucket = bucket;
         this.region = region;
-        this.client = new S3Client({
-            region: region,
-            credentials: {
+        
+        const config: any = { region: region };
+        if (accessKey && secretKey) {
+            config.credentials = {
                 accessKeyId: accessKey,
                 secretAccessKey: secretKey
-            }
-        });
+            };
+        }
+        this.client = new S3Client(config);
         logger.info(`[S3StorageProvider] Initialized for bucket: ${this.bucket}`);
     }
 
