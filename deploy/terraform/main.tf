@@ -263,13 +263,20 @@ resource "aws_instance" "verimus_node" {
   vpc_security_group_ids = [aws_security_group.verimus_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.node_profile.name
 
+  # Allow docker containers access to IMDS metadata for IAM roles implicitly
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_put_response_hop_limit = 2
+    http_tokens                 = "optional"
+  }
+
   # Force EC2 recreation when user_data changes logically
   user_data_replace_on_change = true
 
   # Provision EC2 automatically mounting Docker environment
   user_data = <<-EOF
               #!/bin/bash
-              # Force Build Ref: Client Memory Fix 3
+              # Force Build Ref: Client Memory Fix 5
               apt-get update -y
               apt-get install -y docker.io docker-compose git python3-pip unzip
               systemctl enable docker
