@@ -116,6 +116,7 @@ async function main() {
     const keyPaths: PeerCredentials = {
         privateKey: credentials.peer?.privateKey,
         privateKeyPath: credentials.peer?.privateKeyPath,
+        evmPrivateKey: credentials.peer?.evmPrivateKey,
         evmPrivateKeyPath: credentials.peer?.evmPrivateKeyPath || evmPrivateKeyPath,
         httpsKeyPath: credentials.peer?.httpsKeyPath || httpsKeyPath,
         httpsCertPath: credentials.peer?.httpsCertPath || httpsCertPath,

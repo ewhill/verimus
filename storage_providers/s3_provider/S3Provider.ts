@@ -24,7 +24,7 @@ class S3StorageProvider extends BaseStorageProvider {
         super();
         this.bucket = bucket;
         this.region = region;
-        
+
         const config: any = { region: region };
         if (accessKey && secretKey) {
             config.credentials = {
