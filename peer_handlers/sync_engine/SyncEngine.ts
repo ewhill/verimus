@@ -436,6 +436,7 @@ class SyncEngine {
     }
 
     async handleMerkleProofChallengeRequest(msg: MerkleProofChallengeRequestMessage, _unusedConnection: PeerConnection) {
+        logger.info(`[SyncEngine DEBUG] Received Merkle Proof Challenge Request for target node: ${msg.targetNodeId}`);
         if (this.node.peer) this.node.peer.broadcast(msg).catch(() => { });
         if (!this.node.roles.includes(NodeRole.STORAGE)) return;
 
