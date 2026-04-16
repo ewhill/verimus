@@ -436,7 +436,6 @@ class SyncEngine {
     }
 
     async handleMerkleProofChallengeRequest(msg: MerkleProofChallengeRequestMessage, _unusedConnection: PeerConnection) {
-        logger.info(`[SyncEngine DEBUG] Received Merkle Proof Challenge Request for target node: ${msg.targetNodeId}`);
         if (this.node.peer) this.node.peer.broadcast(msg).catch(() => { });
         if (!this.node.roles.includes(NodeRole.STORAGE)) return;
 
@@ -447,15 +446,12 @@ class SyncEngine {
         try {
             const result = await this.node.storageProvider!.getBlockReadStream(msg.physicalId);
             if (result.status !== 'available' || !result.stream) {
-                logger.warn(`[SyncEngine DEBUG] Missed challenge block physically missing! File not found in local disk bounds: ${msg.physicalId}`);
                 return;
             }
 
             const CHUNK_SIZE = 64 * 1024;
             const chunks: Buffer[] = [];
             let currentChunk = Buffer.alloc(0);
-
-            logger.info(`[SyncEngine DEBUG] Starting explicit stream reconstruction for GENESIS_PHYSICAL_ID bounds.`);
 
             for await (const c of result.stream as any) {
                 currentChunk = Buffer.concat([currentChunk, c]);
@@ -470,7 +466,6 @@ class SyncEngine {
                 currentChunk = Buffer.alloc(0);
 
                 if (chunks.length === 0 || msg.chunkIndex >= chunks.length) {
-                    logger.info(`[SyncEngine DEBUG] Missing or Out-Of-Bounds chunk index req: ${msg.chunkIndex} >= ${chunks.length}. Broadcasting false.`);
                     const respMsg = new MerkleProofChallengeResponseMessage({
                         contractId: msg.contractId, physicalId: msg.physicalId, auditorNodeId: msg.auditorNodeId, responderNodeId: this.node.walletAddress, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
                     });
@@ -482,7 +477,6 @@ class SyncEngine {
                 const merkleSiblings = cryptoUtils.getMerkleProof(tree, msg.chunkIndex);
                 const chunkDataBase64 = chunks[msg.chunkIndex].toString('base64');
 
-                logger.info(`[SyncEngine DEBUG] Assembled valid proof for shard chunk ${msg.chunkIndex}. Broadcasting true...`);
                 const respMsg = new MerkleProofChallengeResponseMessage({
                     contractId: msg.contractId, physicalId: msg.physicalId, auditorNodeId: msg.auditorNodeId, responderNodeId: this.node.walletAddress, chunkDataBase64, merkleSiblings, computedRootMatch: true
                 });
@@ -497,7 +491,6 @@ class SyncEngine {
 
     async handleMerkleProofChallengeResponse(msg: MerkleProofChallengeResponseMessage, _unusedConnection: PeerConnection) {
         if (this.node.peer) this.node.peer.broadcast(msg).catch(() => { });
-        logger.info(`[Auditor DEBUG] Received response for contractId=${msg.contractId} physicalId=${msg.physicalId} computed=${msg.computedRootMatch} dataLength=${msg.chunkDataBase64?.length}`);
         this.node.events.emit(`audit_response:${msg.contractId}:${msg.physicalId}`, msg);
     }
 
