@@ -5,7 +5,7 @@ import { ethers } from 'ethers';
 
 import type { Block } from './types';
 
-export const GENESIS_TIMESTAMP = process.env.VERIMUS_GENESIS_TIMESTAMP ? parseInt(process.env.VERIMUS_GENESIS_TIMESTAMP) : 1776220873710;
+export const GENESIS_TIMESTAMP = process.env.VERIMUS_GENESIS_TIMESTAMP ? parseInt(process.env.VERIMUS_GENESIS_TIMESTAMP) : 1776384003000;
 
 export const IS_DEV_NETWORK = process.env.NODE_ENV !== 'production';
 export const IS_TEST_NETWORK = process.env.NODE_ENV === 'test';
