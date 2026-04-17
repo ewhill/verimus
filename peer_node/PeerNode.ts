@@ -255,17 +255,17 @@ class PeerNode {
                     // that allow the node to gracefully observe its acquired PoSt rewards and then enroll seamlessly
                     
                     if (!IS_TEST_NETWORK) {
-                        setInterval(async () => {
+                        const checkSystemEnrollment = async () => {
                             try {
                                 if (this.roles.includes(NodeRole.ORIGINATOR)) {
-                                    const hasFunds = await this.walletManager.verifyFunds(this.walletAddress, ethers.parseUnits("200", 18));
+                                    const hasFunds = await this.walletManager.verifyFunds(this.walletAddress, ethers.parseUnits("100", 18));
                                     if (hasFunds) {
                                         const existingStaking = await this.ledger.collection!.findOne({ type: 'STAKING_CONTRACT', 'payload.operatorAddress': this.walletAddress });
                                         if (!existingStaking) {
                                             const stakingBlock: Block = {
                                                 metadata: { index: -1, timestamp: Date.now() },
                                                 type: 'STAKING_CONTRACT',
-                                                payload: { operatorAddress: this.walletAddress, collateralAmount: ethers.parseUnits("200", 18), minEpochTimelineDays: 30n },
+                                                payload: { operatorAddress: this.walletAddress, collateralAmount: ethers.parseUnits("100", 18), minEpochTimelineDays: 30n },
                                                 signerAddress: this.walletAddress,
                                                 signature: ''
                                             };
@@ -301,7 +301,10 @@ class PeerNode {
                             } catch (error: any) {
                                 // Silent retry gracefully avoiding spamming the console
                             }
-                        }, 300000); // Check every 5 minutes logically mapping gracefully
+                        };
+
+                        checkSystemEnrollment();
+                        setInterval(checkSystemEnrollment, 60000); // Check every 60 seconds logically mapping gracefully
                     }
                 } catch (_unusedE: any) {
                     logger.warn(`[Peer ${this.port}] Genesis Seed formulation dynamically skipped explicitly mapping safe execution limit constraints.`);

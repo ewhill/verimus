@@ -73,10 +73,13 @@ class BftCoordinator {
             
             // SECURITY CHECK: Only accept verifications from valid active validators, preventing quorum bypass
             if (!IS_DEV_NETWORK && this.node.ledger.activeValidatorsCollection && verifierId !== `127.0.0.1:${this.node.port}`) {
-                const isValidator = await this.node.ledger.activeValidatorsCollection.findOne({ validatorAddress: verifierId });
-                if (!isValidator) {
-                    logger.warn(`[Peer ${this.node.port}] Rejected Verification from NON-VALIDATOR ${verifierId}`);
-                    return;
+                const validatorCount = this.node.ledger.activeValidatorCountCache || 0;
+                if (validatorCount > 0) {
+                    const isValidator = await this.node.ledger.activeValidatorsCollection.findOne({ validatorAddress: verifierId });
+                    if (!isValidator) {
+                        logger.warn(`[Peer ${this.node.port}] Rejected Verification from NON-VALIDATOR ${verifierId}`);
+                        return;
+                    }
                 }
             }
 

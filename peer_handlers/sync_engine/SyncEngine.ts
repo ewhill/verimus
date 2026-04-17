@@ -280,7 +280,7 @@ class SyncEngine {
             const providerRecord = await this.node.ledger.activeStorageProvidersCollection.findOne({ operatorAddress: msg.storageHostId });
             if (!providerRecord) return; // Silent eviction on Sybil
             const stakedAmount = BigInt(providerRecord.collateralAmount);
-            const minimumStake = 5000000000000000000000n; // 5000 VERI
+            const minimumStake = 100000000000000000000n; // 100 VERI
             if (stakedAmount < minimumStake) return; 
         }
 
