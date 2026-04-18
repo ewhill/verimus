@@ -197,6 +197,8 @@ class BftCoordinator {
                                         });
                                     } else {
                                         logger.error(`[Peer ${this.node.port}] Block ${bId.slice(0,8)} failed to reach consensus after 3 physical rebroadcast attempts. Permanently discarding from limits!`);
+                                        pEntry.status = 'failed';
+                                        this.mempool.failedBlocks.set(bId, pEntry);
                                     }
                                 }
                             }

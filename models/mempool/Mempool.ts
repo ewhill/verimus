@@ -8,6 +8,7 @@ export interface PendingBlockEntry {
     committed?: boolean;
     strikes?: number;
     rebroadcastCount?: number;
+    status?: string;
 }
 
 export interface ForkEntry {
@@ -29,12 +30,14 @@ class Mempool {
     eligibleForks: Map<string, ForkEntry>;
     settledForks: Map<string, SettledForkEntry>;
     orphanedVerifications: Map<string, { signature: string, connection: PeerConnection }[]>;
+    failedBlocks: Map<string, PendingBlockEntry>;
 
     constructor() {
         this.pendingBlocks = new Map(); // blockId -> { block, verifications: Set(peerAddress) }
         this.eligibleForks = new Map(); // forkId -> { blockIds, proposals: Set(peerAddress) }
         this.settledForks = new Map();   // forkId -> { finalTipHash, adoptions: Set(peerAddress) }
         this.orphanedVerifications = new Map(); // blockId -> [{ signature, peerAddress }]
+        this.failedBlocks = new Map(); // blockId -> Failed block entries explicitly stored for UI reporting bounds safely
     }
 }
 

@@ -98,6 +98,29 @@ export default class BlocksHandler extends BaseHandler {
                     pendingBlocks.sort((a, b) => b.metadata.timestamp - a.metadata.timestamp);
                 }
             }
+            
+            if (this.node.mempool && this.node.mempool.failedBlocks) {
+                for (const [bId, entry] of this.node.mempool.failedBlocks.entries()) {
+                    if (req.query.own === 'true') {
+                        if (req.query.address) {
+                            if (!entry.block.payload || (entry.block.payload as any).ownerAddress?.toLowerCase() !== (req.query.address as string).toLowerCase()) continue;
+                        } else {
+                            if (entry.block.signerAddress !== this.node.walletAddress) continue;
+                        }
+                    }
+                    if (req.query.type && entry.block.type !== req.query.type) continue;
+
+                    pendingBlocks.push({
+                        hash: bId,
+                        metadata: { index: -1, timestamp: entry.originalTimestamp || Date.now() },
+                        type: entry.block.type || BLOCK_TYPES.STORAGE_CONTRACT,
+                        payload: entry.block.payload,
+                        signerAddress: entry.block.signerAddress,
+                        signature: entry.block.signature,
+                        status: 'failed'
+                    } as Block);
+                }
+            }
 
             let combinedBlocks = sortOrder === 1 ? [...blocks, ...pendingBlocks] : [...pendingBlocks, ...blocks];
 

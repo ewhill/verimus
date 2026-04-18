@@ -71,18 +71,19 @@ const LedgerGrid = () => {
             <div className="data-list-body">
                 {blocks.map((pkg, i) => {
                     const date = new Date(pkg.metadata?.timestamp || pkg.timestamp).toLocaleString();
-                    const isPending = pkg.status === 'pending' || pkg.metadata?.index === -1;
+                    const isFailed = pkg.status === 'failed';
+                    const isPending = (pkg.status === 'pending' || pkg.metadata?.index === -1) && !isFailed;
                     const isSelected = selectedIndex === i;
                     const typeConfig = getBlockTypeConfig(pkg.type);
                     
                     return (
                         <div 
                             key={pkg.hash} 
-                            className={`data-row ${isPending ? 'status-pending' : 'status-confirmed'} ${isSelected ? 'selected' : ''}`} 
-                            style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 0.7fr) minmax(110px, 0.8fr) 2fr 1.5fr minmax(100px, auto)', alignItems: 'center', padding: '1rem 1.5rem', cursor: isPending ? 'default' : 'pointer', animation: `staggerFadeUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) ${i * 0.05}s both` }} 
-                            onClick={() => !isPending && handleBlockClick(pkg.hash, i)}
+                            className={`data-row ${isFailed ? 'status-failed' : isPending ? 'status-pending' : 'status-confirmed'} ${isSelected ? 'selected' : ''}`} 
+                            style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 0.7fr) minmax(110px, 0.8fr) 2fr 1.5fr minmax(100px, auto)', alignItems: 'center', padding: '1rem 1.5rem', cursor: (isPending || isFailed) ? 'default' : 'pointer', animation: `staggerFadeUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) ${i * 0.05}s both` }} 
+                            onClick={() => !isPending && !isFailed && handleBlockClick(pkg.hash, i)}
                         >
-                            <div>{isPending ? <span className="badge pending">Pending</span> : <span className="badge" style={{ background: 'rgba(99,102,241,0.15)', color: '#c7d2fe' }}>#{pkg.metadata?.index ?? pkg.index}</span>}</div>
+                            <div>{isFailed ? <span className="badge" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>Failed</span> : isPending ? <span className="badge pending">Pending</span> : <span className="badge" style={{ background: 'rgba(99,102,241,0.15)', color: '#c7d2fe' }}>#{pkg.metadata?.index ?? pkg.index}</span>}</div>
                             <div>
                                 <span className="badge" style={{ background: typeConfig.bg, color: typeConfig.color, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                                     <span style={{ width: '12px', height: '12px', display: 'flex' }}>{typeConfig.icon}</span>
