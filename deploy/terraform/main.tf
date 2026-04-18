@@ -436,8 +436,8 @@ resource "aws_instance" "verimus_node" {
               # Setup OS-level Jittered CRON Updater
               cat << 'UPDATESCRIPT' > /opt/verimus/auto_update.sh
               #!/bin/bash
-              # Jitter linearly safely mapped to 0-3600 seconds (1 hour maximum random offset delays)
-              sleep $((RANDOM % 3600))
+              # Jitter linearly safely mapped to 0-1800 seconds (30 minute maximum random offset delays)
+              sleep $((RANDOM % 1800))
               cd /opt/verimus || exit
               echo "[$(date)] Executing structural OS-Level OTA Update natively..."
               git pull origin main
