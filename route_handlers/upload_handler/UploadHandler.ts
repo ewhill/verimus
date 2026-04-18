@@ -346,23 +346,33 @@ export default class UploadHandler extends BaseHandler {
                     logger.warn(`Suppressed broadcast exception: ${e.message}`);
                 }
             }
-            // Setup asynchronous listener for consensus settlement
-            const timeout = setTimeout(() => {
-                this.node.events.removeAllListeners(`settled:${blockId}`);
-                logger.error(`[Peer ${this.node.port}] Consensus timeout for block ${blockId.slice(0, 8)}`);
-            }, 120000).unref(); // Expanded timeout to 2 minutes for edge cases since user doesn't wait and unref so it doesn't block exit
+            await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    this.node.events.removeAllListeners(`settled:${blockId}`);
+                    this.node.events.removeAllListeners(`failed:${blockId}`);
+                    logger.error(`[Peer ${this.node.port}] Consensus timeout for block ${blockId.slice(0, 8)}`);
+                    reject(new Error("Network timing constraint exceeded waiting for verifiable block quorum securely!"));
+                }, 140000);
 
-            this.node.events.once(`settled:${blockId}`, (settledBlock) => {
-                clearTimeout(timeout);
-                this.node.consensusEngine.walletManager.commitFunds(marketReqId); // Flushes local mapped lock
-                logger.info(`[Peer ${this.node.port}] Block ${settledBlock.hash.slice(0, 8)} consensus achieved resolving limit orders directly!`);
+                this.node.events.once(`settled:${blockId}`, (settledBlock) => {
+                    clearTimeout(timeout);
+                    this.node.events.removeAllListeners(`failed:${blockId}`);
+                    this.node.consensusEngine.walletManager.commitFunds(marketReqId);
+                    logger.info(`[Peer ${this.node.port}] Block ${settledBlock.hash.slice(0, 8)} consensus achieved resolving limit orders directly!`);
+                    resolve(settledBlock);
+                });
+
+                this.node.events.once(`failed:${blockId}`, () => {
+                    clearTimeout(timeout);
+                    this.node.events.removeAllListeners(`settled:${blockId}`);
+                    reject(new Error("Decentralized P2P mesh fundamentally rejected quorum constraints locally! Block dropped."));
+                });
             });
 
-            // Respond immediately to UI
-            res.status(202).json({
+            res.status(200).json({
                 success: true,
-                message: "Block successfully uploaded and is pending consensus.",
-                blockIndex: "Pending",
+                message: "Block successfully uploaded and gained consensus on the ledger.",
+                blockIndex: "Settled",
                 hash: blockId,
                 aesIv: aesIv,
                 fragmentMap: fragmentMap,
