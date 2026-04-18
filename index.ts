@@ -1,3 +1,5 @@
+import { exec } from 'child_process';
+
 import Bundler from './bundler/Bundler';
 import { Credentials, PeerCredentials } from './credential_provider/CredentialProvider';
 import { CredentialProvider } from './credential_provider/CredentialProvider';
@@ -38,12 +40,15 @@ async function main() {
     let httpsCertPath: string | undefined;
     let dataDir = './data';
     let isHeadless = false;
+    let autoUpdate = false;
     let roles: NodeRole[] = [NodeRole.ORIGINATOR, NodeRole.VALIDATOR, NodeRole.STORAGE];
 
     for (let i = 2; i < process.argv.length; i++) {
         const arg = process.argv[i];
         if (arg === '--headless') {
             isHeadless = true;
+        } else if (arg === '--auto-update') {
+            autoUpdate = true;
         } else if (arg === '--mongo-host' && i + 1 < process.argv.length) {
             mongoHost = process.argv[++i];
         } else if (arg === '--mongo-port' && i + 1 < process.argv.length) {
@@ -138,6 +143,39 @@ async function main() {
     await node1.init();
 
     logger.info(`Process complete. Node listening on https://localhost:${port}`);
+
+    // DPoS Resilient Random Jittered Auto-Updater
+    if (autoUpdate) {
+        logger.info(`[Peer ${port}] Auto-updater configured. Rolling update interval initialized.`);
+        
+        const scheduleUpdate = () => {
+            // Random delay uniformly mapped between roughly 2 to 6 hours to inherently prevent deterministic network-wide split-brain partitioning offline cycles 
+            const timeoutWindow = Math.floor(Math.random() * (4 * 60 * 60 * 1000)) + (2 * 60 * 60 * 1000);
+            logger.info(`[Peer ${port}] Next OTA Auto-Update randomly scheduled in ${Math.round(timeoutWindow / 1000 / 60)} minutes.`);
+            
+            setTimeout(() => {
+                logger.info(`[Peer ${port}] Initiating securely jittered OTA GitHub Auto-Update structurally...`);
+                exec('git pull origin main && npm install && npm run build', (error, stdout, stderr) => {
+                    if (error) {
+                        logger.error(`[Peer ${port}] OTA Update inherently failed limits explicitly: ${error.message}`);
+                        // Soft-reset loop securely
+                        scheduleUpdate();
+                        return;
+                    }
+                    if (stderr) logger.warn(`[Peer ${port}] OTA stderr constraints: ${stderr}`);
+                    logger.info(`[Peer ${port}] OTA Build Success: ${stdout}`);
+                    logger.warn(`[Peer ${port}] Gracefully terminating Node process to allow PM2 daemon supervisor mapping logic to inherently restart updated container arrays completely!`);
+                    
+                    if (node1 && typeof node1.stop === 'function') {
+                        node1.stop();
+                    }
+                    setTimeout(() => process.exit(0), 3000);
+                });
+            }, timeoutWindow);
+        };
+        
+        scheduleUpdate();
+    }
 }
 
 main().catch(e => console.error("Unhandled Error in main:", e));
