@@ -44,7 +44,7 @@ abstract class BaseStorageProvider {
      * Creates a write stream for the encrypted block.
      * @returns {{ physicalBlockId: string, writeStream: NodeJS.WritableStream }}
      */
-    createBlockStream(): { physicalBlockId: string, writeStream: NodeJS.WritableStream } {
+    createBlockStream(): { physicalBlockId: string, writeStream: NodeJS.WritableStream, completionPromise?: Promise<any> } {
         throw new Error('createBlockStream not implemented');
     }
 

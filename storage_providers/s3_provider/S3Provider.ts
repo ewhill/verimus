@@ -88,11 +88,12 @@ class S3StorageProvider extends BaseStorageProvider {
         });
 
         // Run upload in background, log errors
-        upload.done().catch((err: Error | NodeJS.ErrnoException | object) => {
+        const completionPromise = upload.done().catch((err: Error | NodeJS.ErrnoException | object) => {
             logger.error(`[S3StorageProvider] Upload failed for ${physicalBlockId}:`, err);
+            throw err;
         });
 
-        return { physicalBlockId, writeStream: passThrough };
+        return { physicalBlockId, writeStream: passThrough, completionPromise };
     }
 
     async getBlockReadStream(physicalBlockId: string): Promise<GetBlockReadStreamResult> {

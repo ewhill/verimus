@@ -303,7 +303,7 @@ class SyncEngine {
         if (!this.node.roles.includes(NodeRole.STORAGE)) return;
 
         try {
-            const { physicalBlockId, writeStream } = this.node.storageProvider!.createBlockStream();
+            const { physicalBlockId, writeStream, completionPromise } = this.node.storageProvider!.createBlockStream();
 
             const buffer = Buffer.from(msg.shardDataBase64, 'base64');
             writeStream.end(buffer);
@@ -312,6 +312,10 @@ class SyncEngine {
                 writeStream.on('finish', res);
                 writeStream.on('error', rej);
             });
+
+            if (completionPromise) {
+                await completionPromise;
+            }
 
             const responseMsg = new StorageShardResponseMessage({
                 marketId: msg.marketId,

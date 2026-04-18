@@ -56,7 +56,7 @@ class LocalFileStorageProvider extends BaseStorageProvider {
     createBlockStream() {
         const physicalBlockId = hashData(Date.now().toString() + Math.random().toString());
         const filePath = path.join(this.storageDir, `${physicalBlockId}.pkg`);
-        return { physicalBlockId, writeStream: fs.createWriteStream(filePath) };
+        return { physicalBlockId, writeStream: fs.createWriteStream(filePath), completionPromise: Promise.resolve() };
     }
 
     async getBlockReadStream(physicalBlockId: string): Promise<GetBlockReadStreamResult> {
