@@ -174,6 +174,26 @@ class BftCoordinator {
                             if (pEntry.strikes >= 3) {
                                 logger.error(`[Peer ${this.node.port}] Block ${bId.slice(0,8)} strictly stalled network consensus 3 times. Purging from isolated mempool limits!`);
                                 this.mempool.pendingBlocks.delete(bId);
+
+                                if (pEntry.block.signerAddress === this.node.walletAddress && this.node.peer) {
+                                    logger.info(`[Peer ${this.node.port}] Systematically re-submitting stalled logical block implicitly!`);
+                                    
+                                    pEntry.strikes = 0;
+                                    pEntry.eligible = false;
+                                    pEntry.verifications.clear();
+                                    
+                                    this.mempool.pendingBlocks.set(bId, pEntry);
+                                    
+                                    this.node.peer.broadcast(new PendingBlockMessage({ block: pEntry.block })).catch(() => {});
+                                    
+                                    const myAddress = `127.0.0.1:${this.node.port}`;
+                                    this.node.wallet.signMessage(bId).then((myVerificationSig) => {
+                                        pEntry.verifications.add(myAddress);
+                                        this.node.peer!.broadcast(new VerifyBlockMessage({ blockId: bId, signature: myVerificationSig })).catch(() => {});
+                                    }).catch((err) => {
+                                        logger.warn(`Failed to generate async signature natively bounding limits: ${err.message}`);
+                                    });
+                                }
                             }
                         }
                     }
