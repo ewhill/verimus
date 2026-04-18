@@ -377,7 +377,6 @@ resource "aws_instance" "verimus_node" {
                     - "verimus.io:443"
                     - "--storage-type"
                     - "s3"
-                    - "--auto-update"
               COMPOSE
               %{ else ~}
               cat << 'COMPOSE' > docker-compose.override.yml
@@ -410,7 +409,6 @@ resource "aws_instance" "verimus_node" {
                     - "--headless"
                     - "--storage-type"
                     - "s3"
-                    - "--auto-update"
               COMPOSE
               %{ endif ~}
 
@@ -434,6 +432,21 @@ resource "aws_instance" "verimus_node" {
                 sleep 30
               done
               %{ endif ~}
+
+              # Setup OS-level Jittered CRON Updater
+              cat << 'UPDATESCRIPT' > /opt/verimus/auto_update.sh
+              #!/bin/bash
+              # Jitter linearly safely mapped to 0-3600 seconds (1 hour maximum random offset delays)
+              sleep $((RANDOM % 3600))
+              cd /opt/verimus || exit
+              echo "[$(date)] Executing structural OS-Level OTA Update natively..."
+              git pull origin main
+              docker-compose up --build -d
+              echo "[$(date)] Update bounds seamlessly recompiled!"
+              UPDATESCRIPT
+
+              chmod +x /opt/verimus/auto_update.sh
+              echo "0 * * * * root /opt/verimus/auto_update.sh >> /var/log/verimus_auto_update.log 2>&1" > /etc/cron.d/verimus_update
 
               docker-compose up --build -d
               EOF
