@@ -176,23 +176,28 @@ class BftCoordinator {
                                 this.mempool.pendingBlocks.delete(bId);
 
                                 if (pEntry.block.signerAddress === this.node.walletAddress && this.node.peer) {
-                                    logger.info(`[Peer ${this.node.port}] Systematically re-submitting stalled logical block implicitly!`);
-                                    
-                                    pEntry.strikes = 0;
-                                    pEntry.eligible = false;
-                                    pEntry.verifications.clear();
-                                    
-                                    this.mempool.pendingBlocks.set(bId, pEntry);
-                                    
-                                    this.node.peer.broadcast(new PendingBlockMessage({ block: pEntry.block })).catch(() => {});
-                                    
-                                    const myAddress = `127.0.0.1:${this.node.port}`;
-                                    this.node.wallet.signMessage(bId).then((myVerificationSig) => {
-                                        pEntry.verifications.add(myAddress);
-                                        this.node.peer!.broadcast(new VerifyBlockMessage({ blockId: bId, signature: myVerificationSig })).catch(() => {});
-                                    }).catch((err) => {
-                                        logger.warn(`Failed to generate async signature natively bounding limits: ${err.message}`);
-                                    });
+                                    pEntry.rebroadcastCount = (pEntry.rebroadcastCount || 0) + 1;
+                                    if (pEntry.rebroadcastCount <= 3) {
+                                        logger.info(`[Peer ${this.node.port}] Systematically re-submitting stalled logical block implicitly! (Attempt ${pEntry.rebroadcastCount}/3)`);
+                                        
+                                        pEntry.strikes = 0;
+                                        pEntry.eligible = false;
+                                        pEntry.verifications.clear();
+                                        
+                                        this.mempool.pendingBlocks.set(bId, pEntry);
+                                        
+                                        this.node.peer.broadcast(new PendingBlockMessage({ block: pEntry.block })).catch(() => {});
+                                        
+                                        const myAddress = `127.0.0.1:${this.node.port}`;
+                                        this.node.wallet.signMessage(bId).then((myVerificationSig) => {
+                                            pEntry.verifications.add(myAddress);
+                                            this.node.peer!.broadcast(new VerifyBlockMessage({ blockId: bId, signature: myVerificationSig })).catch(() => {});
+                                        }).catch((err) => {
+                                            logger.warn(`Failed to generate async signature natively bounding limits: ${err.message}`);
+                                        });
+                                    } else {
+                                        logger.error(`[Peer ${this.node.port}] Block ${bId.slice(0,8)} failed to reach consensus after 3 physical rebroadcast attempts. Permanently discarding from limits!`);
+                                    }
                                 }
                             }
                         }

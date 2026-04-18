@@ -7,6 +7,7 @@ export interface PendingBlockEntry {
     eligible?: boolean;
     committed?: boolean;
     strikes?: number;
+    rebroadcastCount?: number;
 }
 
 export interface ForkEntry {
