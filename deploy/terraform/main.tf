@@ -377,6 +377,7 @@ resource "aws_instance" "verimus_node" {
                     - "verimus.io:443"
                     - "--storage-type"
                     - "s3"
+                    - "--auto-update"
               COMPOSE
               %{ else ~}
               cat << 'COMPOSE' > docker-compose.override.yml
@@ -409,6 +410,7 @@ resource "aws_instance" "verimus_node" {
                     - "--headless"
                     - "--storage-type"
                     - "s3"
+                    - "--auto-update"
               COMPOSE
               %{ endif ~}
 
