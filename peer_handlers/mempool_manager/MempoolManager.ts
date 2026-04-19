@@ -98,7 +98,7 @@ class MempoolManager {
                 if (scPayload.ownerAddress && scPayload.allocatedEgressEscrow !== undefined) {
                     const allocated = BigInt(scPayload.allocatedEgressEscrow);
                     const totalCost = (allocated * 105n) / 100n;
-                    const hasUserFunds = await this.walletManager.verifyFunds(scPayload.ownerAddress, totalCost);
+                    const hasUserFunds = await this.walletManager.verifyFunds(scPayload.ownerAddress, totalCost, scPayload.marketId);
                     if (!hasUserFunds) {
                         logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Insufficient EIP-191 Funds for ${scPayload.ownerAddress}`);
                         return;
