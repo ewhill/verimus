@@ -161,7 +161,7 @@ export default class WalletManager {
         }
     }
 
-    async calculateBalance(address: string): Promise<bigint> {
+    async calculateBalance(address: string, excludeMarketId?: string): Promise<bigint> {
         let safeAddress = address;
         if (address === ethers.ZeroAddress) {
             // Represent infinity natively mathematically logically
@@ -185,7 +185,8 @@ export default class WalletManager {
         }
 
         // Deduct locally frozen escrows executing limit order bounds
-        for (const escrows of this.frozenEscrows.values()) {
+        for (const [marketId, escrows] of this.frozenEscrows.entries()) {
+            if (excludeMarketId && marketId === excludeMarketId) continue;
             for (const escrow of escrows) {
                 if (escrow.address === safeAddress) {
                     balance -= escrow.amount;
@@ -199,11 +200,11 @@ export default class WalletManager {
         return balance;
     }
 
-    async verifyFunds(address: string, minimumRequired: bigint): Promise<boolean> {
+    async verifyFunds(address: string, minimumRequired: bigint, excludeMarketId?: string): Promise<boolean> {
         if (address === ethers.ZeroAddress) {
             return true;
         }
-        const balance = await this.calculateBalance(address);
+        const balance = await this.calculateBalance(address, excludeMarketId);
         return balance >= minimumRequired;
     }
 
