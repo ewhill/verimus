@@ -67,7 +67,23 @@ class Ledger {
         await this.activeValidatorsCollection.createIndex({ "validatorAddress": 1 }, { unique: true });
 
         // Ensure genesis block exists
-        const count = await this.collection.countDocuments();
+        let count = await this.collection.countDocuments();
+        if (count > 0) {
+            const dbGenesis = await this.getBlockByIndex(0);
+            if (dbGenesis && dbGenesis.hash !== GENESIS_FUNDING_BLOCK.hash) {
+                // Genesis boundary collision. Automatically reset ledger securely.
+                await this.collection.deleteMany({});
+                await this.peersCollection.deleteMany({});
+                await this.ownedBlocksCollection.deleteMany({});
+                await this.balancesCollection.deleteMany({});
+                await this.activeContractsCollection.deleteMany({});
+                await this.activeValidatorsCollection.deleteMany({});
+                await this.activeStorageProvidersCollection.deleteMany({});
+                await this.orphanBlocksCollection.deleteMany({});
+                count = 0;
+            }
+        }
+
         if (count === 0) {
             const genesisBlocks = this.createGenesisBlocks() as unknown as Array<Block & { _id: string }>;
             genesisBlocks[0]._id = genesisBlocks[0].hash!;

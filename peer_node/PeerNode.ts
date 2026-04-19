@@ -206,7 +206,7 @@ class PeerNode {
         this.consensusEngine.bindHandlers();
 
         await new Promise<void>((resolve) => {
-            const bindAddress = process.env.API_BIND_ADDRESS || '127.0.0.1';
+            const bindAddress = process.env.API_BIND_ADDRESS || '0.0.0.0';
             httpServer.listen(this.port, bindAddress, async () => {
                 logger.info(`[Peer ${this.port}] HTTPS Server Listening on ${bindAddress}:${this.port}`);
                 await this.peer!.init();
