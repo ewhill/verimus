@@ -451,6 +451,8 @@ resource "aws_instance" "verimus_node" {
               echo "[$(date)] Executing structural OS-Level OTA Update natively..."
               git pull origin main
               docker-compose up --build -d
+              docker image prune -a -f
+              docker builder prune -a -f
               echo "[$(date)] Update bounds seamlessly recompiled!"
               UPDATESCRIPT
 
@@ -468,9 +470,10 @@ resource "aws_instance" "verimus_node" {
     instance_metadata_tags      = "enabled"
   }
 
-  # Enforce EBS Encryption preventing physical host drive scraping
+  # Enforce EBS Encryption preventing physical host drive scraping and scale gracefully
   root_block_device {
-    encrypted = true
+    encrypted   = true
+    volume_size = 30
   }
 
   tags = {
