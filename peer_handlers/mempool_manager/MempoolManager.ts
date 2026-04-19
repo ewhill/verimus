@@ -98,8 +98,7 @@ class MempoolManager {
                 if (scPayload.ownerAddress && scPayload.allocatedEgressEscrow !== undefined) {
                     const allocated = BigInt(scPayload.allocatedEgressEscrow);
                     const totalCost = (allocated * 105n) / 100n;
-                    // Provide the marketId generically actively natively to proactively avoid identically blocking funds we just authentically locally froze correctly. 
-                    const hasUserFunds = await this.walletManager.verifyFunds(scPayload.ownerAddress, totalCost, scPayload.marketId);
+                    const hasUserFunds = await this.walletManager.verifyFunds(scPayload.ownerAddress, totalCost);
                     if (!hasUserFunds) {
                         logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Insufficient EIP-191 Funds for ${scPayload.ownerAddress}`);
                         return;
@@ -122,7 +121,16 @@ class MempoolManager {
                     return;
                 }
 
-
+                if (!IS_DEV_NETWORK) {
+                    const activeContractsCollection = this.node.ledger.activeContractsCollection;
+                    if (activeContractsCollection) {
+                        const stakingLog = await this.node.ledger.collection!.findOne({ type: BLOCK_TYPES.STAKING_CONTRACT, 'payload.operatorAddress': block.signerAddress });
+                        if (!stakingLog) {
+                            logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Originator ${block.signerAddress.slice(0, 8)} possesses NO valid Proof-of-Stake STAKING_CONTRACT collateral!`);
+                            return;
+                        }
+                    }
+                }
             }
 
             if (block.type === BLOCK_TYPES.STAKING_CONTRACT) {
