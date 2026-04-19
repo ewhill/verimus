@@ -85,7 +85,7 @@ class MempoolManager {
                     return;
                 }
 
-                const hasFunds = await this.walletManager.verifyFunds(txPayload.senderAddress, txPayload.amount);
+                const hasFunds = await this.walletManager.verifyFunds(txPayload.senderAddress, BigInt(txPayload.amount));
                 if (!hasFunds && txPayload.senderAddress !== ethers.ZeroAddress) {
                     logger.warn(`[Peer ${this.node.port}] Rejected Transaction: Insufficient Funds from ${txPayload.senderAddress}`);
                     if (this.node.reputationManager) await this.node.reputationManager.penalizeMajor(block.signerAddress, "Insufficient Funds Double Spend");
@@ -96,7 +96,8 @@ class MempoolManager {
             if (block.type === BLOCK_TYPES.STORAGE_CONTRACT) {
                 const scPayload = block.payload as StorageContractPayload;
                 if (scPayload.ownerAddress && scPayload.allocatedEgressEscrow !== undefined) {
-                    const totalCost = (scPayload.allocatedEgressEscrow * 105n) / 100n;
+                    const allocated = BigInt(scPayload.allocatedEgressEscrow);
+                    const totalCost = (allocated * 105n) / 100n;
                     const hasUserFunds = await this.walletManager.verifyFunds(scPayload.ownerAddress, totalCost);
                     if (!hasUserFunds) {
                         logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Insufficient EIP-191 Funds for ${scPayload.ownerAddress}`);
@@ -104,7 +105,7 @@ class MempoolManager {
                     }
 
                     if (scPayload.fragmentMap && scPayload.fragmentMap.length > 0) {
-                        const nodeShare = scPayload.allocatedEgressEscrow / BigInt(scPayload.fragmentMap.length);
+                        const nodeShare = allocated / BigInt(scPayload.fragmentMap.length);
                         for (const frag of scPayload.fragmentMap) {
                             const hasNodeFunds = await this.walletManager.verifyFunds(frag.nodeId, nodeShare);
                             if (!hasNodeFunds) {
@@ -115,7 +116,7 @@ class MempoolManager {
                     }
                 }
 
-                if (scPayload.brokerFeePercentage !== undefined && scPayload.brokerFeePercentage > 1500n) {
+                if (scPayload.brokerFeePercentage !== undefined && BigInt(scPayload.brokerFeePercentage) > 1500n) {
                     logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: brokerFeePercentage exceeded 15% (1500 bps) ceiling from ${block.signerAddress}`);
                     return;
                 }
