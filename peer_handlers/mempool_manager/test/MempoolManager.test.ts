@@ -49,7 +49,7 @@ describe('MempoolManager', () => {
         // Mock out the Crypto verification naturally bypassing test bounds securely 
         // For purely test bounds, we override walletManager explicitly
         manager.node.walletManager = createMock<any>({
-            verifyFunds: mock.fn<() => Promise<boolean>>(async () => true)
+            verifyFunds: mock.fn<(address: string, minimumRequired: bigint, excludeMarketId?: string) => Promise<boolean>>(async () => true)
         });
 
         // We override the cryptoUtils strictly via mocking or intercepting. Since cryptoUtils are standard imports natively,
@@ -101,7 +101,7 @@ describe('MempoolManager', () => {
 
         const manager = new MempoolManager(mockPeerNode);
         manager.node.walletManager = createMock<any>({
-            verifyFunds: mock.fn<() => Promise<boolean>>(async () => true)
+            verifyFunds: mock.fn<(address: string, minimumRequired: bigint, excludeMarketId?: string) => Promise<boolean>>(async () => true)
         });
 
         const executionOrder: number[] = [];

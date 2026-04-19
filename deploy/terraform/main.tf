@@ -216,6 +216,11 @@ resource "aws_iam_role_policy_attachment" "node_s3_attach" {
   policy_arn = aws_iam_policy.s3_access_policy.arn
 }
 
+resource "aws_iam_role_policy_attachment" "node_ssm_attach" {
+  role       = aws_iam_role.node_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
 resource "aws_iam_instance_profile" "node_profile" {
   name = "verimus-node-profile"
   role = aws_iam_role.node_role.name

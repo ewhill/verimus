@@ -98,7 +98,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                     blockHandled = true;
                 },
                 walletManager: createMock<WalletManager>({
-                    verifyFunds: mock.fn<() => Promise<boolean>>(() => Promise.resolve(true)),
+                    verifyFunds: mock.fn<(address: string, minimumRequired: bigint, excludeMarketId?: string) => Promise<boolean>>(() => Promise.resolve(true)),
                     calculateBalance: mock.fn<() => Promise<bigint>>(() => Promise.resolve(100n)),
                     freezeFunds: mock.fn<() => void>(),
                     releaseFunds: mock.fn<() => void>(),
@@ -185,7 +185,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             }),
             consensusEngine: createMock<ConsensusEngine>({
                 walletManager: createMock<WalletManager>({
-                    verifyFunds: mock.fn<() => Promise<boolean>>(() => Promise.resolve(true)),
+                    verifyFunds: mock.fn<(address: string, minimumRequired: bigint, excludeMarketId?: string) => Promise<boolean>>(() => Promise.resolve(true)),
                     calculateBalance: mock.fn<() => Promise<bigint>>(() => Promise.resolve(100n)),
                     freezeFunds: mock.fn<() => void>(),
                     releaseFunds: mock.fn<() => void>(),
@@ -250,7 +250,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             consensusEngine: createMock<ConsensusEngine>({
                 handlePendingBlock: async () => { },
                 walletManager: createMock<WalletManager>({
-                    verifyFunds: mock.fn<() => Promise<boolean>>(() => Promise.resolve(true)),
+                    verifyFunds: mock.fn<(address: string, minimumRequired: bigint, excludeMarketId?: string) => Promise<boolean>>(() => Promise.resolve(true)),
                     calculateBalance: mock.fn<() => Promise<bigint>>(() => Promise.resolve(100n)),
                     freezeFunds: mock.fn<() => void>(),
                     releaseFunds: mock.fn<() => void>(),
@@ -353,7 +353,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
                     throw new Error('Converge Error for test');
                 },
                 walletManager: createMock<WalletManager>({
-                    verifyFunds: mock.fn<() => Promise<boolean>>(() => Promise.resolve(true)),
+                    verifyFunds: mock.fn<(address: string, minimumRequired: bigint, excludeMarketId?: string) => Promise<boolean>>(() => Promise.resolve(true)),
                     calculateBalance: mock.fn<() => Promise<bigint>>(() => Promise.resolve(100n)),
                     freezeFunds: mock.fn<() => void>(),
                     releaseFunds: mock.fn<() => void>(),
@@ -453,7 +453,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
             consensusEngine: createMock<ConsensusEngine>({
                 handlePendingBlock: async () => { },
                 walletManager: createMock<WalletManager>({
-                    verifyFunds: mock.fn<() => Promise<boolean>>(() => Promise.resolve(true)),
+                    verifyFunds: mock.fn<(address: string, minimumRequired: bigint, excludeMarketId?: string) => Promise<boolean>>(() => Promise.resolve(true)),
                     calculateBalance: mock.fn<() => Promise<bigint>>(() => Promise.resolve(100n)),
                     freezeFunds: mock.fn<() => void>(),
                     releaseFunds: mock.fn<() => void>(),

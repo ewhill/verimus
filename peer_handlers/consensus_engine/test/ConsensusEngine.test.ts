@@ -60,7 +60,7 @@ describe('Backend: ConsensusEngine Integration Pipeline', () => {
         engine.bindHandlers(); 
         
         engine.node.walletManager = createMock<any>({
-            verifyFunds: mock.fn<() => Promise<boolean>>(async () => true)
+            verifyFunds: mock.fn<(address: string, minimumRequired: bigint, excludeMarketId?: string) => Promise<boolean>>(async () => true)
         });
 
         const wallet = ethers.Wallet.createRandom();
