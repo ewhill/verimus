@@ -16,8 +16,15 @@ terraform {
       source  = "vancluever/acme"
       version = "~> 2.11"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.11"
+    }
   }
 }
+
+# Anchor Genesis logically consistently without shifting automatically on future apply passes
+resource "time_static" "genesis" {}
 
 provider "aws" {
   region = var.aws_region
@@ -360,7 +367,7 @@ resource "aws_instance" "verimus_node" {
                     - "S3_BUCKET=${local.storage_bucket_prefix}-n${count.index}"
                     - "S3_REGION=${var.aws_region}"
                     - "STORAGE_CREDS_ACTIVE=true"
-                    - "VERIMUS_GENESIS_TIMESTAMP=1776557439851"
+                    - "VERIMUS_GENESIS_TIMESTAMP=${time_static.genesis.unix_time}000"
                     - NODE_ENV=production
                   ports:
                     - "443:443"
@@ -390,7 +397,7 @@ resource "aws_instance" "verimus_node" {
                     - "S3_BUCKET=${local.storage_bucket_prefix}-n${count.index}"
                     - "S3_REGION=${var.aws_region}"
                     - "STORAGE_CREDS_ACTIVE=true"
-                    - "VERIMUS_GENESIS_TIMESTAMP=1776557439851"
+                    - "VERIMUS_GENESIS_TIMESTAMP=${time_static.genesis.unix_time}000"
                     - NODE_ENV=production
                   ports:
                     - "443:443"
