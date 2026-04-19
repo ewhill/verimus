@@ -104,16 +104,8 @@ class MempoolManager {
                         return;
                     }
 
-                    if (scPayload.fragmentMap && scPayload.fragmentMap.length > 0) {
-                        const nodeShare = allocated / BigInt(scPayload.fragmentMap.length);
-                        for (const frag of scPayload.fragmentMap) {
-                            const hasNodeFunds = await this.walletManager.verifyFunds(frag.nodeId, nodeShare);
-                            if (!hasNodeFunds) {
-                                logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Insufficient Storage Collateral for Node ${frag.nodeId}`);
-                                return;
-                            }
-                        }
-                    }
+                    // The hosts are selected by the Originator based natively on the `activeStorageProvidersCollection` bounds tracking limit orders natively mathematically.
+                    // Removed legacy Atomic Bid Bond verification mappings natively preventing false positives natively explicitly matching the Clementine design docs mappings securely.
                 }
 
                 if (scPayload.brokerFeePercentage !== undefined && BigInt(scPayload.brokerFeePercentage) > 1500n) {

@@ -257,11 +257,13 @@ class PeerNode {
                     if (!IS_TEST_NETWORK) {
                         const checkSystemEnrollment = async () => {
                             try {
+                                let availableBalanceWei = await this.walletManager.calculateBalance(this.walletAddress);
+                                
                                 if (this.roles.includes(NodeRole.ORIGINATOR)) {
-                                    const hasFunds = await this.walletManager.verifyFunds(this.walletAddress, ethers.parseUnits("100", 18));
-                                    if (hasFunds) {
+                                    if (availableBalanceWei >= ethers.parseUnits("100", 18)) {
                                         const existingStaking = await this.ledger.collection!.findOne({ type: 'STAKING_CONTRACT', 'payload.operatorAddress': this.walletAddress });
                                         if (!existingStaking) {
+                                            availableBalanceWei -= ethers.parseUnits("100", 18);
                                             const stakingBlock: Block = {
                                                 metadata: { index: -1, timestamp: Date.now() },
                                                 type: 'STAKING_CONTRACT',
@@ -279,10 +281,10 @@ class PeerNode {
                                 }
 
                                 if (this.roles.includes(NodeRole.VALIDATOR)) {
-                                    const hasValFunds = await this.walletManager.verifyFunds(this.walletAddress, ethers.parseUnits("100", 18));
-                                    if (hasValFunds) {
+                                    if (availableBalanceWei >= ethers.parseUnits("100", 18)) {
                                         const existingValidator = await this.ledger.collection!.findOne({ type: 'VALIDATOR_REGISTRATION', 'payload.validatorAddress': this.walletAddress });
                                         if (!existingValidator) {
+                                            availableBalanceWei -= ethers.parseUnits("100", 18);
                                             const valBlock: Block = {
                                                 metadata: { index: -1, timestamp: Date.now() },
                                                 type: 'VALIDATOR_REGISTRATION',

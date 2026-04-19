@@ -89,15 +89,6 @@ export default class WalletManager {
 
                 await this.applyBalanceDelta(p.ownerAddress, -totalCost, balances);
                 await this.applyBalanceDelta(block.signerAddress, findersFee, balances);
-
-                if (p.fragmentMap && p.fragmentMap.length > 0) {
-                    const nodeShare = escrowToDeduct / BigInt(p.fragmentMap.length);
-                    for (const frag of p.fragmentMap) {
-                        const fragId = frag.nodeId || '';
-                        const safeFragAddress = fragId.startsWith('0x') ? this.getAddressSafe(fragId) : fragId;
-                        await this.applyBalanceDelta(safeFragAddress, -nodeShare, balances);
-                    }
-                }
             }
         } else if (block.type === BLOCK_TYPES.STAKING_CONTRACT) {
             const p = block.payload as StakingContractPayload;
