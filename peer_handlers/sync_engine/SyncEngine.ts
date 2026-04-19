@@ -457,13 +457,13 @@ class SyncEngine {
             const chunks: Buffer[] = [];
             let currentChunk = Buffer.alloc(0);
 
-            for await (const c of result.stream as any) {
+            result.stream.on('data', (c: Buffer) => {
                 currentChunk = Buffer.concat([currentChunk, c]);
                 while (currentChunk.length >= CHUNK_SIZE) {
                     chunks.push(currentChunk.subarray(0, CHUNK_SIZE));
                     currentChunk = currentChunk.subarray(CHUNK_SIZE);
                 }
-            }
+            });
 
             const flushAndResolve = () => {
                 if (currentChunk.length > 0) chunks.push(currentChunk);
@@ -487,7 +487,14 @@ class SyncEngine {
                 if (this.node.peer) this.node.peer.broadcast(respMsg).catch(() => { });
             };
 
-            flushAndResolve();
+            result.stream.on('end', flushAndResolve);
+
+            result.stream.on('error', () => {
+                const respMsg = new MerkleProofChallengeResponseMessage({
+                    contractId: msg.contractId, physicalId: msg.physicalId, auditorNodeId: msg.auditorNodeId, responderNodeId: this.node.walletAddress, chunkDataBase64: '', merkleSiblings: [], computedRootMatch: false
+                });
+                if (this.node.peer) this.node.peer.broadcast(respMsg).catch(() => { });
+            });
         } catch (error: any) {
             logger.error(`[Peer ${this.node.port}] Failed resolving verification handoff physically catching constraints: ${error.message}`);
         }
