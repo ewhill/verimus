@@ -360,6 +360,7 @@ resource "aws_instance" "verimus_node" {
                     - "S3_BUCKET=${local.storage_bucket_prefix}-n${count.index}"
                     - "S3_REGION=${var.aws_region}"
                     - "STORAGE_CREDS_ACTIVE=true"
+                    - "VERIMUS_GENESIS_TIMESTAMP=1776557439851"
                     - NODE_ENV=production
                   ports:
                     - "443:443"
@@ -389,6 +390,7 @@ resource "aws_instance" "verimus_node" {
                     - "S3_BUCKET=${local.storage_bucket_prefix}-n${count.index}"
                     - "S3_REGION=${var.aws_region}"
                     - "STORAGE_CREDS_ACTIVE=true"
+                    - "VERIMUS_GENESIS_TIMESTAMP=1776557439851"
                     - NODE_ENV=production
                   ports:
                     - "443:443"
