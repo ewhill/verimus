@@ -200,6 +200,9 @@ const Header = () => {
                             </div>
                         </div>
                     </div>
+                    <nav className="main-nav desktop-only" style={{ marginLeft: '1.5rem' }}>
+                        {pagesList}
+                    </nav>
                     <button
                         className="hamburger-menu"
                         aria-label="Toggle Navigation"
@@ -225,10 +228,9 @@ const Header = () => {
                     </svg>
                 </form>
 
-                <nav className="main-nav desktop-only">
-                    {pagesList}
+                <div className="header-right desktop-only" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     {navActions}
-                </nav>
+                </div>
             </div>
 
 
