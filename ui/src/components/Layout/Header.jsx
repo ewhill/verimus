@@ -167,8 +167,9 @@ const Header = () => {
                             height: '38px',
                             borderRadius: '12px',
                             background: '#020617',
-                            border: '1px solid rgba(192, 132, 252, 0.4)',
-                            boxShadow: '0 0 20px rgba(129, 140, 248, 0.5), inset 0 0 10px rgba(129, 140, 248, 0.2)'
+                            border: `1px solid ${error ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`,
+                            boxShadow: `0 0 20px ${error ? 'rgba(239, 68, 68, 0.5)' : 'rgba(16, 185, 129, 0.5)'}, inset 0 0 10px ${error ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
+                            animation: 'pulse 2s infinite'
                         }}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <defs>
@@ -194,15 +195,12 @@ const Header = () => {
                                 }
                             }
                         }} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-sm)', transition: 'background 0.2s', margin: '-0.2rem -0.5rem' }} onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'} title="Configure Node Settings">
-                            <h1 style={{ cursor: 'pointer' }}>{title}</h1>
-                            <div className="node-status desktop-hidden-text" style={{ cursor: 'pointer', marginTop: '2px' }}>
-                                <span className={`status-indicator ${error ? 'offline' : 'active'}`} title={error ? 'Node Offline' : 'Node Online'}></span>
-                            </div>
+                            <h1 style={{ cursor: 'pointer', margin: 0 }}>{title}</h1>
+                            <nav className="main-nav desktop-only" style={{ marginTop: '0.2rem', marginLeft: '-0.4rem' }}>
+                                {pagesList}
+                            </nav>
                         </div>
                     </div>
-                    <nav className="main-nav desktop-only" style={{ marginLeft: '1.5rem' }}>
-                        {pagesList}
-                    </nav>
                     <button
                         className="hamburger-menu"
                         aria-label="Toggle Navigation"
