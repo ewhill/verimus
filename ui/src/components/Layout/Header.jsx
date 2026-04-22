@@ -156,9 +156,9 @@ const Header = () => {
 
     return (
         <header>
-            <div className="header-primary">
-                <div className="header-top">
-                    <div className="logo">
+            <div className="header-primary" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'center' }}>
+                <div className="header-top" style={{ justifySelf: 'start', display: 'flex', alignItems: 'center' }}>
+                    <div className="logo" style={{ gap: '0.8rem' }}>
                         <div className="logo-icon-svg" style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -195,8 +195,8 @@ const Header = () => {
                                 }
                             }
                         }} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-sm)', transition: 'background 0.2s', margin: '-0.2rem -0.5rem' }} onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'} title="Configure Node Settings">
-                            <h1 style={{ cursor: 'pointer', margin: 0 }}>{title}</h1>
-                            <nav className="main-nav desktop-only" style={{ marginTop: '0.2rem', marginLeft: '-0.4rem' }}>
+                            <h1 style={{ cursor: 'pointer', margin: 0, lineHeight: 1 }}>{title}</h1>
+                            <nav className="main-nav desktop-only" style={{ marginTop: '-0.2rem', marginLeft: '-0.4rem', gap: 0 }}>
                                 {pagesList}
                             </nav>
                         </div>
@@ -214,7 +214,7 @@ const Header = () => {
                     </button>
                 </div>
 
-                <form className="omnibar desktop-only" onSubmit={handleOmnibarSearch} style={{ display: 'flex', flex: 1, margin: '0 2rem', position: 'relative', maxWidth: '600px' }}>
+                <form className="omnibar desktop-only" onSubmit={handleOmnibarSearch} style={{ display: 'flex', justifySelf: 'center', width: '100%', maxWidth: '400px', position: 'relative' }}>
                     <input
                         name="omnibar"
                         type="text"
@@ -226,7 +226,7 @@ const Header = () => {
                     </svg>
                 </form>
 
-                <div className="header-right desktop-only" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div className="header-right desktop-only" style={{ display: 'flex', justifySelf: 'end', alignItems: 'center', gap: '1rem' }}>
                     {navActions}
                 </div>
             </div>
