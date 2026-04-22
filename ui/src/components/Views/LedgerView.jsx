@@ -82,14 +82,22 @@ const LedgerView = () => {
             )}
             
             <section className="ledger-section" style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
-                    <div className="segmented-control" style={{ width: '100%', maxWidth: '600px', display: 'flex' }}>
-                        <button className={`segmented-btn ${activeTab === 'global' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' })} style={{ flex: 1 }}>Global Ledger</button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1.5rem', marginBottom: '2.5rem' }}>
+                    <div>
+                        <h1 style={{ margin: 0, fontSize: '2.25rem', fontWeight: 800, letterSpacing: '-0.02em', background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                            Ledger Analytics
+                        </h1>
+                        <p style={{ margin: '0.5rem 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+                            Real-time blockchain consensus and physical storage contracts natively.
+                        </p>
+                    </div>
+                    <div className="segmented-control" style={{ display: 'flex' }}>
+                        <button className={`segmented-btn ${activeTab === 'global' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' })}>Global Ledger</button>
                         {nodeConfig?.roles?.includes('VALIDATOR') && (
-                            <button className={`segmented-btn ${activeTab === 'consensus' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' })} style={{ flex: 1 }}>Consensus</button>
+                            <button className={`segmented-btn ${activeTab === 'consensus' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' })}>Consensus</button>
                         )}
                         {nodeConfig?.roles?.includes('STORAGE') && (
-                            <button className={`segmented-btn ${activeTab === 'contracts' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' })} style={{ flex: 1 }}>Contracts</button>
+                            <button className={`segmented-btn ${activeTab === 'contracts' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' })}>Contracts</button>
                         )}
                     </div>
                 </div>
