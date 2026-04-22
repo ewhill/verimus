@@ -158,12 +158,9 @@ const PeersView = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1.5rem' }}>
                 <div>
-                    <h1 style={{ margin: 0, fontSize: '2.25rem', fontWeight: 800, letterSpacing: '-0.02em', background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                        Network Operations
+                    <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.01em', color: '#fff' }}>
+                        Network
                     </h1>
-                    <p style={{ margin: '0.5rem 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
-                        Peer-to-peer mesh diagnostics, latencies, and routing metrics.
-                    </p>
                 </div>
                 <div className="flat-tab-bar" style={{ display: 'flex' }}>
                     <button className={`flat-tab-btn ${activeTab === 'mesh' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_PEERS_TAB', payload: 'mesh' })}>Network Mesh</button>
