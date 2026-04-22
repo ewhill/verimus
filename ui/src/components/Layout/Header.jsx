@@ -194,9 +194,9 @@ const Header = () => {
                                     window.location.reload();
                                 }
                             }
-                        }} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-sm)', transition: 'background 0.2s', margin: '-0.2rem -0.5rem' }} onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'} title="Configure Node Settings">
+                        }} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }} title="Configure Node Settings">
                             <h1 style={{ cursor: 'pointer', margin: 0, lineHeight: 1 }}>{title}</h1>
-                            <nav className="main-nav desktop-only" style={{ marginTop: '-0.2rem', marginLeft: '-0.4rem', gap: 0 }}>
+                            <nav className="main-nav desktop-only" style={{ marginTop: '0.2rem', marginLeft: '-0.4rem', marginBottom: '-0.5rem', gap: 0 }}>
                                 {pagesList}
                             </nav>
                         </div>
