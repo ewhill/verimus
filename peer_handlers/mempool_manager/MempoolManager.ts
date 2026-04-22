@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 
-import { BLOCK_TYPES, IS_DEV_NETWORK } from '../../constants';
+import { BLOCK_TYPES } from '../../constants';
 import { hashData, verifyEIP712BlockSignature } from '../../crypto_utils/CryptoUtils';
 import { hydrateBlockBigInts } from '../../crypto_utils/EIP712Types';
 import logger from '../../logger/Logger';
@@ -113,14 +113,12 @@ class MempoolManager {
                     return;
                 }
 
-                if (!IS_DEV_NETWORK) {
-                    const activeContractsCollection = this.node.ledger.activeContractsCollection;
-                    if (activeContractsCollection) {
-                        const stakingLog = await this.node.ledger.collection!.findOne({ type: BLOCK_TYPES.STAKING_CONTRACT, 'payload.operatorAddress': block.signerAddress });
-                        if (!stakingLog) {
-                            logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Originator ${block.signerAddress.slice(0, 8)} possesses NO valid Proof-of-Stake STAKING_CONTRACT collateral!`);
-                            return;
-                        }
+                const activeContractsCollection = this.node.ledger.activeContractsCollection;
+                if (activeContractsCollection) {
+                    const stakingLog = await this.node.ledger.collection!.findOne({ type: BLOCK_TYPES.STAKING_CONTRACT, 'payload.operatorAddress': block.signerAddress });
+                    if (!stakingLog) {
+                        logger.warn(`[Peer ${this.node.port}] Rejected STORAGE_CONTRACT: Originator ${block.signerAddress.slice(0, 8)} possesses NO valid Proof-of-Stake STAKING_CONTRACT collateral!`);
+                        return;
                     }
                 }
             }
@@ -166,7 +164,7 @@ class MempoolManager {
             if (block.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
                 const slashPayload = block.payload as SlashingPayload;
 
-                if (!IS_DEV_NETWORK && this.node.ledger.activeValidatorsCollection) {
+                if (this.node.ledger.activeValidatorsCollection) {
                     const validatorRecord = await this.node.ledger.activeValidatorsCollection.findOne({ validatorAddress: block.signerAddress });
                     if (!validatorRecord) {
                         logger.warn(`[Peer ${this.node.port}] Rejected Slashing: Signer ${block.signerAddress} is not an active validator`);

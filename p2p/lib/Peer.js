@@ -434,8 +434,12 @@ class Peer {
     const formattedAddress = url.format(parsedAddress);
 
     this.logger_.log(`Attempting connection to ${formattedAddress}`);
+    let rejectUnauthorized = true;
+    if (process.env.NODE_TLS_REJECT_UNAUTHORIZED == 0) {
+      rejectUnauthorized = false;
+    }
     const client = new Client({
-      connection: new WebSocket(formattedAddress, [], { rejectUnauthorized: process.env.IS_DEV_NETWORK !== 'true' && process.env.NODE_ENV !== 'test' && process.env.NODE_ENV !== 'development' }),
+      connection: new WebSocket(formattedAddress, [], { rejectUnauthorized }),
       credentials: {
         evmPrivateKey: this.evmPrivateKey_,
         walletAddress: this.walletAddress_

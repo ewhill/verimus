@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 
-import { BLOCK_TYPES, IS_DEV_NETWORK } from '../../constants';
+import { BLOCK_TYPES } from '../../constants';
 import { hashData } from '../../crypto_utils/CryptoUtils';
 import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from '../../crypto_utils/EIP712Types';
 import logger from '../../logger/Logger';
@@ -72,7 +72,7 @@ class BftCoordinator {
             const verifierId = connection.remoteCredentials_?.walletAddress || connection.peerAddress;
             
             // SECURITY CHECK: Only accept verifications from valid active validators, preventing quorum bypass
-            if (!IS_DEV_NETWORK && this.node.ledger.activeValidatorsCollection && verifierId !== `127.0.0.1:${this.node.port}`) {
+            if (this.node.ledger.activeValidatorsCollection && verifierId !== `127.0.0.1:${this.node.port}`) {
                 const validatorCount = this.node.ledger.activeValidatorCountCache || 0;
                 if (validatorCount > 0) {
                     const isValidator = await this.node.ledger.activeValidatorsCollection.findOne({ validatorAddress: verifierId });
@@ -248,11 +248,14 @@ class BftCoordinator {
 
             const forkEntry = this.mempool.eligibleForks.get(forkId);
             const proposerId = connection.remoteCredentials_?.walletAddress || connection.peerAddress;
-            if (!IS_DEV_NETWORK && this.node.ledger.activeValidatorsCollection && proposerId !== `127.0.0.1:${this.node.port}`) {
-                const isValidator = await this.node.ledger.activeValidatorsCollection.findOne({ validatorAddress: proposerId });
-                if (!isValidator) {
-                    logger.warn(`[Peer ${this.node.port}] Rejected Fork Proposal from NON-VALIDATOR ${proposerId}`);
-                    return;
+            if (this.node.ledger.activeValidatorsCollection && proposerId !== `127.0.0.1:${this.node.port}`) {
+                const validatorCount = this.node.ledger.activeValidatorCountCache || 0;
+                if (validatorCount > 0) {
+                    const isValidator = await this.node.ledger.activeValidatorsCollection.findOne({ validatorAddress: proposerId });
+                    if (!isValidator) {
+                        logger.warn(`[Peer ${this.node.port}] Rejected Fork Proposal from NON-VALIDATOR ${proposerId}`);
+                        return;
+                    }
                 }
             }
 
@@ -363,11 +366,14 @@ class BftCoordinator {
             const settledEntry = this.mempool.settledForks.get(forkId);
             if (settledEntry!.finalTipHash !== finalTipHash) return;
             const adopterId = connection.remoteCredentials_?.walletAddress || connection.peerAddress;
-            if (!IS_DEV_NETWORK && this.node.ledger.activeValidatorsCollection && adopterId !== `127.0.0.1:${this.node.port}`) {
-                const isValidator = await this.node.ledger.activeValidatorsCollection.findOne({ validatorAddress: adopterId });
-                if (!isValidator) {
-                    logger.warn(`[Peer ${this.node.port}] Rejected Adopt from NON-VALIDATOR ${adopterId}`);
-                    return;
+            if (this.node.ledger.activeValidatorsCollection && adopterId !== `127.0.0.1:${this.node.port}`) {
+                const validatorCount = this.node.ledger.activeValidatorCountCache || 0;
+                if (validatorCount > 0) {
+                    const isValidator = await this.node.ledger.activeValidatorsCollection.findOne({ validatorAddress: adopterId });
+                    if (!isValidator) {
+                        logger.warn(`[Peer ${this.node.port}] Rejected Adopt from NON-VALIDATOR ${adopterId}`);
+                        return;
+                    }
                 }
             }
 

@@ -9,25 +9,24 @@ cleanup() {
         "$(dirname "$0")/stop.sh" --port $port > /dev/null 2>&1 || true
     done
     kill -9 $(lsof -ti :27018) > /dev/null 2>&1 || true
-    echo -e "\033[1;31mTearing down Native Node Memory MongoDB...\033[0m"
+    echo -e "\033[1;31mTearing down MongoDB...\033[0m"
     echo "Cleanup complete. Exiting."
     exit 0
+}
+
+generateUiPassword() {
+    # Generate a random 12-character alphanumeric password
+    PASSWORD=$(openssl rand -base64 9 | tr -dc 'a-zA-Z0-9' | head -c 12)
+    echo $PASSWORD
 }
 
 # Trap Ctrl-C (SIGINT)
 trap cleanup SIGINT
 
-SEED_WALLET=""
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --seed-wallet) SEED_WALLET="$2"; shift 2 ;;
-        *) shift ;;
-    esac
-done
-
 echo "==========================================="
-echo "  Spawning 5 Nodes & Seeding 5 Blocks      "
+echo "  Spawning 5 Nodess  "
 echo "==========================================="
+export UI_PASSWORD="$(generateUiPassword)"
 
 export VERIMUS_GENESIS_TIMESTAMP=$(date +%s000)
 
@@ -42,21 +41,19 @@ echo "2. Validating and generating keys..."
 export PATH=$PATH:/opt/homebrew/bin:/opt/homebrew/opt/node/bin
 npm run keygen
 
-echo "Starting Native Hermetic Memory MongoDB (Port 27018 RAM) and Seeding Limits..."
-node "$(dirname "$0")/memory_mongo_daemon.mjs" > /dev/null 2>&1 &
+DB_PATH="/tmp/verimus-mongo-prod"
+
+echo "Starting System Native MongoDB (Port 27018) for strictly pure network bounds natively..."
+rm -rf "$DB_PATH"
+mkdir -p "$DB_PATH"
+mongod --port 27018 --dbpath "$DB_PATH" > /dev/null 2>&1 &
 sleep 5
 
 
 echo "3. Starting 5 peer nodes..."
-# Start the first one with --mongo to ensure DB is up if needed
 # The first node builds the UI, the remaining nodes skip it to avoid concurrent build conflicts
-if [ 1 -eq 1 ]; then
-    echo "Started Node 1 on port ${PORTS[0]} (Seed Node)"
-    "$(dirname "$0")/spawn_node.sh" --watch --mongo-port 27018 --port ${PORTS[0]} --public-address 127.0.0.1:${PORTS[0]} --force > "node_${PORTS[0]}.log" 2>&1 &
-else
-    echo "Started Node 1 on port ${PORTS[0]}"
-    "$(dirname "$0")/spawn_node.sh" --watch --mongo-port 27018 --port ${PORTS[0]} --public-address 127.0.0.1:${PORTS[0]} --force > /dev/null 2>&1 &
-fi
+echo "Started Node 1 on port ${PORTS[0]} (Seed Node)"
+"$(dirname "$0")/spawn_node.sh" --watch --mongo-port 27018 --port ${PORTS[0]} --public-address 127.0.0.1:${PORTS[0]} --force > "node_${PORTS[0]}.log" 2>&1 &
 # Wait for node startup and UI build completion
 sleep 8
 
@@ -64,8 +61,9 @@ sleep 8
 for i in {1..4}; do
     PORT=${PORTS[$i]}
     DISCOVER="127.0.0.1:${PORTS[0]}"
-    "$(dirname "$0")/spawn_node.sh" --watch --skip-ui --mongo-port 27018 --port $PORT --discover $DISCOVER --public-address 127.0.0.1:$PORT --force > "node_$PORT.log" 2>&1 &
+    "$(dirname "$0")/spawn_node.sh" --watch --mongo-port 27018 --port $PORT --discover $DISCOVER --public-address 127.0.0.1:$PORT --force > "node_$PORT.log" 2>&1 &
     echo "Started Node $((i+1)) on port $PORT"
+    echo "UI Password for Node $((i+1)): $UI_PASSWORD"
     sleep 3
 done
 
@@ -75,7 +73,7 @@ RETRY_COUNT=0
 # Wait until the seed node (port 26780) sees 4 connected peers.
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     # Suppress output, ignore self-signed certs, extract connectedCount
-    CONNECTED_COUNT=$(curl -s -k -u "admin:admin" "https://127.0.0.1:${PORTS[0]}/api/peers" | grep -o '"connectedCount":[0-9]*' | cut -d ':' -f 2)
+    CONNECTED_COUNT=$(curl -s -k -u "admin:$UI_PASSWORD" "https://127.0.0.1:${PORTS[0]}/api/peers" | grep -o '"connectedCount":[0-9]*' | cut -d ':' -f 2)
     
     # If the endpoint returns empty (e.g. server starting up), default to 0
     if [ -z "$CONNECTED_COUNT" ]; then
@@ -86,7 +84,7 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
         echo "✅ Network converged! All nodes are connected."
         break
     fi
-    echo "Waiting for peers to connect ($CONNECTED_COUNT/4)..."
+    echo "Waiting for peers to connect: $CONNECTED_COUNT/4"
     sleep 2
     RETRY_COUNT=$((RETRY_COUNT+1))
 done

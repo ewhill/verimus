@@ -47,7 +47,8 @@ if [ "$WATCH_MODE" = true ]; then
         fi
     done
     
-    NODE_ENV=development npm run watch:node -- "${EXTRA_ARGS[@]}" > "/tmp/watch_node_${PORT_VAL}.log" 2>&1 &
+    export NODE_ENV="${NODE_ENV:-development}"
+    npm run watch:node -- "${EXTRA_ARGS[@]}" > "/tmp/watch_node_${PORT_VAL}.log" 2>&1 &
     NODE_PID=$!
     
     # Trap Ctrl-C to cleanly kill background watchers without zombie processes
@@ -68,5 +69,6 @@ else
     fi
 
     echo "[2/2] Starting Peer Node..."
-    NODE_ENV=development npm run start:node -- "${EXTRA_ARGS[@]}"
+    export NODE_ENV="${NODE_ENV:-development}"
+    npm run start:node -- "${EXTRA_ARGS[@]}"
 fi
