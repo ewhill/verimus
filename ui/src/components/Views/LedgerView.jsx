@@ -89,7 +89,7 @@ const LedgerView = () => {
                         </h1>
                     </div>
                     <div className="flat-tab-bar" style={{ display: 'flex' }}>
-                        <button className={`flat-tab-btn ${activeTab === 'global' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' })}>Global Ledger</button>
+                        <button className={`flat-tab-btn ${activeTab === 'global' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' })}>Blocks</button>
                         {nodeConfig?.roles?.includes('VALIDATOR') && (
                             <button className={`flat-tab-btn ${activeTab === 'consensus' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' })}>Consensus</button>
                         )}
