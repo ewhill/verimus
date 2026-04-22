@@ -159,7 +159,18 @@ const Header = () => {
             <div className="header-primary" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'center' }}>
                 <div className="header-top" style={{ justifySelf: 'start', display: 'flex', alignItems: 'center' }}>
                     <div className="logo" style={{ gap: '0.8rem' }}>
-                        <div className={`logo-icon-svg ${error ? 'logo-glow-offline' : 'logo-glow-online'}`} style={{
+                        <div className={`logo-icon-svg ${error ? 'logo-glow-offline' : 'logo-glow-online'}`} onDoubleClick={() => {
+                            if (nodeConfig?.isAdmin) {
+                                dispatch({ type: 'SET_NODE_CONFIG_MODAL_OPEN', payload: true });
+                            } else {
+                                const pass = window.prompt("Enter Node Admin Password Override:");
+                                if (pass) {
+                                    const b64 = window.btoa(`admin:${pass}`);
+                                    localStorage.setItem('verimus_admin_auth', b64);
+                                    window.location.reload();
+                                }
+                            }
+                        }} style={{
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -167,8 +178,9 @@ const Header = () => {
                             height: '38px',
                             borderRadius: '12px',
                             background: '#020617',
-                            border: `1px solid ${error ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`
-                        }}>
+                            border: `1px solid ${error ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`,
+                            cursor: 'help'
+                        }} title="Double-click for DevOps Override">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <defs>
                                     <linearGradient id="neonGradient" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
@@ -181,19 +193,8 @@ const Header = () => {
                                 <path d="M12 6L18 12L12 18L6 12L12 6Z" fill="#ffffff" />
                             </svg>
                         </div>
-                        <div className={`logo-titles ${nodeConfig?.isAdmin ? 'node-identity-trigger' : 'node-identity-trigger'}`} onClick={() => {
-                            if (nodeConfig?.isAdmin) {
-                                dispatch({ type: 'SET_NODE_CONFIG_MODAL_OPEN', payload: true });
-                            } else {
-                                const pass = window.prompt("Enter Node Admin Password:");
-                                if (pass) {
-                                    const b64 = window.btoa(`admin:${pass}`);
-                                    localStorage.setItem('verimus_admin_auth', b64);
-                                    window.location.reload();
-                                }
-                            }
-                        }} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }} title="Configure Node Settings">
-                            <h1 style={{ cursor: 'pointer', margin: 0, lineHeight: 1 }}>{title}</h1>
+                        <div className="logo-titles" style={{ display: 'flex', flexDirection: 'column' }}>
+                            <h1 style={{ margin: 0, lineHeight: 1 }}>{title}</h1>
                             <nav className="main-nav desktop-only" style={{ marginTop: '0.2rem', marginLeft: '-0.4rem', marginBottom: '-0.5rem', gap: 0 }}>
                                 {pagesList}
                             </nav>
