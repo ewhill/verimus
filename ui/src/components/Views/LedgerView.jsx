@@ -91,13 +91,13 @@ const LedgerView = () => {
                             Real-time blockchain consensus and physical storage contracts natively.
                         </p>
                     </div>
-                    <div className="segmented-control" style={{ display: 'flex' }}>
-                        <button className={`segmented-btn ${activeTab === 'global' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' })}>Global Ledger</button>
+                    <div className="flat-tab-bar" style={{ display: 'flex' }}>
+                        <button className={`flat-tab-btn ${activeTab === 'global' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' })}>Global Ledger</button>
                         {nodeConfig?.roles?.includes('VALIDATOR') && (
-                            <button className={`segmented-btn ${activeTab === 'consensus' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' })}>Consensus</button>
+                            <button className={`flat-tab-btn ${activeTab === 'consensus' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' })}>Consensus</button>
                         )}
                         {nodeConfig?.roles?.includes('STORAGE') && (
-                            <button className={`segmented-btn ${activeTab === 'contracts' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' })}>Contracts</button>
+                            <button className={`flat-tab-btn ${activeTab === 'contracts' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' })}>Contracts</button>
                         )}
                     </div>
                 </div>

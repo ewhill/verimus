@@ -165,10 +165,10 @@ const PeersView = () => {
                         Peer-to-peer mesh diagnostics, latencies, and routing metrics.
                     </p>
                 </div>
-                <div className="segmented-control" style={{ display: 'flex' }}>
-                    <button className={`segmented-btn ${activeTab === 'mesh' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_PEERS_TAB', payload: 'mesh' })}>Network Mesh</button>
-                    <button className={`segmented-btn ${activeTab === 'reputation' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_PEERS_TAB', payload: 'reputation' })}>Global Reputation</button>
-                    <button className={`segmented-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_PEERS_TAB', payload: 'logs' })}>System Logs</button>
+                <div className="flat-tab-bar" style={{ display: 'flex' }}>
+                    <button className={`flat-tab-btn ${activeTab === 'mesh' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_PEERS_TAB', payload: 'mesh' })}>Network Mesh</button>
+                    <button className={`flat-tab-btn ${activeTab === 'reputation' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_PEERS_TAB', payload: 'reputation' })}>Global Reputation</button>
+                    <button className={`flat-tab-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_PEERS_TAB', payload: 'logs' })}>System Logs</button>
                 </div>
             </div>
 
