@@ -14,7 +14,7 @@ This project implements a secure, decentralized, blockchain-backed distributed s
   - `glacier` (AWS Glacier Archive)
   - `samba` (Network SMB shares)
   - `remote-fs` (Network SFTP)
-- **Decentralized Token Economics:** Natively enforces strict token balances via the newly minted `WalletManager`, rejecting double-spend transaction blocks and instituting a decentralized VERI marketplace initialized organically by an unforgeable Genesis `SYSTEM` treasury.
+- **Decentralized Token Economics:** Natively enforces strict token balances via the `WalletManager`, rejecting double-spend transaction blocks and instituting a decentralized VERI marketplace. The network bootstraps uniformly across all environments without fake liquidity, minting its genesis treasury dynamically by racing to natively verify persistent Proof of Spacetime boundaries mapped against the generic `GENESIS_STORAGE_CONTRACT`.
 - **Validated Data Seeding:** Orchestrates strict proof-of-absorption cryptographic challenges (`VerifyHandoff`) mapping linear stream boundary checksums seamlessly ensuring shard arrays are written physically to remote disks before minting escrow contract blocks.
 - **Phase 6 O(1) Checkpoint Pruning:** Introduces strict `CHECKPOINT` epoch boundary limits at 1,000,000 block intervals. The engine intrinsically maintains a Continuous Incremental State Map of peer wealth physically within MongoDB, bypassing legacy O(E) ledger sweeping and permitting infinite historical history eviction natively prioritizing disk elasticity.
 - **Advanced UI Platform:** The frontend relies on a dynamic React & Zustand state-management system resolving asynchronous telemetry data via Vite.
@@ -55,22 +55,25 @@ Verimus strictly separates its environments to guarantee absolute data integrity
 Fully hermetic automated execution mapping 100% in-memory data structures. It dynamically spawns `MongoMemoryServer` (Node.js RAM) for all its local database interactions.
 - **Requires:** Nothing but Node.js. Zero Docker or local `mongod` daemons necessary. Fast CI/CD pipelines.
 
-### 2. Local Development Environment
+### 2. Local Simulation & Zero Environment Drift
 
-When you want to manually run the cluster and visually interact with the 5 simulated test nodes in your browser, utilize the testnet bootloader. It launches a standalone Node.js RAM daemon utilizing `mongodb-memory-server` bounded strictly to port `27018`, injects early fund distribution (`seed_funds.mjs`), and gracefully obliterates itself upon exit.
+When you want to manually run the cluster and visually interact with 5 simulated nodes locally, utilize the orchestration bootloader. It launches a standalone local MongoDB database binding strictly to port `27018`. Verimus mathematically ensures **Zero Configuration Drift** between its simulation layers and AWS deployments. The local boot sequences strictly execute the authentic production validation boundaries—natively bootstrapping startup tokens identically through organic Proof of Spacetime `GENESIS` verification races without injecting arbitrary fake limits or bypassing `STAKING_CONTRACT` validation schemas.
 
 ```bash
-# Instantiate a 5-peer development cluster natively relying completely on in-memory processes
-./scripts/spawn_nodes.sh --mongo
+# Instantiate a 5-peer cluster mapping pure production boundaries natively
+./scripts/spawn_nodes.sh --production
+
+# Instantiate a 5-peer cluster optimized for localized Developer Experience (e.g., standard 'admin' UI passwords, skip-ui watch builds)
+./scripts/spawn_nodes.sh
 ```
 
-### 3. Production Deployment (`npm start`)
+### 3. Native Public Deployment (`npm start`)
 
-For actual public or staging deployments, the environment natively connects to your defined enterprise-grade `MONGO_URI`. It avoids mock environments entirely.
+For actual public or staging deployments, the environment natively connects to your defined enterprise-grade `MONGO_URI`.
 
 ```bash
 # Instantiate a genesis seed node natively binding standard ports over an SSD-level MongoDB
-./scripts/start.sh --mongo --port 26780
+./scripts/start.sh --port 26780
 
 # Instantiate a satellite node resolving an external master IP
 ./scripts/start.sh --port 26781 --discover <remote_seed_ip>:26780
