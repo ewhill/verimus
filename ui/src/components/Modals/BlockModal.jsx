@@ -22,6 +22,7 @@ const BlockModal = () => {
     const [payloadData, setPayloadData] = useState(null);
     const [payloadError, setPayloadError] = useState(false);
     const [activeBlockMemo, setActiveBlockMemo] = useState(null);
+    const [activeModalTab, setActiveModalTab] = useState('overview'); // ['overview', 'raw', 'signatures']
     const fetchedHashRef = useRef(null);
 
     useEffect(() => {
@@ -58,6 +59,7 @@ const BlockModal = () => {
         setPayloadError(false);
         fetchedHashRef.current = null;
         setActiveBlockMemo(null);
+        setActiveModalTab('overview');
     };
 
     if (!isModalOpen || !selectedBlockHash) {
@@ -182,64 +184,117 @@ const BlockModal = () => {
     return (
         <div className="modal" style={{ display: 'flex', position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', alignItems: 'center', justifyContent: 'center' }} onClick={closeModal}>
             <div className="modal-content glass-panel" style={{ width: '100%', maxWidth: '650px', margin: '0 1rem', padding: '0', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }} onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0', padding: '1.5rem 2rem', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
-                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>Block Details</h3>
-                    <button onClick={closeModal} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.5rem', cursor: 'pointer', transition: 'color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.25rem', borderRadius: '4px' }} className="hover-text-main">&times;</button>
+                <div className="modal-header" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', margin: '0', padding: '1.5rem 2rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>Block Inspection</h3>
+                        <button onClick={closeModal} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.5rem', cursor: 'pointer', transition: 'color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.25rem', borderRadius: '4px' }} className="hover-text-main">&times;</button>
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: '1.5rem', borderBottom: '1px solid transparent' }}>
+                        <button 
+                            className={`modal-tab-btn ${activeModalTab === 'overview' ? 'active' : ''}`}
+                            onClick={() => setActiveModalTab('overview')}
+                            style={{ background: 'transparent', border: 'none', borderBottom: activeModalTab === 'overview' ? '2px solid #818cf8' : '2px solid transparent', color: activeModalTab === 'overview' ? '#818cf8' : 'var(--text-muted)', padding: '0.5rem 0', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.9rem' }}
+                        >Overview</button>
+                        <button 
+                            className={`modal-tab-btn ${activeModalTab === 'raw' ? 'active' : ''}`}
+                            onClick={() => setActiveModalTab('raw')}
+                            style={{ background: 'transparent', border: 'none', borderBottom: activeModalTab === 'raw' ? '2px solid #818cf8' : '2px solid transparent', color: activeModalTab === 'raw' ? '#818cf8' : 'var(--text-muted)', padding: '0.5rem 0', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.9rem' }}
+                        >Raw Details</button>
+                        <button 
+                            className={`modal-tab-btn ${activeModalTab === 'signatures' ? 'active' : ''}`}
+                            onClick={() => setActiveModalTab('signatures')}
+                            style={{ background: 'transparent', border: 'none', borderBottom: activeModalTab === 'signatures' ? '2px solid #818cf8' : '2px solid transparent', color: activeModalTab === 'signatures' ? '#818cf8' : 'var(--text-muted)', padding: '0.5rem 0', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.9rem' }}
+                        >Signatures</button>
+                    </div>
                 </div>
 
                 <div className="modal-body" style={{ padding: '2rem', overflowY: 'auto' }}>
-                    {pkg.type === 'STORAGE_CONTRACT' ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                            <div style={{ width: '100%', boxSizing: 'border-box' }}>
-                                <StorageContractPayload block={pkg} payloadData={payloadData} payloadError={payloadError} handleSingleFileDownload={handleSingleFileDownload} web3Account={web3Account} />
-                                
-                                {isOwner && isFetchingPayload && (
-                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '2rem', textAlign: 'center', border: '1px dashed var(--border-soft)', borderRadius: 'var(--radius-sm)', width: '100%', boxSizing: 'border-box', marginTop: '1rem' }}>
-                                        Decrypting network bundle... <div className="spinner" style={{ display: 'inline-block', width: '12px', height: '12px', borderWidth: '2px', marginLeft: '0.5rem' }}></div>
+                    {activeModalTab === 'overview' && (
+                        <>
+                            {pkg.type === 'STORAGE_CONTRACT' ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                                    <div style={{ width: '100%', boxSizing: 'border-box' }}>
+                                        <StorageContractPayload block={pkg} payloadData={payloadData} payloadError={payloadError} handleSingleFileDownload={handleSingleFileDownload} web3Account={web3Account} />
+                                        
+                                        {isOwner && isFetchingPayload && (
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '2rem', textAlign: 'center', border: '1px dashed var(--border-soft)', borderRadius: 'var(--radius-sm)', width: '100%', boxSizing: 'border-box', marginTop: '1rem' }}>
+                                                Decrypting network bundle... <div className="spinner" style={{ display: 'inline-block', width: '12px', height: '12px', borderWidth: '2px', marginLeft: '0.5rem' }}></div>
+                                            </div>
+                                        )}
+                                        {!isOwner && (
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '2rem', background: 'rgba(0,0,0,0.2)', border: '1px dashed var(--border-soft)', borderRadius: 'var(--radius-sm)', textAlign: 'center', width: '100%', boxSizing: 'border-box', marginTop: '1rem' }}>
+                                                Private Payload strictly mandates active wallet decryption keys securely maintained by the authorized originator directly.
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                                {!isOwner && (
-                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '2rem', background: 'rgba(0,0,0,0.2)', border: '1px dashed var(--border-soft)', borderRadius: 'var(--radius-sm)', textAlign: 'center', width: '100%', boxSizing: 'border-box', marginTop: '1rem' }}>
-                                        Private Payload strictly mandates active wallet decryption keys securely maintained by the authorized originator directly.
+                                    <div style={{ height: '1px', width: '100%', background: 'linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), transparent)', margin: '2rem 0 1.5rem 0' }}></div>
+                                    <GenericBlockHeader block={pkg} date={date} hideSignatures={true} />
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                                    <GenericBlockHeader block={pkg} date={date} hideSignatures={true} />
+                                    <div style={{ height: '1px', width: '100%', background: 'linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), transparent)', margin: '2rem 0 1.5rem 0' }}></div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                                        <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px', color: 'var(--text-muted)' }}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                        </svg>
+                                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 500, color: 'var(--text-main)' }}>Public Payload Data</h4>
                                     </div>
-                                )}
-                            </div>
+                                    <div style={{ width: '100%', boxSizing: 'border-box' }}>
+                                        {pkg.type === 'TRANSACTION' && <TransactionPayload block={pkg} />}
+                                        {pkg.type === 'CHECKPOINT' && <CheckpointPayload block={pkg} />}
+                                        {pkg.type === 'STAKING_CONTRACT' && <StakingContractPayload block={pkg} />}
+                                        {pkg.type === 'SLASHING_TRANSACTION' && <SlashingTransactionPayload block={pkg} />}
+                                        {!['STORAGE_CONTRACT', 'TRANSACTION', 'CHECKPOINT', 'STAKING_CONTRACT', 'SLASHING_TRANSACTION'].includes(pkg.type) && <div style={{ color: 'var(--text-muted)' }}>Unrecognized payload type mappings.</div>}
+                                    </div>
+                                </div>
+                            )}
 
-                            <div style={{ height: '1px', width: '100%', background: 'linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), transparent)', margin: '2rem 0 1.5rem 0' }}></div>
-                            
-                            <h4 style={{ margin: '0 0 1.5rem 0', fontSize: '1rem', fontWeight: 500, color: 'var(--text-main)' }}>Generic Block Details</h4>
-                            <GenericBlockHeader block={pkg} date={date} />
-                        </div>
-                    ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                            <GenericBlockHeader block={pkg} date={date} />
-                            
-                            <div style={{ height: '1px', width: '100%', background: 'linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), transparent)', margin: '2rem 0 1.5rem 0' }}></div>
+                            {isOwner && pkg.type === 'STORAGE_CONTRACT' && !isFetchingPayload && payloadData && !payloadError && (
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>
+                                    <form onSubmit={handleDownloadSubmit} style={{ maxWidth: '220px', width: '100%' }}>
+                                        <button type="submit" className="primary-btn" style={{ borderRadius: 'var(--radius-lg)', fontWeight: 600 }}>Decrypt & Download</button>
+                                    </form>
+                                </div>
+                            )}
+                        </>
+                    )}
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                                <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px', color: 'var(--text-muted)' }}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-                                </svg>
-                                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 500, color: 'var(--text-main)' }}>
-                                    Public Payload Data
-                                </h4>
-                            </div>
-
-                            <div style={{ width: '100%', boxSizing: 'border-box' }}>
-                                {pkg.type === 'TRANSACTION' && <TransactionPayload block={pkg} />}
-                                {pkg.type === 'CHECKPOINT' && <CheckpointPayload block={pkg} />}
-                                {pkg.type === 'STAKING_CONTRACT' && <StakingContractPayload block={pkg} />}
-                                {pkg.type === 'SLASHING_TRANSACTION' && <SlashingTransactionPayload block={pkg} />}
-                                {!['STORAGE_CONTRACT', 'TRANSACTION', 'CHECKPOINT', 'STAKING_CONTRACT', 'SLASHING_TRANSACTION'].includes(pkg.type) && <div style={{ color: 'var(--text-muted)' }}>Unrecognized payload type mappings.</div>}
-                            </div>
+                    {activeModalTab === 'raw' && (
+                        <div style={{ background: 'rgba(15, 23, 42, 0.4)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                            <pre style={{ margin: 0, color: '#38bdf8', fontSize: '0.8rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                                {JSON.stringify(pkg, null, 2)}
+                            </pre>
                         </div>
                     )}
 
-                    {isOwner && pkg.type === 'STORAGE_CONTRACT' && !isFetchingPayload && payloadData && !payloadError && (
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>
-                            <form onSubmit={handleDownloadSubmit} style={{ maxWidth: '220px', width: '100%' }}>
-                                <button type="submit" className="primary-btn" style={{ borderRadius: 'var(--radius-lg)', fontWeight: 600 }}>Decrypt & Download</button>
-                            </form>
+                    {activeModalTab === 'signatures' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            <div style={{ background: 'rgba(15, 23, 42, 0.4)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.9rem', color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.05em' }}>EIP-712 Network Signatures</h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '1rem', fontSize: '0.85rem' }}>
+                                    <span style={{ color: 'var(--text-muted)' }}>Signer Address:</span>
+                                    <PropertyValue value={pkg.signerAddress} />
+                                    
+                                    <span style={{ color: 'var(--text-muted)' }}>Signature:</span>
+                                    <PropertyValue value={pkg.signature || 'N/A'} style={{ wordBreak: 'break-all' }} />
+
+                                    {pkg.payload?.evidenceSignature && (
+                                        <>
+                                            <span style={{ color: 'var(--text-muted)' }}>Evidence Sign:</span>
+                                            <PropertyValue value={pkg.payload.evidenceSignature} style={{ wordBreak: 'break-all', color: '#ef4444' }} />
+                                        </>
+                                    )}
+
+                                    {pkg.payload?.senderSignature && (
+                                        <>
+                                            <span style={{ color: 'var(--text-muted)' }}>Sender Sign:</span>
+                                            <PropertyValue value={pkg.payload.senderSignature} style={{ wordBreak: 'break-all' }} />
+                                        </>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>

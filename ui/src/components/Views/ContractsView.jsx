@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useStore } from '../../store';
+import RenewContractModal from './RenewContractModal';
 
 const formatBytes = (bytes) => {
     if (!bytes || bytes === 0) return '0 B';
@@ -17,11 +18,13 @@ const formatAddress = (str) => {
 
 const ContractsView = () => {
     const dispatch = useStore(s => s.dispatch);
+    const headBlockIndex = useStore(s => s.blocks[0]?.metadata?.index || 0);
     const [contracts, setContracts] = useState({ data: [], total: 0 });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState('');
+    const [renewModalContract, setRenewModalContract] = useState(null);
     const typingTimeout = useRef(null);
     const PAGE_LIMIT = 16;  // Matching standard ledger bounds
 
@@ -124,38 +127,71 @@ const ContractsView = () => {
                     </div>
                 ) : (
                     <div className="data-list-container">
-                        <div className="data-list-header stagger-1" style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 0.7fr) 2fr 2fr minmax(110px, 1fr) minmax(100px, auto)', padding: '0 1.5rem', marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            <div>Type</div>
+                        <div className="data-list-header stagger-1" style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 1fr) 2fr 1.5fr minmax(130px, auto) minmax(120px, auto)', padding: '0 1.5rem', marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <div>Lifecycle</div>
                             <div>Contract Hash</div>
                             <div>Originator</div>
-                            <div>Bound State</div>
+                            <div>Storage Metrics</div>
                             <div>Action</div>
                         </div>
                         <div className="data-list-body">
-                            {contracts.data.map((contract, i) => (
-                                <div 
-                                    key={contract.contractId} 
-                                    className="data-row status-confirmed" 
-                                    style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 0.7fr) 2fr 2fr minmax(110px, 1fr) minmax(100px, auto)', alignItems: 'center', padding: '1rem 1.5rem', cursor: 'pointer', animation: `staggerFadeUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) ${i * 0.05}s both` }} 
-                                    onClick={() => handleContractClick(contract)}
-                                >
-                                    <div>
-                                        <span className="badge" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                                            <span style={{ width: '12px', height: '12px', display: 'flex' }}>
-                                                <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0v3.75C20.25 19.853 16.556 21.75 12 21.75s-8.25-1.847-8.25-4.125v-3.75" /></svg>
+                            {contracts.data.map((contract, i) => {
+                                // Dynamically infer contract lifecycle state
+                                let statusText = 'ACTIVE';
+                                let statusColor = '#10b981';
+                                let statusBg = 'rgba(16, 185, 129, 0.15)';
+                                
+                                if (contract.faultCount > 0) {
+                                    statusText = 'SLA BREACH';
+                                    statusColor = '#ef4444';
+                                    statusBg = 'rgba(239, 68, 68, 0.15)';
+                                } else if (contract.expirationBlockHeight && headBlockIndex >= contract.expirationBlockHeight) {
+                                    statusText = 'EXPIRED';
+                                    statusColor = '#f59e0b';
+                                    statusBg = 'rgba(245, 158, 11, 0.15)';
+                                }
+
+                                // Audit Health Indicator heartbeat
+                                const isAuditedRecently = contract.lastAuditHeight ? (headBlockIndex - contract.lastAuditHeight < 100) : true;
+                                const heartbeatColor = isAuditedRecently ? '#10b981' : '#f59e0b';
+                                const heartbeatAnimation = isAuditedRecently ? 'pulse-slow 2s infinite' : 'none';
+
+                                return (
+                                    <div 
+                                        key={contract.contractId} 
+                                        className="data-row status-confirmed" 
+                                        style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 1fr) 2fr 1.5fr minmax(130px, auto) minmax(120px, auto)', alignItems: 'center', padding: '1rem 1.5rem', cursor: 'pointer', animation: `staggerFadeUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) ${i * 0.05}s both` }} 
+                                        onClick={() => handleContractClick(contract)}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <span className="badge" style={{ background: statusBg, color: statusColor, display: 'inline-flex', alignItems: 'center', padding: '0.2rem 0.6rem', fontSize: '0.7rem', fontWeight: 700, borderRadius: '4px' }}>
+                                                {statusText}
                                             </span>
-                                            Storage
-                                        </span>
+                                            {/* Proof of Spacetime Heartbeat Icon */}
+                                            <div title={isAuditedRecently ? "Healthy Audit Heartbeat" : "Missing Recent Audits"} style={{ color: heartbeatColor, animation: heartbeatAnimation, display: 'flex', alignItems: 'center' }}>
+                                                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" /></svg>
+                                            </div>
+                                        </div>
+                                        <div style={{ fontFamily: 'monospace', color: 'var(--text-secondary)' }} title={contract.contractId}>{formatAddress(contract.contractId)}</div>
+                                        <div style={{ fontFamily: 'monospace', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            {formatAddress(contract.originator)}
+                                            {contract.isLocalHost && <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.4rem', background: 'var(--bg-dark)', color: '#93c5fd', borderRadius: '4px', fontWeight: 600, border: '1px solid rgba(96, 165, 250, 0.2)' }}>HOST</span>}
+                                        </div>
+                                        <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                {contract.payload?.fragmentMap?.length || 0} Shards <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)' }}>•</span> {formatBytes(contract.payload?.erasureParams?.originalSize || 0)}
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); setRenewModalContract(contract); }}
+                                                style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', fontWeight: 600, background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', transition: 'all 0.2s', zIndex: 2 }}
+                                            >Top-Up</button>
+                                            <span className="action-link" style={{ fontSize: '0.85rem', fontWeight: 600 }}>View Details</span>
+                                        </div>
                                     </div>
-                                    <div style={{ fontFamily: 'monospace', color: 'var(--text-secondary)' }} title={contract.contractId}>{formatAddress(contract.contractId)}</div>
-                                    <div style={{ fontFamily: 'monospace', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        {formatAddress(contract.originator)}
-                                        {contract.isLocalHost && <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.4rem', background: 'var(--bg-dark)', color: '#93c5fd', borderRadius: '4px', fontWeight: 600, border: '1px solid rgba(96, 165, 250, 0.2)' }}>HOST</span>}
-                                    </div>
-                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{contract.payload?.fragmentMap?.length || 0} Shards - {formatBytes(contract.payload?.erasureParams?.originalSize || 0)}</div>
-                                    <div><span className="action-link" style={{ fontSize: '0.85rem', fontWeight: 600 }}>View Block</span></div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}
@@ -173,6 +209,18 @@ const ContractsView = () => {
                         </button>
                     </div>
                 </div>
+            )}
+
+            {renewModalContract && (
+                <RenewContractModal 
+                    contract={renewModalContract} 
+                    onClose={() => setRenewModalContract(null)} 
+                    onRenewSuccess={(data) => {
+                        setRenewModalContract(null);
+                        // Refresh data intelligently avoiding page reloads globally
+                        fetchContracts(page, search);
+                    }} 
+                />
             )}
         </div>
     );

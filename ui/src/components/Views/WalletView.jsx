@@ -4,6 +4,61 @@ import { useStore } from '../../store';
 import FilesView from './FilesView/FilesView';
 import TransferModal from '../Modals/TransferModal';
 
+// Inline Native SVG Area Chart mapping cumulative wallet physics
+const PortfolioChart = ({ transactions, balance }) => {
+    if (!transactions || transactions.length === 0) {
+        return <div style={{ height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontStyle: 'italic', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>Insufficient historical data for charting.</div>;
+    }
+
+    const currentBal = parseFloat(ethers.formatUnits(balance ? balance.toString() : "0", 18));
+    let runningBal = currentBal;
+    
+    // Form historical data points by projecting backwards
+    // We reverse the logic: txns are newest first. So as we go back in time, we revert the txn effects.
+    const history = [{ val: currentBal }];
+    for (const tx of transactions) {
+        const amt = parseFloat(ethers.formatUnits(tx.amount ? tx.amount.toString() : "0", 18));
+        // If it was a received mint/transfer, the previous balance was lower
+        // If we sent it, the previous balance was higher (assuming we can detect send/receive, for now assume all are receives in mock or standard)
+        const isMint = tx.senderAddress === ethers.ZeroAddress;
+        if (isMint) {
+            runningBal -= amt;
+        } else {
+            // Generalize: if not mint, assume generic
+            runningBal -= amt;
+        }
+        history.push({ val: Math.max(0, runningBal) });
+    }
+    
+    history.reverse(); // Now oldest -> newest
+    const maxVal = Math.max(...history.map(h => h.val), 0.1);
+    
+    const width = 1000;
+    const height = 150;
+    
+    const points = history.map((pt, i) => {
+        const x = (i / Math.max(1, history.length - 1)) * width;
+        const y = height - ((pt.val / maxVal) * height * 0.8) - 10; // 10px padding
+        return `${x},${y}`;
+    }).join(' ');
+    
+    return (
+        <div style={{ width: '100%', height: '150px', background: 'rgba(15, 23, 42, 0.4)', borderRadius: '12px', border: '1px solid var(--border-soft)', overflow: 'hidden', position: 'relative' }}>
+             <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+                 <defs>
+                     <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="0%" stopColor="rgba(192, 132, 252, 0.4)" />
+                         <stop offset="100%" stopColor="rgba(192, 132, 252, 0)" />
+                     </linearGradient>
+                 </defs>
+                 <polyline points={`0,${height} ${points} ${width},${height}`} fill="url(#chartGradient)" />
+                 <polyline points={points} fill="none" stroke="#c084fc" strokeWidth="3" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+             </svg>
+        </div>
+    );
+};
+
+
 const WalletView = () => {
     const activeTab = useStore(s => s.activeWalletTab);
     const web3Account = useStore(s => s.web3Account);
@@ -105,49 +160,52 @@ const WalletView = () => {
                             </div>
 
                             {/* Bottom Row: Transaction Ledger Integration */}
-                            <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px' }}>
-                                <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: '#c084fc' }}>Node Transaction Ledger</h2>
+                            <div className="glass-panel" style={{ padding: '2.5rem', borderRadius: '16px' }}>
+                                <div style={{ marginBottom: '2rem' }}>
+                                    <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--text-main)' }}>Portfolio Trajectory</h2>
+                                    <PortfolioChart transactions={walletData.transactions} balance={walletData.balance} />
+                                </div>
+                                
+                                <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', color: 'var(--text-main)', marginTop: '3rem' }}>Isolated TxHistory</h2>
                                 
                                 {walletData.transactions.length === 0 ? (
                                     <div style={{ color: '#64748b', fontStyle: 'italic', textAlign: 'center', padding: '2rem 0' }}>No active transactions detected inside bounding arrays.</div>
                                 ) : (
-                                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                                        <thead>
-                                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#818cf8' }}>
-                                                <th style={{ padding: '1rem 0', fontWeight: 'normal' }}>Timestamp</th>
-                                                <th style={{ padding: '1rem 0', fontWeight: 'normal' }}>Transaction Array Identity</th>
-                                                <th style={{ padding: '1rem 0', fontWeight: 'normal' }}>Volume Limit</th>
-                                                <th style={{ padding: '1rem 0', fontWeight: 'normal', textAlign: 'right' }}>Type</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
+                                    <div className="data-list-container" style={{ marginTop: '1rem' }}>
+                                        <div className="data-list-header stagger-1" style={{ display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr 1.5fr', padding: '0 1.5rem', marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                            <div>Timestamp</div>
+                                            <div>TxHash</div>
+                                            <div>Value</div>
+                                            <div style={{ textAlign: 'right' }}>Type</div>
+                                        </div>
+                                        <div className="data-list-body">
                                             {walletData.transactions.map((tx, idx) => {
                                                 const isMint = tx.senderAddress === ethers.ZeroAddress;
                                                 return (
-                                                    <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#cbd5e1' }}>
-                                                        <td style={{ padding: '1rem 0' }}>{formatDate(tx.timestamp)}</td>
-                                                        <td style={{ padding: '1rem 0', fontFamily: 'monospace', fontSize: '0.85em', color: '#94a3b8' }}>{tx.hash}</td>
-                                                        <td style={{ padding: '1rem 0', color: isMint ? '#4ade80' : '#f8fafc', fontWeight: isMint ? 'bold' : 'normal' }}>
+                                                    <div key={idx} className="data-row status-confirmed" style={{ display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr 1.5fr', alignItems: 'center', padding: '1rem 1.5rem', cursor: 'default', animation: `staggerFadeUp 0.3s ease-out ${idx * 0.03}s both` }}>
+                                                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                                                            {formatDate(tx.timestamp)}
+                                                        </div>
+                                                        <div style={{ fontFamily: 'monospace', color: 'var(--text-main)', fontSize: '0.85rem' }}>
+                                                            {tx.hash.substring(0, 16)}...
+                                                        </div>
+                                                        <div style={{ color: isMint ? '#10b981' : 'var(--text-main)', fontWeight: isMint ? 600 : 400, fontFamily: 'monospace' }}>
                                                             {isMint ? '+' : ''}{formatVeri(tx.amount)}
-                                                        </td>
-                                                        <td style={{ padding: '1rem 0', textAlign: 'right' }}>
-                                                            <span style={{ 
-                                                                background: isMint ? 'rgba(74, 222, 128, 0.1)' : 'rgba(56, 189, 248, 0.1)', 
-                                                                color: isMint ? '#4ade80' : '#38bdf8',
-                                                                padding: '4px 12px',
-                                                                borderRadius: '20px',
-                                                                fontSize: '0.75rem',
-                                                                letterSpacing: '0.05em',
-                                                                textTransform: 'uppercase'
+                                                        </div>
+                                                        <div style={{ textAlign: 'right' }}>
+                                                            <span className="badge" style={{ 
+                                                                background: isMint ? 'rgba(16, 185, 129, 0.15)' : 'rgba(56, 189, 248, 0.15)', 
+                                                                color: isMint ? '#10b981' : '#38bdf8',
+                                                                fontSize: '0.75rem'
                                                             }}>
-                                                                {isMint ? 'System Emission' : 'Standard Pipeline'}
+                                                                {isMint ? 'System Emission' : 'Standard Transfer'}
                                                             </span>
-                                                        </td>
-                                                    </tr>
+                                                        </div>
+                                                    </div>
                                                 );
                                             })}
-                                        </tbody>
-                                    </table>
+                                        </div>
+                                    </div>
                                 )}
                                 
                                 {walletData.totalPages > 1 && (

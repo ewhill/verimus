@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store';
 import WalletConnection from '../Wallet/WalletConnection';
+import GlobalStatsBanner from './GlobalStatsBanner';
 
 const Header = () => {
     const dispatch = useStore(s => s.dispatch);
@@ -25,7 +26,7 @@ const Header = () => {
     const title = sig ? `0x${sig.substring(0, 2)}...${sig.substring(sig.length - 8)}` : 'Verimus Secure Storage';
 
     const routeTo = (e, route) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         
         let tabSegment = '';
         if (route === 'wallet') tabSegment = activeWalletTab;
@@ -39,6 +40,26 @@ const Header = () => {
 
         dispatch({ type: 'SET_ROUTE', payload: route });
         setIsNavOpen(false);
+    };
+
+    const handleOmnibarSearch = (e) => {
+        e.preventDefault();
+        const query = e.target.omnibar.value.trim();
+        if (!query) return;
+
+        if (query.startsWith('0x') && query.length === 42) {
+            // Ethers Address -> Navigate to Wallet lookup implicitly or Ledger
+            dispatch({ type: 'SET_ROUTE', payload: 'ledger' });
+            dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' });
+        } else if (query.length === 64) {
+            // Hash -> Open Block Modal
+            dispatch({ type: 'SET_MODAL_OPEN', payload: { isOpen: true, hash: query } });
+        } else {
+            // Generic fallback searches against Contracts
+            dispatch({ type: 'SET_ROUTE', payload: 'ledger' });
+            dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' });
+        }
+        e.target.omnibar.value = '';
     };
 
     const pagesList = (
@@ -166,6 +187,7 @@ const Header = () => {
 
     return (
         <header>
+            <GlobalStatsBanner />
             <div className="header-primary">
                 <div className="header-top">
                     <div className="logo">
@@ -222,6 +244,19 @@ const Header = () => {
                         </svg>
                     </button>
                 </div>
+
+                <form className="omnibar desktop-only" onSubmit={handleOmnibarSearch} style={{ display: 'flex', flex: 1, margin: '0 2rem', position: 'relative', maxWidth: '600px' }}>
+                    <input 
+                        name="omnibar"
+                        type="text" 
+                        placeholder="Search blocks, txns, or wallet addresses..." 
+                        style={{ width: '100%', padding: '0.6rem 1rem 0.6rem 2.8rem', borderRadius: '20px', border: '1px solid var(--border-soft)', background: 'rgba(15, 23, 42, 0.4)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none' }}
+                    />
+                    <svg style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', width: '18px', height: '18px', color: 'var(--text-muted)' }} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    </svg>
+                </form>
+
                 <nav className="main-nav desktop-only">
                     {pagesList}
                     {navActions}
