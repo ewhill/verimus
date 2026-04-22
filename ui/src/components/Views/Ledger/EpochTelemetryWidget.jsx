@@ -6,6 +6,9 @@ const EpochTelemetryWidget = () => {
     const [metrics, setMetrics] = useState({
         currentIndex: 0,
         epochSize: 1000000,
+        peers: 0,
+        epoch: 1,
+        gasPrice: '0.01',
         databaseFootprintBytes: 0,
         loading: true,
         error: false
@@ -13,13 +16,22 @@ const EpochTelemetryWidget = () => {
 
     const fetchMetrics = async () => {
         try {
-            const res = await fetch('/api/ledger/metrics');
-            const data = await res.json();
-            if (data.success) {
+            const [ledgerRes, peersRes] = await Promise.all([
+                fetch('/api/ledger/metrics').catch(() => ({ json: () => ({ metrics: {} }) })),
+                fetch('/api/peers').catch(() => ({ json: () => ({ nodes: [] }) }))
+            ]);
+            
+            const data = ledgerRes && ledgerRes.status === 200 ? await ledgerRes.json() : { metrics: {} };
+            const peersObj = peersRes && peersRes.status === 200 ? await peersRes.json() : { nodes: [] };
+
+            if (data.success || !data.error) {
                 setMetrics({
-                    currentIndex: data.currentIndex || 0,
+                    currentIndex: data.currentIndex || data.metrics?.totalBlocks || 0,
                     epochSize: data.epochSize || 1000000,
                     databaseFootprintBytes: data.databaseFootprintBytes || 0,
+                    peers: peersObj.nodes?.length || 0,
+                    epoch: 1,
+                    gasPrice: '0.01',
                     loading: false,
                     error: false
                 });
@@ -53,6 +65,27 @@ const EpochTelemetryWidget = () => {
     return (
         <div className="stagger-1" style={{ padding: '0 0 2rem 0' }}>
             <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.25rem', borderRadius: '0.75rem', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+                {/* Stats Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <span style={{ color: '#3b82f6', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>VERIMUS EPOCH</span>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.epoch}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>BLOCK HEIGHT</span>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.currentIndex.toLocaleString()}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <span style={{ color: '#8b5cf6', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>ACTIVE PEERS</span>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.peers}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <span style={{ color: '#eab308', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>$VERI GAS</span>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.gasPrice}</span>
+                    </div>
+                </div>
+
+                {/* Trajectory */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', alignItems: 'center' }}>
                     <span style={{ color: '#e2e8f0', fontSize: '0.95rem', fontWeight: 500 }}>Epoch Trajectory</span>
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>

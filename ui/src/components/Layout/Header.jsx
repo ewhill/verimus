@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store';
 import WalletConnection from '../Wallet/WalletConnection';
-import GlobalStatsBanner from './GlobalStatsBanner';
-
 const Header = () => {
     const dispatch = useStore(s => s.dispatch);
     const currentRoute = useStore(s => s.currentRoute);
@@ -158,7 +156,6 @@ const Header = () => {
 
     return (
         <header>
-            <GlobalStatsBanner />
             <div className="header-primary">
                 <div className="header-top">
                     <div className="logo">
