@@ -83,7 +83,17 @@ const LedgerView = () => {
             )}
             
             <section className="ledger-section" style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
-
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
+                    <div className="segmented-control" style={{ width: '100%', maxWidth: '600px', display: 'flex' }}>
+                        <button className={`segmented-btn ${activeTab === 'global' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' })} style={{ flex: 1 }}>Global Ledger</button>
+                        {nodeConfig?.roles?.includes('VALIDATOR') && (
+                            <button className={`segmented-btn ${activeTab === 'consensus' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' })} style={{ flex: 1 }}>Consensus</button>
+                        )}
+                        {nodeConfig?.roles?.includes('STORAGE') && (
+                            <button className={`segmented-btn ${activeTab === 'contracts' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' })} style={{ flex: 1 }}>Contracts</button>
+                        )}
+                    </div>
+                </div>
                 {activeTab === 'global' && (
                     <>
                         <EpochTelemetryWidget />

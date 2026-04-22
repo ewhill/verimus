@@ -156,6 +156,13 @@ const PeersView = () => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <div className="segmented-control" style={{ width: '100%', maxWidth: '600px', display: 'flex' }}>
+                    <button className={`segmented-btn ${activeTab === 'mesh' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_PEERS_TAB', payload: 'mesh' })} style={{ flex: 1 }}>Network Mesh</button>
+                    <button className={`segmented-btn ${activeTab === 'reputation' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_PEERS_TAB', payload: 'reputation' })} style={{ flex: 1 }}>Global Reputation</button>
+                    <button className={`segmented-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_PEERS_TAB', payload: 'logs' })} style={{ flex: 1 }}>System Logs</button>
+                </div>
+            </div>
 
             {activeTab === 'mesh' && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>

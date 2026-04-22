@@ -110,15 +110,8 @@ const WalletView = () => {
     return (
         <div style={{ padding: '0', maxWidth: '1400px', margin: '0 auto', color: '#f8fafc', height: '100%', display: 'flex', flexDirection: 'column', width: '100%' }}>
 
-            {activeTab === 'assets' && (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'visible' }}>
-                    <FilesView />
-                </div>
-            )}
-
-            {activeTab === 'dashboard' && (
-                <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                         <h1 style={{ fontSize: '2rem', color: '#c084fc', textShadow: '0 0 20px rgba(192, 132, 252, 0.3)' }}>Decentralized Wallet</h1>
                         <button onClick={() => setIsTransferModalOpen(true)} style={{
                             padding: '0.8rem 1.5rem', background: '#38bdf8', color: '#fff', border: 'none',
@@ -232,9 +225,7 @@ const WalletView = () => {
                             </div>
                         </>
                     )}
-                </div>
-            )}
-            
+            </div>
             <TransferModal 
                 isOpen={isTransferModalOpen} 
                 onClose={() => setIsTransferModalOpen(false)} 

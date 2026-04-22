@@ -6,6 +6,7 @@ import Header from './components/Layout/Header';
 import PeersView from './components/Views/PeersView';
 import LedgerView from './components/Views/LedgerView';
 import WalletView from './components/Views/WalletView';
+import FilesView from './components/Views/FilesView/FilesView';
 import BlockModal from './components/Modals/BlockModal';
 import NodeConfigModal from './components/Modals/NodeConfigModal';
 import UploadModal from './components/Modals/UploadModal';
@@ -118,6 +119,7 @@ function App() {
         switch (currentRoute) {
             case 'network':  return <PeersView />;
             case 'wallet': return <WalletView />;
+            case 'files': return <FilesView />;
             case 'ledger':
             default:       return <LedgerView />;
         }

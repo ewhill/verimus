@@ -65,7 +65,10 @@ const Header = () => {
     const pagesList = (
         <>
             {web3Account && (
-                <a href="#" className={`nav-link ${activeRoute === 'wallet' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'wallet')}>Wallet</a>
+                <>
+                    <a href="#" className={`nav-link ${activeRoute === 'wallet' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'wallet')}>Wallet</a>
+                    <a href="#" className={`nav-link ${activeRoute === 'files' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'files')}>Storage</a>
+                </>
             )}
             <a href="#" className={`nav-link ${activeRoute === 'ledger' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'ledger')}>Ledger</a>
             {nodeConfig?.isAdmin && (
@@ -89,54 +92,22 @@ const Header = () => {
         </div>
     );
 
-    const tabsList = ['wallet', 'ledger', 'network'].includes(activeRoute) ? (
-        <div className="segmented-control" style={{ display: 'flex', gap: '0.5rem', width: '100%', maxWidth: '1400px' }}>
-            {activeRoute === 'wallet' && (
-                <>
-                    <button className={`segmented-btn ${activeWalletTab === 'dashboard' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_WALLET_TAB', payload: 'dashboard' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Wallet Dashboard</button>
-                    <button className={`segmented-btn ${activeWalletTab === 'assets' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_WALLET_TAB', payload: 'assets' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Asset Files</button>
-                </>
-            )}
-            {activeRoute === 'ledger' && (
-                <>
-                    <button className={`segmented-btn ${activeLedgerTab === 'global' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Global Ledger</button>
 
-                    {nodeConfig?.roles?.includes('VALIDATOR') && (
-                        <button className={`segmented-btn ${activeLedgerTab === 'consensus' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Consensus</button>
-                    )}
-                    {nodeConfig?.roles?.includes('STORAGE') && (
-                        <button className={`segmented-btn ${activeLedgerTab === 'contracts' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Contracts</button>
-                    )}
-                </>
-            )}
-            {(nodeConfig?.isAdmin && activeRoute === 'network') && (
-                <>
-                    <button className={`segmented-btn ${activePeersTab === 'mesh' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_PEERS_TAB', payload: 'mesh' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Network Mesh</button>
-                    <button className={`segmented-btn ${activePeersTab === 'reputation' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_PEERS_TAB', payload: 'reputation' }); setIsNavOpen(false); }} style={{ flex: 1 }}>Global Reputation</button>
-                    <button className={`segmented-btn ${activePeersTab === 'logs' ? 'active' : ''}`} onClick={() => { dispatch({ type: 'SET_PEERS_TAB', payload: 'logs' }); setIsNavOpen(false); }} style={{ flex: 1 }}>System Logs</button>
-                </>
-            )}
-        </div>
-    ) : null;
 
     const mobileDrawerLinks = (
         <div className="mobile-accordion-wrapper">
             {web3Account && (
                 <div className="mobile-accordion-group">
-                    <a href="#" className={`mobile-accordion-header ${expandedAccordion === 'wallet' ? 'active' : ''}`} onClick={(e) => handleAccordionToggle(e, 'wallet')}>
+                    <a href="#" style={{ paddingTop: '0' }} className={`mobile-accordion-header ${activeRoute === 'wallet' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'wallet')}>
                         Wallet
-                        <div className="mobile-accordion-cta">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expandedAccordion === 'wallet' ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </div>
                     </a>
-                    {expandedAccordion === 'wallet' && (
-                        <div className="mobile-nested-group" style={{ animation: 'fadeInDown 0.2s ease-out' }}>
-                            <button className={`mobile-nested-item ${activeWalletTab === 'dashboard' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_WALLET_TAB', payload: 'dashboard' }); routeTo(e, 'wallet'); }}>Wallet Dashboard</button>
-                            <button className={`mobile-nested-item ${activeWalletTab === 'assets' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_WALLET_TAB', payload: 'assets' }); routeTo(e, 'wallet'); }}>Asset Files</button>
-                        </div>
-                    )}
+                </div>
+            )}
+            {web3Account && (
+                <div className="mobile-accordion-group">
+                    <a href="#" className={`mobile-accordion-header ${activeRoute === 'files' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'files')}>
+                        Data Storage
+                    </a>
                 </div>
             )}
 
@@ -263,11 +234,7 @@ const Header = () => {
                 </nav>
             </div>
 
-            {tabsList && (
-                <div className="header-sub-tier desktop-only">
-                    {tabsList}
-                </div>
-            )}
+
 
             <div className={`mobile-drawer ${isNavOpen ? 'active' : ''}`}>
                 <div className="mobile-drawer-header">
