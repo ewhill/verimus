@@ -83,7 +83,7 @@ describe('Frontend: Header', () => {
 
         render(<Header />);
 
-        expect(screen.getByText('Verimus Secure Storage')).toBeInTheDocument();
+        expect(screen.getByText('Verimus')).toBeInTheDocument();
         expect(screen.getByText('Node Offline')).toBeInTheDocument();
     });
 });

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useStore } from '../../store';
 import { ApiService } from '../../services/api';
 import EpochTelemetryWidget from './Ledger/EpochTelemetryWidget';
-import LedgerToolbar from './LedgerToolbar';
 import LedgerGrid from './LedgerGrid';
 
 import ConsensusView from './ConsensusView';
@@ -98,9 +97,6 @@ const LedgerView = () => {
                     <>
                         <EpochTelemetryWidget />
                         <div className="stagger-1">
-                            <LedgerToolbar />
-                        </div>
-                        <div className="stagger-2">
                             <LedgerGrid />
                         </div>
                     </>

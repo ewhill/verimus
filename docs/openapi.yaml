@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  title: Verimus Secure Storage API
+  title: Verimus API
   version: 1.0.0
   description: HTTP API for submitting files and querying the decentralized ledger via the internal Express Gateway.
 paths:

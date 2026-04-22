@@ -1,5 +1,5 @@
 #!/bin/bash
-# Verimus Secure Storage - Network Cleanup Script
+# Verimus - Network Cleanup Script
 # This script removes all MongoDB ledger instances and local physical block/cache storage,
 # ensuring the P2P nodes can boot from a perfectly clean slate.
 

@@ -23,11 +23,11 @@ const Header = () => {
         setExpandedAccordion(prev => prev === route ? null : route);
     };
     const sig = nodeConfig?.signature;
-    const title = sig ? `0x${sig.substring(0, 2)}...${sig.substring(sig.length - 8)}` : 'Verimus Secure Storage';
+    const title = sig ? `0x${sig.substring(0, 2)}...${sig.substring(sig.length - 8)}` : 'Verimus';
 
     const routeTo = (e, route) => {
         if (e) e.preventDefault();
-        
+
         let tabSegment = '';
         if (route === 'wallet') tabSegment = activeWalletTab;
         else if (route === 'ledger') tabSegment = activeLedgerTab;
@@ -80,7 +80,7 @@ const Header = () => {
     const navActions = (
         <div className="nav-actions">
             {(nodeConfig?.roles?.includes('ORIGINATOR') && web3EncryptionKey) && (
-                <button 
+                <button
                     className="nav-upload-btn"
                     onClick={() => dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true })}
                 >
@@ -217,10 +217,10 @@ const Header = () => {
                 </div>
 
                 <form className="omnibar desktop-only" onSubmit={handleOmnibarSearch} style={{ display: 'flex', flex: 1, margin: '0 2rem', position: 'relative', maxWidth: '600px' }}>
-                    <input 
+                    <input
                         name="omnibar"
-                        type="text" 
-                        placeholder="Search blocks, txns, or wallet addresses..." 
+                        type="text"
+                        placeholder="Search blocks, txns, or wallet addresses..."
                         style={{ width: '100%', padding: '0.6rem 1rem 0.6rem 2.8rem', borderRadius: '20px', border: '1px solid var(--border-soft)', background: 'rgba(15, 23, 42, 0.4)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none' }}
                     />
                     <svg style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', width: '18px', height: '18px', color: 'var(--text-muted)' }} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -246,12 +246,12 @@ const Header = () => {
                         </svg>
                     </button>
                 </div>
-                
+
                 <div className="mobile-drawer-scroll">
                     <div style={{ paddingBottom: '2rem', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', marginBottom: '1.5rem', width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <WalletConnection isMobileDrawer={true} />
                         {(nodeConfig?.roles?.includes('ORIGINATOR') && web3EncryptionKey) && (
-                            <button 
+                            <button
                                 className="nav-upload-btn" style={{ width: '100%', padding: '0.8rem' }}
                                 onClick={() => { setIsNavOpen(false); dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true }); }}
                             >

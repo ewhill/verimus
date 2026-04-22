@@ -21,9 +21,9 @@ import { NodeRole } from './types/NodeRole';
 async function main() {
     // Inject BigInt serialization mapping seamlessly globally
     // @ts-ignore
-    BigInt.prototype.toJSON = function() { return this.toString(); };
+    BigInt.prototype.toJSON = function () { return this.toString(); };
 
-    logger.info("Starting Verimus Secure Storage Node...");
+    logger.info("Starting Verimus Node...");
 
     // Parse CLI arguments for MongoDB and Storage
     let mongoHost = '127.0.0.1';
