@@ -159,7 +159,7 @@ const Header = () => {
             <div className="header-primary" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'center' }}>
                 <div className="header-top" style={{ justifySelf: 'start', display: 'flex', alignItems: 'center' }}>
                     <div className="logo" style={{ gap: '0.8rem' }}>
-                        <div className="logo-icon-svg" style={{
+                        <div className={`logo-icon-svg ${error ? 'logo-glow-offline' : 'logo-glow-online'}`} style={{
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -167,9 +167,7 @@ const Header = () => {
                             height: '38px',
                             borderRadius: '12px',
                             background: '#020617',
-                            border: `1px solid ${error ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`,
-                            boxShadow: `0 0 20px ${error ? 'rgba(239, 68, 68, 0.5)' : 'rgba(16, 185, 129, 0.5)'}, inset 0 0 10px ${error ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
-                            animation: 'pulse 2s infinite'
+                            border: `1px solid ${error ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`
                         }}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <defs>
