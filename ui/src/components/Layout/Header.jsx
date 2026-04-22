@@ -195,8 +195,8 @@ const Header = () => {
                             }
                         }} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-sm)', transition: 'background 0.2s', margin: '-0.2rem -0.5rem' }} onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'} title="Configure Node Settings">
                             <h1 style={{ cursor: 'pointer' }}>{title}</h1>
-                            <div className="node-status" style={{ cursor: 'pointer' }}>
-                                <span className={`status-indicator ${error ? 'offline' : 'active'}`}></span> {error ? 'Node Offline' : 'Node Online'}
+                            <div className="node-status desktop-hidden-text" style={{ cursor: 'pointer', marginTop: '2px' }}>
+                                <span className={`status-indicator ${error ? 'offline' : 'active'}`} title={error ? 'Node Offline' : 'Node Online'}></span>
                             </div>
                         </div>
                     </div>
@@ -221,7 +221,7 @@ const Header = () => {
                         name="omnibar"
                         type="text"
                         placeholder="Search blocks, txns, or wallet addresses..."
-                        style={{ width: '100%', padding: '0.6rem 1rem 0.6rem 2.8rem', borderRadius: '20px', border: '1px solid var(--border-soft)', background: 'rgba(15, 23, 42, 0.4)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none' }}
+                        style={{ width: '100%', padding: '0.6rem 1rem 0.6rem 2.8rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.03)', background: 'rgba(255,255,255,0.02)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none', transition: 'all 0.2s' }}
                     />
                     <svg style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', width: '18px', height: '18px', color: 'var(--text-muted)' }} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
