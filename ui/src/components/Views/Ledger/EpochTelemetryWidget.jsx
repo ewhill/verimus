@@ -60,8 +60,7 @@ const EpochTelemetryWidget = () => {
     if (metrics.loading && metrics.currentIndex === 0) return null;
 
     return (
-        <div className="stagger-1" style={{ padding: '0 0 2rem 0' }}>
-            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.25rem', borderRadius: '0.75rem', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+        <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
                 {/* Stats Grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -110,7 +109,6 @@ const EpochTelemetryWidget = () => {
                     <span>Block: {metrics.currentIndex.toLocaleString()}</span>
                     <span>Target: {(metrics.currentIndex + (metrics.epochSize - (metrics.currentIndex % metrics.epochSize))).toLocaleString()}</span>
                 </div>
-            </div>
         </div>
     );
 };
