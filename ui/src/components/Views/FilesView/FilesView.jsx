@@ -88,11 +88,11 @@ const FilesView = () => {
     };
 
     return (
-        <div className="glass-panel files-wrapper stagger-1">
+        <div className="files-wrapper stagger-1" style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
             <SidebarLocations treeData={treeData} />
 
             <div className="files-main stagger-2">
-                <div className="files-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="files-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', marginBottom: '2.5rem' }}>
                     <div className="files-header-left">
                         {showBackButton && (
                             <button className="back-btn" title="Go up one level" onClick={handleBackClick}>
