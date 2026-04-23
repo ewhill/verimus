@@ -8,7 +8,8 @@ cleanup() {
     for port in "${PORTS[@]}"; do
         "$(dirname "$0")/stop.sh" --port $port > /dev/null 2>&1 || true
     done
-    kill -9 $(lsof -ti :27018) > /dev/null 2>&1 || true
+    pkill -f "mongod --port 27018" > /dev/null 2>&1 || true
+    sleep 2
     echo -e "\033[1;31mTearing down MongoDB...\033[0m"
     echo "Cleanup complete. Exiting."
     exit 0
@@ -45,6 +46,8 @@ npm run keygen
 DB_PATH="/tmp/verimus-mongo-prod"
 
 echo "Starting System Native MongoDB (Port 27018) for strictly pure network bounds natively..."
+pkill -f "mongod --port 27018" > /dev/null 2>&1 || true
+sleep 2
 rm -rf "$DB_PATH"
 mkdir -p "$DB_PATH"
 mongod --port 27018 --dbpath "$DB_PATH" > /dev/null 2>&1 &
