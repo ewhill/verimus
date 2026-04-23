@@ -75,10 +75,7 @@ class SyncEngine {
         this.node.peer?.bind(ChainStatusResponseMessage).to(async (m: ChainStatusResponseMessage, c: PeerConnection) => this.handleChainStatusResponse(m.latestIndex, m.latestHash, c));
         this.node.peer?.bind(BlockSyncRequestMessage).to(async (m: BlockSyncRequestMessage, c: PeerConnection) => this.handleBlockSyncRequest(m.index, c));
         this.node.peer?.bind(BlockSyncResponseMessage).to(async (m: BlockSyncResponseMessage, c: PeerConnection) => this.handleBlockSyncResponse(m.block, c));
-        this.node.peer?.bind(NetworkHealthSyncMessage).to(async (m: NetworkHealthSyncMessage, c: PeerConnection) => {
-            if (Date.now() - this.node.bootTime < 45000) return;
-            return this.handleNetworkHealthSync(m.score_payloads, c);
-        });
+        this.node.peer?.bind(NetworkHealthSyncMessage).to(async (m: NetworkHealthSyncMessage, c: PeerConnection) => this.handleNetworkHealthSync(m.score_payloads, c));
         this.node.peer?.bind(StorageRequestMessage).to(async (m: StorageRequestMessage, c: PeerConnection) => this.handleStorageRequest(m, c));
         this.node.peer?.bind(StorageBidMessage).to(async (m: StorageBidMessage, c: PeerConnection) => this.handleStorageBid(m, c));
         this.node.peer?.bind(StorageShardTransferMessage).to(async (m: StorageShardTransferMessage, c: PeerConnection) => this.handleStorageShardTransfer(m, c));
@@ -109,6 +106,7 @@ class SyncEngine {
     }
 
     async handleNetworkHealthSync(score_payloads: { operatorAddress: string, publicKey?: string, score: number, roles?: NodeRole[] }[], _unusedConnection: PeerConnection) {
+        if (Date.now() - this.node.bootTime < 45000) return;
         if (!this.node.ledger.peersCollection) return;
 
         for (const remoteScore of score_payloads) {
