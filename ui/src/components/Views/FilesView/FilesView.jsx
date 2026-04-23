@@ -88,16 +88,25 @@ const FilesView = () => {
     };
 
     return (
-        <div className="files-wrapper stagger-1" style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
-            <SidebarLocations treeData={treeData} />
+        <div style={{ padding: '0', maxWidth: '1400px', margin: '0 auto', color: '#f8fafc', height: '100%', display: 'flex', flexDirection: 'column', width: '100%' }}>
+            <div style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', marginBottom: '2.5rem' }}>
+                    <div>
+                        <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.01em', color: '#fff', lineHeight: 1 }}>Data Storage</h1>
+                    </div>
+                </div>
+            </div>
 
-            <div className="files-main stagger-2">
-                <div className="files-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', marginBottom: '2.5rem' }}>
-                    <div className="files-header-left">
-                        {showBackButton && (
-                            <button className="back-btn" title="Go up one level" onClick={handleBackClick}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                            </button>
+            <div className="files-wrapper stagger-1" style={{ width: '100%' }}>
+                <SidebarLocations treeData={treeData} />
+
+                <div className="files-main stagger-2">
+                    <div className="files-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
+                        <div className="files-header-left">
+                            {showBackButton && (
+                                <button className="back-btn" title="Go up one level" onClick={handleBackClick}>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                </button>
                         )}
                         <div>
                             <h2 style={{ marginBottom: '0.25rem' }}>{currentLocationName}</h2>
@@ -120,6 +129,7 @@ const FilesView = () => {
                 </div>
 
                 <FileGrid displayItems={displayItems} />
+                </div>
             </div>
         </div>
     );
