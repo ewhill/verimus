@@ -21,7 +21,7 @@ const EpochTelemetryWidget = () => {
                 fetch('/api/ledger/metrics').catch(() => ({ json: () => ({ metrics: {} }) })),
                 fetch('/api/peers').catch(() => ({ json: () => ({ peers: [] }) }))
             ]);
-            
+
             const data = ledgerRes && ledgerRes.status === 200 ? await ledgerRes.json() : { metrics: {} };
             const peersObj = peersRes && peersRes.status === 200 ? await peersRes.json() : { peers: [] };
 
@@ -80,9 +80,9 @@ const EpochTelemetryWidget = () => {
                         <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.gasPrice}</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>EMISSION LIMIT</span>
+                        <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>$VERI EMISSION</span>
                         <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>
-                            {metrics.emissionRate ? parseFloat(ethers.formatUnits(metrics.emissionRate.toString(), 18)).toFixed(6) + ' $VERI' : '0.000000 $VERI'}
+                            {metrics.emissionRate ? parseFloat(ethers.formatUnits(metrics.emissionRate.toString(), 18)).toFixed(6) : '0.000000'}
                         </span>
                     </div>
                 </div>
@@ -94,17 +94,17 @@ const EpochTelemetryWidget = () => {
                         <span style={{ fontWeight: 600, color: '#8b5cf6', fontSize: '0.95rem' }}>{calculateProgress()}%</span>
                     </div>
                 </div>
-                
+
                 <div style={{ width: '100%', height: '10px', background: 'rgba(139, 92, 246, 0.15)', borderRadius: '5px', overflow: 'hidden', position: 'relative' }}>
-                    <div style={{ 
-                        position: 'absolute', 
-                        left: 0, top: 0, bottom: 0, 
-                        width: `${calculateProgress()}%`, 
+                    <div style={{
+                        position: 'absolute',
+                        left: 0, top: 0, bottom: 0,
+                        width: `${calculateProgress()}%`,
                         background: 'linear-gradient(90deg, #8b5cf6, #3b82f6)',
                         transition: 'width 0.5s ease-out'
                     }} />
                 </div>
-                
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.75rem', fontSize: '0.8rem', color: '#64748b' }}>
                     <span>Block: {metrics.currentIndex.toLocaleString()}</span>
                     <span>Target: {(metrics.currentIndex + (metrics.epochSize - (metrics.currentIndex % metrics.epochSize))).toLocaleString()}</span>

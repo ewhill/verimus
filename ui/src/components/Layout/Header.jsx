@@ -86,13 +86,13 @@ const Header = () => {
 
     const pagesList = (
         <>
+            <a href="#" className={`nav-link ${activeRoute === 'ledger' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'ledger')}>Ledger</a>
             {(web3Account && !isWalletConnecting) && (
                 <>
                     <a href="#" className={`nav-link ${activeRoute === 'wallet' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'wallet')}>Wallet</a>
                     <a href="#" className={`nav-link ${activeRoute === 'files' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'files')}>Storage</a>
                 </>
             )}
-            <a href="#" className={`nav-link ${activeRoute === 'ledger' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'ledger')}>Ledger</a>
             {nodeConfig?.isAdmin && (
                 <a href="#" className={`nav-link ${activeRoute === 'network' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'network')}>Network</a>
             )}
@@ -192,23 +192,8 @@ const Header = () => {
 
     const mobileDrawerLinks = (
         <div className="mobile-accordion-wrapper">
-            {(web3Account && !isWalletConnecting) && (
-                <div className="mobile-accordion-group">
-                    <a href="#" style={{ paddingTop: '0' }} className={`mobile-accordion-header ${activeRoute === 'wallet' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'wallet')}>
-                        Wallet
-                    </a>
-                </div>
-            )}
-            {(web3Account && !isWalletConnecting) && (
-                <div className="mobile-accordion-group">
-                    <a href="#" className={`mobile-accordion-header ${activeRoute === 'files' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'files')}>
-                        Data Storage
-                    </a>
-                </div>
-            )}
-
             <div className="mobile-accordion-group">
-                <a href="#" className={`mobile-accordion-header ${expandedAccordion === 'ledger' ? 'active' : ''}`} onClick={(e) => handleAccordionToggle(e, 'ledger')}>
+                <a href="#" style={{ paddingTop: '0' }} className={`mobile-accordion-header ${expandedAccordion === 'ledger' ? 'active' : ''}`} onClick={(e) => handleAccordionToggle(e, 'ledger')}>
                     Ledger
                     <div className="mobile-accordion-cta">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expandedAccordion === 'ledger' ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
@@ -229,6 +214,21 @@ const Header = () => {
                     </div>
                 )}
             </div>
+
+            {(web3Account && !isWalletConnecting) && (
+                <div className="mobile-accordion-group">
+                    <a href="#" className={`mobile-accordion-header ${activeRoute === 'wallet' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'wallet')}>
+                        Wallet
+                    </a>
+                </div>
+            )}
+            {(web3Account && !isWalletConnecting) && (
+                <div className="mobile-accordion-group">
+                    <a href="#" className={`mobile-accordion-header ${activeRoute === 'files' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'files')}>
+                        Data Storage
+                    </a>
+                </div>
+            )}
 
             {nodeConfig?.isAdmin && (
                 <div className="mobile-accordion-group">
