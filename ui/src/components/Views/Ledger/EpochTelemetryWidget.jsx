@@ -30,7 +30,7 @@ const EpochTelemetryWidget = () => {
                 setMetrics({
                     currentIndex: data.currentIndex || data.metrics?.totalBlocks || 0,
                     epochSize: data.epochSize || 1000000,
-                    databaseFootprintBytes: data.databaseFootprintBytes || 0,
+                    totalContracts: data.totalContracts || 0,
                     peers: peersObj.peers?.length || 0,
                     epoch: 1,
                     gasPrice: '0.01',
@@ -86,9 +86,9 @@ const EpochTelemetryWidget = () => {
                         </span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        <span style={{ color: '#ec4899', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>LEDGER SIZE</span>
+                        <span style={{ color: '#ec4899', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>TOTAL CONTRACTS</span>
                         <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>
-                            {(metrics.databaseFootprintBytes / 1024 / 1024).toFixed(2)} MB
+                            {metrics.totalContracts.toLocaleString()}
                         </span>
                     </div>
                 </div>

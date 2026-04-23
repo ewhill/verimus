@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 
-import BaseHandler from '../base_handler/BaseHandler';
 import WalletManager from '../../wallet_manager/WalletManager';
+import BaseHandler from '../base_handler/BaseHandler';
 
 export default class LedgerMetricsHandler extends BaseHandler {
     async handle(_unusedReq: Request, res: Response): Promise<void> {
@@ -29,12 +29,18 @@ export default class LedgerMetricsHandler extends BaseHandler {
                 }
             }
 
+            let totalContracts = 0;
+            if (this.node.ledger.activeContractsCollection) {
+                totalContracts = await this.node.ledger.activeContractsCollection.countDocuments({});
+            }
+
             res.json({
                 success: true,
                 currentIndex,
                 epochSize,
                 emissionRate,
-                databaseFootprintBytes
+                databaseFootprintBytes,
+                totalContracts
             });
         } catch (error: any) {
             res.status(500).json({ success: false, message: error.message });
