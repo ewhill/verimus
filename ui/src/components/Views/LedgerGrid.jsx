@@ -15,7 +15,7 @@ const getBlockTypeConfig = (type) => {
         case 'SLASHING_TRANSACTION':
             return { icon: <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)', name: 'Slashing' };
         case 'VALIDATOR_REGISTRATION':
-            return { icon: <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, color: '#ec4899', bg: 'rgba(236, 72, 153, 0.15)', name: 'Validator' };
+            return { icon: <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, color: '#eab308', bg: 'rgba(234, 179, 8, 0.15)', name: 'Validator' };
         default:
             return { icon: <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>, color: '#9ca3af', bg: 'rgba(156, 163, 175, 0.15)', name: type };
     }
