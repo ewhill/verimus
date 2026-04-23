@@ -155,8 +155,8 @@ const PeersView = () => {
     const connectedPeers = otherPeers.filter(p => p.status === 'connected');
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', borderBottom: 'none', paddingBottom: '0' }}>
                 <div className="flat-tab-bar" style={{ display: 'flex' }}>
                     <button className={`flat-tab-btn ${activeTab === 'mesh' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_PEERS_TAB', payload: 'mesh' })}>Network Mesh</button>
                     <button className={`flat-tab-btn ${activeTab === 'reputation' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_PEERS_TAB', payload: 'reputation' })}>Global Reputation</button>
@@ -164,31 +164,33 @@ const PeersView = () => {
                 </div>
             </div>
 
-            {activeTab === 'mesh' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
-                    <GossipStatsPanel telemetry={gossipTelemetry} />
-                    <section className="glass-panel stagger-1">
-                        <div className="section-header">
-                            <h2>Network Diagnostics</h2>
-                        </div>
-                        <div id="canvas-container" className="canvas-grid-bg" style={{ width: '100%', height: '400px', position: 'relative', overflow: 'hidden' }}>
-                            <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }}></canvas>
-                        </div>
-                    </section>
-                </div>
-            )}
+            <div className="glass-panel" style={{ padding: '2rem', borderRadius: '0 16px 16px 16px', minHeight: '600px', width: '100%' }}>
+                {activeTab === 'mesh' && (
+                    <div className="stagger-1" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
+                        <GossipStatsPanel telemetry={gossipTelemetry} />
+                        <section style={{ width: '100%' }}>
+                            <div className="section-header">
+                                <h2>Network Diagnostics</h2>
+                            </div>
+                            <div id="canvas-container" className="canvas-grid-bg" style={{ width: '100%', height: '400px', position: 'relative', overflow: 'hidden', borderRadius: '12px' }}>
+                                <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }}></canvas>
+                            </div>
+                        </section>
+                    </div>
+                )}
 
-            {activeTab === 'reputation' && (
-                <div style={{ width: '100%' }} className="stagger-1">
-                    <ReputationLadder peers={peers} error={error} otherPeers={otherPeers} connectedPeers={connectedPeers} />
-                </div>
-            )}
+                {activeTab === 'reputation' && (
+                    <div style={{ width: '100%' }} className="stagger-1">
+                        <ReputationLadder peers={peers} error={error} otherPeers={otherPeers} connectedPeers={connectedPeers} />
+                    </div>
+                )}
 
-            {activeTab === 'logs' && (
-                <div style={{ width: '100%', height: 'calc(100vh - 200px)' }} className="stagger-1">
-                    <LogsView />
-                </div>
-            )}
+                {activeTab === 'logs' && (
+                    <div style={{ width: '100%', height: 'calc(100vh - 200px)' }} className="stagger-1">
+                        <LogsView />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

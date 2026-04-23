@@ -81,8 +81,8 @@ const LedgerView = () => {
                 </div>
             )}
             
-            <section className="ledger-section" style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', marginBottom: '2.5rem' }}>
+            <section className="ledger-section" style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', borderBottom: 'none', paddingBottom: '0' }}>
                     <div className="flat-tab-bar" style={{ display: 'flex' }}>
                         <button className={`flat-tab-btn ${activeTab === 'global' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' })}>Blocks</button>
                         {nodeConfig?.roles?.includes('VALIDATOR') && (
@@ -93,28 +93,26 @@ const LedgerView = () => {
                         )}
                     </div>
                 </div>
-                {activeTab === 'global' && (
-                    <>
-                        <EpochTelemetryWidget />
+                <div className="glass-panel" style={{ padding: '2rem', borderRadius: '0 16px 16px 16px', minHeight: '600px', width: '100%' }}>
+                    {activeTab === 'global' && (
                         <div className="stagger-1">
+                            <EpochTelemetryWidget />
                             <LedgerGrid />
                         </div>
-                    </>
-                )}
+                    )}
 
+                    {activeTab === 'consensus' && nodeConfig?.roles?.includes('VALIDATOR') && (
+                        <div style={{ width: '100%' }} className="stagger-1">
+                            <ConsensusView />
+                        </div>
+                    )}
 
-
-                {activeTab === 'consensus' && nodeConfig?.roles?.includes('VALIDATOR') && (
-                    <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }} className="stagger-1">
-                        <ConsensusView />
-                    </div>
-                )}
-
-                {activeTab === 'contracts' && nodeConfig?.roles?.includes('STORAGE') && (
-                    <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }} className="stagger-1">
-                        <ContractsView />
-                    </div>
-                )}
+                    {activeTab === 'contracts' && nodeConfig?.roles?.includes('STORAGE') && (
+                        <div style={{ width: '100%' }} className="stagger-1">
+                            <ContractsView />
+                        </div>
+                    )}
+                </div>
             </section>
         </>
     );
