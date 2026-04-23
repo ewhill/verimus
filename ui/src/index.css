@@ -171,6 +171,7 @@ header {
     background: url('verimus_logo.png') center/cover no-repeat;
     border-radius: 100%;
     box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;

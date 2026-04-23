@@ -69,19 +69,19 @@ const EpochTelemetryWidget = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                         <span style={{ color: '#3b82f6', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>VERIMUS EPOCH</span>
-                        <span style={{ fontSize: '1.5rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.epoch}</span>
+                        <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.epoch}</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                         <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>BLOCK HEIGHT</span>
-                        <span style={{ fontSize: '1.5rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.currentIndex.toLocaleString()}</span>
+                        <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.currentIndex.toLocaleString()}</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                         <span style={{ color: '#8b5cf6', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>ACTIVE PEERS</span>
-                        <span style={{ fontSize: '1.5rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.peers}</span>
+                        <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.peers}</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                         <span style={{ color: '#eab308', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>$VERI GAS</span>
-                        <span style={{ fontSize: '1.5rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.gasPrice}</span>
+                        <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.gasPrice}</span>
                     </div>
                 </div>
 

@@ -257,7 +257,7 @@ const Header = () => {
             <div className="header-primary" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'center' }}>
                 <div className="header-top" style={{ justifySelf: 'start', display: 'flex', alignItems: 'center' }}>
                     <div className="logo">
-                        <div className={`logo-icon ${error ? 'logo-glow-offline' : 'logo-glow-online'}`} onDoubleClick={() => {
+                        <div className={`logo-icon ${error ? 'logo-glow-offline' : 'logo-glow-online'}`} onClick={() => {
                             if (nodeConfig?.isAdmin) {
                                 dispatch({ type: 'SET_NODE_CONFIG_MODAL_OPEN', payload: true });
                             } else {
