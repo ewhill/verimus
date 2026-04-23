@@ -1564,9 +1564,7 @@ tr:hover {
     background: transparent;
     border: none;
     color: var(--text-muted);
-    padding: 0 0 1rem 0;
-    margin-bottom: -1rem;
-    /* Pulldown to border baseline exactly */
+    padding: 0.5rem 1rem 1rem 1rem;
     cursor: pointer;
     font-size: 0.95rem;
     font-weight: 600;
