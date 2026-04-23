@@ -28,32 +28,10 @@ function App() {
     const isModalOpen = useStore(s => s.isModalOpen);
     const _hasHydrated = useStore(s => s._hasHydrated);
 
+    const initializeRef = React.useRef(false);
+
     useEffect(() => {
         const cleanupWeb3Listeners = initializeEIP6963Discovery(dispatch);
-
-        // Evaluate deep-link URL on native mount taking precedence over Zustand persistent cache
-        const params = new URLSearchParams(window.location.search);
-        const q = params.get('q');
-        const block = params.get('block');
-        const segments = window.location.pathname.split('/').filter(Boolean);
-        const route = segments[0] || 'ledger';
-
-        if (q) {
-            if (route === 'wallet') {
-                dispatch({ type: 'SET_FILES_SEARCH', payload: q });
-            } else if (route === 'ledger') {
-                dispatch({ type: 'SET_SEARCH', payload: q });
-            }
-        }
-        if (block && route === 'ledger') {
-            dispatch({ type: 'SET_MODAL_OPEN', payload: { isOpen: true, hash: block } });
-        }
-
-        // Run once on mount explicitly fetching dynamic multi-tier originator topologies securely logically mapping optimally!
-        ApiService.discoverOptimalProxy(dispatch).then(() => {
-            ApiService.fetchNodeConfig(dispatch);
-            ApiService.resumePendingDownloads();
-        });
 
         const handlePopState = () => {
             const pathSegments = window.location.pathname.split('/').filter(Boolean);
@@ -72,6 +50,35 @@ function App() {
             cleanupWeb3Listeners();
         };
     }, [dispatch]);
+
+    useEffect(() => {
+        if (!_hasHydrated || initializeRef.current) return;
+        initializeRef.current = true;
+
+        const params = new URLSearchParams(window.location.search);
+        const q = params.get('q');
+        const block = params.get('block');
+        const segments = window.location.pathname.split('/').filter(Boolean);
+        const route = segments[0] || 'ledger';
+
+        if (q) {
+            if (route === 'wallet' || route === 'files') {
+                dispatch({ type: 'SET_FILES_SEARCH', payload: q });
+            } else if (route === 'ledger') {
+                dispatch({ type: 'SET_SEARCH', payload: q });
+            }
+        }
+        if (block && route === 'ledger') {
+            dispatch({ type: 'SET_MODAL_OPEN', payload: { isOpen: true, hash: block } });
+        }
+
+        ApiService.discoverOptimalProxy(dispatch).then(() => {
+            ApiService.fetchNodeConfig(dispatch);
+            ApiService.resumePendingDownloads();
+        });
+    }, [_hasHydrated, dispatch]);
+
+
 
     useEffect(() => {
         if (!_hasHydrated) return;
@@ -127,6 +134,10 @@ function App() {
             default:       return <LedgerView />;
         }
     };
+
+    if (!_hasHydrated) {
+        return <div style={{ height: '100vh', background: '#020617' }} />;
+    }
 
     return (
         <div className="app-container">
