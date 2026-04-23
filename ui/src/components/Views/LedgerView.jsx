@@ -85,11 +85,8 @@ const LedgerView = () => {
                 <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', width: '100%', borderBottom: '2px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0' }}>
                     <div className="flat-tab-bar" style={{ display: 'flex' }}>
                         <button className={`flat-tab-btn ${activeTab === 'global' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' })}>Blocks</button>
-                        {nodeConfig?.roles?.includes('VALIDATOR') && (
+                        {(nodeConfig?.roles?.includes('VALIDATOR') || nodeConfig?.roles?.includes('STORAGE')) && (
                             <button className={`flat-tab-btn ${activeTab === 'consensus' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' })}>Statistics</button>
-                        )}
-                        {nodeConfig?.roles?.includes('STORAGE') && (
-                            <button className={`flat-tab-btn ${activeTab === 'contracts' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' })}>Contracts</button>
                         )}
                     </div>
                 </div>
@@ -100,16 +97,17 @@ const LedgerView = () => {
                         </div>
                     )}
 
-                    {activeTab === 'consensus' && nodeConfig?.roles?.includes('VALIDATOR') && (
+                    {activeTab === 'consensus' && (nodeConfig?.roles?.includes('VALIDATOR') || nodeConfig?.roles?.includes('STORAGE')) && (
                         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }} className="stagger-1">
-                            <EpochTelemetryWidget />
-                            <ConsensusView />
-                        </div>
-                    )}
-
-                    {activeTab === 'contracts' && nodeConfig?.roles?.includes('STORAGE') && (
-                        <div style={{ width: '100%' }} className="stagger-1">
-                            <ContractsView />
+                            {nodeConfig?.roles?.includes('VALIDATOR') && (
+                                <>
+                                    <EpochTelemetryWidget />
+                                    <ConsensusView />
+                                </>
+                            )}
+                            {nodeConfig?.roles?.includes('STORAGE') && (
+                                <ContractsView />
+                            )}
                         </div>
                     )}
                 </div>
