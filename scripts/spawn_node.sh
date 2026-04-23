@@ -47,8 +47,6 @@ if [ "$WATCH_MODE" = true ]; then
         fi
     done
     
-    export NODE_ENV="${NODE_ENV:-development}"
-    export NODE_TLS_REJECT_UNAUTHORIZED=0
     npm run watch:node -- "${EXTRA_ARGS[@]}" > "/tmp/watch_node_${PORT_VAL}.log" 2>&1 &
     NODE_PID=$!
     
@@ -70,7 +68,5 @@ else
     fi
 
     echo "[2/2] Starting Peer Node..."
-    export NODE_ENV="${NODE_ENV:-development}"
-    export NODE_TLS_REJECT_UNAUTHORIZED=0
     npm run start:node -- "${EXTRA_ARGS[@]}"
 fi
