@@ -60,25 +60,12 @@ const ConsensusView = () => {
 
 
             <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
-                <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', marginBottom: '1.25rem' }}>Consensus Telemetry</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                         <span style={{ color: '#3b82f6', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>PENDING BLOCKS</span>
-                        <span style={{ fontSize: '1.5rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{mempool.pendingBlocks.total}</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        <span style={{ color: '#8b5cf6', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>ELIGIBLE FORKS</span>
-                        <span style={{ fontSize: '1.5rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{mempool.eligibleForks.total}</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>SETTLED FORKS</span>
-                        <span style={{ fontSize: '1.5rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{mempool.settledForks.total}</span>
+                        <span style={{ fontSize: '2rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{mempool.pendingBlocks.total}</span>
                     </div>
                 </div>
-            </div>
-
-            <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
-                <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', marginBottom: '1.25rem' }}>Pending Blocks</h2>
                 {mempool.pendingBlocks.data.length === 0 ? (
                     <p style={{ color: 'var(--text-muted)' }}>There are no pending blocks.</p>
                 ) : (
@@ -119,7 +106,10 @@ const ConsensusView = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
                 <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
-                    <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', marginBottom: '1.25rem' }}>Eligible Forks</h2>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '1.5rem' }}>
+                        <span style={{ color: '#8b5cf6', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>ELIGIBLE FORKS</span>
+                        <span style={{ fontSize: '2rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{mempool.eligibleForks.total}</span>
+                    </div>
                     {mempool.eligibleForks.data.length === 0 ? (
                         <p style={{ color: 'var(--text-muted)' }}>There are no eligible forks.</p>
                     ) : (
@@ -150,7 +140,10 @@ const ConsensusView = () => {
                 </div>
 
                 <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
-                    <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', marginBottom: '1.25rem' }}>Settled Forks</h2>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '1.5rem' }}>
+                        <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>SETTLED FORKS</span>
+                        <span style={{ fontSize: '2rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{mempool.settledForks.total}</span>
+                    </div>
                     {mempool.settledForks.data.length === 0 ? (
                         <p style={{ color: 'var(--text-muted)' }}>No forks have been settled.</p>
                     ) : (
