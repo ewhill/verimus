@@ -106,10 +106,8 @@ const WalletConnection = ({ isMobileDrawer }) => {
                     padding: '0.8rem 1rem', borderRadius: 'var(--radius-md)'
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, minWidth: 0 }}>
-                        {isConnecting ? (
+                        {isConnecting && (
                             <div className="spinner" style={{ width: '12px', height: '12px', flexShrink: 0, borderWidth: '2px', borderColor: 'rgba(74, 222, 128, 0.3)', borderTopColor: '#4ade80' }}></div>
-                        ) : (
-                            <div style={{ width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%', boxShadow: '0 0 8px rgba(74,222,128,0.6)', flexShrink: 0 }}></div>
                         )}
                         <span style={{ color: '#818cf8', fontWeight: 600, fontFamily: 'monospace', fontSize: '1rem', flex: 1, textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {web3Account}
@@ -129,10 +127,8 @@ const WalletConnection = ({ isMobileDrawer }) => {
                     background: 'transparent', border: '1px solid transparent',
                     padding: '0', borderRadius: '100px', transition: 'background 0.2s ease'
                 }} title={web3Account}>
-                    {isConnecting ? (
+                    {isConnecting && (
                         <div className="spinner" style={{ width: '12px', height: '12px', flexShrink: 0, borderWidth: '2px', borderColor: 'rgba(74, 222, 128, 0.3)', borderTopColor: '#4ade80' }}></div>
-                    ) : (
-                        <div style={{ width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%', boxShadow: '0 0 8px rgba(74,222,128,0.6)', flexShrink: 0 }}></div>
                     )}
                     <span style={{ color: '#e2e8f0', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.85rem' }}>
                         {web3Account.substring(0, 5)}...{web3Account.substring(web3Account.length - 3)}
@@ -167,19 +163,17 @@ const WalletConnection = ({ isMobileDrawer }) => {
                     {isConnecting ? 'Connecting...' : 'Connect Wallet'}
                 </span>
                 {isConnecting && (
-                    <div style={{
-                        position: 'absolute', inset: 0, borderRadius: '100px', padding: '2px',
-                        background: 'transparent',
-                        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                        WebkitMaskComposite: 'xor', maskComposite: 'exclude',
-                        zIndex: 1, pointerEvents: 'none'
-                    }}>
-                        <div style={{
-                            position: 'absolute', top: '50%', left: '50%', width: '200%', height: '500%',
-                            background: 'conic-gradient(from 0deg, transparent 70%, #4ade80 100%)',
-                            animation: 'spin-gradient 1.2s linear infinite'
-                        }} />
-                    </div>
+                    <svg width="100%" height="100%" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', zIndex: 1, borderRadius: '100px' }}>
+                        <rect 
+                            x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="21" 
+                            fill="none" 
+                            stroke="#4ade80" 
+                            strokeWidth="2" 
+                            strokeDasharray="100 1000"
+                            strokeLinecap="round"
+                            style={{ animation: 'spin-stroke 2s linear infinite' }}
+                        />
+                    </svg>
                 )}
             </button>
             {isProviderListOpen && discoveredProviders.length > 1 && (

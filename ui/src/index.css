@@ -1368,6 +1368,11 @@ tr:hover {
     }
 }
 
+@keyframes spin-stroke {
+    from { stroke-dashoffset: 1100; }
+    to { stroke-dashoffset: 0; }
+}
+
 /* Peer Graph Specifics */
 #canvas-container {
     background: rgba(0, 0, 0, 0.3) !important;
