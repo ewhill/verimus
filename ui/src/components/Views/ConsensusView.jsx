@@ -59,10 +59,22 @@ const ConsensusView = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', animation: 'fadeIn 0.3s ease-out' }}>
 
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-                <MetricCard title="Pending Blocks" value={mempool.pendingBlocks.total} color="#3b82f6" />
-                <MetricCard title="Eligible Forks" value={mempool.eligibleForks.total} color="#8b5cf6" />
-                <MetricCard title="Settled Forks" value={mempool.settledForks.total} color="#10b981" />
+            <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
+                <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', marginBottom: '1.25rem' }}>Consensus Telemetry</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <span style={{ color: '#3b82f6', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>PENDING BLOCKS</span>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{mempool.pendingBlocks.total}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <span style={{ color: '#8b5cf6', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>ELIGIBLE FORKS</span>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{mempool.eligibleForks.total}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>SETTLED FORKS</span>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{mempool.settledForks.total}</span>
+                    </div>
+                </div>
             </div>
 
             <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
@@ -170,12 +182,5 @@ const ConsensusView = () => {
         </div>
     );
 };
-
-const MetricCard = ({ title, value, color }) => (
-    <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderLeft: `4px solid ${color}` }}>
-        <h3 style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>{title}</h3>
-        <span style={{ fontSize: '2rem', fontWeight: 700, color: '#f8fafc' }}>{value}</span>
-    </div>
-);
 
 export default ConsensusView;
