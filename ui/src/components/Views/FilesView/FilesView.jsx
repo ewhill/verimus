@@ -97,7 +97,7 @@ const FilesView = () => {
                 </div>
             </div>
 
-            <div className="files-wrapper stagger-1" style={{ width: '100%' }}>
+            <div className="files-wrapper glass-panel stagger-1" style={{ width: '100%', padding: '2rem', borderRadius: '16px' }}>
                 <SidebarLocations treeData={treeData} />
 
                 <div className="files-main stagger-2">
