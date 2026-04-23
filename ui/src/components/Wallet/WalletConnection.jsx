@@ -154,14 +154,19 @@ const WalletConnection = ({ isMobileDrawer }) => {
                     background: 'transparent',
                     color: '#818cf8', border: isConnecting ? '1px solid transparent' : '1px solid #818cf8', borderRadius: '100px', fontWeight: '600',
                     cursor: isConnecting ? 'not-allowed' : 'pointer', transition: 'background 0.2s, border 0.2s',
-                    width: isMobileDrawer ? '100%' : '150px',
+                    width: isMobileDrawer ? '100%' : '44px',
                     boxSizing: 'border-box', position: 'relative'
                 }}
                 onMouseOver={(e) => !isConnecting && (e.currentTarget.style.background = 'rgba(129, 140, 248, 0.1)')}
                 onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                title={isConnecting ? 'Connecting...' : 'Connect Wallet'}
             >
-                <span style={{ position: 'relative', zIndex: 2 }}>
-                    {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                <span style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path>
+                        <path d="M4 6v12c0 1.1.9 2 2 2h14v-4"></path>
+                        <path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"></path>
+                    </svg>
                 </span>
                 {isConnecting && (
                     <svg width="100%" height="100%" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', zIndex: 1, borderRadius: '100px' }}>
