@@ -1369,8 +1369,13 @@ tr:hover {
 }
 
 @keyframes spin-stroke {
-    from { stroke-dashoffset: 1100; }
-    to { stroke-dashoffset: 0; }
+    from {
+        stroke-dashoffset: 100;
+    }
+
+    to {
+        stroke-dashoffset: 0;
+    }
 }
 
 /* Peer Graph Specifics */

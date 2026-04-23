@@ -8,7 +8,7 @@ const WalletConnection = ({ isMobileDrawer }) => {
     const activeProvider = useStore(s => s.activeProvider);
     const discoveredProviders = useStore(s => s.discoveredProviders);
     const isConnecting = useStore(s => s.isWalletConnecting);
-    
+
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isProviderListOpen, setIsProviderListOpen] = useState(false);
 
@@ -58,7 +58,7 @@ const WalletConnection = ({ isMobileDrawer }) => {
             if (account) {
                 dispatch({ type: 'SET_ACTIVE_PROVIDER', payload: selectedProvider });
                 dispatch({ type: 'SET_WEB3_ACCOUNT', payload: account });
-                
+
                 try {
                     const pubKey = await getEncryptionPublicKey(account, selectedProvider);
                     dispatch({ type: 'SET_WEB3_ENCRYPTION_KEY', payload: pubKey });
@@ -89,7 +89,7 @@ const WalletConnection = ({ isMobileDrawer }) => {
                 payload: { id: Date.now(), title: 'Metamask Missing', message: 'No EIP6963 Ethereum provider detected natively. Please install Metamask.', type: 'error' }
             });
         }
-        
+
         if (discoveredProviders.length === 1) {
             await executeConnection(discoveredProviders[0].provider);
         } else {
@@ -106,9 +106,6 @@ const WalletConnection = ({ isMobileDrawer }) => {
                     padding: '0.8rem 1rem', borderRadius: 'var(--radius-md)'
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, minWidth: 0 }}>
-                        {isConnecting && (
-                            <div className="spinner" style={{ width: '12px', height: '12px', flexShrink: 0, borderWidth: '2px', borderColor: 'rgba(74, 222, 128, 0.3)', borderTopColor: '#4ade80' }}></div>
-                        )}
                         <span style={{ color: '#818cf8', fontWeight: 600, fontFamily: 'monospace', fontSize: '1rem', flex: 1, textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {web3Account}
                         </span>
@@ -127,9 +124,6 @@ const WalletConnection = ({ isMobileDrawer }) => {
                     background: 'transparent', border: '1px solid transparent',
                     padding: '0', borderRadius: '100px', transition: 'background 0.2s ease'
                 }} title={web3Account}>
-                    {isConnecting && (
-                        <div className="spinner" style={{ width: '12px', height: '12px', flexShrink: 0, borderWidth: '2px', borderColor: 'rgba(74, 222, 128, 0.3)', borderTopColor: '#4ade80' }}></div>
-                    )}
                     <span style={{ color: '#e2e8f0', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.85rem' }}>
                         {web3Account.substring(0, 5)}...{web3Account.substring(web3Account.length - 3)}
                     </span>
@@ -164,14 +158,15 @@ const WalletConnection = ({ isMobileDrawer }) => {
                 </span>
                 {isConnecting && (
                     <svg width="100%" height="100%" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', zIndex: 1, borderRadius: '100px' }}>
-                        <rect 
-                            x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="21" 
-                            fill="none" 
-                            stroke="#4ade80" 
-                            strokeWidth="2" 
-                            strokeDasharray="100 1000"
+                        <rect
+                            x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="21"
+                            fill="none"
+                            stroke="#4ade80"
+                            strokeWidth="2"
+                            pathLength="100"
+                            strokeDasharray="30 70"
                             strokeLinecap="round"
-                            style={{ animation: 'spin-stroke 2s linear infinite' }}
+                            style={{ animation: 'spin-stroke 1.5s linear infinite' }}
                         />
                     </svg>
                 )}
