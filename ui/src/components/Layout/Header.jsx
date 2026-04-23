@@ -87,7 +87,7 @@ const Header = () => {
             gap: '8px',
             boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
         }}>
-            {(nodeConfig?.roles?.includes('ORIGINATOR') && web3EncryptionKey) && (
+            {web3Account && (
                 <button
                     onClick={() => dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true })}
                     title="Upload File"

@@ -12,8 +12,7 @@ const FilesView = () => {
     const filesSearchQuery = useStore(s => s.filesSearchQuery);
     const filesLocationFilter = useStore(s => s.filesLocationFilter);
     const filesSelectedPath = useStore(s => s.filesSelectedPath);
-    const nodeConfig = useStore(s => s.nodeConfig);
-    const web3EncryptionKey = useStore(s => s.web3EncryptionKey);
+    const web3Account = useStore(s => s.web3Account);
 
     useEffect(() => {
         ApiService.fetchFiles(dispatch);
@@ -104,7 +103,7 @@ const FilesView = () => {
                             <div className="subtitle" style={{ marginBottom: '0' }}>{displayItems.length} item(s)</div>
                         </div>
                     </div>
-                    {(nodeConfig?.roles?.includes('ORIGINATOR') && web3EncryptionKey) && (
+                    {web3Account && (
                         <div className="files-header-right">
                             <button
                                 onClick={() => dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true })}
