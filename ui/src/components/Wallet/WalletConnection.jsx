@@ -154,16 +154,33 @@ const WalletConnection = ({ isMobileDrawer }) => {
                 disabled={isConnecting}
                 style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', height: '44px',
-                    marginLeft: isMobileDrawer ? '0' : '0.5rem', padding: '0 1.2rem', background: 'transparent',
-                    color: '#818cf8', border: '1px solid #818cf8', borderRadius: '100px', fontWeight: '600',
-                    cursor: isConnecting ? 'not-allowed' : 'pointer', transition: 'background 0.2s',
-                    opacity: isConnecting ? 0.7 : 1, width: isMobileDrawer ? '100%' : 'auto',
-                    boxSizing: 'border-box'
+                    marginLeft: isMobileDrawer ? '0' : '0.5rem', padding: '0', background: 'transparent',
+                    color: '#818cf8', border: isConnecting ? '1px solid transparent' : '1px solid #818cf8', borderRadius: '100px', fontWeight: '600',
+                    cursor: isConnecting ? 'not-allowed' : 'pointer', transition: 'background 0.2s, border 0.2s',
+                    width: isMobileDrawer ? '100%' : '150px',
+                    boxSizing: 'border-box', position: 'relative'
                 }}
                 onMouseOver={(e) => !isConnecting && (e.currentTarget.style.background = 'rgba(129, 140, 248, 0.1)')}
                 onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
             >
-                {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                <span style={{ position: 'relative', zIndex: 2 }}>
+                    {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                </span>
+                {isConnecting && (
+                    <div style={{
+                        position: 'absolute', inset: 0, borderRadius: '100px', padding: '2px',
+                        background: 'transparent',
+                        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                        WebkitMaskComposite: 'xor', maskComposite: 'exclude',
+                        zIndex: 1, pointerEvents: 'none'
+                    }}>
+                        <div style={{
+                            position: 'absolute', top: '50%', left: '50%', width: '200%', height: '500%',
+                            background: 'conic-gradient(from 0deg, transparent 70%, #4ade80 100%)',
+                            animation: 'spin-gradient 1.2s linear infinite'
+                        }} />
+                    </div>
+                )}
             </button>
             {isProviderListOpen && discoveredProviders.length > 1 && (
                 <div style={{
