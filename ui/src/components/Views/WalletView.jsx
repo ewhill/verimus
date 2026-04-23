@@ -198,13 +198,7 @@ const WalletView = () => {
 
     return (
         <div style={{ padding: '0', maxWidth: '1400px', margin: '0 auto', color: '#f8fafc', height: '100%', display: 'flex', flexDirection: 'column', width: '100%' }}>
-
             <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', marginBottom: '2.5rem' }}>
-                    <div>
-                        <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.01em', color: '#fff', lineHeight: 1 }}>Wallet</h1>
-                    </div>
-                </div>
 
                 {loading ? (
                     <div style={{ textAlign: 'center', padding: '3rem', color: '#8b9bb4' }}>Syncing Global Ledger Arrays...</div>

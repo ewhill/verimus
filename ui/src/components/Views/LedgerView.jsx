@@ -82,12 +82,7 @@ const LedgerView = () => {
             )}
             
             <section className="ledger-section" style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', marginBottom: '2.5rem' }}>
-                    <div>
-                        <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.01em', color: '#fff', lineHeight: 1 }}>
-                            Ledger
-                        </h1>
-                    </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', marginBottom: '2.5rem' }}>
                     <div className="flat-tab-bar" style={{ display: 'flex' }}>
                         <button className={`flat-tab-btn ${activeTab === 'global' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' })}>Blocks</button>
                         {nodeConfig?.roles?.includes('VALIDATOR') && (

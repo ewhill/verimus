@@ -89,14 +89,6 @@ const FilesView = () => {
 
     return (
         <div style={{ padding: '0', maxWidth: '1400px', margin: '0 auto', color: '#f8fafc', height: '100%', display: 'flex', flexDirection: 'column', width: '100%' }}>
-            <div style={{ width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', marginBottom: '2.5rem' }}>
-                    <div>
-                        <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.01em', color: '#fff', lineHeight: 1 }}>Data Storage</h1>
-                    </div>
-                </div>
-            </div>
-
             <div className="files-wrapper glass-panel stagger-1" style={{ width: '100%', padding: '2rem', borderRadius: '16px' }}>
                 <SidebarLocations treeData={treeData} />
 

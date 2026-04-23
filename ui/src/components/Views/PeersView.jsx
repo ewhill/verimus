@@ -156,12 +156,7 @@ const PeersView = () => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem' }}>
-                <div>
-                    <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.01em', color: '#fff', lineHeight: 1 }}>
-                        Network
-                    </h1>
-                </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem' }}>
                 <div className="flat-tab-bar" style={{ display: 'flex' }}>
                     <button className={`flat-tab-btn ${activeTab === 'mesh' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_PEERS_TAB', payload: 'mesh' })}>Network Mesh</button>
                     <button className={`flat-tab-btn ${activeTab === 'reputation' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_PEERS_TAB', payload: 'reputation' })}>Global Reputation</button>
