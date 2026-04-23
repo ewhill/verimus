@@ -58,9 +58,9 @@ const Header = () => {
             // Hash -> Open Block Modal
             dispatch({ type: 'SET_MODAL_OPEN', payload: { isOpen: true, hash: query } });
         } else {
-            // Generic fallback searches against Contracts
+            // Generic fallback searches against Blocks
             dispatch({ type: 'SET_ROUTE', payload: 'ledger' });
-            dispatch({ type: 'SET_LEDGER_TAB', payload: 'statistics' });
+            dispatch({ type: 'SET_LEDGER_TAB', payload: 'blocks' });
         }
         dispatch({ type: 'SET_SEARCH', payload: query });
         setLocalSearchQuery('');
