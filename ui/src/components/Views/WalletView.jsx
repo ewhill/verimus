@@ -11,7 +11,7 @@ const PortfolioChart = ({ transactions, balance }) => {
 
     const currentBal = parseFloat(ethers.formatUnits(balance ? balance.toString() : "0", 18));
     let runningBal = currentBal;
-    
+
     // Form historical data points by projecting backwards
     // We reverse the logic: txns are newest first. So as we go back in time, we revert the txn effects.
     const history = [{ val: currentBal }];
@@ -28,31 +28,31 @@ const PortfolioChart = ({ transactions, balance }) => {
         }
         history.push({ val: Math.max(0, runningBal) });
     }
-    
+
     history.reverse(); // Now oldest -> newest
     const maxVal = Math.max(...history.map(h => h.val), 0.1);
-    
+
     const width = 1000;
     const height = 150;
-    
+
     const points = history.map((pt, i) => {
         const x = (i / Math.max(1, history.length - 1)) * width;
         const y = height - ((pt.val / maxVal) * height * 0.8) - 10; // 10px padding
         return `${x},${y}`;
     }).join(' ');
-    
+
     return (
         <div style={{ width: '100%', height: '150px', background: 'rgba(15, 23, 42, 0.4)', borderRadius: '12px', border: '1px solid var(--border-soft)', overflow: 'hidden', position: 'relative' }}>
-             <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-                 <defs>
-                     <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                         <stop offset="0%" stopColor="rgba(192, 132, 252, 0.4)" />
-                         <stop offset="100%" stopColor="rgba(192, 132, 252, 0)" />
-                     </linearGradient>
-                 </defs>
-                 <polyline points={`0,${height} ${points} ${width},${height}`} fill="url(#chartGradient)" />
-                 <polyline points={points} fill="none" stroke="#c084fc" strokeWidth="3" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
-             </svg>
+            <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+                <defs>
+                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="rgba(192, 132, 252, 0.4)" />
+                        <stop offset="100%" stopColor="rgba(192, 132, 252, 0)" />
+                    </linearGradient>
+                </defs>
+                <polyline points={`0,${height} ${points} ${width},${height}`} fill="url(#chartGradient)" />
+                <polyline points={points} fill="none" stroke="#c084fc" strokeWidth="3" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+            </svg>
         </div>
     );
 };
@@ -97,8 +97,8 @@ const WalletView = () => {
         const intervalId = setInterval(fetchWalletStats, 5000);
 
         return () => {
-             isMounted = false;
-             clearInterval(intervalId);
+            isMounted = false;
+            clearInterval(intervalId);
         };
     }, [web3Account, currentPage]);
 
@@ -124,98 +124,95 @@ const WalletView = () => {
                     </button>
                 </div>
 
-                    {loading ? (
-                        <div style={{ textAlign: 'center', padding: '3rem', color: '#8b9bb4' }}>Syncing Global Ledger Arrays...</div>
-                    ) : error ? (
-                        <div style={{ textAlign: 'center', padding: '3rem', color: '#f87171' }}>{error}</div>
-                    ) : (
-                        <>
-                            {/* Top Row: Analytical Float Arrays */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-                                <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px' }}>
-                                    <h3 style={{ color: '#818cf8', fontSize: '1rem', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1rem' }}>Web3 Wallet Balance</h3>
-                                    <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#fff', textShadow: '0 0 15px rgba(255,255,255,0.2)' }}>
-                                        {formatVeri(walletData.balance)}
-                                    </div>
-                                    <div style={{ marginTop: '1rem', color: '#94a3b8', fontSize: '0.875rem' }}>
-                                        Continuous Float Array Constraints
-                                    </div>
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: '3rem', color: '#8b9bb4' }}>Syncing Global Ledger Arrays...</div>
+                ) : error ? (
+                    <div style={{ textAlign: 'center', padding: '3rem', color: '#f87171' }}>{error}</div>
+                ) : (
+                    <>
+                        {/* Top Row: Analytical Float Arrays */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+                            <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px' }}>
+                                <h3 style={{ color: '#818cf8', fontSize: '1rem', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1rem' }}>Balance</h3>
+                                <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#fff', textShadow: '0 0 15px rgba(255,255,255,0.2)' }}>
+                                    {formatVeri(walletData.balance)}
                                 </div>
-                            </div>
-
-                            {/* Bottom Row: Transaction Ledger Integration */}
-                            <div className="glass-panel" style={{ padding: '2.5rem', borderRadius: '16px' }}>
-                                <div style={{ marginBottom: '2rem' }}>
+                                
+                                <div style={{ marginTop: '2.5rem' }}>
                                     <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--text-main)' }}>Portfolio Trajectory</h2>
                                     <PortfolioChart transactions={walletData.transactions} balance={walletData.balance} />
                                 </div>
-                                
-                                <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', color: 'var(--text-main)', marginTop: '3rem' }}>Isolated TxHistory</h2>
-                                
-                                {walletData.transactions.length === 0 ? (
-                                    <div style={{ color: '#64748b', fontStyle: 'italic', textAlign: 'center', padding: '2rem 0' }}>No active transactions detected inside bounding arrays.</div>
-                                ) : (
-                                    <div className="data-list-container" style={{ marginTop: '1rem' }}>
-                                        <div className="data-list-header stagger-1" style={{ display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr 1.5fr', padding: '0 1.5rem', marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                            <div>Timestamp</div>
-                                            <div>TxHash</div>
-                                            <div>Value</div>
-                                            <div style={{ textAlign: 'right' }}>Type</div>
-                                        </div>
-                                        <div className="data-list-body">
-                                            {walletData.transactions.map((tx, idx) => {
-                                                const isMint = tx.senderAddress === ethers.ZeroAddress;
-                                                return (
-                                                    <div key={idx} className="data-row status-confirmed" style={{ display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr 1.5fr', alignItems: 'center', padding: '1rem 1.5rem', cursor: 'default', animation: `staggerFadeUp 0.3s ease-out ${idx * 0.03}s both` }}>
-                                                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                                                            {formatDate(tx.timestamp)}
-                                                        </div>
-                                                        <div style={{ fontFamily: 'monospace', color: 'var(--text-main)', fontSize: '0.85rem' }}>
-                                                            {tx.hash.substring(0, 16)}...
-                                                        </div>
-                                                        <div style={{ color: isMint ? '#10b981' : 'var(--text-main)', fontWeight: isMint ? 600 : 400, fontFamily: 'monospace' }}>
-                                                            {isMint ? '+' : ''}{formatVeri(tx.amount)}
-                                                        </div>
-                                                        <div style={{ textAlign: 'right' }}>
-                                                            <span className="badge" style={{ 
-                                                                background: isMint ? 'rgba(16, 185, 129, 0.15)' : 'rgba(56, 189, 248, 0.15)', 
-                                                                color: isMint ? '#10b981' : '#38bdf8',
-                                                                fontSize: '0.75rem'
-                                                            }}>
-                                                                {isMint ? 'System Emission' : 'Standard Transfer'}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                {walletData.totalPages > 1 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
-                                        <button 
-                                            disabled={currentPage === 1} 
-                                            onClick={() => setCurrentPage(p => p - 1)}
-                                            style={{ padding: '0.75rem 1.5rem', background: currentPage === 1 ? 'rgba(255,255,255,0.05)' : 'rgba(192, 132, 252, 0.1)', color: currentPage === 1 ? '#64748b' : '#c084fc', border: 'none', borderRadius: '8px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', transition: 'all 0.2s', fontWeight: 'bold' }}
-                                        >
-                                            ← Previous Phase
-                                        </button>
-                                        <span style={{ color: '#94a3b8', fontSize: '0.9rem', letterSpacing: '0.05em' }}>
-                                            MATRIX PAGE <span style={{ color: '#f8fafc', fontWeight: 'bold' }}>{currentPage}</span> OF <span style={{ color: '#f8fafc', fontWeight: 'bold' }}>{walletData.totalPages}</span>
-                                        </span>
-                                        <button 
-                                            disabled={currentPage >= walletData.totalPages} 
-                                            onClick={() => setCurrentPage(p => p + 1)}
-                                            style={{ padding: '0.75rem 1.5rem', background: currentPage >= walletData.totalPages ? 'rgba(255,255,255,0.05)' : 'rgba(192, 132, 252, 0.1)', color: currentPage >= walletData.totalPages ? '#64748b' : '#c084fc', border: 'none', borderRadius: '8px', cursor: currentPage >= walletData.totalPages ? 'not-allowed' : 'pointer', transition: 'all 0.2s', fontWeight: 'bold' }}
-                                        >
-                                            Next Phase →
-                                        </button>
-                                    </div>
-                                )}
                             </div>
-                        </>
-                    )}
+                        </div>
+
+                        {/* Bottom Row: Transaction Ledger Integration */}
+                        <div className="glass-panel" style={{ padding: '2.5rem', borderRadius: '16px' }}>
+                            <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', color: 'var(--text-main)' }}>Isolated TxHistory</h2>
+
+                            {walletData.transactions.length === 0 ? (
+                                <div style={{ color: '#64748b', fontStyle: 'italic', textAlign: 'center', padding: '2rem 0' }}>No active transactions detected inside bounding arrays.</div>
+                            ) : (
+                                <div className="data-list-container" style={{ marginTop: '1rem' }}>
+                                    <div className="data-list-header stagger-1" style={{ display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr 1.5fr', padding: '0 1.5rem', marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        <div>Timestamp</div>
+                                        <div>TxHash</div>
+                                        <div>Value</div>
+                                        <div style={{ textAlign: 'right' }}>Type</div>
+                                    </div>
+                                    <div className="data-list-body">
+                                        {walletData.transactions.map((tx, idx) => {
+                                            const isMint = tx.senderAddress === ethers.ZeroAddress;
+                                            return (
+                                                <div key={idx} className="data-row status-confirmed" style={{ display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr 1.5fr', alignItems: 'center', padding: '1rem 1.5rem', cursor: 'default', animation: `staggerFadeUp 0.3s ease-out ${idx * 0.03}s both` }}>
+                                                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                                                        {formatDate(tx.timestamp)}
+                                                    </div>
+                                                    <div style={{ fontFamily: 'monospace', color: 'var(--text-main)', fontSize: '0.85rem' }}>
+                                                        {tx.hash.substring(0, 16)}...
+                                                    </div>
+                                                    <div style={{ color: isMint ? '#10b981' : 'var(--text-main)', fontWeight: isMint ? 600 : 400, fontFamily: 'monospace' }}>
+                                                        {isMint ? '+' : ''}{formatVeri(tx.amount)}
+                                                    </div>
+                                                    <div style={{ textAlign: 'right' }}>
+                                                        <span className="badge" style={{
+                                                            background: isMint ? 'rgba(16, 185, 129, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                                                            color: isMint ? '#10b981' : '#38bdf8',
+                                                            fontSize: '0.75rem'
+                                                        }}>
+                                                            {isMint ? 'System Emission' : 'Standard Transfer'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {walletData.totalPages > 1 && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+                                    <button
+                                        disabled={currentPage === 1}
+                                        onClick={() => setCurrentPage(p => p - 1)}
+                                        style={{ padding: '0.75rem 1.5rem', background: currentPage === 1 ? 'rgba(255,255,255,0.05)' : 'rgba(192, 132, 252, 0.1)', color: currentPage === 1 ? '#64748b' : '#c084fc', border: 'none', borderRadius: '8px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', transition: 'all 0.2s', fontWeight: 'bold' }}
+                                    >
+                                        ← Previous Phase
+                                    </button>
+                                    <span style={{ color: '#94a3b8', fontSize: '0.9rem', letterSpacing: '0.05em' }}>
+                                        MATRIX PAGE <span style={{ color: '#f8fafc', fontWeight: 'bold' }}>{currentPage}</span> OF <span style={{ color: '#f8fafc', fontWeight: 'bold' }}>{walletData.totalPages}</span>
+                                    </span>
+                                    <button
+                                        disabled={currentPage >= walletData.totalPages}
+                                        onClick={() => setCurrentPage(p => p + 1)}
+                                        style={{ padding: '0.75rem 1.5rem', background: currentPage >= walletData.totalPages ? 'rgba(255,255,255,0.05)' : 'rgba(192, 132, 252, 0.1)', color: currentPage >= walletData.totalPages ? '#64748b' : '#c084fc', border: 'none', borderRadius: '8px', cursor: currentPage >= walletData.totalPages ? 'not-allowed' : 'pointer', transition: 'all 0.2s', fontWeight: 'bold' }}
+                                    >
+                                        Next Phase →
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );
