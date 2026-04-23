@@ -56,12 +56,6 @@ const EpochTelemetryWidget = () => {
 
     if (metrics.loading && metrics.currentIndex === 0) return null;
 
-    const navigateToCheckpoints = (e) => {
-        e.preventDefault();
-        dispatch({ type: 'SET_ROUTE', payload: 'network' });
-        dispatch({ type: 'SET_PEERS_TAB', payload: 'checkpoints' });
-    };
-
     return (
         <div className="stagger-1" style={{ padding: '0 0 2rem 0' }}>
             <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.25rem', borderRadius: '0.75rem', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
@@ -89,7 +83,6 @@ const EpochTelemetryWidget = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', alignItems: 'center' }}>
                     <span style={{ color: '#e2e8f0', fontSize: '0.95rem', fontWeight: 500 }}>Epoch Trajectory</span>
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                        <a href="/network/checkpoints" onClick={navigateToCheckpoints} style={{ fontSize: '0.85rem', color: 'var(--primary-light)', textDecoration: 'none' }}>View Checkpoints</a>
                         <span style={{ fontWeight: 600, color: '#8b5cf6', fontSize: '0.95rem' }}>{calculateProgress()}%</span>
                     </div>
                 </div>
