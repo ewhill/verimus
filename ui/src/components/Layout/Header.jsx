@@ -278,7 +278,21 @@ const Header = () => {
                                     </linearGradient>
                                 </defs>
                                 <circle cx="12" cy="12" r="8.5" stroke="url(#neonGradient)" strokeWidth="3.5" />
-                                <path d="M12 6L18 12L12 18L6 12L12 6Z" fill="#ffffff" />
+                                
+                                {/* 3D Isometric Cube Edges */}
+                                <path d="M12 18 L17.2 15 L17.2 9 L12 6 L6.8 9 L6.8 15 Z" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
+                                <path d="M12 12 L12 18 M12 12 L17.2 9 M12 12 L6.8 9" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" />
+                                
+                                {/* 3D Cube External Network Vertices */}
+                                <circle cx="12" cy="6" r="1.5" fill="#c084fc" />      {/* Purple Neon */}
+                                <circle cx="17.2" cy="9" r="1.5" fill="#38bdf8" />    {/* Blue Transfer */}
+                                <circle cx="17.2" cy="15" r="1.5" fill="#4ade80" />   {/* Green Upload */}
+                                <circle cx="12" cy="18" r="1.5" fill="#fbbf24" />     {/* Yellow Search */}
+                                <circle cx="6.8" cy="15" r="1.5" fill="#818cf8" />    {/* Indigo Neon */}
+                                <circle cx="6.8" cy="9" r="1.5" fill="#38bdf8" />     {/* Blue Neon */}
+                                
+                                {/* Core Node Vertex */}
+                                <circle cx="12" cy="12" r="2" fill="#ffffff" />
                             </svg>
                         </div>
                         <div className="logo-titles" style={{ display: 'flex', alignItems: 'center' }}>

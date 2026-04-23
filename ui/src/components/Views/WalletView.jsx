@@ -67,14 +67,14 @@ const PortfolioChart = ({ transactions, balance, timeFilter, onDeltaCalculated }
         const rect = e.currentTarget.getBoundingClientRect();
         let percentX = (e.clientX - rect.left) / rect.width;
         percentX = Math.max(0, Math.min(1, percentX));
-        
+
         const floatIndex = percentX * (history.length - 1);
         const index = Math.round(floatIndex);
-        
+
         const pt = history[index];
         const svgX = (index / Math.max(1, history.length - 1)) * width;
         const svgY = height - ((pt.val / maxVal) * height * 0.8) - 10;
-        
+
         setHoverPos({
             x: percentX * 100,
             val: pt.val,
@@ -85,7 +85,7 @@ const PortfolioChart = ({ transactions, balance, timeFilter, onDeltaCalculated }
     };
 
     return (
-        <div 
+        <div
             style={{ width: '100%', height: '150px', background: 'rgba(15, 23, 42, 0.4)', borderRadius: '12px', border: '1px solid var(--border-soft)', overflow: 'hidden', position: 'relative', cursor: 'crosshair', marginTop: '1.5rem' }}
             onMouseMove={getHoverData}
             onMouseLeave={() => setHoverPos(null)}
@@ -106,7 +106,7 @@ const PortfolioChart = ({ transactions, balance, timeFilter, onDeltaCalculated }
                     </>
                 )}
             </svg>
-            
+
             {hoverPos && (
                 <div style={{
                     position: 'absolute',
@@ -224,7 +224,7 @@ const WalletView = () => {
                                                 {formatVeri(walletData.balance)}
                                             </div>
                                             {deltaObj.absolute !== 0 && (
-                                                <div style={{ 
+                                                <div style={{
                                                     background: deltaObj.absolute > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
                                                     color: deltaObj.absolute > 0 ? '#10b981' : '#ef4444',
                                                     padding: '0.5rem 1rem',
@@ -245,7 +245,7 @@ const WalletView = () => {
                                     {/* Temporal Bounding Matrix */}
                                     <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '0.25rem', borderRadius: '100px' }}>
                                         {['1H', '1D', '7D', '30D', '1Y', 'All'].map(filter => (
-                                            <button 
+                                            <button
                                                 key={filter}
                                                 onClick={() => setTimeFilter(filter)}
                                                 style={{
@@ -265,16 +265,12 @@ const WalletView = () => {
                                         ))}
                                     </div>
                                 </div>
-                                
-                                <div style={{ marginTop: '2.5rem' }}>
-                                    <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--text-main)' }}>Portfolio Trajectory</h2>
-                                    <PortfolioChart 
-                                        transactions={walletData.transactions} 
-                                        balance={walletData.balance} 
-                                        timeFilter={timeFilter} 
-                                        onDeltaCalculated={setDeltaObj} 
-                                    />
-                                </div>
+                                <PortfolioChart
+                                    transactions={walletData.transactions}
+                                    balance={walletData.balance}
+                                    timeFilter={timeFilter}
+                                    onDeltaCalculated={setDeltaObj}
+                                />
                             </div>
                         </div>
 
