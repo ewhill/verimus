@@ -165,25 +165,31 @@ header {
 }
 
 .logo-icon {
-    width: 36px;
-    height: 36px;
+    background-color: #020617;
     background: url('verimus_logo.png') center/cover no-repeat;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-lg);
     box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
 }
 
 .logo-titles {
+    align-items: flex-start;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     gap: 2px;
+    justify-content: center;
 }
 
-.logo h1 {
-    font-size: 1.35rem;
+.logo-titles h1 {
+    font-size: 2rem;
     font-weight: 700;
     line-height: 1.2;
     letter-spacing: -0.02em;
+    margin-bottom: -0.5rem;
     background: linear-gradient(to right, #fff, var(--text-secondary));
     -webkit-background-clip: text;
     background-clip: text;
@@ -222,19 +228,25 @@ header {
 }
 
 .nav-upload-btn {
-    padding: 0.4rem 1rem;
-    background: #4ade80;
-    color: #000;
-    border: none;
+    padding: 0.35rem 1rem;
+    background: linear-gradient(135deg, rgba(74, 222, 128, 0.15) 0%, rgba(16, 185, 129, 0.2) 100%);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    color: #4ade80;
     border-radius: 100px;
     font-weight: 600;
+    font-size: 0.9rem;
     cursor: pointer;
-    transition: transform 0.2s, background 0.2s;
-    box-shadow: 0 4px 10px rgba(74, 222, 128, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    box-shadow: inset 0 0 10px rgba(74, 222, 128, 0.05);
 }
 
 .nav-upload-btn:hover {
-    transform: scale(1.05);
+    background: linear-gradient(135deg, rgba(74, 222, 128, 0.25) 0%, rgba(16, 185, 129, 0.35) 100%);
+    box-shadow: 0 4px 15px rgba(74, 222, 128, 0.2), inset 0 0 10px rgba(74, 222, 128, 0.1);
+    transform: translateY(-1px);
 }
 
 .node-status {
@@ -278,9 +290,11 @@ header {
     0% {
         box-shadow: 0 0 10px rgba(16, 185, 129, 0.3), inset 0 0 5px rgba(16, 185, 129, 0.1);
     }
+
     50% {
         box-shadow: 0 0 25px rgba(16, 185, 129, 0.7), inset 0 0 10px rgba(16, 185, 129, 0.3);
     }
+
     100% {
         box-shadow: 0 0 10px rgba(16, 185, 129, 0.3), inset 0 0 5px rgba(16, 185, 129, 0.1);
     }
@@ -290,9 +304,11 @@ header {
     0% {
         box-shadow: 0 0 10px rgba(239, 68, 68, 0.3), inset 0 0 5px rgba(239, 68, 68, 0.1);
     }
+
     50% {
         box-shadow: 0 0 25px rgba(239, 68, 68, 0.7), inset 0 0 10px rgba(239, 68, 68, 0.3);
     }
+
     100% {
         box-shadow: 0 0 10px rgba(239, 68, 68, 0.3), inset 0 0 5px rgba(239, 68, 68, 0.1);
     }
@@ -834,10 +850,6 @@ tr:hover {
         text-align: left;
     }
 
-    .logo-titles {
-        align-items: flex-start;
-    }
-
     /* Navigation Mapping */
     .desktop-only {
         display: none !important;
@@ -916,14 +928,15 @@ tr:hover {
         color: var(--text-secondary);
         cursor: pointer;
     }
+
     .mobile-nested-group {
         display: flex;
         flex-direction: column;
         margin: 0 -1.2rem;
         padding: 0.5rem 0;
         background: rgba(0, 0, 0, 0.4);
-        box-shadow: inset 0 6px 15px rgba(0,0,0,0.5), inset 0 -6px 15px rgba(0,0,0,0.2);
-        border-top: 1px solid rgba(0,0,0,0.8);
+        box-shadow: inset 0 6px 15px rgba(0, 0, 0, 0.5), inset 0 -6px 15px rgba(0, 0, 0, 0.2);
+        border-top: 1px solid rgba(0, 0, 0, 0.8);
     }
 
     .mobile-nested-item {
@@ -1527,7 +1540,8 @@ tr:hover {
     border: none;
     color: var(--text-muted);
     padding: 0 0 1rem 0;
-    margin-bottom: -1rem; /* Pulldown to border baseline exactly */
+    margin-bottom: -1rem;
+    /* Pulldown to border baseline exactly */
     cursor: pointer;
     font-size: 0.95rem;
     font-weight: 600;

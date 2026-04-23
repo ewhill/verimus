@@ -82,6 +82,7 @@ const Header = () => {
                     className="nav-upload-btn"
                     onClick={() => dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true })}
                 >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                     Upload File
                 </button>
             )}
@@ -159,7 +160,7 @@ const Header = () => {
             <div className="header-primary" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'center' }}>
                 <div className="header-top" style={{ justifySelf: 'start', display: 'flex', alignItems: 'center' }}>
                     <div className="logo" style={{ gap: '0.8rem' }}>
-                        <div className={`logo-icon-svg ${error ? 'logo-glow-offline' : 'logo-glow-online'}`} onDoubleClick={() => {
+                        <div className={`logo-icon ${error ? 'logo-glow-offline' : 'logo-glow-online'}`} onDoubleClick={() => {
                             if (nodeConfig?.isAdmin) {
                                 dispatch({ type: 'SET_NODE_CONFIG_MODAL_OPEN', payload: true });
                             } else {
@@ -171,17 +172,9 @@ const Header = () => {
                                 }
                             }
                         }} style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '38px',
-                            height: '38px',
-                            borderRadius: '12px',
-                            background: '#020617',
-                            border: `1px solid ${error ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`,
-                            cursor: 'help'
+                            border: `1px solid ${error ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`
                         }} title="Double-click for DevOps Override">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <defs>
                                     <linearGradient id="neonGradient" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
                                         <stop stopColor="#c084fc" />
@@ -194,7 +187,7 @@ const Header = () => {
                             </svg>
                         </div>
                         <div className="logo-titles" style={{ display: 'flex', flexDirection: 'column' }}>
-                            <h1 style={{ margin: 0, lineHeight: 1 }}>{title}</h1>
+                            <h1>{title}</h1>
                             <nav className="main-nav desktop-only" style={{ marginTop: '0.2rem', marginLeft: '-0.4rem', marginBottom: '-0.5rem', gap: 0 }}>
                                 {pagesList}
                             </nav>
