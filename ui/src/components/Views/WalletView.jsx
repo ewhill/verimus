@@ -5,6 +5,8 @@ import FilesView from './FilesView/FilesView';
 
 // Inline Native SVG Area Chart mapping cumulative wallet physics
 const PortfolioChart = ({ transactions, balance }) => {
+    const [hoverPos, setHoverPos] = useState(null);
+
     if (!transactions || transactions.length === 0) {
         return <div style={{ height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontStyle: 'italic', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>Insufficient historical data for charting.</div>;
     }
@@ -41,8 +43,32 @@ const PortfolioChart = ({ transactions, balance }) => {
         return `${x},${y}`;
     }).join(' ');
 
+    const getHoverData = (e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        let percentX = (e.clientX - rect.left) / rect.width;
+        percentX = Math.max(0, Math.min(1, percentX));
+        
+        const floatIndex = percentX * (history.length - 1);
+        const index = Math.round(floatIndex);
+        
+        const pt = history[index];
+        const svgX = (index / Math.max(1, history.length - 1)) * width;
+        const svgY = height - ((pt.val / maxVal) * height * 0.8) - 10;
+        
+        setHoverPos({
+            x: percentX * 100,
+            val: pt.val,
+            svgX,
+            svgY
+        });
+    };
+
     return (
-        <div style={{ width: '100%', height: '150px', background: 'rgba(15, 23, 42, 0.4)', borderRadius: '12px', border: '1px solid var(--border-soft)', overflow: 'hidden', position: 'relative' }}>
+        <div 
+            style={{ width: '100%', height: '150px', background: 'rgba(15, 23, 42, 0.4)', borderRadius: '12px', border: '1px solid var(--border-soft)', overflow: 'hidden', position: 'relative', cursor: 'crosshair', marginTop: '1.5rem' }}
+            onMouseMove={getHoverData}
+            onMouseLeave={() => setHoverPos(null)}
+        >
             <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
                 <defs>
                     <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
@@ -52,7 +78,35 @@ const PortfolioChart = ({ transactions, balance }) => {
                 </defs>
                 <polyline points={`0,${height} ${points} ${width},${height}`} fill="url(#chartGradient)" />
                 <polyline points={points} fill="none" stroke="#c084fc" strokeWidth="3" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+                {hoverPos && (
+                    <>
+                        <line x1={hoverPos.svgX} y1="0" x2={hoverPos.svgX} y2={height} stroke="rgba(255,255,255,0.25)" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeDasharray="4 4" />
+                        <circle cx={hoverPos.svgX} cy={hoverPos.svgY} r="6" fill="#0f172a" stroke="#c084fc" strokeWidth="3" vectorEffect="non-scaling-stroke" />
+                    </>
+                )}
             </svg>
+            
+            {hoverPos && (
+                <div style={{
+                    position: 'absolute',
+                    left: `${hoverPos.x}%`,
+                    top: '10px',
+                    transform: `translateX(${hoverPos.x > 80 ? '-110%' : '10%'})`,
+                    background: 'rgba(15, 23, 42, 0.9)',
+                    backdropFilter: 'blur(8px)',
+                    border: '1px solid rgba(192, 132, 252, 0.5)',
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: '8px',
+                    color: '#fff',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    pointerEvents: 'none',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                    zIndex: 10
+                }}>
+                    {parseFloat(hoverPos.val).toFixed(6)} $VERI
+                </div>
+            )}
         </div>
     );
 };
@@ -137,11 +191,7 @@ const WalletView = () => {
                                 <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#fff', textShadow: '0 0 15px rgba(255,255,255,0.2)' }}>
                                     {formatVeri(walletData.balance)}
                                 </div>
-                                
-                                <div style={{ marginTop: '2.5rem' }}>
-                                    <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--text-main)' }}>Portfolio Trajectory</h2>
-                                    <PortfolioChart transactions={walletData.transactions} balance={walletData.balance} />
-                                </div>
+                                <PortfolioChart transactions={walletData.transactions} balance={walletData.balance} />
                             </div>
                         </div>
 
