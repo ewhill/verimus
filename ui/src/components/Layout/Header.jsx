@@ -13,7 +13,7 @@ const Header = () => {
     const web3Account = useStore(s => s.web3Account);
     const web3EncryptionKey = useStore(s => s.web3EncryptionKey);
     const [isNavOpen, setIsNavOpen] = useState(false);
-    
+
     const [isSearchExpanded, setIsSearchExpanded] = useState(false);
     const [localSearchQuery, setLocalSearchQuery] = useState('');
     const searchInputRef = useRef(null);
@@ -105,8 +105,8 @@ const Header = () => {
             alignItems: 'center',
             gap: '8px',
         }}>
-            <form className="omnibar" onSubmit={handleOmnibarSearch} style={{ 
-                display: 'flex', 
+            <form className="omnibar" onSubmit={handleOmnibarSearch} style={{
+                display: 'flex',
                 alignItems: 'center',
                 position: 'relative',
                 width: (isSearchExpanded || localSearchQuery.trim()) ? '400px' : '44px',
@@ -115,20 +115,21 @@ const Header = () => {
                 background: (isSearchExpanded || localSearchQuery.trim()) ? 'rgba(30, 41, 59, 0.6)' : '#fbbf24',
                 border: (isSearchExpanded || localSearchQuery.trim()) ? '1px solid rgba(255,255,255,0.1)' : 'none',
                 backdropFilter: (isSearchExpanded || localSearchQuery.trim()) ? 'blur(10px)' : 'none',
+                marginRight: (isSearchExpanded || localSearchQuery.trim()) ? '1em' : '0',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 overflow: 'hidden',
                 cursor: (isSearchExpanded || localSearchQuery.trim()) ? 'text' : 'pointer'
-            }} 
-            onClick={() => { if (!isSearchExpanded && !localSearchQuery.trim()) handleSearchClick() }}
-            onMouseOver={(e) => { if (!isSearchExpanded && !localSearchQuery.trim()) { e.currentTarget.style.transform = 'scale(1.1)'; } }}
-            onMouseOut={(e) => { if (!isSearchExpanded && !localSearchQuery.trim()) { e.currentTarget.style.transform = 'scale(1)'; } }}
+            }}
+                onClick={() => { if (!isSearchExpanded && !localSearchQuery.trim()) handleSearchClick() }}
+                onMouseOver={(e) => { if (!isSearchExpanded && !localSearchQuery.trim()) { e.currentTarget.style.transform = 'scale(1.1)'; } }}
+                onMouseOut={(e) => { if (!isSearchExpanded && !localSearchQuery.trim()) { e.currentTarget.style.transform = 'scale(1)'; } }}
             >
                 <div style={{ position: 'absolute', left: (isSearchExpanded || localSearchQuery.trim()) ? '12px' : '50%', top: '50%', transform: `translate(${(isSearchExpanded || localSearchQuery.trim()) ? '0' : '-50%'}, -50%)`, display: 'flex', alignItems: 'center', transition: 'all 0.3s ease', color: (isSearchExpanded || localSearchQuery.trim()) ? 'var(--text-muted)' : '#020617' }}>
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                     </svg>
                 </div>
-                
+
                 <input
                     ref={searchInputRef}
                     name="omnibar"
@@ -137,15 +138,15 @@ const Header = () => {
                     value={localSearchQuery}
                     onChange={(e) => setLocalSearchQuery(e.target.value)}
                     onBlur={handleSearchBlur}
-                    style={{ 
-                        width: '100%', 
+                    style={{
+                        width: '100%',
                         height: '100%',
-                        padding: '0 32px 0 36px', 
-                        background: 'transparent', 
-                        border: 'none', 
-                        color: 'var(--text-main)', 
-                        fontSize: '0.85rem', 
-                        outline: 'none', 
+                        padding: '0 32px 0 36px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-main)',
+                        fontSize: '0.85rem',
+                        outline: 'none',
                         opacity: (isSearchExpanded || localSearchQuery.trim()) ? 1 : 0,
                         pointerEvents: (isSearchExpanded || localSearchQuery.trim()) ? 'auto' : 'none',
                         transition: 'opacity 0.2s 0.1s'
