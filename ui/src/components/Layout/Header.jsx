@@ -105,6 +105,59 @@ const Header = () => {
             alignItems: 'center',
             gap: '8px',
         }}>
+            <form className="omnibar" onSubmit={handleOmnibarSearch} style={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                position: 'relative',
+                width: (isSearchExpanded || localSearchQuery.trim()) ? '400px' : '28px',
+                height: '28px',
+                borderRadius: (isSearchExpanded || localSearchQuery.trim()) ? '100px' : '50%',
+                background: (isSearchExpanded || localSearchQuery.trim()) ? 'rgba(30, 41, 59, 0.6)' : '#fbbf24',
+                border: (isSearchExpanded || localSearchQuery.trim()) ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                backdropFilter: (isSearchExpanded || localSearchQuery.trim()) ? 'blur(10px)' : 'none',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                overflow: 'hidden',
+                cursor: (isSearchExpanded || localSearchQuery.trim()) ? 'text' : 'pointer'
+            }} 
+            onClick={() => { if (!isSearchExpanded && !localSearchQuery.trim()) handleSearchClick() }}
+            onMouseOver={(e) => { if (!isSearchExpanded && !localSearchQuery.trim()) { e.currentTarget.style.transform = 'scale(1.1)'; } }}
+            onMouseOut={(e) => { if (!isSearchExpanded && !localSearchQuery.trim()) { e.currentTarget.style.transform = 'scale(1)'; } }}
+            >
+                <div style={{ position: 'absolute', left: (isSearchExpanded || localSearchQuery.trim()) ? '12px' : '50%', top: '50%', transform: `translate(${(isSearchExpanded || localSearchQuery.trim()) ? '0' : '-50%'}, -50%)`, display: 'flex', alignItems: 'center', transition: 'all 0.3s ease', color: (isSearchExpanded || localSearchQuery.trim()) ? 'var(--text-muted)' : '#020617' }}>
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    </svg>
+                </div>
+                
+                <input
+                    ref={searchInputRef}
+                    name="omnibar"
+                    type="text"
+                    placeholder="Search blocks, txns, or wallet addresses..."
+                    value={localSearchQuery}
+                    onChange={(e) => setLocalSearchQuery(e.target.value)}
+                    onBlur={handleSearchBlur}
+                    style={{ 
+                        width: '100%', 
+                        height: '100%',
+                        padding: '0 32px 0 36px', 
+                        background: 'transparent', 
+                        border: 'none', 
+                        color: 'var(--text-main)', 
+                        fontSize: '0.85rem', 
+                        outline: 'none', 
+                        opacity: (isSearchExpanded || localSearchQuery.trim()) ? 1 : 0,
+                        pointerEvents: (isSearchExpanded || localSearchQuery.trim()) ? 'auto' : 'none',
+                        transition: 'opacity 0.2s 0.1s'
+                    }}
+                />
+
+                {(isSearchExpanded || localSearchQuery) && (
+                    <button type="button" onClick={handleSearchClear} style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '18px', height: '18px', color: '#94a3b8', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} onMouseOver={(e) => { e.currentTarget.style.color = '#f8fafc'; e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; }} onMouseOut={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                )}
+            </form>
             {(web3Account && !isWalletConnecting) && (
                 <button
                     onClick={() => dispatch({ type: 'SET_TRANSFER_MODAL_OPEN', payload: true })}
@@ -251,59 +304,6 @@ const Header = () => {
                 <div className="header-center desktop-only"></div>
 
                 <div className="header-right desktop-only" style={{ display: 'flex', justifySelf: 'end', alignItems: 'center', gap: '1rem' }}>
-                    <form className="omnibar" onSubmit={handleOmnibarSearch} style={{ 
-                        display: 'flex', 
-                        alignItems: 'center',
-                        position: 'relative',
-                        width: (isSearchExpanded || localSearchQuery.trim()) ? '400px' : '28px',
-                        height: '28px',
-                        borderRadius: (isSearchExpanded || localSearchQuery.trim()) ? '100px' : '50%',
-                        background: (isSearchExpanded || localSearchQuery.trim()) ? 'rgba(30, 41, 59, 0.6)' : '#fbbf24',
-                        border: (isSearchExpanded || localSearchQuery.trim()) ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                        backdropFilter: (isSearchExpanded || localSearchQuery.trim()) ? 'blur(10px)' : 'none',
-                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        overflow: 'hidden',
-                        cursor: (isSearchExpanded || localSearchQuery.trim()) ? 'text' : 'pointer'
-                    }} 
-                    onClick={() => { if (!isSearchExpanded && !localSearchQuery.trim()) handleSearchClick() }}
-                    onMouseOver={(e) => { if (!isSearchExpanded && !localSearchQuery.trim()) { e.currentTarget.style.transform = 'scale(1.1)'; } }}
-                    onMouseOut={(e) => { if (!isSearchExpanded && !localSearchQuery.trim()) { e.currentTarget.style.transform = 'scale(1)'; } }}
-                    >
-                        <div style={{ position: 'absolute', left: (isSearchExpanded || localSearchQuery.trim()) ? '12px' : '50%', top: '50%', transform: `translate(${(isSearchExpanded || localSearchQuery.trim()) ? '0' : '-50%'}, -50%)`, display: 'flex', alignItems: 'center', transition: 'all 0.3s ease', color: (isSearchExpanded || localSearchQuery.trim()) ? 'var(--text-muted)' : '#020617' }}>
-                            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                            </svg>
-                        </div>
-                        
-                        <input
-                            ref={searchInputRef}
-                            name="omnibar"
-                            type="text"
-                            placeholder="Search blocks, txns, or wallet addresses..."
-                            value={localSearchQuery}
-                            onChange={(e) => setLocalSearchQuery(e.target.value)}
-                            onBlur={handleSearchBlur}
-                            style={{ 
-                                width: '100%', 
-                                height: '100%',
-                                padding: '0 32px 0 36px', 
-                                background: 'transparent', 
-                                border: 'none', 
-                                color: 'var(--text-main)', 
-                                fontSize: '0.85rem', 
-                                outline: 'none', 
-                                opacity: (isSearchExpanded || localSearchQuery.trim()) ? 1 : 0,
-                                pointerEvents: (isSearchExpanded || localSearchQuery.trim()) ? 'auto' : 'none',
-                                transition: 'opacity 0.2s 0.1s'
-                            }}
-                        />
-
-                        {(isSearchExpanded || localSearchQuery) && (
-                            <button type="button" onClick={handleSearchClear} style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '18px', height: '18px', color: '#94a3b8', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} onMouseOver={(e) => { e.currentTarget.style.color = '#f8fafc'; e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; }} onMouseOut={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                            </button>
-                        )}
-                    </form>
                     {navActions}
                 </div>
             </div>
