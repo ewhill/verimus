@@ -12,6 +12,8 @@ const FilesView = () => {
     const filesSearchQuery = useStore(s => s.filesSearchQuery);
     const filesLocationFilter = useStore(s => s.filesLocationFilter);
     const filesSelectedPath = useStore(s => s.filesSelectedPath);
+    const nodeConfig = useStore(s => s.nodeConfig);
+    const web3EncryptionKey = useStore(s => s.web3EncryptionKey);
 
     useEffect(() => {
         ApiService.fetchFiles(dispatch);
@@ -90,7 +92,7 @@ const FilesView = () => {
             <SidebarLocations treeData={treeData} />
 
             <div className="files-main stagger-2">
-                <div className="files-header">
+                <div className="files-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div className="files-header-left">
                         {showBackButton && (
                             <button className="back-btn" title="Go up one level" onClick={handleBackClick}>
@@ -102,6 +104,19 @@ const FilesView = () => {
                             <div className="subtitle" style={{ marginBottom: '0' }}>{displayItems.length} item(s)</div>
                         </div>
                     </div>
+                    {(nodeConfig?.roles?.includes('ORIGINATOR') && web3EncryptionKey) && (
+                        <div className="files-header-right">
+                            <button
+                                onClick={() => dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true })}
+                                style={{ background: '#4ade80', border: 'none', padding: '0.6rem 1.4rem', borderRadius: '100px', cursor: 'pointer', color: '#020617', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.95rem', transition: 'all 0.2s ease', boxShadow: '0 4px 15px rgba(74, 222, 128, 0.2)' }}
+                                onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(74, 222, 128, 0.4)'; }} 
+                                onMouseOut={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(74, 222, 128, 0.2)'; }}
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                Upload File
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <FileGrid displayItems={displayItems} />

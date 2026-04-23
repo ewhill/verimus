@@ -92,7 +92,7 @@ const Header = () => {
                     onClick={() => dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true })}
                     title="Upload File"
                     style={{ background: '#4ade80', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', color: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
-                    onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(74, 222, 128, 0.6)'; }} 
+                    onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(74, 222, 128, 0.6)'; }}
                     onMouseOut={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
                 >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
