@@ -288,7 +288,7 @@ const Header = () => {
                                         <stop offset="0%" stopColor="#ffffff" /><stop offset="100%" stopColor="#38bdf8" />
                                     </linearGradient>
                                 </defs>
-                                <circle cx="12" cy="12" r="8.5" stroke="url(#neonGradient)" strokeWidth="3.5" />
+                                <circle cx="12" cy="12" r="8.5" stroke="url(#neonGradient)" strokeWidth="1.5" />
                                 
                                 {/* Crisp 3D Isometric Cube Faces */}
                                 <polygon points="12,12 6.8,9 12,6 17.2,9" fill="url(#topFaceGrad)" />
