@@ -16,7 +16,7 @@ const PortfolioChart = ({ transactions, balance }) => {
 
     // Form historical data points by projecting backwards
     // We reverse the logic: txns are newest first. So as we go back in time, we revert the txn effects.
-    const history = [{ val: currentBal }];
+    const history = [{ val: currentBal, timestamp: Date.now() }];
     for (const tx of transactions) {
         const amt = parseFloat(ethers.formatUnits(tx.amount ? tx.amount.toString() : "0", 18));
         // If it was a received mint/transfer, the previous balance was lower
@@ -28,7 +28,7 @@ const PortfolioChart = ({ transactions, balance }) => {
             // Generalize: if not mint, assume generic
             runningBal -= amt;
         }
-        history.push({ val: Math.max(0, runningBal) });
+        history.push({ val: Math.max(0, runningBal), timestamp: tx.timestamp });
     }
 
     history.reverse(); // Now oldest -> newest
@@ -58,6 +58,7 @@ const PortfolioChart = ({ transactions, balance }) => {
         setHoverPos({
             x: percentX * 100,
             val: pt.val,
+            timestamp: pt.timestamp,
             svgX,
             svgY
         });
@@ -102,9 +103,15 @@ const PortfolioChart = ({ transactions, balance }) => {
                     fontSize: '0.85rem',
                     pointerEvents: 'none',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                    zIndex: 10
+                    zIndex: 10,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.2rem'
                 }}>
-                    {parseFloat(hoverPos.val).toFixed(6)} $VERI
+                    <div>{parseFloat(hoverPos.val).toFixed(6)} $VERI</div>
+                    <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 'normal' }}>
+                        {new Date(hoverPos.timestamp).toLocaleString()}
+                    </div>
                 </div>
             )}
         </div>
