@@ -164,7 +164,7 @@ const PeersView = () => {
                 </div>
             </div>
 
-            <div className="glass-panel" style={{ background: 'rgba(15, 23, 42, 0.65)', padding: '2rem', borderRadius: '0 16px 16px 16px', minHeight: '600px', width: '100%' }}>
+            <div style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 300px)', padding: '2rem', minHeight: '600px', width: '100%', borderRadius: '0' }}>
                 {activeTab === 'mesh' && (
                     <div className="stagger-1" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
                         <GossipStatsPanel telemetry={gossipTelemetry} />
