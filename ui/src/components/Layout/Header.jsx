@@ -276,12 +276,49 @@ const Header = () => {
                                         <stop offset="0.5" stopColor="#818cf8" />
                                         <stop offset="1" stopColor="#38bdf8" />
                                     </linearGradient>
+                                    
+                                    {/* Edge Gradients mapping node colors directly */}
+                                    <linearGradient id="edgeC_B" x1="12" y1="12" x2="12" y2="18" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stopColor="#ffffff" /><stop offset="100%" stopColor="#fbbf24" />
+                                    </linearGradient>
+                                    <linearGradient id="edgeC_TR" x1="12" y1="12" x2="17.2" y2="9" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stopColor="#ffffff" /><stop offset="100%" stopColor="#38bdf8" />
+                                    </linearGradient>
+                                    <linearGradient id="edgeC_TL" x1="12" y1="12" x2="6.8" y2="9" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stopColor="#ffffff" /><stop offset="100%" stopColor="#38bdf8" />
+                                    </linearGradient>
+                                    <linearGradient id="edgeT_TR" x1="12" y1="6" x2="17.2" y2="9" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stopColor="#c084fc" /><stop offset="100%" stopColor="#38bdf8" />
+                                    </linearGradient>
+                                    <linearGradient id="edgeTR_BR" x1="17.2" y1="9" x2="17.2" y2="15" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stopColor="#38bdf8" /><stop offset="100%" stopColor="#4ade80" />
+                                    </linearGradient>
+                                    <linearGradient id="edgeBR_B" x1="17.2" y1="15" x2="12" y2="18" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stopColor="#4ade80" /><stop offset="100%" stopColor="#fbbf24" />
+                                    </linearGradient>
+                                    <linearGradient id="edgeB_BL" x1="12" y1="18" x2="6.8" y2="15" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stopColor="#fbbf24" /><stop offset="100%" stopColor="#818cf8" />
+                                    </linearGradient>
+                                    <linearGradient id="edgeBL_TL" x1="6.8" y1="15" x2="6.8" y2="9" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stopColor="#818cf8" /><stop offset="100%" stopColor="#38bdf8" />
+                                    </linearGradient>
+                                    <linearGradient id="edgeTL_T" x1="6.8" y1="9" x2="12" y2="6" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stopColor="#38bdf8" /><stop offset="100%" stopColor="#c084fc" />
+                                    </linearGradient>
                                 </defs>
                                 <circle cx="12" cy="12" r="8.5" stroke="url(#neonGradient)" strokeWidth="3.5" />
                                 
-                                {/* 3D Isometric Cube Edges */}
-                                <path d="M12 18 L17.2 15 L17.2 9 L12 6 L6.8 9 L6.8 15 Z" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
-                                <path d="M12 12 L12 18 M12 12 L17.2 9 M12 12 L6.8 9" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" />
+                                {/* 3D Isometric Cube Localized Gradient Edges */}
+                                <line x1="12" y1="12" x2="12" y2="18" stroke="url(#edgeC_B)" strokeWidth="1.5" strokeLinecap="round" />
+                                <line x1="12" y1="12" x2="17.2" y2="9" stroke="url(#edgeC_TR)" strokeWidth="1.5" strokeLinecap="round" />
+                                <line x1="12" y1="12" x2="6.8" y2="9" stroke="url(#edgeC_TL)" strokeWidth="1.5" strokeLinecap="round" />
+
+                                <line x1="12" y1="6" x2="17.2" y2="9" stroke="url(#edgeT_TR)" strokeWidth="1.5" strokeLinecap="round" />
+                                <line x1="17.2" y1="9" x2="17.2" y2="15" stroke="url(#edgeTR_BR)" strokeWidth="1.5" strokeLinecap="round" />
+                                <line x1="17.2" y1="15" x2="12" y2="18" stroke="url(#edgeBR_B)" strokeWidth="1.5" strokeLinecap="round" />
+                                <line x1="12" y1="18" x2="6.8" y2="15" stroke="url(#edgeB_BL)" strokeWidth="1.5" strokeLinecap="round" />
+                                <line x1="6.8" y1="15" x2="6.8" y2="9" stroke="url(#edgeBL_TL)" strokeWidth="1.5" strokeLinecap="round" />
+                                <line x1="6.8" y1="9" x2="12" y2="6" stroke="url(#edgeTL_T)" strokeWidth="1.5" strokeLinecap="round" />
                                 
                                 {/* 3D Cube External Network Vertices */}
                                 <circle cx="12" cy="6" r="1.5" fill="#c084fc" />      {/* Purple Neon */}
