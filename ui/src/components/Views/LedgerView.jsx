@@ -93,7 +93,7 @@ const LedgerView = () => {
                         )}
                     </div>
                 </div>
-                <div className="glass-panel" style={{ padding: '2rem', borderRadius: '0 16px 16px 16px', minHeight: '600px', width: '100%' }}>
+                <div className="glass-panel" style={{ background: 'rgba(15, 23, 42, 0.65)', padding: '2rem', borderRadius: '0 16px 16px 16px', minHeight: '600px', width: '100%' }}>
                     {activeTab === 'global' && (
                         <div className="stagger-1">
                             <EpochTelemetryWidget />
