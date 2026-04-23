@@ -167,13 +167,13 @@ header {
 .logo-icon {
     background-color: #020617;
     background: url('verimus_logo.png') center/cover no-repeat;
-    border-radius: var(--radius-lg);
+    border-radius: 100%;
     box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 64px;
-    height: 64px;
+    width: 48px;
+    height: 48px;
 }
 
 .logo-titles {
@@ -185,7 +185,7 @@ header {
 }
 
 .logo-titles h1 {
-    font-size: 2rem;
+    font-size: 1.6rem;
     font-weight: 700;
     line-height: 1.2;
     letter-spacing: -0.02em;

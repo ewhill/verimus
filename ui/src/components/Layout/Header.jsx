@@ -98,7 +98,18 @@ const Header = () => {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                 </button>
             )}
-            {(nodeConfig?.roles?.includes('ORIGINATOR') && web3EncryptionKey) && (
+            {web3Account && (
+                <button
+                    onClick={() => dispatch({ type: 'SET_TRANSFER_MODAL_OPEN', payload: true })}
+                    title="Transfer $VERI"
+                    style={{ background: '#38bdf8', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', color: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
+                    onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(56, 189, 248, 0.6)'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            )}
+            {web3Account && (
                 <div style={{ width: '1px', height: '18px', background: 'rgba(255, 255, 255, 0.1)' }} />
             )}
             <WalletConnection />
@@ -173,7 +184,7 @@ const Header = () => {
         <header>
             <div className="header-primary" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'center' }}>
                 <div className="header-top" style={{ justifySelf: 'start', display: 'flex', alignItems: 'center' }}>
-                    <div className="logo" style={{ gap: '0.8rem' }}>
+                    <div className="logo">
                         <div className={`logo-icon ${error ? 'logo-glow-offline' : 'logo-glow-online'}`} onDoubleClick={() => {
                             if (nodeConfig?.isAdmin) {
                                 dispatch({ type: 'SET_NODE_CONFIG_MODAL_OPEN', payload: true });
@@ -185,8 +196,6 @@ const Header = () => {
                                     window.location.reload();
                                 }
                             }
-                        }} style={{
-                            border: `1px solid ${error ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`
                         }} title="Double-click for DevOps Override">
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <defs>

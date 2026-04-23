@@ -10,6 +10,7 @@ import FilesView from './components/Views/FilesView/FilesView';
 import BlockModal from './components/Modals/BlockModal';
 import NodeConfigModal from './components/Modals/NodeConfigModal';
 import UploadModal from './components/Modals/UploadModal';
+import TransferModal from './components/Modals/TransferModal';
 import ToastContainer from './components/Layout/ToastContainer';
 import { initializeEIP6963Discovery } from './utils/web3';
 
@@ -136,6 +137,7 @@ function App() {
             <BlockModal />
             <NodeConfigModal />
             <UploadModal />
+            <TransferModal />
             <ToastContainer />
         </div>
     );

@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { ethers } from 'ethers';
 import { useStore } from '../../store';
 
-const TransferModal = ({ isOpen, onClose, balance }) => {
+const TransferModal = () => {
+    const isOpen = useStore(s => s.isTransferModalOpen);
     const web3Account = useStore(s => s.web3Account);
     const activeProvider = useStore(s => s.activeProvider);
     const dispatch = useStore(s => s.dispatch);
@@ -11,8 +13,29 @@ const TransferModal = ({ isOpen, onClose, balance }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
+    const [balance, setBalance] = useState('0');
+
+    useEffect(() => {
+        if (isOpen && web3Account) {
+            fetch(`/api/wallet?address=${web3Account}&page=1&limit=1`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.balance !== undefined) {
+                        setBalance(parseFloat(ethers.formatUnits(data.balance.toString(), 18)).toFixed(6));
+                    }
+                }).catch(() => {});
+        } else if (!isOpen) {
+            // reset state
+            setRecipient('');
+            setAmount('');
+            setError(null);
+            setSuccessMessage(null);
+        }
+    }, [isOpen, web3Account]);
 
     if (!isOpen) return null;
+
+    const onClose = () => dispatch({ type: 'SET_TRANSFER_MODAL_OPEN', payload: false });
 
     const handleMax = () => {
         setAmount(balance.toString());

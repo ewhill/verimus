@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
 import { useStore } from '../../store';
 import FilesView from './FilesView/FilesView';
-import TransferModal from '../Modals/TransferModal';
 
 // Inline Native SVG Area Chart mapping cumulative wallet physics
 const PortfolioChart = ({ transactions, balance }) => {
@@ -66,7 +65,7 @@ const WalletView = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+    const dispatch = useStore(s => s.dispatch);
 
     // Bounding 5 second continuous intervals ensuring O(1) float updates
     useEffect(() => {
@@ -113,7 +112,7 @@ const WalletView = () => {
             <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                         <h1 style={{ fontSize: '2rem', color: '#c084fc', textShadow: '0 0 20px rgba(192, 132, 252, 0.3)' }}>Decentralized Wallet</h1>
-                        <button onClick={() => setIsTransferModalOpen(true)} style={{
+                        <button onClick={() => dispatch({ type: 'SET_TRANSFER_MODAL_OPEN', payload: true })} style={{
                             padding: '0.8rem 1.5rem', background: '#38bdf8', color: '#fff', border: 'none',
                             borderRadius: '100px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s',
                             boxShadow: '0 0 15px rgba(56,189,248,0.4)', display: 'flex', alignItems: 'center', gap: '0.5rem'
@@ -226,11 +225,6 @@ const WalletView = () => {
                         </>
                     )}
             </div>
-            <TransferModal 
-                isOpen={isTransferModalOpen} 
-                onClose={() => setIsTransferModalOpen(false)} 
-                balance={walletData.balance ? parseFloat(ethers.formatUnits(walletData.balance.toString(), 18)).toFixed(6) : '0'} 
-            />
         </div>
     );
 };
