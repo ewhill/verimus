@@ -93,7 +93,7 @@ const LedgerView = () => {
                         )}
                     </div>
                 </div>
-                <div style={{ background: 'radial-gradient(ellipse at top, rgba(0, 0, 0, 0.5) 0%, transparent 100%)', padding: '2rem', minHeight: '600px', width: '100%', borderRadius: '0' }}>
+                <div style={{ background: 'radial-gradient(50% 300px at top, rgba(0, 0, 0, 0.5) 0%, transparent 100%)', padding: '2rem', minHeight: '600px', width: '100%', borderRadius: '0' }}>
                     {activeTab === 'global' && (
                         <div className="stagger-1">
                             <EpochTelemetryWidget />
