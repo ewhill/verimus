@@ -86,7 +86,7 @@ const LedgerView = () => {
                     <div className="flat-tab-bar" style={{ display: 'flex' }}>
                         <button className={`flat-tab-btn ${activeTab === 'global' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' })}>Blocks</button>
                         {nodeConfig?.roles?.includes('VALIDATOR') && (
-                            <button className={`flat-tab-btn ${activeTab === 'consensus' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' })}>Consensus</button>
+                            <button className={`flat-tab-btn ${activeTab === 'consensus' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' })}>Statistics</button>
                         )}
                         {nodeConfig?.roles?.includes('STORAGE') && (
                             <button className={`flat-tab-btn ${activeTab === 'contracts' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' })}>Contracts</button>
@@ -96,13 +96,13 @@ const LedgerView = () => {
                 <div style={{ background: 'radial-gradient(50% 300px at top, rgba(0, 0, 0, 0.5) 0%, transparent 100%)', padding: '2rem 0', minHeight: '600px', width: '100%', borderRadius: '0' }}>
                     {activeTab === 'global' && (
                         <div className="stagger-1">
-                            <EpochTelemetryWidget />
                             <LedgerGrid />
                         </div>
                     )}
 
                     {activeTab === 'consensus' && nodeConfig?.roles?.includes('VALIDATOR') && (
-                        <div style={{ width: '100%' }} className="stagger-1">
+                        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }} className="stagger-1">
+                            <EpochTelemetryWidget />
                             <ConsensusView />
                         </div>
                     )}

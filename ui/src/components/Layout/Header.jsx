@@ -206,7 +206,7 @@ const Header = () => {
                         <button className={`mobile-nested-item ${activeLedgerTab === 'global' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' }); routeTo(e, 'ledger'); }}>Global Ledger</button>
 
                         {nodeConfig?.roles?.includes('VALIDATOR') && (
-                            <button className={`mobile-nested-item ${activeLedgerTab === 'consensus' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' }); routeTo(e, 'ledger'); }}>Consensus</button>
+                            <button className={`mobile-nested-item ${activeLedgerTab === 'consensus' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' }); routeTo(e, 'ledger'); }}>Statistics</button>
                         )}
                         {nodeConfig?.roles?.includes('STORAGE') && (
                             <button className={`mobile-nested-item ${activeLedgerTab === 'contracts' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' }); routeTo(e, 'ledger'); }}>Contracts</button>
