@@ -1,5 +1,6 @@
 import React from 'react';
 import PropertyValue from './PropertyValue';
+import { VeriIcon } from '../../Icons';
 
 export const TransactionPayload = ({ block }) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -10,7 +11,7 @@ export const TransactionPayload = ({ block }) => (
                 <span style={{ color: 'var(--text-muted)' }}>Recipient:</span>
                 <PropertyValue value={block.payload.recipientAddress} />
                 <span style={{ color: 'var(--text-muted)' }}>Amount:</span>
-                <PropertyValue className="success" value={`${block.payload.amount} VERI`} copyable={false} />
+                <PropertyValue className="success" value={<span style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}>{block.payload.amount} <VeriIcon size={12} /></span>} copyable={false} />
                 <span style={{ color: 'var(--text-muted)' }}>Signature:</span>
                 <PropertyValue value={block.payload.senderSignature} />
             </div>
@@ -42,7 +43,7 @@ export const StakingContractPayload = ({ block }) => (
         <div style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '0.5rem 1rem', fontSize: '0.85rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Collateral:</span>
-                <PropertyValue className="highlight" value={`${block.payload.collateralAmount} VERI`} copyable={false} />
+                <PropertyValue className="highlight" value={<span style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}>{block.payload.collateralAmount} <VeriIcon size={12} /></span>} copyable={false} />
                 <span style={{ color: 'var(--text-muted)' }}>Operator Address:</span>
                 <PropertyValue value={block.payload.operatorAddress} />
                 <span style={{ color: 'var(--text-muted)' }}>Timeline Bound:</span>
@@ -59,7 +60,7 @@ export const SlashingTransactionPayload = ({ block }) => (
                 <span style={{ color: 'var(--text-muted)' }}>Penalized Entity:</span>
                 <PropertyValue value={block.payload.penalizedAddress} />
                 <span style={{ color: 'var(--text-muted)' }}>Burnt Ledger:</span>
-                <PropertyValue value={`-${block.payload.burntAmount} VERI`} copyable={false} style={{ color: '#ef4444' }} />
+                <PropertyValue value={<span style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}>-{block.payload.burntAmount} <VeriIcon size={12} /></span>} copyable={false} style={{ color: '#ef4444' }} />
                 <span style={{ color: 'var(--text-muted)' }}>Evidence Sign:</span>
                 <PropertyValue value={block.payload.evidenceSignature} />
             </div>

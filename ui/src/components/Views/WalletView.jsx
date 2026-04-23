@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
 import { useStore } from '../../store';
 import FilesView from './FilesView/FilesView';
+import { VeriIcon } from '../Icons';
 
 // Inline Native SVG Area Chart mapping cumulative wallet physics
 const PortfolioChart = ({ transactions, balance, timeFilter, onDeltaCalculated }) => {
@@ -128,7 +129,9 @@ const PortfolioChart = ({ transactions, balance, timeFilter, onDeltaCalculated }
                     flexDirection: 'column',
                     gap: '0.2rem'
                 }}>
-                    <div>{parseFloat(hoverPos.val).toFixed(6)} $VERI</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        {parseFloat(hoverPos.val).toFixed(6)} <VeriIcon size={12} />
+                    </div>
                     <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 'normal' }}>
                         {new Date(hoverPos.timestamp).toLocaleString()}
                     </div>
@@ -186,7 +189,11 @@ const WalletView = () => {
     }, [web3Account, currentPage]);
 
     // Format helpers mapping raw blockchain precision from BigInt strings natively
-    const formatVeri = (num) => parseFloat(ethers.formatUnits(num ? num.toString() : "0", 18)).toFixed(6) + ' $VERI';
+    const formatVeri = (num) => (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            {parseFloat(ethers.formatUnits(num ? num.toString() : "0", 18)).toFixed(6)} <VeriIcon size={32} />
+        </span>
+    );
     const formatDate = (ts) => new Date(ts).toLocaleString();
 
     return (

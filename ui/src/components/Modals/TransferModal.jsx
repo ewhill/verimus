@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { useStore } from '../../store';
+import { VeriIcon } from '../Icons';
 
 const TransferModal = () => {
     const isOpen = useStore(s => s.isTransferModalOpen);
@@ -191,7 +192,7 @@ const TransferModal = () => {
 
                 <div style={{ marginBottom: '2rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.5rem' }}>
-                        <label style={{ color: '#818cf8', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Volumetric Arrays ($VERI)</label>
+                        <label style={{ color: '#818cf8', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>Volumetric Arrays (<VeriIcon size={12} />)</label>
                         <button onClick={handleMax} disabled={isSubmitting} style={{ background: 'transparent', border: 'none', color: '#c084fc', cursor: isSubmitting ? 'not-allowed' : 'pointer', fontSize: '0.8rem', fontWeight: 600, padding: 0 }} onMouseOver={(e) => !isSubmitting && (e.currentTarget.style.textDecoration = 'underline')} onMouseOut={(e) => !isSubmitting && (e.currentTarget.style.textDecoration = 'none')}>
                             MAX LIMIT ({balance})
                         </button>

@@ -162,7 +162,7 @@ const Header = () => {
             {(web3Account && !isWalletConnecting) && (
                 <button
                     onClick={() => dispatch({ type: 'SET_TRANSFER_MODAL_OPEN', payload: true })}
-                    title="Transfer $VERI"
+                    title="Transfer VERI"
                     style={{ background: '#38bdf8', border: 'none', width: '44px', height: '44px', borderRadius: '50%', cursor: 'pointer', color: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
                     onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(56, 189, 248, 0.6)'; }}
                     onMouseOut={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}

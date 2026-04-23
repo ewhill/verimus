@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { useStore } from '../../../store';
+import { VeriIcon } from '../../Icons';
 
 const EpochTelemetryWidget = () => {
     const dispatch = useStore(s => s.dispatch);
@@ -76,11 +77,11 @@ const EpochTelemetryWidget = () => {
                         <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.peers}</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        <span style={{ color: '#eab308', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>$VERI GAS</span>
+                        <span style={{ color: '#eab308', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', display: 'flex', alignItems: 'center' }}><VeriIcon size={12} style={{marginRight: '0.2rem'}} /> GAS</span>
                         <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.gasPrice}</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>$VERI EMISSION</span>
+                        <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', display: 'flex', alignItems: 'center' }}><VeriIcon size={12} style={{marginRight: '0.2rem'}} /> EMISSION</span>
                         <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>
                             {metrics.emissionRate ? parseFloat(ethers.formatUnits(metrics.emissionRate.toString(), 18)).toFixed(6) : '0.000000'}
                         </span>

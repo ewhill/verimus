@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../../store';
+import { VeriIcon } from '../Icons';
 
 const NodeConfigModal = () => {
     const dispatch = useStore(s => s.dispatch);
@@ -119,7 +120,7 @@ const NodeConfigModal = () => {
                             <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', display: 'block', marginBottom: '0.5rem' }}>Marketplace Tokenomics</span>
                             
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                <label style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Storage Cost ($VERI / GB / Month)</label>
+                                <label style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>Storage Cost (<VeriIcon size={12} /> / GB / Month)</label>
                                 <input 
                                     type="number" 
                                     step="0.01" 
@@ -133,7 +134,7 @@ const NodeConfigModal = () => {
                             </div>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                <label style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Egress Bandwidth Cost ($VERI / GB)</label>
+                                <label style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>Egress Bandwidth Cost (<VeriIcon size={12} /> / GB)</label>
                                 <input 
                                     type="number" 
                                     step="0.01" 
