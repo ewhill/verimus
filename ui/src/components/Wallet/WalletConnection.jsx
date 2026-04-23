@@ -97,7 +97,7 @@ const WalletConnection = ({ isMobileDrawer }) => {
         }
     };
 
-    if (web3Account && activeProvider && !isConnecting) {
+    if (web3Account && !isConnecting) {
         if (isMobileDrawer) {
             return (
                 <div style={{

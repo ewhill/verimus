@@ -182,7 +182,7 @@ const Header = () => {
                 </button>
             )}
             {(web3Account && !isWalletConnecting) && (
-                <div style={{ width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.1)' }} />
+                <div style={{ width: '1px', height: '44px', background: 'rgba(255, 255, 255, 0.1)' }} />
             )}
             <WalletConnection />
         </div>
