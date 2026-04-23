@@ -144,7 +144,7 @@ const WalletConnection = ({ isMobileDrawer }) => {
                 disabled={isConnecting}
                 style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', height: '44px',
-                    marginLeft: isMobileDrawer ? '0' : '0.5rem', padding: '0', background: 'transparent',
+                    background: 'transparent',
                     color: '#818cf8', border: isConnecting ? '1px solid transparent' : '1px solid #818cf8', borderRadius: '100px', fontWeight: '600',
                     cursor: isConnecting ? 'not-allowed' : 'pointer', transition: 'background 0.2s, border 0.2s',
                     width: isMobileDrawer ? '100%' : '150px',

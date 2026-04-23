@@ -86,7 +86,7 @@ const Header = () => {
 
     const pagesList = (
         <>
-            {web3Account && (
+            {(web3Account && !isWalletConnecting) && (
                 <>
                     <a href="#" className={`nav-link ${activeRoute === 'wallet' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'wallet')}>Wallet</a>
                     <a href="#" className={`nav-link ${activeRoute === 'files' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'files')}>Storage</a>
@@ -192,14 +192,14 @@ const Header = () => {
 
     const mobileDrawerLinks = (
         <div className="mobile-accordion-wrapper">
-            {web3Account && (
+            {(web3Account && !isWalletConnecting) && (
                 <div className="mobile-accordion-group">
                     <a href="#" style={{ paddingTop: '0' }} className={`mobile-accordion-header ${activeRoute === 'wallet' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'wallet')}>
                         Wallet
                     </a>
                 </div>
             )}
-            {web3Account && (
+            {(web3Account && !isWalletConnecting) && (
                 <div className="mobile-accordion-group">
                     <a href="#" className={`mobile-accordion-header ${activeRoute === 'files' ? 'active' : ''}`} onClick={(e) => routeTo(e, 'files')}>
                         Data Storage
@@ -269,7 +269,7 @@ const Header = () => {
                                 }
                             }
                         }} title="Double-click for DevOps Override">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <defs>
                                     <linearGradient id="neonGradient" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
                                         <stop stopColor="#c084fc" />
