@@ -115,7 +115,7 @@ const WalletConnection = ({ isMobileDrawer }) => {
                             {web3Account}
                         </span>
                     </div>
-                    <button onClick={() => disconnectWallet()} style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0', transition: 'opacity 0.2s' }} onMouseOver={(e) => e.currentTarget.style.opacity = '0.7'} onMouseOut={(e) => e.currentTarget.style.opacity = '1'} title="Disconnect Wallet">
+                    <button onClick={() => disconnectWallet()} style={{ background: 'transparent', border: 'none', width: '44px', height: '44px', borderRadius: '50%', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0', transition: 'background 0.2s', margin: '0' }} onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(248, 113, 113, 0.15)' }} onMouseOut={(e) => { e.currentTarget.style.background = 'transparent' }} title="Disconnect Wallet">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                     </button>
                 </div>
@@ -153,10 +153,12 @@ const WalletConnection = ({ isMobileDrawer }) => {
                 onClick={handleConnectClick}
                 disabled={isConnecting}
                 style={{
-                    marginLeft: isMobileDrawer ? '0' : '0.5rem', padding: '0.6rem 1rem', background: 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', height: '44px',
+                    marginLeft: isMobileDrawer ? '0' : '0.5rem', padding: '0 1.2rem', background: 'transparent',
                     color: '#818cf8', border: '1px solid #818cf8', borderRadius: '100px', fontWeight: '600',
                     cursor: isConnecting ? 'not-allowed' : 'pointer', transition: 'background 0.2s',
-                    opacity: isConnecting ? 0.7 : 1, width: isMobileDrawer ? '100%' : 'auto'
+                    opacity: isConnecting ? 0.7 : 1, width: isMobileDrawer ? '100%' : 'auto',
+                    boxSizing: 'border-box'
                 }}
                 onMouseOver={(e) => !isConnecting && (e.currentTarget.style.background = 'rgba(129, 140, 248, 0.1)')}
                 onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
