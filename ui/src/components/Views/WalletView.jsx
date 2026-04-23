@@ -189,9 +189,9 @@ const WalletView = () => {
     }, [web3Account, currentPage]);
 
     // Format helpers mapping raw blockchain precision from BigInt strings natively
-    const formatVeri = (num) => (
+    const formatVeri = (num, iconSize = 32) => (
         <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            {parseFloat(ethers.formatUnits(num ? num.toString() : "0", 18)).toFixed(6)} <VeriIcon size={32} />
+            {parseFloat(ethers.formatUnits(num ? num.toString() : "0", 18)).toFixed(6)} <VeriIcon size={iconSize} />
         </span>
     );
     const formatDate = (ts) => new Date(ts).toLocaleString();
@@ -307,7 +307,7 @@ const WalletView = () => {
                                                         {tx.hash.substring(0, 16)}...
                                                     </div>
                                                     <div style={{ color: isMint ? '#10b981' : 'var(--text-main)', fontWeight: isMint ? 600 : 400, fontFamily: 'monospace' }}>
-                                                        {isMint ? '+' : ''}{formatVeri(tx.amount)}
+                                                        {isMint ? '+' : ''}{formatVeri(tx.amount, 14)}
                                                     </div>
                                                     <div style={{ textAlign: 'right' }}>
                                                         <span className="badge" style={{
