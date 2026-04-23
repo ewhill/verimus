@@ -78,13 +78,13 @@ const EpochTelemetryWidget = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                         <span style={{ color: '#eab308', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>GAS</span>
                         <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)', display: 'flex', alignItems: 'center' }}>
-                            {metrics.gasPrice} <VeriIcon size={14} style={{ marginLeft: '0.3rem', color: '#eab308' }} />
+                            {metrics.gasPrice} <VeriIcon size={14} style={{ marginLeft: '0.3rem', color: 'var(--text-main)' }} />
                         </span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                         <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>EMISSION</span>
                         <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)', display: 'flex', alignItems: 'center' }}>
-                            {metrics.emissionRate ? parseFloat(ethers.formatUnits(metrics.emissionRate.toString(), 18)).toFixed(6) : '0.000000'} <VeriIcon size={14} style={{ marginLeft: '0.3rem', color: '#38bdf8' }} />
+                            {metrics.emissionRate ? parseFloat(ethers.formatUnits(metrics.emissionRate.toString(), 18)).toFixed(6) : '0.000000'} <VeriIcon size={14} style={{ marginLeft: '0.3rem', color: 'var(--text-main)' }} />
                         </span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
