@@ -84,20 +84,20 @@ const LedgerView = () => {
             <section className="ledger-section" style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', width: '100%', borderBottom: '2px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0' }}>
                     <div className="flat-tab-bar" style={{ display: 'flex' }}>
-                        <button className={`flat-tab-btn ${activeTab === 'global' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' })}>Blocks</button>
+                        <button className={`flat-tab-btn ${activeTab === 'blocks' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'blocks' })}>Blocks</button>
                         {(nodeConfig?.roles?.includes('VALIDATOR') || nodeConfig?.roles?.includes('STORAGE')) && (
-                            <button className={`flat-tab-btn ${activeTab === 'consensus' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' })}>Statistics</button>
+                            <button className={`flat-tab-btn ${activeTab === 'statistics' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_LEDGER_TAB', payload: 'statistics' })}>Statistics</button>
                         )}
                     </div>
                 </div>
                 <div style={{ background: 'radial-gradient(50% 300px at top, rgba(0, 0, 0, 0.5) 0%, transparent 100%)', padding: '2rem 0', minHeight: '600px', width: '100%', borderRadius: '0' }}>
-                    {activeTab === 'global' && (
+                    {activeTab === 'blocks' && (
                         <div className="stagger-1">
                             <LedgerGrid />
                         </div>
                     )}
 
-                    {activeTab === 'consensus' && (nodeConfig?.roles?.includes('VALIDATOR') || nodeConfig?.roles?.includes('STORAGE')) && (
+                    {activeTab === 'statistics' && (nodeConfig?.roles?.includes('VALIDATOR') || nodeConfig?.roles?.includes('STORAGE')) && (
                         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }} className="stagger-1">
                             {nodeConfig?.roles?.includes('VALIDATOR') && (
                                 <>

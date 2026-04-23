@@ -35,7 +35,7 @@ export const useStore = create(
     activeProvider: null,
     currentRoute: initialRoute,
     activeWalletTab: (initialRoute === 'wallet' && initialTab) ? initialTab : 'dashboard',
-    activeLedgerTab: (initialRoute === 'ledger' && initialTab) ? initialTab : 'global',
+    activeLedgerTab: (initialRoute === 'ledger' && initialTab) ? initialTab : 'blocks',
     activePeersTab: (initialRoute === 'network' && initialTab) ? initialTab : 'mesh',
     ledgerSortMode: 'index_desc',
     toasts: [],

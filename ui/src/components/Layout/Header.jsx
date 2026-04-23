@@ -53,14 +53,14 @@ const Header = () => {
         if (query.startsWith('0x') && query.length === 42) {
             // Ethers Address -> Navigate to Wallet lookup implicitly or Ledger
             dispatch({ type: 'SET_ROUTE', payload: 'ledger' });
-            dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' });
+            dispatch({ type: 'SET_LEDGER_TAB', payload: 'blocks' });
         } else if (query.length === 64) {
             // Hash -> Open Block Modal
             dispatch({ type: 'SET_MODAL_OPEN', payload: { isOpen: true, hash: query } });
         } else {
             // Generic fallback searches against Contracts
             dispatch({ type: 'SET_ROUTE', payload: 'ledger' });
-            dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' });
+            dispatch({ type: 'SET_LEDGER_TAB', payload: 'statistics' });
         }
         dispatch({ type: 'SET_SEARCH', payload: query });
         setLocalSearchQuery('');
@@ -203,13 +203,10 @@ const Header = () => {
                 </a>
                 {expandedAccordion === 'ledger' && (
                     <div className="mobile-nested-group" style={{ animation: 'fadeInDown 0.2s ease-out' }}>
-                        <button className={`mobile-nested-item ${activeLedgerTab === 'global' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'global' }); routeTo(e, 'ledger'); }}>Global Ledger</button>
+                        <button className={`mobile-nested-item ${activeLedgerTab === 'blocks' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'blocks' }); routeTo(e, 'ledger'); }}>Blocks</button>
 
-                        {nodeConfig?.roles?.includes('VALIDATOR') && (
-                            <button className={`mobile-nested-item ${activeLedgerTab === 'consensus' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'consensus' }); routeTo(e, 'ledger'); }}>Statistics</button>
-                        )}
-                        {nodeConfig?.roles?.includes('STORAGE') && (
-                            <button className={`mobile-nested-item ${activeLedgerTab === 'contracts' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'contracts' }); routeTo(e, 'ledger'); }}>Contracts</button>
+                        {(nodeConfig?.roles?.includes('VALIDATOR') || nodeConfig?.roles?.includes('STORAGE')) && (
+                            <button className={`mobile-nested-item ${activeLedgerTab === 'statistics' ? 'active' : ''}`} onClick={(e) => { dispatch({ type: 'SET_LEDGER_TAB', payload: 'statistics' }); routeTo(e, 'ledger'); }}>Statistics</button>
                         )}
                     </div>
                 )}
