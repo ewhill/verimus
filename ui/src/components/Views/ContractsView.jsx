@@ -23,9 +23,7 @@ const ContractsView = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [page, setPage] = useState(1);
-    const [search, setSearch] = useState('');
     const [renewModalContract, setRenewModalContract] = useState(null);
-    const typingTimeout = useRef(null);
     const PAGE_LIMIT = 16;  // Matching standard ledger bounds
 
     const fetchContracts = async (currentPage, currentSearch) => {
@@ -48,20 +46,10 @@ const ContractsView = () => {
     };
 
     useEffect(() => {
-        fetchContracts(page, search);
-        const interval = setInterval(() => fetchContracts(page, search), 5000);
+        fetchContracts(page, '');
+        const interval = setInterval(() => fetchContracts(page, ''), 5000);
         return () => clearInterval(interval);
-    }, [page, search]);
-
-    const handleSearch = (e) => {
-        const val = e.target.value;
-        if (typingTimeout.current) clearTimeout(typingTimeout.current);
-        
-        typingTimeout.current = setTimeout(() => {
-            setSearch(val);
-            setPage(1);
-        }, 300);
-    };
+    }, [page]);
 
     const handleContractClick = (contract) => {
         const syntheticBlock = {
@@ -105,18 +93,13 @@ const ContractsView = () => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', animation: 'fadeIn 0.3s ease-out' }}>
-            
-            <div style={{ marginBottom: '0.5rem', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
-                <input 
-                    type="text" 
-                    placeholder="Search contract hash or originator bounds..." 
-                    onChange={handleSearch}
-                    className="search-input"
-                    style={{ width: '100%', padding: '1rem 1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-soft)', background: 'rgba(15, 23, 42, 0.4)', color: 'var(--text-main)', fontSize: '1rem', transition: 'all 0.2s', outline: 'none' }}
-                />
-            </div>
+            <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '1.5rem' }}>
+                    <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>ACTIVE CONTRACTS</span>
+                    <span style={{ fontSize: '2rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{contracts.total}</span>
+                </div>
 
-            <div className="list-view" style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
+                <div className="list-view" style={{ width: '100%' }}>
                 {contracts.data.length === 0 ? (
                     <div className="empty-state" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--border-soft)' }}>
                         <svg className="empty-state-svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -196,6 +179,7 @@ const ContractsView = () => {
                     </div>
                 )}
             </div>
+            </div>
             
             {contracts.total > PAGE_LIMIT && (
                 <div className="pagination-wrapper stagger-4" style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem', width: '100%' }}>
@@ -218,7 +202,7 @@ const ContractsView = () => {
                     onRenewSuccess={(data) => {
                         setRenewModalContract(null);
                         // Refresh data intelligently avoiding page reloads globally
-                        fetchContracts(page, search);
+                        fetchContracts(page, '');
                     }} 
                 />
             )}
