@@ -8,7 +8,7 @@ export const VeriIcon = ({ size = 24, className = '', style = {} }) => (
         {/* Crisp Inset V */}
         <polyline points="7 7 12 17 17 7" strokeWidth="2" />
         {/* Raised Horizontal Strike mimicking exact V-vertex padding */}
-        <line x1="6.3" y1="8.6" x2="17.7" y2="8.6" strokeWidth="1.5" />
+        <line x1="5.8" y1="10.6" x2="18.2" y2="10.6" strokeWidth="1.5" />
     </svg>
 );
 
@@ -20,6 +20,6 @@ export const WeiIcon = ({ size = 24, className = '', style = {} }) => (
         {/* Crisp Inset W */}
         <polyline points="5.5 8 9 16 12 11 15 16 18.5 8" strokeWidth="1.5" />
         {/* Raised Horizontal Strike mimicking exact W-vertex padding */}
-        <line x1="5.3" y1="8.6" x2="18.7" y2="8.6" strokeWidth="1" />
+        <line x1="4.8" y1="10.6" x2="19.2" y2="10.6" strokeWidth="1" />
     </svg>
 );
