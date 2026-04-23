@@ -86,7 +86,7 @@ const LedgerGrid = () => {
                         >
                             <div>{isPending ? <span className="badge pending">Pending</span> : <span className="badge" style={{ background: 'rgba(99,102,241,0.15)', color: '#c7d2fe' }}>#{pkg.metadata?.index ?? pkg.index}</span>}</div>
                             <div style={{ display: 'flex', overflow: 'hidden' }}>
-                                <span className="badge" style={{ background: typeConfig.bg, color: typeConfig.color, display: 'inline-flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                                <span className="badge" style={{ background: typeConfig.bg, color: typeConfig.color, display: 'inline-flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '115px' }}>
                                     <span style={{ width: '12px', height: '12px', display: 'flex', flexShrink: 0 }}>{typeConfig.icon}</span>
                                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{typeConfig.name}</span>
                                 </span>
