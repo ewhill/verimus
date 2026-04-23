@@ -10,6 +10,8 @@ export const useStore = create(
     persist(
         (set) => ({
     blocks: [],
+    _hasHydrated: false,
+    setHasHydrated: (val) => set({ _hasHydrated: val }),
     filesMap: [],
     filesSearchQuery: '',
     filesSortOrder: 'name_asc',
@@ -83,6 +85,9 @@ export const useStore = create(
     })
 }), {
     name: 'verimus-ui-storage',
+    onRehydrateStorage: () => (state) => {
+        if (state) state.setHasHydrated(true);
+    },
     partialize: (state) => ({
         filesSearchQuery: state.filesSearchQuery,
         filesSortOrder: state.filesSortOrder,

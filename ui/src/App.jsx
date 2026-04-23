@@ -26,6 +26,7 @@ function App() {
     const searchQuery = useStore(s => s.searchQuery);
     const selectedBlockHash = useStore(s => s.selectedBlockHash);
     const isModalOpen = useStore(s => s.isModalOpen);
+    const _hasHydrated = useStore(s => s._hasHydrated);
 
     useEffect(() => {
         const cleanupWeb3Listeners = initializeEIP6963Discovery(dispatch);
@@ -73,11 +74,12 @@ function App() {
     }, [dispatch]);
 
     useEffect(() => {
+        if (!_hasHydrated) return;
         if (!web3Account && (currentRoute === 'wallet' || currentRoute === 'files')) {
             dispatch({ type: 'SET_ROUTE', payload: 'ledger' });
             window.history.replaceState({}, '', '/ledger');
         }
-    }, [web3Account, currentRoute, dispatch]);
+    }, [web3Account, currentRoute, dispatch, _hasHydrated]);
 
     useEffect(() => {
         // Sync functional UI state directly into native browser History API dynamically

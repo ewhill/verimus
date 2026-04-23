@@ -25,6 +25,13 @@ const WalletConnection = ({ isMobileDrawer }) => {
     }, [dispatch]);
 
     React.useEffect(() => {
+        // Hydrate active provider organically strictly evaluating trusted bounded arrays dynamically
+        if (!activeProvider && web3Account && discoveredProviders.length > 0) {
+            dispatch({ type: 'SET_ACTIVE_PROVIDER', payload: discoveredProviders[0].provider });
+        }
+    }, [activeProvider, web3Account, discoveredProviders, dispatch]);
+
+    React.useEffect(() => {
         if (!activeProvider) return;
 
         const handleAccountsChanged = (accounts) => {
