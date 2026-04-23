@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { useStore } from '../../../store';
 import { VeriIcon } from '../../Icons';
-import { VeriIcon } from '../../Icons';
 
 const formatBytes = (bytes) => {
     if (!bytes || bytes === 0) return '0 B';
