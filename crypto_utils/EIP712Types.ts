@@ -41,6 +41,12 @@ export const VALIDATOR_REGISTRATION_PAYLOAD_SCHEMA = [
     { name: 'action', type: 'string' }
 ];
 
+export const CONTRACT_RENEWAL_SCHEMA = [
+    { name: 'marketId', type: 'string' },
+    { name: 'additionalEscrow', type: 'uint256' },
+    { name: 'additionalBlocks', type: 'uint256' }
+];
+
 // Ensure we flatten or specify exact structs for nested arrays
 export const ERASURE_PARAMS_SCHEMA = [
     { name: 'n', type: 'uint256' },
@@ -134,6 +140,14 @@ export const EIP712_SCHEMAS: Record<string, Record<string, Array<{name: string, 
             { name: 'payload', type: 'CheckpointPayload' }
         ],
         CheckpointPayload: CHECKPOINT_PAYLOAD_SCHEMA
+    },
+    [BLOCK_TYPES.CONTRACT_RENEWAL]: {
+        Block: [
+            { name: 'type', type: 'string' },
+            { name: 'signerAddress', type: 'address' },
+            { name: 'payload', type: 'ContractRenewalPayload' }
+        ],
+        ContractRenewalPayload: CONTRACT_RENEWAL_SCHEMA
     }
 };
 
@@ -179,6 +193,11 @@ export const normalizeBlockForSignature = (block: Block): Record<string, any> =>
 
     if (b.type === BLOCK_TYPES.SLASHING_TRANSACTION) {
         b.payload.burntAmount = b.payload.burntAmount ? b.payload.burntAmount.toString() : "0";
+    }
+
+    if (b.type === BLOCK_TYPES.CONTRACT_RENEWAL) {
+        b.payload.additionalEscrow = b.payload.additionalEscrow ? b.payload.additionalEscrow.toString() : "0";
+        b.payload.additionalBlocks = b.payload.additionalBlocks ? b.payload.additionalBlocks.toString() : "0";
     }
 
     // Deep clone stripped logic avoiding memory mutation while resolving strings dynamically
@@ -238,5 +257,9 @@ export const hydrateBlockBigInts = (block: Block): void => {
     } else if (block.type === BLOCK_TYPES.CHECKPOINT) {
         const p = block.payload as any;
         if (p.epochIndex !== undefined) p.epochIndex = strictHydrateBigInt(p.epochIndex, 'epochIndex');
+    } else if (block.type === BLOCK_TYPES.CONTRACT_RENEWAL) {
+        const p = block.payload as any;
+        if (p.additionalEscrow !== undefined) p.additionalEscrow = strictHydrateBigInt(p.additionalEscrow, 'additionalEscrow');
+        if (p.additionalBlocks !== undefined) p.additionalBlocks = strictHydrateBigInt(p.additionalBlocks, 'additionalBlocks');
     }
 };

@@ -101,6 +101,12 @@ export interface CheckpointStatePayload {
     activeContractsMerkleRoot: string;
 }
 
+export interface ContractRenewalPayload {
+    marketId: string;
+    additionalEscrow: string;
+    additionalBlocks: string;
+}
+
 export interface BlockPrivateFile {
     path: string;
     contentHash: string;
@@ -206,6 +212,11 @@ export interface CheckpointBlock extends BaseBlock {
     payload: CheckpointStatePayload;
 }
 
-export type Block = TransactionBlock | StorageContractBlock | StakingContractBlock | SlashingTransactionBlock | CheckpointBlock | ValidatorRegistrationBlock;
+export interface ContractRenewalBlock extends BaseBlock {
+    type: typeof BLOCK_TYPES.CONTRACT_RENEWAL;
+    payload: ContractRenewalPayload;
+}
+
+export type Block = TransactionBlock | StorageContractBlock | StakingContractBlock | SlashingTransactionBlock | CheckpointBlock | ValidatorRegistrationBlock | ContractRenewalBlock;
 
 declare module '@marsaud/smb2';

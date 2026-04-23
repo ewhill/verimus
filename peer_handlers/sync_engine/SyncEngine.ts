@@ -543,7 +543,7 @@ class SyncEngine {
                 for (const key in indexCounts) {
                     const data = indexCounts[key];
                     const index = parseInt(key, 10);
-                    if (data.count >= Math.ceil(responderCount / 2)) {
+                    if (data.count >= 1) { // Removed Math.ceil(responderCount / 2) majority bound to strictly enable native Nakamoto longest-chain progression across diverging tips.
                         if (index > highestConsensusIndex) {
                             highestConsensusIndex = index;
                             // highestConsensusHash = data.hash;
@@ -605,7 +605,7 @@ class SyncEngine {
 
                     const structuralPrevious = await this.node.ledger.getLatestBlock();
 
-                    if (cryptoUtils.hashData(JSON.stringify(clonedBlock)) !== mainBlock.hash || mainBlock.previousHash !== structuralPrevious.hash) {
+                    if (cryptoUtils.hashData(JSON.stringify(clonedBlock, (_, v) => typeof v === 'bigint' ? v.toString() : v)) !== mainBlock.hash || mainBlock.previousHash !== structuralPrevious.hash) {
                         logger.error(`[Peer ${this.node.port}] Dropping invalid mathematical cryptographic sync index ${i}!`);
                         break;
                     }

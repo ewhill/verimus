@@ -5,6 +5,7 @@ import { hashData } from '../../crypto_utils/CryptoUtils';
 import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from '../../crypto_utils/EIP712Types';
 import logger from '../../logger/Logger';
 import { AdoptForkMessage } from '../../messages/adopt_fork_message/AdoptForkMessage';
+import { PendingBlockMessage } from '../../messages/pending_block_message/PendingBlockMessage';
 import { ProposeForkMessage } from '../../messages/propose_fork_message/ProposeForkMessage';
 import { VerifyBlockMessage } from '../../messages/verify_block_message/VerifyBlockMessage';
 import Mempool from '../../models/mempool/Mempool';
