@@ -18,18 +18,18 @@ const EpochTelemetryWidget = () => {
         try {
             const [ledgerRes, peersRes] = await Promise.all([
                 fetch('/api/ledger/metrics').catch(() => ({ json: () => ({ metrics: {} }) })),
-                fetch('/api/peers').catch(() => ({ json: () => ({ nodes: [] }) }))
+                fetch('/api/peers').catch(() => ({ json: () => ({ peers: [] }) }))
             ]);
             
             const data = ledgerRes && ledgerRes.status === 200 ? await ledgerRes.json() : { metrics: {} };
-            const peersObj = peersRes && peersRes.status === 200 ? await peersRes.json() : { nodes: [] };
+            const peersObj = peersRes && peersRes.status === 200 ? await peersRes.json() : { peers: [] };
 
             if (data.success || !data.error) {
                 setMetrics({
                     currentIndex: data.currentIndex || data.metrics?.totalBlocks || 0,
                     epochSize: data.epochSize || 1000000,
                     databaseFootprintBytes: data.databaseFootprintBytes || 0,
-                    peers: peersObj.nodes?.length || 0,
+                    peers: peersObj.peers?.length || 0,
                     epoch: 1,
                     gasPrice: '0.01',
                     loading: false,
