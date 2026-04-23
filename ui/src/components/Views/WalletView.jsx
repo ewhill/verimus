@@ -4,7 +4,7 @@ import { useStore } from '../../store';
 import FilesView from './FilesView/FilesView';
 
 // Inline Native SVG Area Chart mapping cumulative wallet physics
-const PortfolioChart = ({ transactions, balance }) => {
+const PortfolioChart = ({ transactions, balance, timeFilter, onDeltaCalculated }) => {
     const [hoverPos, setHoverPos] = useState(null);
 
     if (!transactions || transactions.length === 0) {
@@ -16,22 +16,42 @@ const PortfolioChart = ({ transactions, balance }) => {
 
     // Form historical data points by projecting backwards
     // We reverse the logic: txns are newest first. So as we go back in time, we revert the txn effects.
-    const history = [{ val: currentBal, timestamp: Date.now() }];
+    const fullHistory = [{ val: currentBal, timestamp: Date.now() }];
     for (const tx of transactions) {
         const amt = parseFloat(ethers.formatUnits(tx.amount ? tx.amount.toString() : "0", 18));
-        // If it was a received mint/transfer, the previous balance was lower
-        // If we sent it, the previous balance was higher (assuming we can detect send/receive, for now assume all are receives in mock or standard)
         const isMint = tx.senderAddress === ethers.ZeroAddress;
         if (isMint) {
             runningBal -= amt;
         } else {
-            // Generalize: if not mint, assume generic
             runningBal -= amt;
         }
-        history.push({ val: Math.max(0, runningBal), timestamp: tx.timestamp });
+        fullHistory.push({ val: Math.max(0, runningBal), timestamp: tx.timestamp });
     }
 
-    history.reverse(); // Now oldest -> newest
+    fullHistory.reverse(); // Now oldest -> newest
+
+    let cutoff = 0;
+    const now = Date.now();
+    if (timeFilter === '1H') cutoff = now - 3600 * 1000;
+    else if (timeFilter === '1D') cutoff = now - 86400 * 1000;
+    else if (timeFilter === '7D') cutoff = now - 7 * 86400 * 1000;
+    else if (timeFilter === '30D') cutoff = now - 30 * 86400 * 1000;
+    else if (timeFilter === '1Y') cutoff = now - 365 * 86400 * 1000;
+
+    const history = cutoff === 0 ? fullHistory : fullHistory.filter(h => h.timestamp >= cutoff);
+    if (history.length === 0 && fullHistory.length > 0) history.push(fullHistory[fullHistory.length - 1]);
+    if (history.length === 1) history.unshift({ val: history[0].val, timestamp: cutoff || history[0].timestamp - 1000 });
+
+    useEffect(() => {
+        if (history.length > 0) {
+            const startVal = history[0].val;
+            const endVal = history[history.length - 1].val;
+            const absoluteDelta = endVal - startVal;
+            const percentDelta = startVal === 0 ? (absoluteDelta > 0 ? 100 : 0) : (absoluteDelta / Math.max(startVal, 0.0000001)) * 100;
+            if (onDeltaCalculated) onDeltaCalculated({ absolute: absoluteDelta, percent: percentDelta });
+        }
+    }, [balance, transactions, timeFilter]);
+
     const maxVal = Math.max(...history.map(h => h.val), 0.1);
 
     const width = 1000;
@@ -126,6 +146,8 @@ const WalletView = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [timeFilter, setTimeFilter] = useState('All');
+    const [deltaObj, setDeltaObj] = useState({ absolute: 0, percent: 0 });
     const dispatch = useStore(s => s.dispatch);
 
     // Bounding 5 second continuous intervals ensuring O(1) float updates
@@ -194,11 +216,65 @@ const WalletView = () => {
                         {/* Top Row: Analytical Float Arrays */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', marginBottom: '2rem' }}>
                             <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px' }}>
-                                <h3 style={{ color: '#818cf8', fontSize: '1rem', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1rem' }}>Balance</h3>
-                                <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#fff', textShadow: '0 0 15px rgba(255,255,255,0.2)' }}>
-                                    {formatVeri(walletData.balance)}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                        <h3 style={{ color: '#818cf8', fontSize: '1rem', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1rem' }}>Balance</h3>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                                            <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#fff', textShadow: '0 0 15px rgba(255,255,255,0.2)' }}>
+                                                {formatVeri(walletData.balance)}
+                                            </div>
+                                            {deltaObj.absolute !== 0 && (
+                                                <div style={{ 
+                                                    background: deltaObj.absolute > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                                    color: deltaObj.absolute > 0 ? '#10b981' : '#ef4444',
+                                                    padding: '0.5rem 1rem',
+                                                    borderRadius: '100px',
+                                                    fontWeight: 'bold',
+                                                    fontSize: '1rem',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.4rem',
+                                                    boxShadow: deltaObj.absolute > 0 ? '0 0 15px rgba(16, 185, 129, 0.1)' : '0 0 15px rgba(239, 68, 68, 0.1)'
+                                                }}>
+                                                    {deltaObj.absolute > 0 ? '▲' : '▼'} {Math.abs(deltaObj.percent).toFixed(2)}%
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Temporal Bounding Matrix */}
+                                    <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '0.25rem', borderRadius: '100px' }}>
+                                        {['1H', '1D', '7D', '30D', '1Y', 'All'].map(filter => (
+                                            <button 
+                                                key={filter}
+                                                onClick={() => setTimeFilter(filter)}
+                                                style={{
+                                                    padding: '0.4rem 1rem',
+                                                    background: timeFilter === filter ? 'rgba(192, 132, 252, 0.2)' : 'transparent',
+                                                    color: timeFilter === filter ? '#c084fc' : '#64748b',
+                                                    border: 'none',
+                                                    borderRadius: '100px',
+                                                    fontSize: '0.8rem',
+                                                    fontWeight: 'bold',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                {filter}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                                <PortfolioChart transactions={walletData.transactions} balance={walletData.balance} />
+                                
+                                <div style={{ marginTop: '2.5rem' }}>
+                                    <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--text-main)' }}>Portfolio Trajectory</h2>
+                                    <PortfolioChart 
+                                        transactions={walletData.transactions} 
+                                        balance={walletData.balance} 
+                                        timeFilter={timeFilter} 
+                                        onDeltaCalculated={setDeltaObj} 
+                                    />
+                                </div>
                             </div>
                         </div>
 
