@@ -277,59 +277,23 @@ const Header = () => {
                                         <stop offset="1" stopColor="#38bdf8" />
                                     </linearGradient>
                                     
-                                    {/* Edge Gradients mapping node colors directly */}
-                                    <linearGradient id="edgeC_B" x1="12" y1="12" x2="12" y2="18" gradientUnits="userSpaceOnUse">
-                                        <stop offset="0%" stopColor="#ffffff" /><stop offset="100%" stopColor="#fbbf24" />
+                                    {/* Face Gradients mapping node colors directly */}
+                                    <linearGradient id="topFaceGrad" x1="12" y1="12" x2="12" y2="6" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stopColor="#ffffff" /><stop offset="100%" stopColor="#c084fc" />
                                     </linearGradient>
-                                    <linearGradient id="edgeC_TR" x1="12" y1="12" x2="17.2" y2="9" gradientUnits="userSpaceOnUse">
+                                    <linearGradient id="rightFaceGrad" x1="12" y1="12" x2="17.2" y2="15" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stopColor="#ffffff" /><stop offset="100%" stopColor="#4ade80" />
+                                    </linearGradient>
+                                    <linearGradient id="leftFaceGrad" x1="12" y1="12" x2="6.8" y2="15" gradientUnits="userSpaceOnUse">
                                         <stop offset="0%" stopColor="#ffffff" /><stop offset="100%" stopColor="#38bdf8" />
-                                    </linearGradient>
-                                    <linearGradient id="edgeC_TL" x1="12" y1="12" x2="6.8" y2="9" gradientUnits="userSpaceOnUse">
-                                        <stop offset="0%" stopColor="#ffffff" /><stop offset="100%" stopColor="#38bdf8" />
-                                    </linearGradient>
-                                    <linearGradient id="edgeT_TR" x1="12" y1="6" x2="17.2" y2="9" gradientUnits="userSpaceOnUse">
-                                        <stop offset="0%" stopColor="#c084fc" /><stop offset="100%" stopColor="#38bdf8" />
-                                    </linearGradient>
-                                    <linearGradient id="edgeTR_BR" x1="17.2" y1="9" x2="17.2" y2="15" gradientUnits="userSpaceOnUse">
-                                        <stop offset="0%" stopColor="#38bdf8" /><stop offset="100%" stopColor="#4ade80" />
-                                    </linearGradient>
-                                    <linearGradient id="edgeBR_B" x1="17.2" y1="15" x2="12" y2="18" gradientUnits="userSpaceOnUse">
-                                        <stop offset="0%" stopColor="#4ade80" /><stop offset="100%" stopColor="#fbbf24" />
-                                    </linearGradient>
-                                    <linearGradient id="edgeB_BL" x1="12" y1="18" x2="6.8" y2="15" gradientUnits="userSpaceOnUse">
-                                        <stop offset="0%" stopColor="#fbbf24" /><stop offset="100%" stopColor="#818cf8" />
-                                    </linearGradient>
-                                    <linearGradient id="edgeBL_TL" x1="6.8" y1="15" x2="6.8" y2="9" gradientUnits="userSpaceOnUse">
-                                        <stop offset="0%" stopColor="#818cf8" /><stop offset="100%" stopColor="#38bdf8" />
-                                    </linearGradient>
-                                    <linearGradient id="edgeTL_T" x1="6.8" y1="9" x2="12" y2="6" gradientUnits="userSpaceOnUse">
-                                        <stop offset="0%" stopColor="#38bdf8" /><stop offset="100%" stopColor="#c084fc" />
                                     </linearGradient>
                                 </defs>
                                 <circle cx="12" cy="12" r="8.5" stroke="url(#neonGradient)" strokeWidth="3.5" />
                                 
-                                {/* 3D Isometric Cube Localized Gradient Edges */}
-                                <line x1="12" y1="12" x2="12" y2="18" stroke="url(#edgeC_B)" strokeWidth="1.5" strokeLinecap="round" />
-                                <line x1="12" y1="12" x2="17.2" y2="9" stroke="url(#edgeC_TR)" strokeWidth="1.5" strokeLinecap="round" />
-                                <line x1="12" y1="12" x2="6.8" y2="9" stroke="url(#edgeC_TL)" strokeWidth="1.5" strokeLinecap="round" />
-
-                                <line x1="12" y1="6" x2="17.2" y2="9" stroke="url(#edgeT_TR)" strokeWidth="1.5" strokeLinecap="round" />
-                                <line x1="17.2" y1="9" x2="17.2" y2="15" stroke="url(#edgeTR_BR)" strokeWidth="1.5" strokeLinecap="round" />
-                                <line x1="17.2" y1="15" x2="12" y2="18" stroke="url(#edgeBR_B)" strokeWidth="1.5" strokeLinecap="round" />
-                                <line x1="12" y1="18" x2="6.8" y2="15" stroke="url(#edgeB_BL)" strokeWidth="1.5" strokeLinecap="round" />
-                                <line x1="6.8" y1="15" x2="6.8" y2="9" stroke="url(#edgeBL_TL)" strokeWidth="1.5" strokeLinecap="round" />
-                                <line x1="6.8" y1="9" x2="12" y2="6" stroke="url(#edgeTL_T)" strokeWidth="1.5" strokeLinecap="round" />
-                                
-                                {/* 3D Cube External Network Vertices */}
-                                <circle cx="12" cy="6" r="1.5" fill="#c084fc" />      {/* Purple Neon */}
-                                <circle cx="17.2" cy="9" r="1.5" fill="#38bdf8" />    {/* Blue Transfer */}
-                                <circle cx="17.2" cy="15" r="1.5" fill="#4ade80" />   {/* Green Upload */}
-                                <circle cx="12" cy="18" r="1.5" fill="#fbbf24" />     {/* Yellow Search */}
-                                <circle cx="6.8" cy="15" r="1.5" fill="#818cf8" />    {/* Indigo Neon */}
-                                <circle cx="6.8" cy="9" r="1.5" fill="#38bdf8" />     {/* Blue Neon */}
-                                
-                                {/* Core Node Vertex */}
-                                <circle cx="12" cy="12" r="2" fill="#ffffff" />
+                                {/* Crisp 3D Isometric Cube Faces */}
+                                <polygon points="12,12 6.8,9 12,6 17.2,9" fill="url(#topFaceGrad)" />
+                                <polygon points="12,12 17.2,9 17.2,15 12,18" fill="url(#rightFaceGrad)" />
+                                <polygon points="12,12 12,18 6.8,15 6.8,9" fill="url(#leftFaceGrad)" />
                             </svg>
                         </div>
                         <div className="logo-titles" style={{ display: 'flex', alignItems: 'center' }}>
