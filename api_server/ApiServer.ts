@@ -77,10 +77,10 @@ export default function setupExpressApp(peerNode: PeerNode) {
     app.get('/api/node/auth', checkAuth, (req, res) => res.json({ success: true, message: 'Authorized Admin' }));
     app.post('/api/node/config', checkAuth, new UpdateNodeConfigHandler(peerNode).handle);
     app.get('/api/audit/events', checkAuth, new AuditEventsHandler(peerNode).handle);
-    app.get('/api/peers', checkAuth, new PeersHandler(peerNode).handle);
     app.get('/api/logs', checkAuth, new LogsHandler(peerNode).handle);
 
     // Public Wallet Owner Routes
+    app.get('/api/peers', new PeersHandler(peerNode).handle);
     app.get('/api/upload/events', new UploadEventsHandler(peerNode).handle);
     app.get('/api/ledger/metrics', new LedgerMetricsHandler(peerNode).handle);
     app.get('/api/blocks', new BlocksHandler(peerNode).handle);
