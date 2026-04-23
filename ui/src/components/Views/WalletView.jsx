@@ -141,16 +141,6 @@ const WalletView = () => {
                                         Continuous Float Array Constraints
                                     </div>
                                 </div>
-
-                                <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px' }}>
-                                    <h3 style={{ color: '#38bdf8', fontSize: '1rem', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1rem' }}>Global Emission Physics</h3>
-                                    <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#fff', textShadow: '0 0 15px rgba(56,189,248,0.2)' }}>
-                                        {formatVeri(walletData.emissionRate)}
-                                    </div>
-                                    <div style={{ marginTop: '1rem', color: '#94a3b8', fontSize: '0.875rem' }}>
-                                        Kryder's Law Block Mint Target Limit
-                                    </div>
-                                </div>
                             </div>
 
                             {/* Bottom Row: Transaction Ledger Integration */}

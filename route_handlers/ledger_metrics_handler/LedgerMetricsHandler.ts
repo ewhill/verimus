@@ -1,15 +1,19 @@
 import { Request, Response } from 'express';
 
 import BaseHandler from '../base_handler/BaseHandler';
+import WalletManager from '../../wallet_manager/WalletManager';
 
 export default class LedgerMetricsHandler extends BaseHandler {
     async handle(_unusedReq: Request, res: Response): Promise<void> {
         try {
             const latestBlock = await this.node.ledger.getLatestBlock();
             const currentIndex = latestBlock ? latestBlock.metadata.index : 0;
+            const currentBlockTime = latestBlock ? latestBlock.metadata.timestamp : Date.now();
             
             // Hardcoded constant mapping exact engine prune triggers
             const epochSize = 1000000;
+            const genesisTime = 1700000000000; // Static epoch bound from Ledger.ts
+            const emissionRate = WalletManager.calculateSystemReward(currentBlockTime, genesisTime);
 
             let databaseFootprintBytes = 0;
             if (this.node.ledger.collection) {
@@ -29,6 +33,7 @@ export default class LedgerMetricsHandler extends BaseHandler {
                 success: true,
                 currentIndex,
                 epochSize,
+                emissionRate,
                 databaseFootprintBytes
             });
         } catch (error: any) {

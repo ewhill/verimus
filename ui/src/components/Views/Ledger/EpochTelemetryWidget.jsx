@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ethers } from 'ethers';
 import { useStore } from '../../../store';
 
 const EpochTelemetryWidget = () => {
@@ -32,6 +33,7 @@ const EpochTelemetryWidget = () => {
                     peers: peersObj.peers?.length || 0,
                     epoch: 1,
                     gasPrice: '0.01',
+                    emissionRate: data.emissionRate || 0,
                     loading: false,
                     error: false
                 });
@@ -76,6 +78,12 @@ const EpochTelemetryWidget = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                         <span style={{ color: '#eab308', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>$VERI GAS</span>
                         <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.gasPrice}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>EMISSION LIMIT</span>
+                        <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>
+                            {metrics.emissionRate ? parseFloat(ethers.formatUnits(metrics.emissionRate.toString(), 18)).toFixed(6) + ' $VERI' : '0.000000 $VERI'}
+                        </span>
                     </div>
                 </div>
 
