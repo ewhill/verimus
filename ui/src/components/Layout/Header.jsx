@@ -83,23 +83,23 @@ const Header = () => {
             backdropFilter: 'blur(10px)',
             border: '1px solid rgba(255, 255, 255, 0.05)',
             borderRadius: '100px',
-            padding: '0.2rem',
-            gap: '0.2rem',
+            padding: '6px',
+            gap: '8px',
             boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
         }}>
             {(nodeConfig?.roles?.includes('ORIGINATOR') && web3EncryptionKey) && (
                 <button
                     onClick={() => dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true })}
                     title="Upload File"
-                    style={{ background: 'transparent', border: 'none', padding: '0.3rem', borderRadius: '50%', cursor: 'pointer', color: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
-                    onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(74, 222, 128, 0.15)'; e.currentTarget.style.transform = 'scale(1.1)' }} 
-                    onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'scale(1)' }}
+                    style={{ background: '#4ade80', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', color: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
+                    onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(74, 222, 128, 0.6)'; }} 
+                    onMouseOut={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
                 >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                 </button>
             )}
             {(nodeConfig?.roles?.includes('ORIGINATOR') && web3EncryptionKey) && (
-                <div style={{ width: '1px', height: '18px', background: 'rgba(255, 255, 255, 0.1)', margin: '0 0.2rem' }} />
+                <div style={{ width: '1px', height: '18px', background: 'rgba(255, 255, 255, 0.1)' }} />
             )}
             <WalletConnection />
         </div>

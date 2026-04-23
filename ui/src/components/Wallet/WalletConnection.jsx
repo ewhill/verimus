@@ -127,7 +127,7 @@ const WalletConnection = ({ isMobileDrawer }) => {
                 <div className="wallet-pill" style={{
                     display: 'flex', alignItems: 'center', gap: '0.6rem',
                     background: 'transparent', border: '1px solid transparent',
-                    padding: '0.3rem 0.6rem', borderRadius: '100px', transition: 'background 0.2s ease'
+                    padding: '0', borderRadius: '100px', transition: 'background 0.2s ease'
                 }} title={web3Account}>
                     {isConnecting ? (
                         <div className="spinner" style={{ width: '12px', height: '12px', flexShrink: 0, borderWidth: '2px', borderColor: 'rgba(74, 222, 128, 0.3)', borderTopColor: '#4ade80' }}></div>
@@ -137,8 +137,8 @@ const WalletConnection = ({ isMobileDrawer }) => {
                     <span style={{ color: '#e2e8f0', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.85rem' }}>
                         {web3Account.substring(0, 5)}...{web3Account.substring(web3Account.length - 3)}
                     </span>
-                    <button onClick={(e) => { e.stopPropagation(); disconnectWallet(); }} title="Disconnect Wallet" style={{ background: 'transparent', border: 'none', padding: '0.3rem', margin: '0 0 0 0.2rem', borderRadius: '50%', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }} onMouseOver={(e) => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'rgba(248, 113, 113, 0.15)'; e.currentTarget.style.transform = 'scale(1.1)' }} onMouseOut={(e) => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'scale(1)' }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <button onClick={(e) => { e.stopPropagation(); disconnectWallet(); }} title="Disconnect Wallet" style={{ background: 'rgba(248, 113, 113, 0.15)', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease', margin: 0, padding: 0 }} onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(248, 113, 113, 0.3)'; e.currentTarget.style.transform = 'scale(1.1)' }} onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(248, 113, 113, 0.15)'; e.currentTarget.style.transform = 'scale(1)' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                     </button>
                 </div>
             </div>
