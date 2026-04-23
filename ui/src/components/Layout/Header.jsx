@@ -109,8 +109,8 @@ const Header = () => {
                 display: 'flex', 
                 alignItems: 'center',
                 position: 'relative',
-                width: (isSearchExpanded || localSearchQuery.trim()) ? '400px' : '28px',
-                height: '28px',
+                width: (isSearchExpanded || localSearchQuery.trim()) ? '400px' : '44px',
+                height: '44px',
                 borderRadius: (isSearchExpanded || localSearchQuery.trim()) ? '100px' : '50%',
                 background: (isSearchExpanded || localSearchQuery.trim()) ? 'rgba(30, 41, 59, 0.6)' : '#fbbf24',
                 border: (isSearchExpanded || localSearchQuery.trim()) ? '1px solid rgba(255,255,255,0.1)' : 'none',
@@ -162,7 +162,7 @@ const Header = () => {
                 <button
                     onClick={() => dispatch({ type: 'SET_TRANSFER_MODAL_OPEN', payload: true })}
                     title="Transfer $VERI"
-                    style={{ background: '#38bdf8', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', color: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
+                    style={{ background: '#38bdf8', border: 'none', width: '44px', height: '44px', borderRadius: '50%', cursor: 'pointer', color: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
                     onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(56, 189, 248, 0.6)'; }}
                     onMouseOut={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
                 >
@@ -173,7 +173,7 @@ const Header = () => {
                 <button
                     onClick={() => dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true })}
                     title="Upload File"
-                    style={{ background: '#4ade80', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', color: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
+                    style={{ background: '#4ade80', border: 'none', width: '44px', height: '44px', borderRadius: '50%', cursor: 'pointer', color: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
                     onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(74, 222, 128, 0.6)'; }}
                     onMouseOut={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
                 >
@@ -181,7 +181,7 @@ const Header = () => {
                 </button>
             )}
             {(web3Account && !isWalletConnecting) && (
-                <div style={{ width: '1px', height: '18px', background: 'rgba(255, 255, 255, 0.1)' }} />
+                <div style={{ width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.1)' }} />
             )}
             <WalletConnection />
         </div>
