@@ -8,7 +8,7 @@ cleanup() {
     for port in "${PORTS[@]}"; do
         "$(dirname "$0")/stop.sh" --port $port > /dev/null 2>&1 || true
     done
-    pkill -f "mongod --port 27018" > /dev/null 2>&1 || true
+    pkill -f "mongod --port 27019" > /dev/null 2>&1 || true
     sleep 2
     echo -e "\033[1;31mTearing down MongoDB...\033[0m"
     echo "Cleanup complete. Exiting."
@@ -45,19 +45,19 @@ npm run keygen
 
 DB_PATH="/tmp/verimus-mongo-prod"
 
-echo "Starting System Native MongoDB (Port 27018) for strictly pure network bounds natively..."
-pkill -f "mongod --port 27018" > /dev/null 2>&1 || true
+echo "Starting System Native MongoDB (Port 27019) for strictly pure network bounds natively..."
+pkill -f "mongod --port 27019" > /dev/null 2>&1 || true
 sleep 2
 rm -rf "$DB_PATH"
 mkdir -p "$DB_PATH"
-mongod --port 27018 --dbpath "$DB_PATH" > /dev/null 2>&1 &
+mongod --port 27019 --dbpath "$DB_PATH" > /dev/null 2>&1 &
 sleep 5
 
 
 echo "3. Starting 5 peer nodes..."
 # The first node builds the UI, the remaining nodes skip it to avoid concurrent build conflicts
 echo "Started Node 1 on port ${PORTS[0]} (Seed Node)"
-"$(dirname "$0")/spawn_node.sh" --watch --mongo-port 27018 --port ${PORTS[0]} --public-address 127.0.0.1:${PORTS[0]} --force > "node_${PORTS[0]}.log" 2>&1 &
+"$(dirname "$0")/spawn_node.sh" --watch --mongo-port 27019 --port ${PORTS[0]} --public-address 127.0.0.1:${PORTS[0]} --force > "node_${PORTS[0]}.log" 2>&1 &
 # Wait for node startup and UI build completion
 sleep 8
 
@@ -65,7 +65,7 @@ sleep 8
 for i in {1..4}; do
     PORT=${PORTS[$i]}
     DISCOVER="127.0.0.1:${PORTS[0]}"
-    "$(dirname "$0")/spawn_node.sh" --watch --mongo-port 27018 --port $PORT --discover $DISCOVER --public-address 127.0.0.1:$PORT --force > "node_$PORT.log" 2>&1 &
+    "$(dirname "$0")/spawn_node.sh" --watch --mongo-port 27019 --port $PORT --discover $DISCOVER --public-address 127.0.0.1:$PORT --force > "node_$PORT.log" 2>&1 &
     echo "Started Node $((i+1)) on port $PORT"
     echo "UI Password for Node $((i+1)): $UI_PASSWORD"
     sleep 3
