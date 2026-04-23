@@ -281,9 +281,10 @@ const Header = () => {
                                 <path d="M12 6L18 12L12 18L6 12L12 6Z" fill="#ffffff" />
                             </svg>
                         </div>
-                        <div className="logo-titles" style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div className="logo-titles" style={{ display: 'flex', alignItems: 'center' }}>
                             <h1>{title}</h1>
-                            <nav className="main-nav desktop-only" style={{ marginTop: '0.2rem', marginLeft: '-0.4rem', marginBottom: '-0.5rem', gap: 0 }}>
+                            <div className="desktop-only" style={{ width: '1px', height: '44px', background: 'rgba(255, 255, 255, 0.1)', marginLeft: '1.2rem', marginRight: '1.2rem' }} />
+                            <nav className="main-nav desktop-only" style={{ margin: 0, gap: '0.8rem' }}>
                                 {pagesList}
                             </nav>
                         </div>
