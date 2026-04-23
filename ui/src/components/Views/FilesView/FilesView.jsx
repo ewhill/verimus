@@ -13,6 +13,7 @@ const FilesView = () => {
     const filesLocationFilter = useStore(s => s.filesLocationFilter);
     const filesSelectedPath = useStore(s => s.filesSelectedPath);
     const web3Account = useStore(s => s.web3Account);
+    const isWalletConnecting = useStore(s => s.isWalletConnecting);
 
     useEffect(() => {
         ApiService.fetchFiles(dispatch);
@@ -103,7 +104,7 @@ const FilesView = () => {
                             <div className="subtitle" style={{ marginBottom: '0' }}>{displayItems.length} item(s)</div>
                         </div>
                     </div>
-                    {web3Account && (
+                    {(web3Account && !isWalletConnecting) && (
                         <div className="files-header-right">
                             <button
                                 onClick={() => dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true })}

@@ -25,9 +25,9 @@ export const useStore = create(
     isUploadModalOpen: false,
     isTransferModalOpen: false,
     selectedBlockHash: null,
-    isLoading: false,
     error: null,
     web3Account: null,
+    isWalletConnecting: false,
     web3EncryptionKey: null,
     discoveredProviders: [],
     activeProvider: null,
@@ -65,6 +65,7 @@ export const useStore = create(
             case 'SET_FILES_SEARCH': return { filesSearchQuery: action.payload };
             case 'SET_SEARCH': return { searchQuery: action.payload };
             case 'SET_WEB3_ACCOUNT': return { web3Account: action.payload };
+            case 'SET_WALLET_CONNECTING': return { isWalletConnecting: action.payload };
             case 'SET_WEB3_ENCRYPTION_KEY': return { web3EncryptionKey: action.payload };
             case 'ADD_DISCOVERED_PROVIDER':
                 if (!state.discoveredProviders.find(p => p.info.uuid === action.payload.info.uuid)) {

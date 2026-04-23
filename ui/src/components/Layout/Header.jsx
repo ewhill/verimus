@@ -3,6 +3,7 @@ import { useStore } from '../../store';
 import WalletConnection from '../Wallet/WalletConnection';
 const Header = () => {
     const dispatch = useStore(s => s.dispatch);
+    const isWalletConnecting = useStore(s => s.isWalletConnecting);
     const currentRoute = useStore(s => s.currentRoute);
     const activeWalletTab = useStore(s => s.activeWalletTab);
     const activeLedgerTab = useStore(s => s.activeLedgerTab);
@@ -87,18 +88,7 @@ const Header = () => {
             gap: '8px',
             boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
         }}>
-            {web3Account && (
-                <button
-                    onClick={() => dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true })}
-                    title="Upload File"
-                    style={{ background: '#4ade80', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', color: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
-                    onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(74, 222, 128, 0.6)'; }}
-                    onMouseOut={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
-                >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                </button>
-            )}
-            {web3Account && (
+            {(web3Account && !isWalletConnecting) && (
                 <button
                     onClick={() => dispatch({ type: 'SET_TRANSFER_MODAL_OPEN', payload: true })}
                     title="Transfer $VERI"
@@ -109,7 +99,18 @@ const Header = () => {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                 </button>
             )}
-            {web3Account && (
+            {(web3Account && !isWalletConnecting) && (
+                <button
+                    onClick={() => dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: true })}
+                    title="Upload File"
+                    style={{ background: '#4ade80', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', color: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
+                    onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(74, 222, 128, 0.6)'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                </button>
+            )}
+            {(web3Account && !isWalletConnecting) && (
                 <div style={{ width: '1px', height: '18px', background: 'rgba(255, 255, 255, 0.1)' }} />
             )}
             <WalletConnection />

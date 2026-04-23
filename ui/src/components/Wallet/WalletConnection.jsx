@@ -7,8 +7,8 @@ const WalletConnection = ({ isMobileDrawer }) => {
     const web3Account = useStore(s => s.web3Account);
     const activeProvider = useStore(s => s.activeProvider);
     const discoveredProviders = useStore(s => s.discoveredProviders);
+    const isConnecting = useStore(s => s.isWalletConnecting);
     
-    const [isConnecting, setIsConnecting] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isProviderListOpen, setIsProviderListOpen] = useState(false);
 
@@ -52,7 +52,7 @@ const WalletConnection = ({ isMobileDrawer }) => {
 
     const executeConnection = async (selectedProvider) => {
         try {
-            setIsConnecting(true);
+            dispatch({ type: 'SET_WALLET_CONNECTING', payload: true });
             setIsProviderListOpen(false);
             const account = await requestAccounts(selectedProvider);
             if (account) {
@@ -78,7 +78,7 @@ const WalletConnection = ({ isMobileDrawer }) => {
                 payload: { id: Date.now(), title: 'Connection Deferred', message: err.message || 'Verification halted organically.', type: 'error' }
             });
         } finally {
-            setIsConnecting(false);
+            dispatch({ type: 'SET_WALLET_CONNECTING', payload: false });
         }
     };
 
@@ -137,9 +137,11 @@ const WalletConnection = ({ isMobileDrawer }) => {
                     <span style={{ color: '#e2e8f0', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.85rem' }}>
                         {web3Account.substring(0, 5)}...{web3Account.substring(web3Account.length - 3)}
                     </span>
-                    <button onClick={(e) => { e.stopPropagation(); disconnectWallet(); }} title="Disconnect Wallet" style={{ background: 'rgba(248, 113, 113, 0.15)', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease', margin: 0, padding: 0 }} onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(248, 113, 113, 0.3)'; e.currentTarget.style.transform = 'scale(1.1)' }} onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(248, 113, 113, 0.15)'; e.currentTarget.style.transform = 'scale(1)' }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                    </button>
+                    {!isConnecting && (
+                        <button onClick={(e) => { e.stopPropagation(); disconnectWallet(); }} title="Disconnect Wallet" style={{ background: 'rgba(248, 113, 113, 0.15)', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease', margin: 0, padding: 0 }} onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(248, 113, 113, 0.3)'; e.currentTarget.style.transform = 'scale(1.1)' }} onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(248, 113, 113, 0.15)'; e.currentTarget.style.transform = 'scale(1)' }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                        </button>
+                    )}
                 </div>
             </div>
         );
