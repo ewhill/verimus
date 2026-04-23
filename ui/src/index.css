@@ -1558,18 +1558,6 @@ tr:hover {
 .flat-tab-bar {
     display: flex;
     gap: 1.5rem;
-    position: relative;
-}
-
-.flat-tab-bar::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.08);
-    z-index: 1;
 }
 
 .flat-tab-btn {
@@ -1597,7 +1585,7 @@ tr:hover {
 .flat-tab-btn.active::after {
     content: '';
     position: absolute;
-    bottom: 0;
+    bottom: -2px;
     left: 0;
     right: 0;
     height: 2px;
