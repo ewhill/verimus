@@ -2,6 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { useStore } from '../../../store';
 import { VeriIcon } from '../../Icons';
+import { VeriIcon } from '../../Icons';
+
+const formatBytes = (bytes) => {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
 
 const EpochTelemetryWidget = () => {
     const dispatch = useStore(s => s.dispatch);
@@ -30,7 +39,7 @@ const EpochTelemetryWidget = () => {
                 setMetrics({
                     currentIndex: data.currentIndex || data.metrics?.totalBlocks || 0,
                     epochSize: data.epochSize || 1000000,
-                    totalContracts: data.totalContracts || 0,
+                    databaseFootprintBytes: data.databaseFootprintBytes || 0,
                     peers: peersObj.peers?.length || 0,
                     epoch: 1,
                     gasPrice: '0.01',
@@ -88,9 +97,9 @@ const EpochTelemetryWidget = () => {
                         </span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        <span style={{ color: '#ec4899', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>TOTAL CONTRACTS</span>
+                        <span style={{ color: '#ec4899', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>LEDGER SIZE</span>
                         <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>
-                            {metrics.totalContracts.toLocaleString()}
+                            {formatBytes(metrics.databaseFootprintBytes)}
                         </span>
                     </div>
                 </div>
