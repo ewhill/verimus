@@ -18,11 +18,10 @@ export default class LedgerMetricsHandler extends BaseHandler {
             let databaseFootprintBytes = 0;
             if (this.node.ledger.collection) {
                 try {
-                    // Extract precise continuous native MongoDB bounds
-                    // @ts-ignore
-                    const stats = await this.node.ledger.collection.stats();
-                    if (stats && stats.storageSize) {
-                        databaseFootprintBytes = stats.storageSize;
+                    // Extract precise continuous native MongoDB bounds using modern aggregate syntax
+                    const stats = await this.node.ledger.collection.aggregate([{ $collStats: { storageStats: {} } }]).toArray();
+                    if (stats && stats.length > 0 && stats[0].storageStats) {
+                        databaseFootprintBytes = stats[0].storageStats.size || stats[0].storageStats.storageSize || 0;
                     }
                 } catch (_unusedE: any) {
                     // Ignore stats extraction errors gracefully if driver unsupported
