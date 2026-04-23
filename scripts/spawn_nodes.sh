@@ -29,6 +29,7 @@ echo "==========================================="
 export UI_PASSWORD="$(generateUiPassword)"
 
 export VERIMUS_GENESIS_TIMESTAMP=$(date +%s000)
+export NODE_TLS_REJECT_UNAUTHORIZED=0
 
 echo "1. Cleaning up existing instances..."
 for port in "${PORTS[@]}"; do

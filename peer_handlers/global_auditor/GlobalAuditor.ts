@@ -228,8 +228,8 @@ class GlobalAuditor {
                 };
 
                 const auditId = contractHash;
-                const MAX_RETRIES = 3;
-                const BASE_TIMEOUT_MS = 5000;
+                const MAX_RETRIES = 5;
+                const BASE_TIMEOUT_MS = 15000;
                 let currentAttempt = 0;
                 let currentTimeoutRef: NodeJS.Timeout;
                 let isResolved = false;
