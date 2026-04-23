@@ -14,6 +14,8 @@ const getBlockTypeConfig = (type) => {
             return { icon: <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" /></svg>, color: '#fb923c', bg: 'rgba(249, 115, 22, 0.15)', name: 'Stake' };
         case 'SLASHING_TRANSACTION':
             return { icon: <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)', name: 'Slashing' };
+        case 'VALIDATOR_REGISTRATION':
+            return { icon: <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, color: '#2dd4bf', bg: 'rgba(45, 212, 191, 0.15)', name: 'Validator' };
         default:
             return { icon: <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>, color: '#9ca3af', bg: 'rgba(156, 163, 175, 0.15)', name: type };
     }
@@ -60,8 +62,8 @@ const LedgerGrid = () => {
     }
 
     const renderList = () => (
-        <div className="data-list-container">
-            <div className="data-list-header stagger-1" style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 0.7fr) minmax(110px, 0.8fr) 2fr 1.5fr minmax(100px, auto)', padding: '0 1.5rem', marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div className="data-list-container" style={{ overflowX: 'auto' }}>
+            <div className="data-list-header stagger-1" style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 0.7fr) minmax(130px, 0.9fr) 2fr 1.5fr minmax(100px, auto)', padding: '0 1.5rem', marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 <div>Block</div>
                 <div>Type</div>
                 <div>Hash</div>
@@ -79,14 +81,14 @@ const LedgerGrid = () => {
                         <div 
                             key={pkg.hash} 
                             className={`data-row ${isPending ? 'status-pending' : 'status-confirmed'} ${isSelected ? 'selected' : ''}`} 
-                            style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 0.7fr) minmax(110px, 0.8fr) 2fr 1.5fr minmax(100px, auto)', alignItems: 'center', padding: '1rem 1.5rem', cursor: isPending ? 'default' : 'pointer', animation: `staggerFadeUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) ${i * 0.05}s both` }} 
+                            style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 0.7fr) minmax(130px, 0.9fr) 2fr 1.5fr minmax(100px, auto)', alignItems: 'center', padding: '1rem 1.5rem', cursor: isPending ? 'default' : 'pointer', animation: `staggerFadeUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) ${i * 0.05}s both` }} 
                             onClick={() => !isPending && handleBlockClick(pkg.hash, i)}
                         >
                             <div>{isPending ? <span className="badge pending">Pending</span> : <span className="badge" style={{ background: 'rgba(99,102,241,0.15)', color: '#c7d2fe' }}>#{pkg.metadata?.index ?? pkg.index}</span>}</div>
-                            <div>
-                                <span className="badge" style={{ background: typeConfig.bg, color: typeConfig.color, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                                    <span style={{ width: '12px', height: '12px', display: 'flex' }}>{typeConfig.icon}</span>
-                                    {typeConfig.name}
+                            <div style={{ display: 'flex', overflow: 'hidden' }}>
+                                <span className="badge" style={{ background: typeConfig.bg, color: typeConfig.color, display: 'inline-flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                                    <span style={{ width: '12px', height: '12px', display: 'flex', flexShrink: 0 }}>{typeConfig.icon}</span>
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{typeConfig.name}</span>
                                 </span>
                             </div>
                             <div style={{ fontFamily: 'monospace', color: 'var(--text-secondary)' }} title={pkg.hash}>{pkg.hash.substring(0, 16)}...</div>
