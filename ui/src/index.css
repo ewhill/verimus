@@ -341,6 +341,27 @@ header {
     overflow: hidden;
 }
 
+.telemetry-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 1.5rem;
+}
+
+@media (max-width: 1200px) {
+    .telemetry-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .telemetry-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 .glass-panel::before {
     content: '';
     position: absolute;

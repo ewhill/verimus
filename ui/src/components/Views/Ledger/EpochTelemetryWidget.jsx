@@ -62,7 +62,7 @@ const EpochTelemetryWidget = () => {
     return (
         <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
                 {/* Stats Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1.5rem' }}>
+                <div className="telemetry-grid">
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                         <span style={{ color: '#3b82f6', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>VERIMUS EPOCH</span>
                         <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>{metrics.epoch}</span>
@@ -83,6 +83,12 @@ const EpochTelemetryWidget = () => {
                         <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', display: 'flex', alignItems: 'center' }}><VeriIcon size={12} style={{marginRight: '0.2rem'}} /> EMISSION</span>
                         <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>
                             {metrics.emissionRate ? parseFloat(ethers.formatUnits(metrics.emissionRate.toString(), 18)).toFixed(6) : '0.000000'}
+                        </span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <span style={{ color: '#ec4899', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em' }}>LEDGER SIZE</span>
+                        <span style={{ fontSize: '1.15rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-main)' }}>
+                            {(metrics.databaseFootprintBytes / 1024 / 1024).toFixed(2)} MB
                         </span>
                     </div>
                 </div>
