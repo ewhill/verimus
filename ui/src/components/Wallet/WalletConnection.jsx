@@ -124,11 +124,11 @@ const WalletConnection = ({ isMobileDrawer }) => {
 
         return (
             <div style={{ position: 'relative' }}>
-                <div className="wallet-pill" onClick={() => setIsDropdownOpen(!isDropdownOpen)} style={{
-                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                <div className="wallet-pill" style={{
+                    display: 'flex', alignItems: 'center', gap: '0.6rem',
                     background: 'transparent', border: '1px solid transparent',
-                    padding: '0.3rem 0.6rem', borderRadius: '100px', cursor: 'pointer', transition: 'background 0.2s ease'
-                }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'} title={web3Account}>
+                    padding: '0.3rem 0.6rem', borderRadius: '100px', transition: 'background 0.2s ease'
+                }} title={web3Account}>
                     {isConnecting ? (
                         <div className="spinner" style={{ width: '12px', height: '12px', flexShrink: 0, borderWidth: '2px', borderColor: 'rgba(74, 222, 128, 0.3)', borderTopColor: '#4ade80' }}></div>
                     ) : (
@@ -137,19 +137,10 @@ const WalletConnection = ({ isMobileDrawer }) => {
                     <span style={{ color: '#e2e8f0', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.85rem' }}>
                         {web3Account.substring(0, 5)}...{web3Account.substring(web3Account.length - 3)}
                     </span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    <button onClick={(e) => { e.stopPropagation(); disconnectWallet(); }} style={{ background: 'transparent', border: 'none', padding: '0 0 0 0.2rem', margin: 0, cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }} onMouseOver={(e) => e.currentTarget.style.color = '#f87171'} onMouseOut={(e) => e.currentTarget.style.color = '#64748b'} title="Disconnect Wallet">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    </button>
                 </div>
-                
-                {isDropdownOpen && (
-                    <div style={{
-                        position: 'absolute', top: 'calc(100% + 0.5rem)', right: '0', background: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '0.5rem', zIndex: 100, boxShadow: '0 4px 20px rgba(0,0,0,0.5)', minWidth: '180px'
-                    }}>
-                        <button onClick={() => disconnectWallet()} style={{ width: '100%', padding: '0.6rem 0.5rem', background: 'transparent', border: 'none', color: '#f87171', textAlign: 'left', cursor: 'pointer', borderRadius: '4px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(248, 113, 113, 0.1)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                            Disconnect Wallet
-                        </button>
-                    </div>
-                )}
             </div>
         );
     }
