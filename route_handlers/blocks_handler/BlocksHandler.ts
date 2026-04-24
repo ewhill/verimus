@@ -47,7 +47,37 @@ export default class BlocksHandler extends BaseHandler {
                 }
             }
 
-            const searchQuery = req.query.q ? (req.query.q as string).toLowerCase() : null;
+            const rawSearchQuery = req.query.q ? (req.query.q as string) : '';
+            let searchQuery = rawSearchQuery.toLowerCase();
+
+            // Extract advanced query parameters like from:0x... to:0x... type:...
+            const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            
+            const typeMatch = rawSearchQuery.match(/type:(\S+)/i);
+            if (typeMatch) {
+                query.type = typeMatch[1].toUpperCase();
+                searchQuery = searchQuery.replace(typeMatch[0].toLowerCase(), '').trim();
+            }
+
+            const fromMatch = rawSearchQuery.match(/from:(\S+)/i);
+            if (fromMatch) {
+                query.signerAddress = { $regex: new RegExp(`^${escapeRegExp(fromMatch[1])}$`, 'i') };
+                searchQuery = searchQuery.replace(fromMatch[0].toLowerCase(), '').trim();
+            }
+
+            const toMatch = rawSearchQuery.match(/to:(\S+)/i);
+            if (toMatch) {
+                query["payload.recipientAddress"] = { $regex: new RegExp(`^${escapeRegExp(toMatch[1])}$`, 'i') };
+                searchQuery = searchQuery.replace(toMatch[0].toLowerCase(), '').trim();
+            }
+
+            const ownerMatch = rawSearchQuery.match(/owner:(\S+)/i);
+            if (ownerMatch) {
+                query["payload.ownerAddress"] = { $regex: new RegExp(`^${escapeRegExp(ownerMatch[1])}$`, 'i') };
+                searchQuery = searchQuery.replace(ownerMatch[0].toLowerCase(), '').trim();
+            }
+            
+            if (!searchQuery) searchQuery = null as any;
 
             // Fetch all matching blocks to memory so we can decrypt and filter
             logger.info("MongoDB Query Triggered: " + JSON.stringify(query)); let blocks = await this.node.ledger.collection!.find(query)
