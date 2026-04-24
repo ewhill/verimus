@@ -25,10 +25,16 @@ const LedgerGrid = () => {
     const dispatch = useStore(s => s.dispatch);
     const blocks = useStore(s => s.blocks);
     const selectedIndex = useStore(s => s.selectedIndex);
-    const pagination = useStore(s => s.pagination);
+    const searchQuery = useStore(s => s.searchQuery);
     
     const page = pagination?.page || 1;
     const pages = pagination?.pages || 1;
+
+    React.useEffect(() => {
+        return () => {
+            dispatch({ type: 'SET_SEARCH', payload: '' });
+        };
+    }, []);
 
     const paginate = (dir) => {
         if (!pagination) return;
@@ -39,6 +45,12 @@ const LedgerGrid = () => {
         }
     };
 
+    const clearSearch = () => {
+        dispatch({ type: 'SET_SEARCH', payload: '' });
+        const simulatedState = { ...useStore.getState(), searchQuery: '', pagination: { ...pagination, page: 1 } };
+        ApiService.fetchBlocks(simulatedState, dispatch);
+    };
+
     const handleBlockClick = (hash, idx) => {
         const block = blocks.find(b => b.hash === hash);
         if (block && block.status !== 'pending' && (!block.metadata || block.metadata.index !== -1)) {
@@ -47,19 +59,17 @@ const LedgerGrid = () => {
         }
     };
 
-    if (!blocks || !blocks.length) {
-        return (
-            <div id="ledgerContainer" className="grid-view stagger-2">
-                <div className="empty-state" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--border-soft)' }}>
-                    <svg className="empty-state-svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                    </svg>
-                    <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>No blocks found</h3>
-                    <p style={{ color: 'var(--text-muted)' }}>No blocks matched your search terms or ownership filter.</p>
-                </div>
+    const renderEmptyState = () => (
+        <div id="ledgerContainer" className="grid-view stagger-2">
+            <div className="empty-state" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--border-soft)' }}>
+                <svg className="empty-state-svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                </svg>
+                <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>No blocks found</h3>
+                <p style={{ color: 'var(--text-muted)' }}>No blocks matched your search terms or ownership filter.</p>
             </div>
-        );
-    }
+        </div>
+    );
 
     const renderList = () => (
         <div className="data-list-container" style={{ overflowX: 'auto' }}>
@@ -105,21 +115,42 @@ const LedgerGrid = () => {
 
     return (
         <>
-            <div id="ledgerContainer" className="list-view">
-                {renderList()}
-            </div>
-            
-            <div className="pagination-wrapper stagger-4" style={{ display: 'flex', justifyContent: 'center', marginTop: '2.5rem' }}>
-                <div className="glass-pagination">
-                    <button className="icon-btn" style={{ color: page <= 1 ? 'var(--text-muted)' : 'var(--text-main)', cursor: page <= 1 ? 'not-allowed' : 'pointer' }} disabled={page <= 1} onClick={() => paginate(-1)}>
-                        <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
-                    </button>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Page {page} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>of {pages}</span></span>
-                    <button className="icon-btn" style={{ color: page >= pages ? 'var(--text-muted)' : 'var(--text-main)', cursor: page >= pages ? 'not-allowed' : 'pointer' }} disabled={page >= pages} onClick={() => paginate(1)}>
-                        <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+            {searchQuery && (
+                <div className="active-search-banner stagger-1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.5rem', background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: 'var(--radius-lg)', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="#38bdf8">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
+                        <span style={{ color: '#e2e8f0', fontSize: '0.95rem' }}>
+                            Showing results for: <strong style={{ color: '#38bdf8' }}>{searchQuery}</strong>
+                        </span>
+                    </div>
+                    <button onClick={clearSearch} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#cbd5e1', padding: '0.4rem 0.8rem', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s' }} onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#f8fafc'; }} onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}>
+                        Clear Search
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </button>
                 </div>
-            </div>
+            )}
+            
+            {(!blocks || !blocks.length) ? renderEmptyState() : (
+                <>
+                    <div id="ledgerContainer" className="list-view">
+                        {renderList()}
+                    </div>
+                    
+                    <div className="pagination-wrapper stagger-4" style={{ display: 'flex', justifyContent: 'center', marginTop: '2.5rem' }}>
+                        <div className="glass-pagination">
+                            <button className="icon-btn" style={{ color: page <= 1 ? 'var(--text-muted)' : 'var(--text-main)', cursor: page <= 1 ? 'not-allowed' : 'pointer' }} disabled={page <= 1} onClick={() => paginate(-1)}>
+                                <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+                            </button>
+                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Page {page} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>of {pages}</span></span>
+                            <button className="icon-btn" style={{ color: page >= pages ? 'var(--text-muted)' : 'var(--text-main)', cursor: page >= pages ? 'not-allowed' : 'pointer' }} disabled={page >= pages} onClick={() => paginate(1)}>
+                                <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
         </>
     );
 };
