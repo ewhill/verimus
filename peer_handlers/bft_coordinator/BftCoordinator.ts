@@ -498,6 +498,10 @@ class BftCoordinator {
                 }
             }
 
+            this.mempool.eligibleForks.delete(forkId);
+            this.mempool.settledForks.delete(forkId);
+            this.activeForkTimeouts.delete(forkId);
+            
             this.committing = false;
             await this._checkAndProposeFork();
 
@@ -505,6 +509,7 @@ class BftCoordinator {
             this.committing = false;
             this.mempool.eligibleForks.delete(forkId);
             this.mempool.settledForks.delete(forkId);
+            this.activeForkTimeouts.delete(forkId);
             if (forkEntry && forkEntry.blockIds) {
                 for (const bId of forkEntry.blockIds) {
                     this.mempool.pendingBlocks.delete(bId);

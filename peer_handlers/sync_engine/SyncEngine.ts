@@ -513,7 +513,7 @@ class SyncEngine {
             this.transitionState(SyncState.ACTIVE);
             return;
         }
-        if (this.currentState !== SyncState.OFFLINE) return;
+        if (this.currentState !== SyncState.OFFLINE && this.currentState !== SyncState.ACTIVE) return;
 
         this.transitionState(SyncState.SYNCING_HEADERS);
         this._chainStatusResponses = [];
