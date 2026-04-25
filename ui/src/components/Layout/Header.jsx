@@ -15,8 +15,16 @@ const Header = () => {
     const [isNavOpen, setIsNavOpen] = useState(false);
 
     const [isSearchExpanded, setIsSearchExpanded] = useState(false);
-    const [localSearchQuery, setLocalSearchQuery] = useState('');
+    const searchQuery = useStore(s => s.searchQuery);
+    const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery || '');
     const searchInputRef = useRef(null);
+
+    React.useEffect(() => {
+        setLocalSearchQuery(searchQuery || '');
+        if (searchQuery) {
+            setIsSearchExpanded(true);
+        }
+    }, [searchQuery]);
 
     const activeRoute = currentRoute || 'files';
     const [expandedAccordion, setExpandedAccordion] = useState(activeRoute);
@@ -63,8 +71,6 @@ const Header = () => {
             dispatch({ type: 'SET_LEDGER_TAB', payload: 'blocks' });
         }
         dispatch({ type: 'SET_SEARCH', payload: query });
-        setLocalSearchQuery('');
-        setIsSearchExpanded(false);
         searchInputRef.current?.blur();
     };
 
@@ -74,13 +80,14 @@ const Header = () => {
     };
 
     const handleSearchBlur = () => {
-        if (!localSearchQuery.trim()) setIsSearchExpanded(false);
+        if (!localSearchQuery.trim() && !searchQuery) setIsSearchExpanded(false);
     };
 
     const handleSearchClear = (e) => {
         e.stopPropagation();
         setLocalSearchQuery('');
         setIsSearchExpanded(false);
+        dispatch({ type: 'SET_SEARCH', payload: '' });
         searchInputRef.current?.blur();
     };
 
