@@ -23,6 +23,7 @@ import NodeConfigHandler from '../route_handlers/node_config_handler/NodeConfigH
 import UpdateNodeConfigHandler from '../route_handlers/node_config_handler/UpdateNodeConfigHandler';
 import PeersHandler from '../route_handlers/peers_handler/PeersHandler';
 import PrivatePayloadHandler from '../route_handlers/private_payload_handler/PrivatePayloadHandler';
+import SuggestHandler from '../route_handlers/suggest_handler/SuggestHandler';
 import TransactionsHandler from '../route_handlers/transactions_handler/TransactionsHandler';
 import UploadEventsHandler from '../route_handlers/upload_events_handler/UploadEventsHandler';
 import UploadHandler from '../route_handlers/upload_handler/UploadHandler';
@@ -92,6 +93,7 @@ export default function setupExpressApp(peerNode: PeerNode) {
     app.get('/api/download/:hash/file/:filename', new DownloadFileHandler(peerNode).handle);
     app.get('/api/blocks/:hash/private', new PrivatePayloadHandler(peerNode).handle);
     app.get('/api/files', new FilesHandler(peerNode).handle);
+    app.get('/api/suggest', new SuggestHandler(peerNode).handle);
     app.get('/api/wallet', new WalletHandler(peerNode).handle);
 
     // Fallback for SPA path-based routing

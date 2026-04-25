@@ -17,7 +17,11 @@ const Header = () => {
     const [isSearchExpanded, setIsSearchExpanded] = useState(false);
     const searchQuery = useStore(s => s.searchQuery);
     const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery || '');
+    const [suggestions, setSuggestions] = useState([]);
     const searchInputRef = useRef(null);
+    const debounceTimeoutRef = useRef(null);
+    const abortControllerRef = useRef(null);
+    const suggestionCache = useRef({});
 
     React.useEffect(() => {
         setLocalSearchQuery(searchQuery || '');
@@ -80,15 +84,54 @@ const Header = () => {
     };
 
     const handleSearchBlur = () => {
-        if (!localSearchQuery.trim() && !searchQuery) setIsSearchExpanded(false);
+        setTimeout(() => {
+            if (!localSearchQuery.trim() && !searchQuery) setIsSearchExpanded(false);
+            setSuggestions([]);
+        }, 150); // delay to allow suggestion clicks
     };
 
     const handleSearchClear = (e) => {
         e.stopPropagation();
         setLocalSearchQuery('');
+        setSuggestions([]);
         setIsSearchExpanded(false);
         dispatch({ type: 'SET_SEARCH', payload: '' });
         searchInputRef.current?.blur();
+    };
+
+    const handleQueryChange = (e) => {
+        const val = e.target.value;
+        setLocalSearchQuery(val);
+
+        if (!val.trim()) {
+            setSuggestions([]);
+            return;
+        }
+
+        const staticSuggestions = ['type:TRANSACTION', 'type:STORAGE_CONTRACT', 'type:STAKING_CONTRACT', 'type:VALIDATOR_REGISTRATION', 'from:', 'to:', 'owner:'];
+        const matches = staticSuggestions.filter(s => s.toLowerCase().startsWith(val.toLowerCase()) && s.toLowerCase() !== val.toLowerCase());
+        
+        if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+        
+        debounceTimeoutRef.current = setTimeout(async () => {
+            let dyn = suggestionCache.current[val];
+            if (!dyn) {
+                if (abortControllerRef.current) abortControllerRef.current.abort();
+                abortControllerRef.current = new AbortController();
+                try {
+                    const res = await fetch(`/api/suggest?q=${encodeURIComponent(val)}`, { signal: abortControllerRef.current.signal });
+                    const data = await res.json();
+                    if (data.success) {
+                        dyn = data.suggestions;
+                        suggestionCache.current[val] = dyn;
+                    }
+                } catch (err) {
+                    return; // Aborted
+                }
+            }
+            if (dyn) setSuggestions([...matches, ...dyn].slice(0, 7));
+            else setSuggestions(matches.slice(0, 7));
+        }, 300);
     };
 
     const pagesList = (
@@ -143,8 +186,9 @@ const Header = () => {
                     type="text"
                     placeholder="Search blocks, txns, or wallet addresses..."
                     value={localSearchQuery}
-                    onChange={(e) => setLocalSearchQuery(e.target.value)}
+                    onChange={handleQueryChange}
                     onBlur={handleSearchBlur}
+                    autoComplete="off"
                     style={{
                         width: '100%',
                         height: '100%',
@@ -164,6 +208,48 @@ const Header = () => {
                     <button type="button" onClick={handleSearchClear} style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '18px', height: '18px', color: '#94a3b8', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} onMouseOver={(e) => { e.currentTarget.style.color = '#f8fafc'; e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; }} onMouseOut={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}>
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </button>
+                )}
+                
+                {isSearchExpanded && suggestions.length > 0 && (
+                    <div className="search-suggestions" style={{
+                        position: 'absolute',
+                        top: '110%',
+                        left: 0,
+                        right: 0,
+                        background: 'rgba(15, 23, 42, 0.95)',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 'var(--radius-md)',
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                        overflow: 'hidden',
+                        zIndex: 100
+                    }}>
+                        {suggestions.map((s, idx) => (
+                            <div key={idx} style={{ padding: '0.6rem 1rem', cursor: 'pointer', color: '#e2e8f0', fontSize: '0.85rem', borderBottom: idx < suggestions.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}
+                                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(56, 189, 248, 0.1)'; }}
+                                onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    setLocalSearchQuery(s);
+                                    if (s.endsWith(':')) {
+                                        searchInputRef.current?.focus();
+                                    } else {
+                                        setSuggestions([]);
+                                        dispatch({ type: 'SET_SEARCH', payload: s });
+                                        if (s.length === 64) {
+                                            dispatch({ type: 'SET_MODAL_OPEN', payload: { isOpen: true, hash: s } });
+                                        } else {
+                                            dispatch({ type: 'SET_ROUTE', payload: 'ledger' });
+                                            dispatch({ type: 'SET_LEDGER_TAB', payload: 'blocks' });
+                                        }
+                                        searchInputRef.current?.blur();
+                                    }
+                                }}
+                            >
+                                {s}
+                            </div>
+                        ))}
+                    </div>
                 )}
             </form>
             {(web3Account && !isWalletConnecting) && (
