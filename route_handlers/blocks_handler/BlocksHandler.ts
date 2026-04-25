@@ -173,7 +173,11 @@ export default class BlocksHandler extends BaseHandler {
             }
 
             const totalFiltered = combinedBlocks.length;
-            const offsetBlocks = combinedBlocks.slice(skip, skip + limit);
+            const offsetBlocks = combinedBlocks.slice(skip, skip + limit).map((b: any) => {
+                const cleanBlock = { ...b };
+                delete cleanBlock._id;
+                return cleanBlock;
+            });
 
             res.json({
                 success: true,
