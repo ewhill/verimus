@@ -26,6 +26,7 @@ const LedgerGrid = () => {
     const blocks = useStore(s => s.blocks);
     const selectedIndex = useStore(s => s.selectedIndex);
     const searchQuery = useStore(s => s.searchQuery);
+    const pagination = useStore(s => s.pagination);
     
     const page = pagination?.page || 1;
     const pages = pagination?.pages || 1;
