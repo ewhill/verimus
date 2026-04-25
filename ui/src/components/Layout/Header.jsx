@@ -167,7 +167,7 @@ const Header = () => {
                 backdropFilter: (isSearchExpanded || localSearchQuery.trim()) ? 'blur(10px)' : 'none',
                 marginRight: (isSearchExpanded || localSearchQuery.trim()) ? '1em' : '0',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                overflow: 'hidden',
+                overflow: 'visible',
                 cursor: (isSearchExpanded || localSearchQuery.trim()) ? 'text' : 'pointer'
             }}
                 onClick={() => { if (!isSearchExpanded && !localSearchQuery.trim()) handleSearchClick() }}
