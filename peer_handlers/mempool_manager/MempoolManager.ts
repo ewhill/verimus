@@ -74,6 +74,11 @@ class MempoolManager {
                 return;
             }
 
+            const existing = await this.node.ledger.collection!.findOne({ signature: block.signature });
+            if (existing) {
+                return;
+            }
+
             if (block.type === BLOCK_TYPES.TRANSACTION) {
                 const txPayload = block.payload as TransactionPayload;
                 
