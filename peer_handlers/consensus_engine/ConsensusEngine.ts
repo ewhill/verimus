@@ -100,12 +100,15 @@ class ConsensusEngine {
 
         // Map decoupled SyncEngine thresholds natively back towards the local memory routers
         this.node.events.on('SYNC_PHASE_COMPLETE', async (evt: any) => {
+            evt.retryCount = (evt.retryCount || 0) + 1;
+            if (evt.retryCount > 3) return; // Drop stale or unreachable orphan natively
+            
             if (evt.type === 'PendingBlock') {
                 await this.mempoolManager.handlePendingBlock(evt.block!, evt.connection, evt.timestamp!);
             } else if (evt.type === 'AdoptFork') {
-                await this.bftCoordinator.handleAdoptFork(evt.forkId!, evt.finalTipHash!, evt.connection);
+                await this.bftCoordinator.handleAdoptFork(evt.forkId!, evt.finalTipHash!, evt.connection, evt.retryCount);
             } else if (evt.type === 'ProposeFork') {
-                await this.bftCoordinator.handleProposeFork(evt.forkId!, evt.blockIds!, evt.connection);
+                await this.bftCoordinator.handleProposeFork(evt.forkId!, evt.blockIds!, evt.connection, evt.retryCount);
             }
         });
     }

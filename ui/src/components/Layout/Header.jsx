@@ -125,7 +125,7 @@ const Header = () => {
                         dyn = data.suggestions;
                         suggestionCache.current[val] = dyn;
                     }
-                } catch (err) {
+                } catch {
                     return; // Aborted
                 }
             }
@@ -149,24 +149,20 @@ const Header = () => {
         </>
     );
 
-    const navActions = (
-        <div className="nav-actions" style={{
+    const omnibarComponent = (
+        <form className="omnibar" onSubmit={handleOmnibarSearch} style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-        }}>
-            <form className="omnibar" onSubmit={handleOmnibarSearch} style={{
-                display: 'flex',
-                alignItems: 'center',
-                position: 'relative',
-                width: (isSearchExpanded || localSearchQuery.trim()) ? '400px' : '44px',
-                height: '44px',
-                borderRadius: (isSearchExpanded || localSearchQuery.trim()) ? '100px' : '50%',
-                background: (isSearchExpanded || localSearchQuery.trim()) ? 'rgba(30, 41, 59, 0.6)' : '#fbbf24',
-                border: (isSearchExpanded || localSearchQuery.trim()) ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                backdropFilter: (isSearchExpanded || localSearchQuery.trim()) ? 'blur(10px)' : 'none',
-                marginRight: (isSearchExpanded || localSearchQuery.trim()) ? '1em' : '0',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            position: 'relative',
+            width: (isSearchExpanded || localSearchQuery.trim()) ? '400px' : '44px',
+            maxWidth: 'calc(100% + 1.5rem - 8px)',
+            height: '44px',
+            borderRadius: (isSearchExpanded || localSearchQuery.trim()) ? '100px' : '50%',
+            background: (isSearchExpanded || localSearchQuery.trim()) ? 'rgba(30, 41, 59, 0.6)' : '#fbbf24',
+            border: (isSearchExpanded || localSearchQuery.trim()) ? '1px solid rgba(255,255,255,0.1)' : 'none',
+            backdropFilter: (isSearchExpanded || localSearchQuery.trim()) ? 'blur(10px)' : 'none',
+            marginRight: 'calc(-1.5rem + 8px)',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 overflow: 'visible',
                 cursor: (isSearchExpanded || localSearchQuery.trim()) ? 'text' : 'pointer'
             }}
@@ -252,6 +248,15 @@ const Header = () => {
                     </div>
                 )}
             </form>
+    );
+
+    const navActions = (
+        <div className="nav-actions" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginLeft: 0,
+        }}>
             {(web3Account && !isWalletConnecting) && (
                 <button
                     onClick={() => dispatch({ type: 'SET_TRANSFER_MODAL_OPEN', payload: true })}
@@ -344,7 +349,7 @@ const Header = () => {
 
     return (
         <header>
-            <div className="header-primary" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'center' }}>
+            <div className="header-primary" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center' }}>
                 <div className="header-top" style={{ justifySelf: 'start', display: 'flex', alignItems: 'center' }}>
                     <div className="logo">
                         <div className={`logo-icon ${error ? 'logo-glow-offline' : 'logo-glow-online'}`} onClick={() => {
@@ -407,8 +412,10 @@ const Header = () => {
                     </button>
                 </div>
 
-                {/* Empty center column to absorb expanding leftward omnibox gracefully */}
-                <div className="header-center desktop-only"></div>
+                {/* Center column to house the expanding omnibox gracefully */}
+                <div className="header-center desktop-only" style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', minWidth: 0 }}>
+                    {omnibarComponent}
+                </div>
 
                 <div className="header-right desktop-only" style={{ display: 'flex', justifySelf: 'end', alignItems: 'center', gap: '1rem' }}>
                     {navActions}
