@@ -46,10 +46,6 @@ class BftCoordinator {
                         await this.handleVerifyBlock(blockId, orphan.signature, orphan.connection);
                     }
                 }
-
-                if (this.node.peer) {
-                    this.node.peer.broadcast(new VerifyBlockMessage({ blockId, signature: myVerificationSig as string })).catch(() => {});
-                }
             } catch (err: any) {
                 logger.warn(`[Peer ${this.node.port}] Local block verification failed synchronously: ${err.message}`);
             }
@@ -71,9 +67,10 @@ class BftCoordinator {
             }
 
             const verifierId = connection.remoteCredentials_?.walletAddress || connection.peerAddress;
+            const myAddress = `127.0.0.1:${this.node.port}`;
             
             // SECURITY CHECK: Only accept verifications from valid active validators, preventing quorum bypass
-            if (this.node.ledger.activeValidatorsCollection && verifierId !== `127.0.0.1:${this.node.port}`) {
+            if (this.node.ledger.activeValidatorsCollection && verifierId !== myAddress) {
                 const validatorCount = this.node.ledger.activeValidatorCountCache || 0;
                 if (validatorCount > 0) {
                     const isValidator = await this.node.ledger.activeValidatorsCollection.findOne({ validatorAddress: verifierId });
@@ -84,20 +81,28 @@ class BftCoordinator {
                 }
             }
 
-            if (pendingEntry.verifications.has(verifierId)) return;
+            const isNewVerification = !pendingEntry.verifications.has(verifierId);
+            if (!isNewVerification) return;
 
             pendingEntry.verifications.add(verifierId);
 
-            const myAddress = `127.0.0.1:${this.node.port}`;
-            if (!pendingEntry.verifications.has(myAddress)) {
+            const majority = this.node.getMajorityCount();
+
+            if (verifierId === myAddress) {
+                // If the trigger was our own local verification loop
+                if (this.node.peer && pendingEntry.verifications.size <= majority) {
+                    this.node.peer.broadcast(new VerifyBlockMessage({ blockId, signature })).catch(() => { });
+                }
+            } else if (!pendingEntry.verifications.has(myAddress)) {
+                // If it's a remote peer and we haven't verified it yet
                 const myVerificationSig = await this.node.wallet.signMessage(blockId);
                 pendingEntry.verifications.add(myAddress);
-                if (this.node.peer) {
+                
+                if (this.node.peer && pendingEntry.verifications.size <= majority) {
                     this.node.peer.broadcast(new VerifyBlockMessage({ blockId, signature: myVerificationSig })).catch(() => { });
                 }
             }
 
-            const majority = this.node.getMajorityCount();
             if (pendingEntry.verifications.size >= majority && !pendingEntry.eligible) {
                 pendingEntry.eligible = true;
                 logger.info(`[Peer ${this.node.port}] Block ${blockId.slice(0, 8)} is ELIGIBLE. Scheduling fork proposal...`);
@@ -219,7 +224,7 @@ class BftCoordinator {
         }
     }
 
-    async handleProposeFork(forkId: string, blockIds: string[], connection: PeerConnection) {
+    async handleProposeFork(forkId: string, blockIds: string[], connection: PeerConnection, retryCount: number = 0) {
         const release = await this.mutex.acquire(forkId);
         try {
             if (this.node.syncEngine && (this.node.syncEngine.currentState === SyncState.SYNCING_HEADERS || this.node.syncEngine.currentState === SyncState.SYNCING_BLOCKS)) {
@@ -232,11 +237,14 @@ class BftCoordinator {
                 const latestBlock = await this.node.ledger.getLatestBlock();
                 const currentTip = latestBlock && latestBlock.hash ? latestBlock.hash.slice(0, 16) : '0'.repeat(16);
                 if (currentTip !== tipConstraint) {
+                    const existsInChain = await this.node.ledger.collection?.findOne({ hash: { $regex: '^' + tipConstraint } });
+                    if (existsInChain) return;
+
                     const existingFork = this.mempool.eligibleForks.get(forkId);
                     if (existingFork && existingFork.adopted) return;
 
-                    if (this.node.syncEngine) {
-                        await this.node.ledger.orphanBlocksCollection?.insertOne({ type: 'ProposeFork', forkId, blockIds, connection });
+                    if (this.node.syncEngine && retryCount < 3) {
+                        await this.node.ledger.orphanBlocksCollection?.insertOne({ type: 'ProposeFork', forkId, blockIds, connection, retryCount });
                         this.node.syncEngine.performInitialSync().catch(() => { });
                     }
                     return;
@@ -336,7 +344,7 @@ class BftCoordinator {
         }
     }
 
-    async handleAdoptFork(forkId: string, finalTipHash: string, connection: PeerConnection) {
+    async handleAdoptFork(forkId: string, finalTipHash: string, connection: PeerConnection, retryCount: number = 0) {
         const release = await this.mutex.acquire(forkId);
         try {
             if (this.node.syncEngine && (this.node.syncEngine.currentState === SyncState.SYNCING_HEADERS || this.node.syncEngine.currentState === SyncState.SYNCING_BLOCKS)) {
@@ -349,11 +357,14 @@ class BftCoordinator {
                 const latestBlock = await this.node.ledger.getLatestBlock();
                 const currentTip = latestBlock && latestBlock.hash ? latestBlock.hash.slice(0, 16) : '0'.repeat(16);
                 if (currentTip !== tipConstraint) {
+                    const existsInChain = await this.node.ledger.collection?.findOne({ hash: { $regex: '^' + tipConstraint } });
+                    if (existsInChain) return;
+
                     const existingSettled = this.mempool.settledForks.get(forkId);
                     if (existingSettled && existingSettled.finalTipHash === finalTipHash) return;
 
-                    if (this.node.syncEngine) {
-                        await this.node.ledger.orphanBlocksCollection?.insertOne({ type: 'AdoptFork', forkId, finalTipHash, connection });
+                    if (this.node.syncEngine && retryCount < 3) {
+                        await this.node.ledger.orphanBlocksCollection?.insertOne({ type: 'AdoptFork', forkId, finalTipHash, connection, retryCount });
                         this.node.syncEngine.performInitialSync().catch(() => { });
                     }
                     return;

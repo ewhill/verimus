@@ -201,12 +201,14 @@ class MempoolManager {
 
             if (this.node.reputationManager) await this.node.reputationManager.rewardHonestProposal(block.signerAddress);
 
+            let isNewBlock = false;
             if (!this.mempool.pendingBlocks.has(blockId)) {
                 this.mempool.pendingBlocks.set(blockId, {
                     block: block,
                     verifications: new Set(),
                     originalTimestamp: headerTimestamp ? new Date(headerTimestamp).getTime() : Date.now()
                 });
+                isNewBlock = true;
                 
                 if (this.node.peer) {
                     this.node.peer.broadcast(new PendingBlockMessage({ block })).catch(err => {
@@ -218,7 +220,9 @@ class MempoolManager {
             logger.info(`[Peer ${this.node.port}] Verified Pending Block ${blockId.slice(0, 8)} from ${connection.peerAddress}`);
 
             // Replace nested explicit pipeline bounds with dedicated bus proxy emission maps logically
-            this.node.events.emit('MEMPOOL:BLOCK_VERIFIED', blockId);
+            if (isNewBlock) {
+                this.node.events.emit('MEMPOOL:BLOCK_VERIFIED', blockId);
+            }
         } finally {
             release();
         }
