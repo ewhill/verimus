@@ -1,4 +1,4 @@
- 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../store';
 import { ApiService } from '../../services/api';
@@ -28,26 +28,36 @@ const BlockModal = () => {
     useEffect(() => {
         if (isModalOpen && selectedBlockHash) {
             const found = blocks.find(b => b.hash === selectedBlockHash);
-            if (found) {
-                setActiveBlockMemo(found);
-            }
-            const pkg = found || activeBlockMemo;
-            const isOwner = nodeConfig && nodeConfig.walletAddress === pkg?.signerAddress;
+            
+            const handleBlockFound = (pkg) => {
+                setActiveBlockMemo(pkg);
+                const isOwner = nodeConfig && nodeConfig.walletAddress === pkg?.signerAddress;
 
-            if (pkg?.type === 'STORAGE_CONTRACT' && isOwner && fetchedHashRef.current !== selectedBlockHash) {
-                fetchedHashRef.current = selectedBlockHash;
-                setIsFetchingPayload(true);
-                setPayloadError(false);
-                ApiService.fetchPrivatePayload(selectedBlockHash).then(data => {
-                    if (!data.success) {
+                if (pkg?.type === 'STORAGE_CONTRACT' && isOwner && fetchedHashRef.current !== selectedBlockHash) {
+                    fetchedHashRef.current = selectedBlockHash;
+                    setIsFetchingPayload(true);
+                    setPayloadError(false);
+                    ApiService.fetchPrivatePayload(selectedBlockHash).then(data => {
+                        if (!data.success) {
+                            setPayloadError(true);
+                        } else {
+                            setPayloadData(data.payload ? { ...data.payload, provider: data.provider } : { ...data.privatePayload, provider: data.provider });
+                        }
+                        setIsFetchingPayload(false);
+                    }).catch(() => {
                         setPayloadError(true);
-                    } else {
-                        setPayloadData(data.payload ? { ...data.payload, provider: data.provider } : { ...data.privatePayload, provider: data.provider });
-                    }
-                    setIsFetchingPayload(false);
-                }).catch(() => {
-                    setPayloadError(true);
-                    setIsFetchingPayload(false);
+                        setIsFetchingPayload(false);
+                    });
+                }
+            };
+
+            if (found) {
+                handleBlockFound(found);
+            } else if (activeBlockMemo && activeBlockMemo.hash === selectedBlockHash) {
+                handleBlockFound(activeBlockMemo);
+            } else {
+                ApiService.fetchSingleBlock(selectedBlockHash).then(pkg => {
+                    if (pkg) handleBlockFound(pkg);
                 });
             }
         }
@@ -141,10 +151,10 @@ const BlockModal = () => {
                     const blob = new Blob([rawZip], { type: 'application/zip' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a'); a.href = url;
-                    
+
                     const rootName = keys.length > 0 ? keys[0].split('/').pop() : 'data';
                     a.download = `verimus_package_${rootName}.zip`;
-                    
+
                     document.body.appendChild(a); a.click(); setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
                 }
             }
@@ -183,25 +193,25 @@ const BlockModal = () => {
 
     return (
         <div className="modal" style={{ display: 'flex', position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', alignItems: 'flex-start', justifyContent: 'center', overflowY: 'auto' }} onClick={closeModal}>
-            <div className="modal-content glass-panel" style={{ width: '100%', maxWidth: '650px', margin: '1rem', padding: '0', display: 'flex', flexDirection: 'column', maxHeight: 'calc(100vh - 2rem)', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content glass-panel" style={{ width: 'calc(100% - 200px)', margin: '100px', padding: '0', display: 'flex', flexDirection: 'column', maxHeight: 'calc(100% - 200px)', position: 'fixed' }} onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', margin: '0', padding: '1.5rem 2rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>Block Inspection</h3>
                         <button onClick={closeModal} style={{ position: 'absolute', top: '1.25rem', right: '1.5rem', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.5rem', cursor: 'pointer', transition: 'color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.25rem', borderRadius: '4px', zIndex: 10 }} className="hover-text-main">&times;</button>
                     </div>
-                    
+
                     <div style={{ display: 'flex', gap: '1.5rem', borderBottom: '1px solid transparent' }}>
-                        <button 
+                        <button
                             className={`modal-tab-btn ${activeModalTab === 'overview' ? 'active' : ''}`}
                             onClick={() => setActiveModalTab('overview')}
                             style={{ background: 'transparent', border: 'none', borderBottom: activeModalTab === 'overview' ? '2px solid #818cf8' : '2px solid transparent', color: activeModalTab === 'overview' ? '#818cf8' : 'var(--text-muted)', padding: '0.5rem 0', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.9rem' }}
                         >Overview</button>
-                        <button 
+                        <button
                             className={`modal-tab-btn ${activeModalTab === 'raw' ? 'active' : ''}`}
                             onClick={() => setActiveModalTab('raw')}
                             style={{ background: 'transparent', border: 'none', borderBottom: activeModalTab === 'raw' ? '2px solid #818cf8' : '2px solid transparent', color: activeModalTab === 'raw' ? '#818cf8' : 'var(--text-muted)', padding: '0.5rem 0', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.9rem' }}
                         >Raw Details</button>
-                        <button 
+                        <button
                             className={`modal-tab-btn ${activeModalTab === 'signatures' ? 'active' : ''}`}
                             onClick={() => setActiveModalTab('signatures')}
                             style={{ background: 'transparent', border: 'none', borderBottom: activeModalTab === 'signatures' ? '2px solid #818cf8' : '2px solid transparent', color: activeModalTab === 'signatures' ? '#818cf8' : 'var(--text-muted)', padding: '0.5rem 0', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.9rem' }}
@@ -216,7 +226,7 @@ const BlockModal = () => {
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                                     <div style={{ width: '100%', boxSizing: 'border-box' }}>
                                         <StorageContractPayload block={pkg} payloadData={payloadData} payloadError={payloadError} handleSingleFileDownload={handleSingleFileDownload} web3Account={web3Account} />
-                                        
+
                                         {isOwner && isFetchingPayload && (
                                             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '2rem', textAlign: 'center', border: '1px dashed var(--border-soft)', borderRadius: 'var(--radius-sm)', width: '100%', boxSizing: 'border-box', marginTop: '1rem' }}>
                                                 Decrypting network bundle... <div className="spinner" style={{ display: 'inline-block', width: '12px', height: '12px', borderWidth: '2px', marginLeft: '0.5rem' }}></div>
@@ -276,7 +286,7 @@ const BlockModal = () => {
                                 <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '1rem', fontSize: '0.85rem' }}>
                                     <span style={{ color: 'var(--text-muted)' }}>Signer Address:</span>
                                     <PropertyValue value={pkg.signerAddress} />
-                                    
+
                                     <span style={{ color: 'var(--text-muted)' }}>Signature:</span>
                                     <PropertyValue value={pkg.signature || 'N/A'} style={{ wordBreak: 'break-all' }} />
 

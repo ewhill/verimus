@@ -83,6 +83,21 @@ export const ApiService = {
             dispatch({ type: 'SET_ERROR', payload: 'Connection lost' });
         }
     },
+
+    fetchSingleBlock: async (hash) => {
+        try {
+            const res = await fetch(`${ApiService.activeProxyUrl}/api/blocks?q=${hash}`);
+            if (!res.ok) throw new Error('Network response was not ok');
+            const data = await res.json();
+            if (data.success && data.blocks && data.blocks.length > 0) {
+                return data.blocks[0];
+            }
+            return null;
+        } catch (err) {
+            console.error("Failed fetching single block:", err);
+            return null;
+        }
+    },
     
     fetchFiles: async (dispatch) => {
         try {
