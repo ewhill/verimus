@@ -423,10 +423,10 @@ const WalletView = () => {
                                                             borderRadius: '100px', 
                                                             fontSize: '0.75rem', 
                                                             fontWeight: 'bold',
-                                                            background: stake.type === 'STAKING_CONTRACT' ? 'rgba(192, 132, 252, 0.15)' : 'rgba(56, 189, 248, 0.15)',
-                                                            color: stake.type === 'STAKING_CONTRACT' ? '#c084fc' : '#38bdf8'
+                                                            background: stake.type === 'STAKING_CONTRACT' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(156, 163, 175, 0.15)',
+                                                            color: stake.type === 'STAKING_CONTRACT' ? '#fb923c' : '#9ca3af'
                                                         }}>
-                                                            {stake.type === 'STAKING_CONTRACT' ? 'Storage Node' : 'Validator Auditor'}
+                                                            {stake.type === 'STAKING_CONTRACT' ? 'Stake' : 'Validator'}
                                                         </span>
                                                     </div>
                                                     <div style={{ textAlign: 'right', fontWeight: 'bold', color: '#fff', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
