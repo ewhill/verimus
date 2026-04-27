@@ -36,6 +36,7 @@ export default class WalletHandler extends BaseHandler {
 
             // 3. Extract transaction ledger history locally
             let transactions: any[] = [];
+            let stakes: any[] = [];
             let totalPages = 1;
             
             const page = parseInt(req.query.page as string) || 1;
@@ -67,6 +68,19 @@ export default class WalletHandler extends BaseHandler {
                     recipientAddress: b.payload.recipientAddress,
                     amount: b.payload.amount
                 }));
+
+                const stakeQuery = {
+                    $or: [
+                        { type: BLOCK_TYPES.STAKING_CONTRACT, 'payload.operatorAddress': targetAddress },
+                        { type: BLOCK_TYPES.VALIDATOR_REGISTRATION, 'payload.validatorAddress': targetAddress }
+                    ]
+                };
+                const activeStakes = await this.node.ledger.collection.find(stakeQuery).toArray();
+                stakes = activeStakes.map((b: any) => ({
+                    type: b.type,
+                    amount: b.payload.collateralAmount || b.payload.stakeAmount,
+                    timestamp: b.metadata.timestamp
+                }));
             }
 
             res.json({
@@ -74,6 +88,7 @@ export default class WalletHandler extends BaseHandler {
                 balance,
                 emissionRate,
                 transactions,
+                stakes,
                 totalPages,
                 currentPage: page
             });

@@ -145,7 +145,7 @@ const PortfolioChart = ({ transactions, balance, timeFilter, onDeltaCalculated }
 const WalletView = () => {
     const activeTab = useStore(s => s.activeWalletTab);
     const web3Account = useStore(s => s.web3Account);
-    const [walletData, setWalletData] = useState({ balance: 0, emissionRate: 0, transactions: [], totalPages: 1 });
+    const [walletData, setWalletData] = useState({ balance: 0, emissionRate: 0, transactions: [], stakes: [], totalPages: 1 });
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -166,6 +166,7 @@ const WalletView = () => {
                         balance: data.balance || 0,
                         emissionRate: data.emissionRate || 0,
                         transactions: data.transactions || [],
+                        stakes: data.stakes || [],
                         totalPages: data.totalPages || 1
                     });
                     setError(null);
@@ -382,7 +383,35 @@ const WalletView = () => {
                                 
                                 <div className="glass-panel" style={{ padding: '2.5rem', borderRadius: '16px' }}>
                                     <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', color: 'var(--text-main)' }}>Active Stakes</h3>
-                                    <div style={{ color: '#64748b', fontStyle: 'italic', textAlign: 'center', padding: '2rem 0' }}>No active node stakes detected for this wallet.</div>
+                                    
+                                    {walletData.stakes.length === 0 ? (
+                                        <div style={{ color: '#64748b', fontStyle: 'italic', textAlign: 'center', padding: '2rem 0' }}>No active node stakes detected for this wallet.</div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                            {walletData.stakes.map((stake, idx) => (
+                                                <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr', alignItems: 'center', padding: '1rem 1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--border-soft)' }}>
+                                                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                                                        {formatDate(stake.timestamp)}
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <span style={{ 
+                                                            padding: '0.25rem 0.75rem', 
+                                                            borderRadius: '100px', 
+                                                            fontSize: '0.75rem', 
+                                                            fontWeight: 'bold',
+                                                            background: stake.type === 'STAKING_CONTRACT' ? 'rgba(192, 132, 252, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                                                            color: stake.type === 'STAKING_CONTRACT' ? '#c084fc' : '#38bdf8'
+                                                        }}>
+                                                            {stake.type === 'STAKING_CONTRACT' ? 'Storage Node' : 'Validator Auditor'}
+                                                        </span>
+                                                    </div>
+                                                    <div style={{ textAlign: 'right', fontWeight: 'bold', color: '#fff', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                                        {formatVeri(stake.amount, 14, '🔒 ')}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
