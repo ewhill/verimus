@@ -19,7 +19,7 @@ describe('Backend: peersHandler Integrity', () => {
         const mockNode = createMock<PeerNode>({
             ledger: createMock<Ledger>({}),
             peer: createMock<Peer>({}),
-            publicKey: 'MOCK_PUB_KEY'
+            walletAddress: 'MOCK_PUB_KEY'
         });
         const handler = new PeersHandler(mockNode);
         await handler.handle(mockRequest, mockResponse);
@@ -38,7 +38,7 @@ describe('Backend: peersHandler Integrity', () => {
 
         const mockNode = createMock<PeerNode>({
             ledger: createMock<Ledger>({}),
-            publicKey: 'MOCK_PUB_KEY',
+            walletAddress: 'MOCK_PUB_KEY',
             peer: createMock<Peer>({
                 peers: [
                     {
@@ -93,7 +93,7 @@ describe('Backend: peersHandler Integrity', () => {
 
         const mockNode = createMock<PeerNode>({
             ledger: createMock<Ledger>({}),
-            publicKey: 'MOCK_PUB_KEY',
+            walletAddress: 'MOCK_PUB_KEY',
             peer: createMock<Peer>({})
         });
 
@@ -118,7 +118,7 @@ describe('Backend: peersHandler Integrity', () => {
 
         const mockNode = createMock<PeerNode>({
             ledger: createMock<Ledger>({}),
-            publicKey: 'MOCK_PUB_KEY',
+            walletAddress: 'MOCK_PUB_KEY',
             peer: createMock<Peer>({
                 get peers(): string[] {
                     throw new Error("peer crash test");

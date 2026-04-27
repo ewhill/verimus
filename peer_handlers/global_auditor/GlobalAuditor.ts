@@ -100,7 +100,7 @@ class GlobalAuditor {
         const challengeHashHex = crypto.createHash('sha256').update(challengeString).digest('hex');
 
         const sanitizeKey = (k: string) => k.replace(/\s+/g, '');
-        const cleanSelfId = this.node.publicKey ? sanitizeKey(this.node.publicKey) : '';
+        const cleanSelfId = this.node.walletAddress ? sanitizeKey(this.node.walletAddress) : '';
         let closestId = cleanSelfId;
         const selfHashHex = crypto.createHash('sha256').update(cleanSelfId).digest('hex');
         let minDistance = this.computeXORDistance(challengeHashHex, selfHashHex);
@@ -238,7 +238,7 @@ class GlobalAuditor {
                     const challengeMsg = new MerkleProofChallengeRequestMessage({
                         contractId: contractHash,
                         physicalId: fragment.physicalId,
-                        auditorPublicKey: this.node.publicKey,
+                        auditorPublicKey: this.node.walletAddress,
                         auditorNodeId: this.node.walletAddress,
                         targetNodeId: fragment.nodeId,
                         chunkIndex: targetIndex

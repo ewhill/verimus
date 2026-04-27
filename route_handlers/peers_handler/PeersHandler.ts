@@ -31,11 +31,11 @@ export default class PeersHandler extends BaseHandler {
         });
         
         // Also include the current node itself
-        const selfPg = mongoPeers.find(p => p.publicKey === this.node.publicKey);
+        const selfPg = mongoPeers.find(p => p.operatorAddress === this.node.walletAddress);
         const self = {
             address: `127.0.0.1:${this.node.port}`,
             walletAddress: this.node.walletAddress,
-            signature: this.node.publicKey ? Buffer.from(this.node.publicKey).toString('base64').slice(-16) : null,
+            signature: this.node.walletAddress ? Buffer.from(this.node.walletAddress).toString('base64').slice(-16) : null,
             status: 'self',
             score: selfPg ? selfPg.score : 100,
             isBanned: selfPg ? selfPg.isBanned : false,

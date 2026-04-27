@@ -83,7 +83,7 @@ async function runManualTest() {
         type: 'TRANSACTION',
         previousHash: 'mock_genesis_bypass',
         hash: 'mock_funds_node1',
-        payload: { senderAddress: ethers.ZeroAddress, recipientAddress: node1.publicKey, amount: ethers.parseUnits("50000", 18), senderSignature: 'SYSTEM_MINT' },
+        payload: { senderAddress: ethers.ZeroAddress, recipientAddress: node1.walletAddress, amount: ethers.parseUnits("50000", 18), senderSignature: 'SYSTEM_MINT' },
         signerAddress: ethers.ZeroAddress,
         signature: 'SYSTEM_MINT'
     });

@@ -44,7 +44,6 @@ describe('GlobalAuditor', () => {
 
         const mockPeerNode = createMock<PeerNode>({
             walletAddress: 'myAddress', // Does not match 'targetnodeid'
-            publicKey: 'myPubKey',
             wallet: { signTypedData: async () => 'dummySig' } as any,
             port: 3000,
             ledger: mockLedger,

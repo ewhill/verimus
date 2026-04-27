@@ -1,3 +1,5 @@
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 import assert from 'node:assert';
 import type { AddressInfo } from 'node:net';
 import { describe, it, before, after } from 'node:test';

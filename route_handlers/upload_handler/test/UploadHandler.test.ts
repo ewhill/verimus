@@ -72,7 +72,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         const mockNode: PeerNode = createMock<PeerNode>({
             roles: [NodeRole.ORIGINATOR],
             port: 3000,
-            publicKey: publicKey,
+            walletAddress: publicKey,
 
             storageProvider: createMock<BaseProvider>({
                 createBlockStream: () => {
@@ -227,7 +227,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         const merkleSiblings = getMerkleProof(tree, 0);
         const mockNode: PeerNode = createMock<PeerNode>({
             roles: [NodeRole.ORIGINATOR],
-            publicKey,
+            walletAddress: publicKey,
 
             port: 1234,
             storageProvider: createMock<BaseProvider>({
@@ -328,7 +328,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         const merkleSiblings = getMerkleProof(tree, 0);
         const mockNode: PeerNode = createMock<PeerNode>({
             roles: [NodeRole.ORIGINATOR],
-            publicKey,
+            walletAddress: publicKey,
 
             port: 1234,
             storageProvider: createMock<BaseProvider>({
@@ -430,7 +430,7 @@ describe('Backend: uploadHandler Coverage Unit Tests', () => {
         const { publicKey, privateKey: _unusedPrivateKey } = generateRSAKeyPair();
         const mockNode: PeerNode = createMock<PeerNode>({
             roles: [NodeRole.ORIGINATOR],
-            publicKey,
+            walletAddress: publicKey,
 
             port: 1234,
             storageProvider: createMock<BaseProvider>({

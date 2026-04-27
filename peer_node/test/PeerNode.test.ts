@@ -90,7 +90,6 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     it('Restores block caching arrays on initialization from MongoDB', async () => {
 
         const mockNode = await getMockNode(PeerNodeClass);
-        mockNode.publicKey = 'myPubKey';
         mockNode.walletAddress = 'myPubKey';
         mock.method(mockNode.ledger.ownedBlocksCollection!, 'countDocuments', async () => 0);
         mock.method(mockNode.ledger.collection!, 'countDocuments', async () => 5);
@@ -109,7 +108,6 @@ describe('Backend: PeerNode Logical Verification Check', () => {
         const PeerNode = PeerNodeClass;
 
         const mockNode = new PeerNode(3002, [], createMock<BaseProvider>(), createMock<Bundler>(), 'mongodb://localhost:27017/test', createMock<string>(), createMock<PeerCredentials>(), 'data');
-        mockNode.publicKey = 'myPubKey';
         mockNode.walletAddress = 'myPubKey';
         mockNode.ownedBlocksCache = [];
 
@@ -145,7 +143,6 @@ describe('Backend: PeerNode Logical Verification Check', () => {
     it('Bypasses cache population when cache matches ledger', async () => {
 
         const mockNode = await getMockNode(PeerNodeClass);
-        mockNode.publicKey = 'myPubKey';
         mockNode.walletAddress = 'myPubKey';
 
         mock.method(mockNode.ledger.collection!, 'countDocuments', async () => 5);
@@ -163,7 +160,6 @@ describe('Backend: PeerNode Logical Verification Check', () => {
 
     it('Auto-invalidates stale cache if database appears purged', async () => {
         const mockNode = await getMockNode(PeerNodeClass);
-        mockNode.publicKey = 'myPubKey';
         mockNode.walletAddress = 'myPubKey';
 
         let deleted = false;
@@ -201,7 +197,6 @@ describe('Backend: PeerNode Logical Verification Check', () => {
 
     it('Synchronizes deletion from unverified blocks', async () => {
         const mockNode = await getMockNode(PeerNodeClass);
-        mockNode.publicKey = 'myPubKey';
         mockNode.walletAddress = 'myPubKey';
 
         mockNode.mempool = createMock<Mempool>({

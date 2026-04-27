@@ -67,3 +67,18 @@ export const SlashingTransactionPayload = ({ block }) => (
         </div>
     </div>
 );
+
+export const ValidatorRegistrationPayload = ({ block }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr', gap: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Action:</span>
+                <PropertyValue className="highlight" value={block.payload.action} copyable={false} />
+                <span style={{ color: 'var(--text-muted)' }}>Validator Address:</span>
+                <PropertyValue value={block.payload.validatorAddress} />
+                <span style={{ color: 'var(--text-muted)' }}>Stake Amount:</span>
+                <PropertyValue className="success" value={<span style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}>{block.payload.stakeAmount} <VeriIcon size={12} /></span>} copyable={false} />
+            </div>
+        </div>
+    </div>
+);

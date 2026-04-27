@@ -59,7 +59,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         const mockCollection = createMock<Collection<Block>>({ find: mockCollectionFind as any });
         
         const mockNode: PeerNode = createMock<PeerNode>({ 
-            publicKey: 'MY_KEY', 
+            walletAddress: 'MY_KEY', 
             ledger: createMock<Ledger>({ collection: mockCollection }) 
         });
         const handler = new PrivatePayloadHandler(mockNode);
@@ -112,7 +112,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         mockCollectionFind.mock.mockImplementation(() => createMock<FindCursor<WithId<Block>>>({ toArray: async () => [] }));
         const mockCollection = createMock<Collection<Block>>({ find: mockCollectionFind as any });
         const mockNode: PeerNode = createMock<PeerNode>({ 
-            publicKey, 
+            walletAddress: publicKey, 
             ledger: createMock<Ledger>({ collection: mockCollection }),
             mempool: createMock<Mempool>({ pendingBlocks: new Map([['memhash', { block: mockBlock, committed: false, verifications: new Set<string>(), eligible: true, originalTimestamp: 0 }]]) })
         });
@@ -150,7 +150,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         }));
         const mockCollection = createMock<Collection<Block>>({ find: mockCollectionFind as any });
         const mockNode: PeerNode = createMock<PeerNode>({ 
-            publicKey, 
+            walletAddress: publicKey, 
 
             ledger: createMock<Ledger>({ collection: mockCollection })
         });
@@ -188,7 +188,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         }));
         const mockCollection = createMock<Collection<Block>>({ find: mockCollectionFind as any });
         const mockNode: PeerNode = createMock<PeerNode>({ 
-            publicKey, 
+            walletAddress: publicKey, 
             
             ledger: createMock<Ledger>({ collection: mockCollection })
         });
@@ -238,7 +238,7 @@ describe('Backend: privatePayloadHandler Coverage', () => {
         }));
         const mockCollection = createMock<Collection<Block>>({ find: mockCollectionFind as any });
         const mockNode: PeerNode = createMock<PeerNode>({ 
-            publicKey, 
+            walletAddress: publicKey, 
 
             ledger: createMock<Ledger>({ collection: mockCollection })
         });

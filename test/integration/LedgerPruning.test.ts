@@ -31,14 +31,14 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
         node.consensusEngine.runGlobalAudit = async () => {};
 
         const wallet = new ethers.Wallet(node.wallet.privateKey!);
-        node.publicKey = wallet.address;
+        node.walletAddress = wallet.address;
 
         // 1. Manually synthesize 999,999 bounds
         // Inject a base transaction that gives peer 1000 tokens. 
         // This validates the incremental `balances` tracking hook dynamically.
         const seedPayload: TransactionPayload = {
             senderAddress: ethers.ZeroAddress,
-            recipientAddress: node.publicKey,
+            recipientAddress: node.walletAddress,
             amount: ethers.parseUnits("1000", 18),
             senderSignature: 'MOCK_SYS_SIG'
         };
@@ -49,14 +49,14 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
         
         await new Promise(res => setTimeout(res, 50));
         
-        const initialBal = await node.consensusEngine.walletManager.calculateBalance(node.publicKey);
+        const initialBal = await node.consensusEngine.walletManager.calculateBalance(node.walletAddress);
         assert.strictEqual(initialBal, ethers.parseUnits("1000", 18), 'Incremental state mathematically mapped 1000 bounds efficiently.');
 
         // 2. Cross the 1,000,000 Epoch Boundary
         // Formulate exactly Block 1,000,000 and push into the ConsensusEngine mempool
         const epochPayload: TransactionPayload = {
             senderAddress: ethers.ZeroAddress,
-            recipientAddress: node.publicKey,
+            recipientAddress: node.walletAddress,
             amount: ethers.parseUnits("500", 18),
             senderSignature: 'MOCK_SYS_SIG'
         };
@@ -90,7 +90,7 @@ test('Integration: Phase 6 Ledger Pruning & O(1) Checkpoint Scalability', async 
         await new Promise(r => setTimeout(r, 200));
 
         // 3. Mathematical Verification of Checkpoint Pruning
-        const postEpochBal = await node.consensusEngine.walletManager.calculateBalance(node.publicKey);
+        const postEpochBal = await node.consensusEngine.walletManager.calculateBalance(node.walletAddress);
         assert.strictEqual(postEpochBal, ethers.parseUnits("1500", 18), 'Balance fully preserved completely functionally through Epoch Pruning iteration bounds.');
 
         const blockCount = await node.ledger.collection!.countDocuments();

@@ -54,16 +54,7 @@ class PeerNode {
     walletManager!: WalletManager;
     httpServer?: https.Server;
     isHeadless: boolean;
-    _publicKeyOverride?: string;
     bootTime: number = Date.now();
-
-    get publicKey(): string {
-        return this._publicKeyOverride || this.walletAddress;
-    }
-
-    set publicKey(val: string) {
-        this._publicKeyOverride = val;
-    }
 
     roles: NodeRole[];
     proxyBrokerFee: number;
@@ -173,7 +164,16 @@ class PeerNode {
             cert: fs.readFileSync(httpsCertPath)
         }, app);
 
-        const discoveryAddrs = this.discoverAddresses.filter(addr => addr !== `127.0.0.1:${this.port}` && addr !== this.publicAddress);
+        let discoveryAddrs = this.discoverAddresses.filter(addr => addr !== `127.0.0.1:${this.port}` && addr !== this.publicAddress);
+        
+        if (this.ledger.peersCollection) {
+            const persistedPeers = await this.ledger.peersCollection!.find({}).toArray();
+            for (const p of persistedPeers) {
+                if (p.lastKnownAddress && !discoveryAddrs.includes(p.lastKnownAddress) && p.lastKnownAddress !== `127.0.0.1:${this.port}` && p.lastKnownAddress !== this.publicAddress) {
+                    discoveryAddrs.push(p.lastKnownAddress);
+                }
+            }
+        }
 
         this.peer = new Peer({
             discoveryConfig: {
@@ -219,6 +219,14 @@ class PeerNode {
                 this.peer!.onClientMessage = async (connection: any, type: string, message: any) => {
                     let remoteIdentity = connection.remoteCredentials_?.walletAddress || connection.remoteCredentials_?.rsaKeyPair?.public?.toString('utf8');
                     if (remoteIdentity) {
+                        if (connection.peerAddress && this.ledger.peersCollection) {
+                            // Update lastKnownAddress asynchronously to prevent blocking the message handler
+                            this.ledger.peersCollection.updateOne(
+                                { operatorAddress: remoteIdentity },
+                                { $set: { lastKnownAddress: connection.peerAddress } }
+                            ).catch(() => {});
+                        }
+
                         if (Date.now() - this.bootTime > 45000) {
                             const isBanned = await this.reputationManager.isBanned(remoteIdentity);
                             if (isBanned) {

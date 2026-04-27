@@ -36,7 +36,7 @@ test('Integration: Proof of Spacetime Slashing & Mathematical Deterrence', async
         node.syncEngine.currentState = 'ACTIVE' as any;
         node.consensusEngine.runGlobalAudit = async () => {};
 
-        node.publicKey = wallet.address;
+        node.walletAddress = wallet.address;
 
         await node.ledger.balancesCollection!.updateOne({ walletAddress: maliciousWallet.address }, { $inc: { balance: ethers.parseUnits("50000", 18) } }, { upsert: true });
         await node.ledger.balancesCollection!.updateOne({ walletAddress: wallet.address }, { $inc: { balance: ethers.parseUnits("50000", 18) } }, { upsert: true });
@@ -158,7 +158,7 @@ test('Integration: Deterministic Auditor Verification (Phase 4 Chaos Overlap)', 
         
         node.wallet = ethers.Wallet.createRandom();
         node.walletAddress = node.wallet.address;
-        node.publicKey = node.walletAddress;
+        node.walletAddress = node.walletAddress;
 
         await node.init();
         node.syncEngine.currentState = 'ACTIVE' as any;

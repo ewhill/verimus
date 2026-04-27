@@ -435,7 +435,7 @@ class Peer {
 
     this.logger_.log(`Attempting connection to ${formattedAddress}`);
     let rejectUnauthorized = true;
-    if (process.env.NODE_TLS_REJECT_UNAUTHORIZED == 0) {
+    if (process.env.NODE_TLS_REJECT_UNAUTHORIZED == 0 || formattedAddress.includes('127.0.0.1') || formattedAddress.includes('localhost')) {
       rejectUnauthorized = false;
     }
     const client = new Client({

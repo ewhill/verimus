@@ -11,7 +11,7 @@ import NodeConfigHandler from '../NodeConfigHandler';
 describe('Backend: nodeConfigHandler Integrity', () => {
     it('Responds with active node configuration parameters globally', async () => {
         const mockPeerNode = createMock<PeerNode>({
-            publicKey: 'pub',
+            walletAddress: 'pub',
             port: 1234,
             roles: [NodeRole.ORIGINATOR],
             storageProvider: null

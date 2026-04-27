@@ -93,11 +93,10 @@ class SyncEngine {
                 if (Date.now() - this.node.bootTime < 45000) return;
                 if (!this.node.ledger.peersCollection) return;
                 const peers = await this.node.ledger.peersCollection.find({}).toArray();
-                const score_payloads = peers.map(p => ({ operatorAddress: p.operatorAddress, publicKey: p.publicKey, score: p.score, roles: p.roles }));
+                const score_payloads = peers.map(p => ({ operatorAddress: p.operatorAddress, score: p.score, roles: p.roles }));
 
-                // Also broadcast our own native node roles mapped explicitly pinning RSA ties cleanly
-                const rsaKey = (this.node.peer as any)?.peerRSAKeyPair_?.public?.toString('utf8');
-                score_payloads.push({ operatorAddress: this.node.walletAddress, publicKey: rsaKey || this.node.publicKey, score: 100, roles: this.node.roles });
+                // Also broadcast our own native node roles mapped explicitly pinning cleanly
+                score_payloads.push({ operatorAddress: this.node.walletAddress, score: 100, roles: this.node.roles });
                 if (score_payloads.length > 0) {
                     this.node.peer!.broadcast(new NetworkHealthSyncMessage({ score_payloads })).catch(() => { });
                 }
@@ -105,7 +104,7 @@ class SyncEngine {
         }
     }
 
-    async handleNetworkHealthSync(score_payloads: { operatorAddress: string, publicKey?: string, score: number, roles?: NodeRole[] }[], _unusedConnection: PeerConnection) {
+    async handleNetworkHealthSync(score_payloads: { operatorAddress: string, score: number, roles?: NodeRole[] }[], _unusedConnection: PeerConnection) {
         if (Date.now() - this.node.bootTime < 45000) return;
         if (!this.node.ledger.peersCollection) return;
 
@@ -125,17 +124,16 @@ class SyncEngine {
                 if (updatedScore > 100) updatedScore = 100;
                 if (updatedScore < 0) updatedScore = 0;
 
-                if (updatedScore !== localPeer.score || (remoteScore.roles && JSON.stringify(localPeer.roles) !== JSON.stringify(remoteScore.roles)) || (remoteScore.publicKey && localPeer.publicKey !== remoteScore.publicKey)) {
+                if (updatedScore !== localPeer.score || (remoteScore.roles && JSON.stringify(localPeer.roles) !== JSON.stringify(remoteScore.roles))) {
                     await this.node.ledger.peersCollection.updateOne(
                         { operatorAddress: remoteScore.operatorAddress },
-                        { $set: { score: updatedScore, isBanned: updatedScore === 0, ...(remoteScore.roles ? { roles: remoteScore.roles } : {}), ...(remoteScore.publicKey ? { publicKey: remoteScore.publicKey } : {}) } }
+                        { $set: { score: updatedScore, isBanned: updatedScore === 0, ...(remoteScore.roles ? { roles: remoteScore.roles } : {}) } }
                     );
                 }
             } else if (remoteScore.score > 0) {
                 // ingest new metrics tracking
                 await this.node.ledger.peersCollection.insertOne({
                     operatorAddress: remoteScore.operatorAddress,
-                    publicKey: remoteScore.publicKey,
                     score: Math.min(remoteScore.score, 100),
                     strikeCount: 0,
                     isBanned: false,
@@ -445,7 +443,7 @@ class SyncEngine {
         if (this.node.peer) this.node.peer.broadcast(msg).catch(() => { });
         if (!this.node.roles.includes(NodeRole.STORAGE)) return;
 
-        if (msg.targetNodeId && msg.targetNodeId !== this.node.walletAddress && msg.targetNodeId !== this.node.publicKey && msg.targetNodeId !== 'GENESIS_NODE') {
+        if (msg.targetNodeId && msg.targetNodeId !== this.node.walletAddress && msg.targetNodeId !== 'GENESIS_NODE') {
             return; // Not the targeted storage host for this geometric validation iteration
         }
 

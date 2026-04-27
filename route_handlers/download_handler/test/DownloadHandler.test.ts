@@ -128,7 +128,6 @@ describe('Backend: downloadHandler Unit Tests', () => {
         const mockNode = createMock<PeerNode>({  
             roles: [NodeRole.STORAGE], 
 
-            publicKey: publicKey,
             walletAddress: publicKey,
             events: realEvents,
             peer: createMock<Peer>({

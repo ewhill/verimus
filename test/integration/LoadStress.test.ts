@@ -63,7 +63,7 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
             privateKeyPath: 'keys/peer_26780.peer.pem'
         }, tmpLoad);
 
-        node.publicKey = fs.readFileSync('keys/peer_26780.peer.pub', 'utf8');
+        node.walletAddress = fs.readFileSync('keys/peer_26780.peer.pub', 'utf8');
         fs.readFileSync('keys/peer_26780.peer.pem', 'utf8');
 
         const mockPeer = {
@@ -99,7 +99,7 @@ describe('Integration: Enterprise Stress Testing Core Pipelines (Phase 3)', () =
 
         node.consensusEngine.node.syncEngine.orchestrateStorageMarket = async (marketReqId: string) => {
             return [{
-                peerId: node.publicKey, connection: {
+                peerId: node.walletAddress, connection: {
                     send: (msg: any) => {
                         if (!msg.body.shardDataBase64) {
                             const physicalId = msg.body.physicalId;

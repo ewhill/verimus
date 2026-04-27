@@ -153,7 +153,7 @@ class MempoolManager {
                 }
                 
                 let isDuplicateInMempool = false;
-                for (const pending of this.pendingBlocks.values()) {
+                for (const pending of this.mempool.pendingBlocks.values()) {
                     if (pending.block.type === BLOCK_TYPES.STAKING_CONTRACT && (pending.block.payload as StakingContractPayload).operatorAddress === scPayload.operatorAddress) {
                         isDuplicateInMempool = true;
                         break;
@@ -172,7 +172,11 @@ class MempoolManager {
                     return;
                 }
                 if (vPayload.action === 'STAKE') {
-                    const stakeAmt = BigInt(vPayload.stakeAmount);
+                    if (!vPayload.stakeAmount) {
+                        logger.warn(`[Peer ${this.node.port}] Rejected VALIDATOR_REGISTRATION: Missing stakeAmount`);
+                        return;
+                    }
+                    const stakeAmt = BigInt(vPayload.stakeAmount!);
                     if (stakeAmt <= 0n) {
                         logger.warn(`[Peer ${this.node.port}] Rejected VALIDATOR_REGISTRATION: Invalid stakeAmount`);
                         return;
@@ -191,7 +195,7 @@ class MempoolManager {
                     }
                     
                     let isDuplicateInMempool = false;
-                    for (const pending of this.pendingBlocks.values()) {
+                    for (const pending of this.mempool.pendingBlocks.values()) {
                         if (pending.block.type === BLOCK_TYPES.VALIDATOR_REGISTRATION && (pending.block.payload as ValidatorRegistrationPayload).validatorAddress === vPayload.validatorAddress) {
                             isDuplicateInMempool = true;
                             break;

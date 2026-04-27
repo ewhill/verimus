@@ -42,7 +42,6 @@ describe('Backend: filesHandler Coverage', () => {
         _unusedKeys = generateRSAKeyPair();
         mockNode = createMock<PeerNode>({
             walletAddress: 'testPubKey',
-            publicKey: 'testPubKey',
 
             ownedBlocksCache: [],
             ledger: createMock<Ledger>({

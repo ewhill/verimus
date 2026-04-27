@@ -7,7 +7,7 @@ import { decryptAESCore } from '../../utils/web3';
 import * as fflate from 'fflate';
 import PropertyValue from './Payloads/PropertyValue';
 import StorageContractPayload from './Payloads/StorageContractPayload';
-import { TransactionPayload, CheckpointPayload, StakingContractPayload, SlashingTransactionPayload } from './Payloads/GenericPayloads';
+import { TransactionPayload, CheckpointPayload, StakingContractPayload, SlashingTransactionPayload, ValidatorRegistrationPayload } from './Payloads/GenericPayloads';
 import GenericBlockHeader from './Payloads/GenericBlockHeader';
 
 const BlockModal = () => {
@@ -255,8 +255,9 @@ const BlockModal = () => {
                                         {pkg.type === 'TRANSACTION' && <TransactionPayload block={pkg} />}
                                         {pkg.type === 'CHECKPOINT' && <CheckpointPayload block={pkg} />}
                                         {pkg.type === 'STAKING_CONTRACT' && <StakingContractPayload block={pkg} />}
+                                        {pkg.type === 'VALIDATOR_REGISTRATION' && <ValidatorRegistrationPayload block={pkg} />}
                                         {pkg.type === 'SLASHING_TRANSACTION' && <SlashingTransactionPayload block={pkg} />}
-                                        {!['STORAGE_CONTRACT', 'TRANSACTION', 'CHECKPOINT', 'STAKING_CONTRACT', 'SLASHING_TRANSACTION'].includes(pkg.type) && <div style={{ color: 'var(--text-muted)' }}>Unrecognized payload type mappings.</div>}
+                                        {!['STORAGE_CONTRACT', 'TRANSACTION', 'CHECKPOINT', 'STAKING_CONTRACT', 'SLASHING_TRANSACTION', 'VALIDATOR_REGISTRATION'].includes(pkg.type) && <div style={{ color: 'var(--text-muted)' }}>Unrecognized payload type mappings.</div>}
                                     </div>
                                 </div>
                             )}

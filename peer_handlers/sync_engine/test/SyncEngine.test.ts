@@ -377,7 +377,7 @@ describe('Backend: SyncEngine Integrity', () => {
         assert.strictEqual(sentMessage, null);
 
         (mockNode as any).roles = [NodeRole.STORAGE];
-        mockNode.publicKey = 'local-storage';
+        mockNode.walletAddress = 'local-storage';
         mockNode.storageProvider = createMock<any>({ getEgressCostPerGB: () => 0.05 });
 
         await syncEngine.handleStorageRequest(new StorageRequestMessage({ fileSizeBytes: 100, chunkSizeBytes: 200, requiredNodes: 2, storageRequestId: 'r-2', senderAddress: 'remote', maxCostPerGB: 0.10 }), mockConnection);
