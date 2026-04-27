@@ -161,7 +161,7 @@ const Header = () => {
             background: (isSearchExpanded || localSearchQuery.trim()) ? 'rgba(30, 41, 59, 0.6)' : '#fbbf24',
             border: (isSearchExpanded || localSearchQuery.trim()) ? '1px solid rgba(255,255,255,0.1)' : 'none',
             backdropFilter: (isSearchExpanded || localSearchQuery.trim()) ? 'blur(10px)' : 'none',
-            marginRight: '8px',
+            marginRight: (isSearchExpanded || localSearchQuery.trim()) ? '16px' : '8px',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 overflow: 'visible',
                 cursor: (isSearchExpanded || localSearchQuery.trim()) ? 'text' : 'pointer'
