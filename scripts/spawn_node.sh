@@ -36,18 +36,22 @@ if [ "$WATCH_MODE" = true ]; then
         UI_PID=""
     fi
 
-    echo "[2/2] Starting Peer Node watcher..."
-    # Launch nodemon passing port and configs over npm "--" bindings
-    
     # Extract port for local logging bounds
-    PORT_VAL="unknown"
+    PORT_VAL="26780"
     for ((i=0; i<${#EXTRA_ARGS[@]}; ++i)); do
         if [[ "${EXTRA_ARGS[i]}" == "--port" ]]; then
             PORT_VAL="${EXTRA_ARGS[i+1]}"
         fi
     done
+
+    # Calculate a staggered delay based on the port to prevent network collapse on file changes
+    STAGGER_DELAY=$(((PORT_VAL - 26780) * 2 + 1))
+    if [ "$STAGGER_DELAY" -lt 1 ]; then
+        STAGGER_DELAY=1
+    fi
     
-    npm run watch:node -- "${EXTRA_ARGS[@]}" > "/tmp/watch_node_${PORT_VAL}.log" 2>&1 &
+    echo "[2/2] Starting Peer Node watcher with ${STAGGER_DELAY}s restart stagger..."
+    npx nodemon --delay ${STAGGER_DELAY} -x tsx -e ts --ignore data/ --ignore storage/ index.ts "${EXTRA_ARGS[@]}" > "/tmp/watch_node_${PORT_VAL}.log" 2>&1 &
     NODE_PID=$!
     
     # Trap Ctrl-C to cleanly kill background watchers without zombie processes
