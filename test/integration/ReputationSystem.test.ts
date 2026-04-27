@@ -92,6 +92,7 @@ describe('Integration: Reputation System (5 Nodes)', () => {
                 node.httpServer.close();
                 node.httpServer.closeAllConnections();
             }
+            if (node.reputationManager) node.reputationManager.stopPruning();
             if (node.syncEngine && node.syncEngine.syncInterval) clearInterval(node.syncEngine.syncInterval);
             if (node.peer) await node.peer.close();
             if (node.ledger && node.ledger.client) await node.ledger.client.close();

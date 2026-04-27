@@ -8,9 +8,41 @@ import type { PeerReputation } from '../../types';
 export class ReputationManager extends EventEmitter {
     private peersCollection: Collection<PeerReputation> | null;
 
+    private pruningInterval: NodeJS.Timeout | null = null;
+
     constructor(peersCollection: Collection<PeerReputation> | null) {
         super();
         this.peersCollection = peersCollection;
+        this.startPruning();
+    }
+
+    private startPruning() {
+        // Prune peers inactive for 3 days every 6 hours
+        this.pruningInterval = setInterval(async () => {
+            if (!this.peersCollection) return;
+            // 3 days in milliseconds
+            const threshold = Date.now() - (3 * 24 * 60 * 60 * 1000); 
+            try {
+                const result = await this.peersCollection.deleteMany({
+                    $or: [
+                        { lastSeenAt: { $lt: threshold } },
+                        { lastSeenAt: { $exists: false } }
+                    ]
+                });
+                if (result.deletedCount > 0) {
+                    logger.info(`[ReputationManager] Pruned ${result.deletedCount} inactive peers from database.`);
+                }
+            } catch (err: any) {
+                logger.warn(`[ReputationManager] Failed to prune peers: ${err.message}`);
+            }
+        }, 6 * 60 * 60 * 1000); // Run every 6 hours
+    }
+
+    public stopPruning() {
+        if (this.pruningInterval) {
+            clearInterval(this.pruningInterval);
+            this.pruningInterval = null;
+        }
     }
 
     private async executePeerUpsert(operatorAddress: string, scoreDelta: number, offense: string | null = null): Promise<PeerReputation | null> {

@@ -137,6 +137,7 @@ describe('Integration: UI Critical User Journeys (Frontend/Backend System Contra
                 node.httpServer.close();
                 node.httpServer.closeAllConnections();
             }
+            if (node.reputationManager) node.reputationManager.stopPruning();
             if (node.syncEngine && node.syncEngine.syncInterval) {
                 clearInterval(node.syncEngine.syncInterval);
             }

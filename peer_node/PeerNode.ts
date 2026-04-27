@@ -12,7 +12,7 @@ import { WebSocket } from 'ws';
 
 import setupExpressApp from '../api_server/ApiServer';
 import Bundler from '../bundler/Bundler';
-import { GENESIS_SEED_DATA, IS_TEST_NETWORK, IS_DEV_NETWORK } from '../constants';
+import { GENESIS_SEED_DATA, IS_TEST_NETWORK } from '../constants';
 import { PeerCredentials } from '../credential_provider/CredentialProvider';
 import { EIP712_DOMAIN, EIP712_SCHEMAS, normalizeBlockForSignature } from '../crypto_utils/EIP712Types';
 import Ledger from '../ledger/Ledger';
@@ -223,7 +223,7 @@ class PeerNode {
                             // Update lastKnownAddress asynchronously to prevent blocking the message handler
                             this.ledger.peersCollection.updateOne(
                                 { operatorAddress: remoteIdentity },
-                                { $set: { lastKnownAddress: connection.peerAddress } }
+                                { $set: { lastKnownAddress: connection.peerAddress, lastSeenAt: Date.now() } }
                             ).catch(() => {});
                         }
 
@@ -311,7 +311,7 @@ class PeerNode {
                                         }
                                     }
                                 }
-                            } catch (error: any) {
+                            } catch (_unusedError: any) {
                                 // Silent retry gracefully avoiding spamming the console
                             }
                         };
@@ -329,6 +329,7 @@ class PeerNode {
     }
 
     stop() {
+        this.reputationManager.stopPruning();
         this.consensusEngine.stop();
         if (this.syncEngine && typeof (this.syncEngine as any).stop === 'function') {
             (this.syncEngine as any).stop();

@@ -29,6 +29,7 @@ export interface PeerReputation {
     isBanned: boolean;
     lastOffense: string | null;
     lastKnownAddress?: string;
+    lastSeenAt?: number;
     roles?: NodeRole[];
 }
 
