@@ -45,9 +45,9 @@ if [ "$WATCH_MODE" = true ]; then
     done
 
     # Calculate a staggered delay based on the port to prevent network collapse on file changes
-    STAGGER_DELAY=$(((PORT_VAL - 26780) * 2 + 1))
+    STAGGER_DELAY=$(((PORT_VAL - 26780) * 10 + 2))
     if [ "$STAGGER_DELAY" -lt 1 ]; then
-        STAGGER_DELAY=1
+        STAGGER_DELAY=2
     fi
     
     echo "[2/2] Starting Peer Node watcher with ${STAGGER_DELAY}s restart stagger..."
