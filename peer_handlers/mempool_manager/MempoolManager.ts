@@ -144,6 +144,25 @@ class MempoolManager {
                     logger.warn(`[Peer ${this.node.port}] Rejected STAKING_CONTRACT: Insufficient Funds from ${scPayload.operatorAddress}`);
                     return;
                 }
+                
+                // Prevent duplicate staking
+                const existingLedgerStake = await this.node.ledger.collection?.findOne({ type: BLOCK_TYPES.STAKING_CONTRACT, 'payload.operatorAddress': scPayload.operatorAddress });
+                if (existingLedgerStake) {
+                    logger.warn(`[Peer ${this.node.port}] Rejected STAKING_CONTRACT: Operator ${scPayload.operatorAddress} is already registered on the ledger`);
+                    return;
+                }
+                
+                let isDuplicateInMempool = false;
+                for (const pending of this.pendingBlocks.values()) {
+                    if (pending.block.type === BLOCK_TYPES.STAKING_CONTRACT && (pending.block.payload as StakingContractPayload).operatorAddress === scPayload.operatorAddress) {
+                        isDuplicateInMempool = true;
+                        break;
+                    }
+                }
+                if (isDuplicateInMempool) {
+                    logger.warn(`[Peer ${this.node.port}] Rejected STAKING_CONTRACT: Operator ${scPayload.operatorAddress} already has a pending registration in the mempool`);
+                    return;
+                }
             }
 
             if (block.type === BLOCK_TYPES.VALIDATOR_REGISTRATION) {
@@ -161,6 +180,25 @@ class MempoolManager {
                     const hasFunds = await this.walletManager.verifyFunds(vPayload.validatorAddress, stakeAmt);
                     if (!hasFunds) {
                         logger.warn(`[Peer ${this.node.port}] Rejected VALIDATOR_REGISTRATION: Insufficient Funds from ${vPayload.validatorAddress}`);
+                        return;
+                    }
+                    
+                    // Prevent duplicate staking
+                    const existingLedgerStake = await this.node.ledger.collection?.findOne({ type: BLOCK_TYPES.VALIDATOR_REGISTRATION, 'payload.validatorAddress': vPayload.validatorAddress });
+                    if (existingLedgerStake) {
+                        logger.warn(`[Peer ${this.node.port}] Rejected VALIDATOR_REGISTRATION: Validator ${vPayload.validatorAddress} is already registered on the ledger`);
+                        return;
+                    }
+                    
+                    let isDuplicateInMempool = false;
+                    for (const pending of this.pendingBlocks.values()) {
+                        if (pending.block.type === BLOCK_TYPES.VALIDATOR_REGISTRATION && (pending.block.payload as ValidatorRegistrationPayload).validatorAddress === vPayload.validatorAddress) {
+                            isDuplicateInMempool = true;
+                            break;
+                        }
+                    }
+                    if (isDuplicateInMempool) {
+                        logger.warn(`[Peer ${this.node.port}] Rejected VALIDATOR_REGISTRATION: Validator ${vPayload.validatorAddress} already has a pending registration in the mempool`);
                         return;
                     }
                 }
