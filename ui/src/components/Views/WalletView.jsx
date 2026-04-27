@@ -363,7 +363,7 @@ const WalletView = () => {
                                             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Bid on storage contracts and earn 90% of system rewards by hosting physical data chunks.</p>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                                 <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Required Stake</span>
-                                                <span style={{ color: '#fff', fontWeight: 'bold' }}>50,000 VERI</span>
+                                                <span style={{ color: '#fff', fontWeight: 'bold' }}>100 VERI</span>
                                             </div>
                                             <button className="primary-btn" style={{ width: '100%', borderRadius: '8px' }}>Register Storage Node</button>
                                         </div>
@@ -373,7 +373,7 @@ const WalletView = () => {
                                             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Run a lightweight watchdog node to verify mathematical proofs and earn 10% of system rewards.</p>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                                 <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Required Stake</span>
-                                                <span style={{ color: '#fff', fontWeight: 'bold' }}>100,000 VERI</span>
+                                                <span style={{ color: '#fff', fontWeight: 'bold' }}>100 VERI</span>
                                             </div>
                                             <button className="secondary-btn" style={{ width: '100%', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.5)', color: '#38bdf8', background: 'transparent' }}>Register Validator</button>
                                         </div>
