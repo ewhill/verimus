@@ -183,7 +183,7 @@ const BlockModal = () => {
 
     return (
         <div className="modal" style={{ display: 'flex', position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', alignItems: 'center', justifyContent: 'center' }} onClick={closeModal}>
-            <div className="modal-content glass-panel" style={{ width: '100%', maxWidth: '650px', margin: '0 1rem', padding: '0', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 4rem)', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content glass-panel" style={{ width: '100%', maxWidth: '650px', margin: '0 1rem', padding: '0', display: 'flex', flexDirection: 'column', maxHeight: '90vh', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', margin: '0', padding: '1.5rem 2rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>Block Inspection</h3>
