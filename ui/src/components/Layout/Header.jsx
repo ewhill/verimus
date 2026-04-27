@@ -110,9 +110,9 @@ const Header = () => {
 
         const staticSuggestions = ['type:TRANSACTION', 'type:STORAGE_CONTRACT', 'type:STAKING_CONTRACT', 'type:VALIDATOR_REGISTRATION', 'from:', 'to:', 'owner:'];
         const matches = staticSuggestions.filter(s => s.toLowerCase().startsWith(val.toLowerCase()) && s.toLowerCase() !== val.toLowerCase());
-        
+
         if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
-        
+
         debounceTimeoutRef.current = setTimeout(async () => {
             let dyn = suggestionCache.current[val];
             if (!dyn) {
@@ -161,93 +161,93 @@ const Header = () => {
             background: (isSearchExpanded || localSearchQuery.trim()) ? 'rgba(30, 41, 59, 0.6)' : '#fbbf24',
             border: (isSearchExpanded || localSearchQuery.trim()) ? '1px solid rgba(255,255,255,0.1)' : 'none',
             backdropFilter: (isSearchExpanded || localSearchQuery.trim()) ? 'blur(10px)' : 'none',
-            marginRight: (isSearchExpanded || localSearchQuery.trim()) ? '16px' : '8px',
+            marginRight: (isSearchExpanded || localSearchQuery.trim()) ? '8px' : '0',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                overflow: 'visible',
-                cursor: (isSearchExpanded || localSearchQuery.trim()) ? 'text' : 'pointer'
-            }}
-                onClick={() => { if (!isSearchExpanded && !localSearchQuery.trim()) handleSearchClick() }}
-                onMouseOver={(e) => { if (!isSearchExpanded && !localSearchQuery.trim()) { e.currentTarget.style.transform = 'scale(1.1)'; } }}
-                onMouseOut={(e) => { if (!isSearchExpanded && !localSearchQuery.trim()) { e.currentTarget.style.transform = 'scale(1)'; } }}
-            >
-                <div style={{ position: 'absolute', left: (isSearchExpanded || localSearchQuery.trim()) ? '12px' : '50%', top: '50%', transform: `translate(${(isSearchExpanded || localSearchQuery.trim()) ? '0' : '-50%'}, -50%)`, display: 'flex', alignItems: 'center', transition: 'all 0.3s ease', color: (isSearchExpanded || localSearchQuery.trim()) ? 'var(--text-muted)' : '#020617' }}>
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                    </svg>
-                </div>
+            overflow: 'visible',
+            cursor: (isSearchExpanded || localSearchQuery.trim()) ? 'text' : 'pointer'
+        }}
+            onClick={() => { if (!isSearchExpanded && !localSearchQuery.trim()) handleSearchClick() }}
+            onMouseOver={(e) => { if (!isSearchExpanded && !localSearchQuery.trim()) { e.currentTarget.style.transform = 'scale(1.1)'; } }}
+            onMouseOut={(e) => { if (!isSearchExpanded && !localSearchQuery.trim()) { e.currentTarget.style.transform = 'scale(1)'; } }}
+        >
+            <div style={{ position: 'absolute', left: (isSearchExpanded || localSearchQuery.trim()) ? '12px' : '50%', top: '50%', transform: `translate(${(isSearchExpanded || localSearchQuery.trim()) ? '0' : '-50%'}, -50%)`, display: 'flex', alignItems: 'center', transition: 'all 0.3s ease', color: (isSearchExpanded || localSearchQuery.trim()) ? 'var(--text-muted)' : '#020617' }}>
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+            </div>
 
-                <input
-                    ref={searchInputRef}
-                    name="omnibar"
-                    type="text"
-                    placeholder="Search blocks, txns, or wallet addresses..."
-                    value={localSearchQuery}
-                    onChange={handleQueryChange}
-                    onBlur={handleSearchBlur}
-                    autoComplete="off"
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                        padding: '0 32px 0 36px',
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--text-main)',
-                        fontSize: '0.85rem',
-                        outline: 'none',
-                        opacity: (isSearchExpanded || localSearchQuery.trim()) ? 1 : 0,
-                        pointerEvents: (isSearchExpanded || localSearchQuery.trim()) ? 'auto' : 'none',
-                        transition: 'opacity 0.2s 0.1s'
-                    }}
-                />
+            <input
+                ref={searchInputRef}
+                name="omnibar"
+                type="text"
+                placeholder="Search blocks, txns, or wallet addresses..."
+                value={localSearchQuery}
+                onChange={handleQueryChange}
+                onBlur={handleSearchBlur}
+                autoComplete="off"
+                style={{
+                    width: '100%',
+                    height: '100%',
+                    padding: '0 32px 0 36px',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-main)',
+                    fontSize: '0.85rem',
+                    outline: 'none',
+                    opacity: (isSearchExpanded || localSearchQuery.trim()) ? 1 : 0,
+                    pointerEvents: (isSearchExpanded || localSearchQuery.trim()) ? 'auto' : 'none',
+                    transition: 'opacity 0.2s 0.1s'
+                }}
+            />
 
-                {(isSearchExpanded || localSearchQuery) && (
-                    <button type="button" onClick={handleSearchClear} style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '18px', height: '18px', color: '#94a3b8', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} onMouseOver={(e) => { e.currentTarget.style.color = '#f8fafc'; e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; }} onMouseOut={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}>
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                )}
-                
-                {isSearchExpanded && suggestions.length > 0 && (
-                    <div className="search-suggestions" style={{
-                        position: 'absolute',
-                        top: '110%',
-                        left: 0,
-                        right: 0,
-                        background: 'rgba(15, 23, 42, 0.95)',
-                        backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: 'var(--radius-md)',
-                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
-                        overflow: 'hidden',
-                        zIndex: 100
-                    }}>
-                        {suggestions.map((s, idx) => (
-                            <div key={idx} style={{ padding: '0.6rem 1rem', cursor: 'pointer', color: '#e2e8f0', fontSize: '0.85rem', borderBottom: idx < suggestions.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}
-                                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(56, 189, 248, 0.1)'; }}
-                                onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    setLocalSearchQuery(s);
-                                    if (s.endsWith(':')) {
-                                        searchInputRef.current?.focus();
+            {(isSearchExpanded || localSearchQuery) && (
+                <button type="button" onClick={handleSearchClear} style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '18px', height: '18px', color: '#94a3b8', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} onMouseOver={(e) => { e.currentTarget.style.color = '#f8fafc'; e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; }} onMouseOut={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            )}
+
+            {isSearchExpanded && suggestions.length > 0 && (
+                <div className="search-suggestions" style={{
+                    position: 'absolute',
+                    top: '110%',
+                    left: 0,
+                    right: 0,
+                    background: 'rgba(15, 23, 42, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 'var(--radius-md)',
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                    overflow: 'hidden',
+                    zIndex: 100
+                }}>
+                    {suggestions.map((s, idx) => (
+                        <div key={idx} style={{ padding: '0.6rem 1rem', cursor: 'pointer', color: '#e2e8f0', fontSize: '0.85rem', borderBottom: idx < suggestions.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}
+                            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(56, 189, 248, 0.1)'; }}
+                            onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                setLocalSearchQuery(s);
+                                if (s.endsWith(':')) {
+                                    searchInputRef.current?.focus();
+                                } else {
+                                    setSuggestions([]);
+                                    dispatch({ type: 'SET_SEARCH', payload: s });
+                                    if (s.length === 64) {
+                                        dispatch({ type: 'SET_MODAL_OPEN', payload: { isOpen: true, hash: s } });
                                     } else {
-                                        setSuggestions([]);
-                                        dispatch({ type: 'SET_SEARCH', payload: s });
-                                        if (s.length === 64) {
-                                            dispatch({ type: 'SET_MODAL_OPEN', payload: { isOpen: true, hash: s } });
-                                        } else {
-                                            dispatch({ type: 'SET_ROUTE', payload: 'ledger' });
-                                            dispatch({ type: 'SET_LEDGER_TAB', payload: 'blocks' });
-                                        }
-                                        searchInputRef.current?.blur();
+                                        dispatch({ type: 'SET_ROUTE', payload: 'ledger' });
+                                        dispatch({ type: 'SET_LEDGER_TAB', payload: 'blocks' });
                                     }
-                                }}
-                            >
-                                {s}
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </form>
+                                    searchInputRef.current?.blur();
+                                }
+                            }}
+                        >
+                            {s}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </form>
     );
 
     const navActions = (
@@ -349,7 +349,7 @@ const Header = () => {
 
     return (
         <header>
-            <div className="header-primary" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center' }}>
+            <div className="header-primary" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', alignItems: 'center' }}>
                 <div className="header-top" style={{ justifySelf: 'start', display: 'flex', alignItems: 'center' }}>
                     <div className="logo">
                         <div className={`logo-icon ${error ? 'logo-glow-offline' : 'logo-glow-online'}`} onClick={() => {
@@ -371,7 +371,7 @@ const Header = () => {
                                         <stop offset="0.5" stopColor="#818cf8" />
                                         <stop offset="1" stopColor="#38bdf8" />
                                     </linearGradient>
-                                    
+
                                     {/* Face Gradients mapping node colors directly */}
                                     <linearGradient id="topFaceGrad" x1="12" y1="12" x2="12" y2="6" gradientUnits="userSpaceOnUse">
                                         <stop offset="0%" stopColor="#ffffff" /><stop offset="100%" stopColor="#c084fc" />
@@ -384,7 +384,7 @@ const Header = () => {
                                     </linearGradient>
                                 </defs>
                                 <circle cx="12" cy="12" r="8.5" stroke="url(#neonGradient)" strokeWidth="1.5" />
-                                
+
                                 {/* Crisp 3D Isometric Cube Faces */}
                                 <polygon points="12,12 6.8,9 12,6 17.2,9" fill="url(#topFaceGrad)" />
                                 <polygon points="12,12 17.2,9 17.2,15 12,18" fill="url(#rightFaceGrad)" />
@@ -412,12 +412,9 @@ const Header = () => {
                     </button>
                 </div>
 
-                {/* Center column to house the expanding omnibox gracefully */}
-                <div className="header-center desktop-only" style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', minWidth: 0 }}>
+                {/* Right column houses the expanding omnibox and nav actions natively merged */}
+                <div className="header-right desktop-only" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', width: '100%', minWidth: 0 }}>
                     {omnibarComponent}
-                </div>
-
-                <div className="header-right desktop-only" style={{ display: 'flex', justifySelf: 'end', alignItems: 'center', gap: '1rem' }}>
                     {navActions}
                 </div>
             </div>
