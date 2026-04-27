@@ -13,6 +13,7 @@ const WalletConnection = ({ isMobileDrawer }) => {
     const [isProviderListOpen, setIsProviderListOpen] = useState(false);
 
     const disconnectWallet = React.useCallback((message = 'You have been unmapped successfully', type = 'success') => {
+        localStorage.setItem('verimus_explicit_disconnect', 'true');
         dispatch({ type: 'SET_ACTIVE_PROVIDER', payload: null });
         dispatch({ type: 'SET_WEB3_ACCOUNT', payload: null });
         setIsDropdownOpen(false);
@@ -34,6 +35,8 @@ const WalletConnection = ({ isMobileDrawer }) => {
     // Eagerly connect if the user has previously authorized the site
     React.useEffect(() => {
         const attemptEagerConnection = async () => {
+            if (localStorage.getItem('verimus_explicit_disconnect') === 'true') return;
+            
             if (!web3Account && discoveredProviders.length > 0) {
                 try {
                     const provider = discoveredProviders[0].provider;
@@ -78,6 +81,7 @@ const WalletConnection = ({ isMobileDrawer }) => {
 
     const executeConnection = async (selectedProvider) => {
         try {
+            localStorage.removeItem('verimus_explicit_disconnect');
             dispatch({ type: 'SET_WALLET_CONNECTING', payload: true });
             setIsProviderListOpen(false);
             const account = await requestAccounts(selectedProvider);
