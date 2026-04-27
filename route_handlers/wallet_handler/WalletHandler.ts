@@ -77,6 +77,8 @@ export default class WalletHandler extends BaseHandler {
                 };
                 const activeStakes = await this.node.ledger.collection.find(stakeQuery).toArray();
                 stakes = activeStakes.map((b: any) => ({
+                    hash: b.hash,
+                    index: b.metadata?.index,
                     type: b.type,
                     amount: b.payload.collateralAmount || b.payload.stakeAmount,
                     timestamp: b.metadata.timestamp

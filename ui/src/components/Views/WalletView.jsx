@@ -409,31 +409,40 @@ const WalletView = () => {
                                     {walletData.stakes.length === 0 ? (
                                         <div style={{ color: '#64748b', fontStyle: 'italic', textAlign: 'center', padding: '2rem 0' }}>No active node stakes detected for this wallet.</div>
                                     ) : (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                            {walletData.stakes.map((stake, idx) => (
-                                                <div key={idx} onClick={() => {
-                                                    dispatch({ type: 'SET_MODAL_OPEN', payload: { isOpen: true, hash: stake.hash } });
-                                                }} className="data-row status-confirmed" style={{ display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr', alignItems: 'center', padding: '1rem 1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--border-soft)', cursor: 'pointer' }}>
-                                                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                                                        {formatDate(stake.timestamp)}
+                                        <div className="data-list-container" style={{ overflowX: 'auto' }}>
+                                            <div className="data-list-header stagger-1" style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 0.7fr) minmax(130px, 0.9fr) 2fr 1.5fr minmax(100px, auto)', padding: '0 1.5rem', marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                <div>Block</div>
+                                                <div>Type</div>
+                                                <div>Hash</div>
+                                                <div>Timestamp</div>
+                                                <div style={{ textAlign: 'right' }}>Amount</div>
+                                            </div>
+                                            <div className="data-list-body">
+                                                {walletData.stakes.map((stake, idx) => (
+                                                    <div key={idx} onClick={() => {
+                                                        dispatch({ type: 'SET_MODAL_OPEN', payload: { isOpen: true, hash: stake.hash } });
+                                                    }} className="data-row status-confirmed" style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 0.7fr) minmax(130px, 0.9fr) 2fr 1.5fr minmax(100px, auto)', alignItems: 'center', padding: '1rem 1.5rem', cursor: 'pointer', animation: `staggerFadeUp 0.3s ease-out ${idx * 0.03}s both` }}>
+                                                        <div><span className="badge" style={{ background: 'rgba(99,102,241,0.15)', color: '#c7d2fe' }}>#{stake.index !== undefined ? stake.index : '?'}</span></div>
+                                                        <div style={{ display: 'flex', overflow: 'hidden' }}>
+                                                            <span className="badge" style={{ background: stake.type === 'STAKING_CONTRACT' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(156, 163, 175, 0.15)', color: stake.type === 'STAKING_CONTRACT' ? '#fb923c' : '#9ca3af', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                                                                <span style={{ width: '12px', height: '12px', display: 'flex', flexShrink: 0 }}>
+                                                                    {stake.type === 'STAKING_CONTRACT' ? (
+                                                                        <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" /></svg>
+                                                                    ) : (
+                                                                        <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                                    )}
+                                                                </span>
+                                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{stake.type === 'STAKING_CONTRACT' ? 'Stake' : 'Validator'}</span>
+                                                            </span>
+                                                        </div>
+                                                        <div style={{ fontFamily: 'monospace', color: 'var(--text-secondary)' }} title={stake.hash}>{stake.hash.substring(0, 16)}...</div>
+                                                        <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{formatDate(stake.timestamp)}</div>
+                                                        <div style={{ textAlign: 'right', fontWeight: 'bold', color: '#fff', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                                            {formatVeri(stake.amount, 14, '🔒 ')}
+                                                        </div>
                                                     </div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                        <span style={{ 
-                                                            padding: '0.25rem 0.75rem', 
-                                                            borderRadius: '100px', 
-                                                            fontSize: '0.75rem', 
-                                                            fontWeight: 'bold',
-                                                            background: stake.type === 'STAKING_CONTRACT' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(156, 163, 175, 0.15)',
-                                                            color: stake.type === 'STAKING_CONTRACT' ? '#fb923c' : '#9ca3af'
-                                                        }}>
-                                                            {stake.type === 'STAKING_CONTRACT' ? 'Stake' : 'Validator'}
-                                                        </span>
-                                                    </div>
-                                                    <div style={{ textAlign: 'right', fontWeight: 'bold', color: '#fff', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                                                        {formatVeri(stake.amount, 14, '🔒 ')}
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
