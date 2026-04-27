@@ -361,14 +361,25 @@ const WalletView = () => {
                                     </p>
                                     
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginTop: '2rem', textAlign: 'left' }}>
-                                        <div style={{ background: 'rgba(15, 23, 42, 0.4)', border: '1px solid var(--border-soft)', padding: '1.5rem', borderRadius: '12px' }}>
+                                        {(() => {
+                                            const hasStorageStake = walletData.stakes.some(s => s.type === 'STAKING_CONTRACT');
+                                            const hasValidatorStake = walletData.stakes.some(s => s.type === 'VALIDATOR_REGISTRATION');
+                                            return (
+                                                <>
+                                                    <div style={{ background: 'rgba(15, 23, 42, 0.4)', border: '1px solid var(--border-soft)', padding: '1.5rem', borderRadius: '12px' }}>
                                             <h3 style={{ color: '#c084fc', marginBottom: '0.5rem', fontSize: '1.1rem' }}>Storage Node</h3>
                                             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Bid on storage contracts and earn 90% of system rewards by hosting physical data chunks.</p>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                                 <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Required Stake</span>
                                                 <span style={{ color: '#fff', fontWeight: 'bold' }}>100 VERI</span>
                                             </div>
-                                            <button className="primary-btn" style={{ width: '100%', borderRadius: '8px' }}>Register Storage Node</button>
+                                            {hasStorageStake ? (
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderRadius: '8px', fontWeight: 'bold' }}>
+                                                    ✓ Already Registered
+                                                </div>
+                                            ) : (
+                                                <button className="primary-btn" style={{ width: '100%', borderRadius: '8px' }}>Register Storage Node</button>
+                                            )}
                                         </div>
                                         
                                         <div style={{ background: 'rgba(15, 23, 42, 0.4)', border: '1px solid var(--border-soft)', padding: '1.5rem', borderRadius: '12px' }}>
@@ -378,8 +389,17 @@ const WalletView = () => {
                                                 <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Required Stake</span>
                                                 <span style={{ color: '#fff', fontWeight: 'bold' }}>100 VERI</span>
                                             </div>
-                                            <button className="secondary-btn" style={{ width: '100%', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.5)', color: '#38bdf8', background: 'transparent' }}>Register Validator</button>
+                                            {hasValidatorStake ? (
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem', background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', borderRadius: '8px', fontWeight: 'bold' }}>
+                                                    ✓ Already Registered
+                                                </div>
+                                            ) : (
+                                                <button className="secondary-btn" style={{ width: '100%', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.5)', color: '#38bdf8', background: 'transparent' }}>Register Validator</button>
+                                            )}
                                         </div>
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                                 
