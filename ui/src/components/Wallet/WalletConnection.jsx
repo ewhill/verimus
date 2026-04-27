@@ -31,6 +31,25 @@ const WalletConnection = ({ isMobileDrawer }) => {
         }
     }, [activeProvider, web3Account, discoveredProviders, dispatch]);
 
+    // Eagerly connect if the user has previously authorized the site
+    React.useEffect(() => {
+        const attemptEagerConnection = async () => {
+            if (!web3Account && discoveredProviders.length > 0) {
+                try {
+                    const provider = discoveredProviders[0].provider;
+                    // eth_accounts silently returns authorized accounts without a popup
+                    const accounts = await provider.request({ method: 'eth_accounts' });
+                    if (accounts && accounts.length > 0 && !isConnecting) {
+                        await executeConnection(provider);
+                    }
+                } catch (e) {
+                    console.warn("Eager connection verification deferred:", e);
+                }
+            }
+        };
+        attemptEagerConnection();
+    }, [discoveredProviders, web3Account]);
+
     React.useEffect(() => {
         if (!activeProvider) return;
 
