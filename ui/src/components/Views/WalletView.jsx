@@ -300,8 +300,7 @@ const WalletView = () => {
                                             const isMint = tx.senderAddress === ethers.ZeroAddress;
                                             return (
                                                 <div key={idx} className="data-row status-confirmed" onClick={() => {
-                                                    dispatch({ type: 'SET_SELECTED_BLOCK', payload: tx.hash });
-                                                    dispatch({ type: 'SET_MODAL_OPEN', payload: true });
+                                                    dispatch({ type: 'SET_MODAL_OPEN', payload: { isOpen: true, hash: tx.hash } });
                                                 }} style={{ display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr 1.5fr', alignItems: 'center', padding: '1rem 1.5rem', cursor: 'pointer', animation: `staggerFadeUp 0.3s ease-out ${idx * 0.03}s both` }}>
                                                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                                                         {formatDate(tx.timestamp)}
@@ -393,8 +392,7 @@ const WalletView = () => {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                             {walletData.stakes.map((stake, idx) => (
                                                 <div key={idx} onClick={() => {
-                                                    dispatch({ type: 'SET_SELECTED_BLOCK', payload: stake.hash });
-                                                    dispatch({ type: 'SET_MODAL_OPEN', payload: true });
+                                                    dispatch({ type: 'SET_MODAL_OPEN', payload: { isOpen: true, hash: stake.hash } });
                                                 }} className="data-row status-confirmed" style={{ display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr', alignItems: 'center', padding: '1rem 1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--border-soft)', cursor: 'pointer' }}>
                                                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                                                         {formatDate(stake.timestamp)}
