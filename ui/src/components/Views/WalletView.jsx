@@ -206,7 +206,20 @@ const WalletView = () => {
                     <div style={{ textAlign: 'center', padding: '3rem', color: '#f87171' }}>{error}</div>
                 ) : (
                     <>
-                        {/* Top Row: Analytical Float Arrays */}
+                        <div style={{ display: 'flex', gap: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '2rem', padding: '0 1rem' }}>
+                            <button 
+                                onClick={() => dispatch({ type: 'SET_WALLET_TAB', payload: 'dashboard' })}
+                                style={{ background: 'transparent', border: 'none', borderBottom: (activeTab === 'dashboard' || activeTab === 'overview') ? '2px solid #818cf8' : '2px solid transparent', color: (activeTab === 'dashboard' || activeTab === 'overview') ? '#818cf8' : 'var(--text-muted)', padding: '1rem 0', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', fontSize: '1rem' }}
+                            >Portfolio Overview</button>
+                            <button 
+                                onClick={() => dispatch({ type: 'SET_WALLET_TAB', payload: 'staking' })}
+                                style={{ background: 'transparent', border: 'none', borderBottom: activeTab === 'staking' ? '2px solid #818cf8' : '2px solid transparent', color: activeTab === 'staking' ? '#818cf8' : 'var(--text-muted)', padding: '1rem 0', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', fontSize: '1rem' }}
+                            >Staking & Nodes</button>
+                        </div>
+
+                        {(activeTab === 'dashboard' || activeTab === 'overview') && (
+                            <div className="wallet-dashboard-content">
+                                {/* Top Row: Analytical Float Arrays */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', marginBottom: '2rem' }}>
                             <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -333,6 +346,46 @@ const WalletView = () => {
                                 </div>
                             )}
                         </div>
+                        </div>
+                        )}
+
+                        {activeTab === 'staking' && (
+                            <div className="wallet-staking-content" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                <div className="glass-panel" style={{ padding: '2.5rem', borderRadius: '16px', textAlign: 'center' }}>
+                                    <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-main)' }}>Staking Portal</h2>
+                                    <p style={{ color: 'var(--text-muted)', maxWidth: '600px', margin: '0 auto 2rem', lineHeight: '1.6' }}>
+                                        Lock your VERI tokens to participate in network consensus or operate a decentralized storage node. Staked tokens are frozen to ensure network reliability and deter malicious behavior.
+                                    </p>
+                                    
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginTop: '2rem', textAlign: 'left' }}>
+                                        <div style={{ background: 'rgba(15, 23, 42, 0.4)', border: '1px solid var(--border-soft)', padding: '1.5rem', borderRadius: '12px' }}>
+                                            <h3 style={{ color: '#c084fc', marginBottom: '0.5rem', fontSize: '1.1rem' }}>Storage Node</h3>
+                                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Bid on storage contracts and earn 90% of system rewards by hosting physical data chunks.</p>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                                <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Required Stake</span>
+                                                <span style={{ color: '#fff', fontWeight: 'bold' }}>50,000 VERI</span>
+                                            </div>
+                                            <button className="primary-btn" style={{ width: '100%', borderRadius: '8px' }}>Register Storage Node</button>
+                                        </div>
+                                        
+                                        <div style={{ background: 'rgba(15, 23, 42, 0.4)', border: '1px solid var(--border-soft)', padding: '1.5rem', borderRadius: '12px' }}>
+                                            <h3 style={{ color: '#38bdf8', marginBottom: '0.5rem', fontSize: '1.1rem' }}>Validator Auditor</h3>
+                                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Run a lightweight watchdog node to verify mathematical proofs and earn 10% of system rewards.</p>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                                <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Required Stake</span>
+                                                <span style={{ color: '#fff', fontWeight: 'bold' }}>100,000 VERI</span>
+                                            </div>
+                                            <button className="secondary-btn" style={{ width: '100%', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.5)', color: '#38bdf8', background: 'transparent' }}>Register Validator</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="glass-panel" style={{ padding: '2.5rem', borderRadius: '16px' }}>
+                                    <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', color: 'var(--text-main)' }}>Active Stakes</h3>
+                                    <div style={{ color: '#64748b', fontStyle: 'italic', textAlign: 'center', padding: '2rem 0' }}>No active node stakes detected for this wallet.</div>
+                                </div>
+                            </div>
+                        )}
                     </>
                 )}
             </div>
